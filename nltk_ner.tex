@@ -1,0 +1,154 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
+{\Large NER in NLTK}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Steps for NER}
+  \begin{itemize}
+  \item Take a string as input
+  \item Tokenize it into sentences
+  \item Tokenize the sentences into words
+  \item Add part-of-speech tags to the words using \lstinline|nltk.pos_tag()|
+  \item  Run this through the NLTK-provided NER classifier using \lstinline|nltk.ne_chunk()|
+  \item  Parse these intermediate results and return any extracted entities
+
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{NLTK NER Chunker}
+  \begin{itemize}
+  \item \lstinline|ne_chunk| needs part-of-speech annotations to add NE labels to the sentence. The output of the \lstinline|ne_chunk| is a \lstinline|nltk.Tree| object.
+  \begin{lstlisting}
+from nltk import word_tokenize, pos_tag, ne_chunk
+sentence = "Mark and John are working at Google."
+print ne_chunk(pos_tag(word_tokenize(sentence)))
+"""
+(S
+  (PERSON Mark/NNP)
+  and/CC
+  (PERSON John/NNP)
+  are/VBP
+  working/VBG
+  at/IN
+  (ORGANIZATION Google/NNP)
+  ./.)
+"""
+  \end{lstlisting}
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Steps for NER}
+  \begin{itemize}
+  \item NLTK provides a classifier that has already been trained to recognize named entities, accessed with the function \lstinline|nltk.ne_chunk()|. 
+\item If we set the parameter \lstinline|binary=True|, then named entities are just tagged as \lstinline|NE|; otherwise, the classifier adds category labels such as \lstinline|PERSON, ORGANIZATION, and GPE|.
+  \begin{lstlisting}
+ >>> print(nltk.ne_chunk(sent)) 
+(S
+  The/DT
+  (GPE U.S./NNP)
+  is/VBZ
+  one/CD
+  ...
+  according/VBG
+  to/TO
+  (PERSON Brooke/NNP T./NNP Mossman/NNP)
+  ...)
+  \end{lstlisting}
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{IOB tagging}
+The IOB Tagging system contains tags of the form:
+  \begin{itemize}
+  \item \lstinline|B-{CHUNK_TYPE}| - for the word in the Beginning chunk
+  \item \lstinline|I-{CHUNK_TYPE}| - for words Inside the chunk
+  \item \lstinline|O| - Outside any chunk
+  \end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{IOB tagging}
+  \begin{lstlisting}
+from nltk.chunk import conlltags2tree, tree2conlltags
+sentence = "Mark and John are working at Google."
+ne_tree = ne_chunk(pos_tag(word_tokenize(sentence)))
+iob_tagged = tree2conlltags(ne_tree)
+print iob_tagged
+"""[('Mark', 'NNP', u'B-PERSON'), ('and', 'CC', u'O'), ('John', 'NNP', u'B-PERSON'), ('are', 'VBP', u'O'), ('working', 'VBG', u'O'), ('at', 'IN', u'O'), ('Google', 'NNP', u'B-ORGANIZATION'), ('.', '.', u'O')]
+"""
+ne_tree = conlltags2tree(iob_tagged)
+print ne_tree
+""" (S
+  (PERSON Mark/NNP)
+  and/CC
+  (PERSON John/NNP)
+  are/VBP
+  working/VBG
+  at/IN
+  (ORGANIZATION Google/NNP)
+  ./.)
+"""
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile]\frametitle{Max Entropy}
+%  \begin{lstlisting}
+%import nltk
+%nltk.download('maxent_ne_chunker')
+%nltk.download('words')
+%import re
+%import time
+%contentArray =['Starbucks is not doing very well lately.',
+%               'Overall, while it may seem there is already a Starbucks on every corner, Starbucks still has a lot of room to grow.',
+%               'Increase in supply... well you know the rules...',]
+%for item in contentArray:
+%            tokenized = nltk.word_tokenize(item)
+%            tagged = nltk.pos_tag(tokenized)
+%            #print tagged
+%             namedEnt = nltk.ne_chunk(tagged)
+%            namedEnt.draw()
+%  \end{lstlisting}
+%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Stanford NER}
+  \begin{lstlisting}
+wget "http://nlp.stanford.edu/software/stanford-ner-2014-06-16.zip"
+unzip stanford-ner-2014-06-16.zip
+mv stanford-ner-2014-06-16 stanford-ner
+sudo mv stanford-ner /usr/share/
+
+from nltk import word_tokenize
+from nltk.tag.stanford import NERTagger
+ 
+classifier = '/usr/share/stanford-ner/classifiers/english.all.3class.distsim.crf.ser.gz'
+jar = '/usr/share/stanford-ner/stanford-ner.jar'
+st = NERTagger(classifier,jar)
+sentence = word_tokenize("Rami Eid is studying at Stony Brook University in NY")
+print st.tag(sentence)
+  \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training your own system}
+  \begin{itemize}
+  \item The feature extraction works almost identical as the one implemented in the Training a Part-Of-Speech Tagger, except need to add many features.
+  \item Since the previous IOB tag is a very good indicator of what the current IOB tag is going to be, we have included the previous IOB tag as a feature.
+  \item Spacy Provides Gold Parse method
+  \item CRF++ can be used to generate custom NER tags.
+  \end{itemize}
+\end{frame}
+
+
+

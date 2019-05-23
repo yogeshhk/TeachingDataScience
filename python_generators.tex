@@ -1,0 +1,392 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Generators}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{A different Iterator}
+
+    \begin{itemize}
+    \item  Generators simplifies creation of iterators. 
+    \item A generator is a function that produces a sequence of results instead of a single value (sequence).
+\begin{lstlisting}
+def yrange(n):
+    i = 0
+    while i < n:
+        yield i
+        i += 1
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Usage}
+Each time the yield statement is executed the function generates a new value.
+\begin{lstlisting}
+>>> y = yrange(3)
+>>> y
+<generator object yrange at 0x401f30>
+>>> y.next()
+0
+>>> y.next()
+1
+>>> y.next()
+2
+>>> y.next()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+\end{lstlisting}
+So a generator is also an iterator. You don't have to worry about the iterator protocol.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Example}
+Counter class using a generator function and its usage in a for loop.
+\begin{lstlisting}
+def counter_generator(low, high):
+    while low <= high:
+       yield low
+       low += 1
+
+>>> for i in counter_generator(5,10):
+...     print(i, end=' ')
+...
+5 6 7 8 9 10
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Examples}
+    \begin{itemize}
+    \item  Inside the while loop when it reaches to the yield statement, the value of low is returned and the generator state is suspended. 
+    \item During the second next call the generator resumed where it freeze-ed before and then the value of low is increased by one. 
+    \item It continues with the while loop and comes to the yield statement again.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Examples}
+    \begin{itemize}
+    \item  When you call an generator function it returns a $generator$ object.
+    \item If you call $dir$ on this object you will find that it contains \_\_iter\_\_ and $\_\_next\_\_$ methods among the other methods.
+    \end{itemize}
+    \begin{lstlisting}
+   >>> c = counter_generator(5,10)
+   >>> dir(c)
+   ['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__',
+'__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__iter__',
+'__le__', '__lt__', '__name__', '__ne__', '__new__', '__next__', '__reduce__',
+'__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__',
+'close', 'gi_code', 'gi_frame', 'gi_running', 'send', 'throw']
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Example: Fibonacci }
+The first number of the sequence is 0, the second number is 1, and each subsequent number is equal to the sum of the previous two numbers of the sequence itself. 
+\begin{lstlisting}
+import time
+def fib():
+   a, b = 1, 1
+   while True:
+      yield b
+      a, b = b, a + b
+g = fib()
+try:
+   for e in g:
+      print(e)
+      time.sleep(1)
+except KeyboardInterrupt:
+   print("Calculation stopped")
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Examples}
+    \begin{itemize}
+    \item  We mostly use generators for laze evaluations. 
+    \item This way generators become a good approach to work with lots of data. 
+    \item If you don't want to load all the data in the memory, you can use a generator which will pass you each piece of data at a time.
+\item One of the biggest example of such example is os.path.walk() function which uses a callback function and current os.walk generator. 
+\item Using the generator implementation saves memory.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Note}
+    \begin{itemize}
+    \item  ``generator'' to mean the generated object 
+    \item ``generator function'' to mean the function that generates it.
+    \item  When a generator function is called, it returns a generator object without even beginning execution of the function.
+    \item When next method is called for the first time, the function starts executing until it reaches yield statement. 
+    \item The yielded value is returned by the next call.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Example}
+The following example demonstrates the interplay between yield and call to next method on generator object.
+\begin{lstlisting}
+>>> def foo():
+...     print "begin"
+...     for i in range(3):
+...         print "before yield", i
+...         yield i
+...         print "after yield", i
+...     print "end"
+...
+>>> f = foo() #NOTHING is printed
+>>> f.next()
+begin
+before yield 0
+0
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Example continued}
+\begin{lstlisting}
+>>> f.next()
+after yield 0
+before yield 1
+1
+>>> f.next()
+after yield 1
+before yield 2
+2
+>>> f.next()
+after yield 2
+end
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+>>>
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Examples}
+\begin{lstlisting}
+def integers():
+    """Infinite sequence of integers."""
+    i = 1
+    while True:
+        yield i
+        i = i + 1
+        
+def squares():
+    for i in integers():
+        yield i * i
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Examples}
+\begin{lstlisting}
+def take(n, seq):
+    """Returns first n values from the given sequence."""
+    seq = iter(seq)
+    result = []
+    try:
+        for i in range(n):
+            result.append(seq.next())
+    except StopIteration:
+        pass
+    return result
+
+print take(5, squares()) # prints [1, 4, 9, 16, 25]
+\end{lstlisting}
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Expressions}
+
+    \begin{itemize}
+    \item  Generator Expressions are generator version of list comprehensions. 
+    \item They look like list comprehensions, but returns a generator back instead of a list.
+\begin{lstlisting}
+>>> a = (x*x for x in range(10))
+>>> a
+<generator object <genexpr> at 0x401f08>
+>>> sum(a)
+285
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Expressions}
+We can use the generator expressions as arguments to various functions that consume iterators.
+\begin{lstlisting}
+>>> sum((x*x for x in range(10)))
+285
+\end{lstlisting}
+When there is only one argument to the calling function, the parenthesis around generator expression can be omitted.
+\begin{lstlisting}
+>>> sum(x*x for x in range(10))
+285
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Expressions}
+\begin{lstlisting}
+n = (e for e in range(50000000) if not e % 3)
+i = 0
+for e in n:
+    print(e)
+    i += 1
+    if i > 100:
+        raise StopIteration
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Expressions}
+
+    \begin{itemize}
+    \item  A generator expression is created with round brackets. 
+    \item Creating a list comprehension in this case would be very inefficient because the example would occupy a lot of memory unnecessarily.
+    \item Insted of this, we create a generator expression, which generates values lazily on demand. 
+    \end{itemize}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Fun Example}
+
+    \begin{itemize}
+    \item  Lets say we want to find first 10 (or any n) Pythagorean triplets. A triplet $(x, y, z)$ is called Pythagorean triplet if $x*x + y*y == z*z$.
+\item It is easy to solve this problem if we know till what value of z to test for. But we want to find first n Pythagorean triplets.
+\begin{lstlisting}
+>>> pyt = ((x, y, z) for z in integers() for y in range(1, z) for x in range(1, y) if x*x + y*y == z*z)
+>>> take(10, pyt)
+[(3, 4, 5), (6, 8, 10), (5, 12, 13), (9, 12, 15), (8, 15, 17), (12, 16, 20), (15, 20, 25), (7, 24, 25), (10, 24, 26), (20, 21, 29)]
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Reading multiple files}
+Lets say we want to write a program that takes a list of filenames as arguments and prints contents of all those files, like cat command in UNIX.
+\begin{lstlisting}
+def cat(filenames):
+    for f in filenames:
+        for line in open(f):
+            print line
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Reading multiple files}
+Now, lets say we want to print only the line which has a particular substring, like grep command in unix.
+\begin{lstlisting}
+def grep(pattern, filenames):
+    for f in filenames:
+        for line in open(f):
+            if pattern in line:
+                print line
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Reading multiple files}
+Both these programs have lot of code in common. It is hard to move the common part to a function. But with generators makes it possible to do it.
+\begin{lstlisting}
+def readfiles(filenames):
+    for f in filenames:
+        for line in open(f):
+            yield line
+
+def grep(pattern, lines):
+    return (line for line in lines if pattern in line)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Reading multiple files}
+
+\begin{lstlisting}
+def printlines(lines):
+    for line in lines:
+        print line,
+
+def main(pattern, filenames):
+    lines = readfiles(filenames)
+    lines = grep(pattern, lines)
+    printlines(lines)
+\end{lstlisting}
+The code is much simpler now with each function doing one small thing. We can move all these functions into a separate module and reuse it in other programs.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+Define a class with a generator which can iterate the numbers, which are divisible by 7, between a given range 0 and n.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+\begin{lstlisting}
+def putNumbers(n):
+    i = 0
+    while i<n:
+        j=i
+        i=i+1
+        if j%7==0:
+            yield j
+
+for i in reverse(100):
+    print(i)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generator Assignments}
+    \begin{itemize}
+    \item Write a program that takes one or more filenames as arguments and prints all the lines which are longer than 40 characters.
+    \item  Write a function findfiles that recursively descends the directory tree for the specified directory and generates paths of all the files in the tree.
+    \item Write a function to compute the number of python files (.py extension) in a specified directory recursively.
+\item Write a function to compute the total number of lines of code in all python files in the specified directory recursively.
+\item Write a function to compute the total number of lines of code, ignoring empty and comment lines, in all python files in the specified directory recursively.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Itertools}
+The itertools module in the standard library provides lot of interesting tools to work with iterators.
+
+chain: chains multiple iterators together.
+\begin{lstlisting}
+>>> it1 = iter([1, 2, 3])
+>>> it2 = iter([4, 5, 6])
+>>> itertools.chain(it1, it2)
+[1, 2, 3, 4, 5, 6]
+\end{lstlisting}
+izip: iterable version of zip
+\begin{lstlisting}
+>>> for x, y in itertools.izip(["a", "b", "c"], [1, 2, 3]):
+...     print x, y
+...
+a 1
+b 2
+c 3
+\end{lstlisting}
+\end{frame}
+
+

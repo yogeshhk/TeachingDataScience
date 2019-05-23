@@ -1,0 +1,228 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
+{\Large Sentiment Analysis using Doc2Vec}
+
+{\tiny (Ref: http://linanqiu.github.io/2015/10/07/word2vec-sentiment/ Linan Qiu) }
+\end{center}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sentiment Analysis using Doc2Vec}
+\begin{itemize}
+\item Doc2Vec for sentiment analysis by attempting to classify the Cornell IMDB movie review corpus 
+\item Site: http://www.cs.cornell.edu/people/pabo/movie-review-data/
+\item ``gensim'' has a much more readable implementation of Word2Vec (and Doc2Vec)
+\item Original source code used in this demo can be found at https://github.com/linanqiu/word2vec-sentiments
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Imports}
+\begin{lstlisting}
+import gensim
+from gensim import utils
+from gensim.models.doc2vec import TaggedDocument
+from gensim.models import Doc2Vec
+
+import numpy
+
+from sklearn.linear_model import LogisticRegression
+
+import random
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Input Format}
+Preprocessing like lower case, removing punctuation has already been done.
+
+\begin{itemize}
+\item test-neg.txt: 12500 negative  reviews from the test data
+\item test-pos.txt: 12500 positive  reviews from the test data
+\item train-neg.txt: 12500 negative  reviews from the training data
+\item train-pos.txt: 12500 positive  reviews from the training data
+\item train-unsup.txt: 50000 Unlabelled  reviews
+\end{itemize}
+
+Sample:
+\begin{lstlisting}
+once again mr costner has dragged out a movie for far longer than necessary aside from the terrific sea rescue sequences of which there are very few i just did not care about any of the characters most of us have ghosts in the closet and costner s character are realized early on and then forgotten until much later by which time i did not care the character we should really ...
+\end{lstlisting}
+
+Each review takes one entire line. So, each document should be on one line, separated by new lines. This is extremely important, because our parser depends on this to identify sentences.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feeding Data to Doc2Vec}
+\begin{itemize}
+\item Need to identify each review/record with separate id.
+\item We define dictionary with filename as key and its tag as value.
+\item Plus, each review gets its own 'i' ie id appended
+\end{itemize}
+\begin{lstlisting}
+import smart_open
+
+sources = {'data/test-neg.txt':'TEST_NEG', 'data/test-pos.txt':'TEST_POS', 'data/train-neg.txt':'TRAIN_NEG', 'data/train-pos.txt':'TRAIN_POS', 'data/train-unsup.txt':'TRAIN_UNS'}
+
+taggedDocs = []
+for source, prefix in sources.items():
+    with smart_open.smart_open(source, encoding="iso-8859-1") as fin:
+        for item_no, line in enumerate(fin):
+            tagd = TaggedDocument(gensim.utils.simple_preprocess(line), [prefix + '_%s' % item_no])
+            taggedDocs.append(tagd)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Vocabulary}
+\begin{itemize}
+\item Doc2Vec requires us to build the vocabulary table (simply digesting all the words and filtering out the unique words, and doing some basic counts on them). 
+\item So we feed it the array of sentences. `model.build\_vocab` takes an array of tagged documents.
+\end{itemize}
+\begin{lstlisting}
+model = Doc2Vec(min_count=1, window=10, size=100, sample=1e-4, negative=5, workers=2)
+
+model.build_vocab(taggedDocs)
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training Doc2Vec}
+The model is better trained if it is done multiple times. 
+\begin{lstlisting}
+for i in range(2): # 10 if good machine
+    print("Iteration {}...".format(i))
+    model.train(taggedDocs,total_examples=model.corpus_count, epochs=model.iter)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Inspecting the Model}
+
+\begin{itemize}
+\item It seems that it has kind of understood the word good, since the most similar words to good are glamorous, spectacular, astounding etc. 
+\item This is really awesome (and important), since we are doing sentiment analysis.
+\end{itemize}
+
+\begin{lstlisting}
+model.most_similar('good')
+
+[('great', 0.8066476583480835),
+ ('decent', 0.7794740200042725),
+ ('bad', 0.77460777759552),
+ ('nice', 0.7537754774093628),
+ ('ok', 0.7464274764060974),
+ ('okay', 0.7421061992645264),
+ ('alright', 0.7385467290878296),
+ ('really', 0.6848776936531067),
+ ('excellent', 0.6513122320175171),
+ ('overall', 0.6501857042312622)]
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Accessing Vectors}
+\begin{itemize}
+\item Each of the vectors of the words and sentences in the model. 
+\item We can access all of them using model.syn0 (syn0 is simply the output layer of the shallow neural network). 
+\item However, we don't want to use the entire syn0 since that contains the vectors for the words as well, but we are only interested in the ones for sentences.
+\end{itemize}
+
+Here's a sample vector for the first sentence in the training set for negative reviews:
+\begin{lstlisting}
+model['TRAIN_NEG_0']
+array([ 0.45238438, -0.07346677, -0.17444436,  0.60655016, -0.70522565,
+           -0.2582404 , -0.19224562, -0.07114315, -0.25864932, -0.5387702 ,\ldots,], dtype=float32)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Persistence}
+To avoid training the model again, we can save it.
+\begin{lstlisting}
+model.save('data/imdb.d2v')
+\end{lstlisting}
+
+And load it.
+\begin{lstlisting}
+model = Doc2Vec.load('data/imdb.d2v')
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training Vectors}
+\begin{itemize}
+\item  Let's use these vectors to train a classifier.
+\item First, we must extract the training vectors. Remember that we have a total of 25000 training reviews, with equal numbers of positive and negative ones (12500 positive, 12500 negative).
+\item We create a numpy array (since the classifier we use only takes numpy arrays. 
+\item There are two parallel arrays, one containing the vectors (train\_arrays) and the other containing the labels (train\_labels).
+\item We simply put the positive ones at the first half of the array, and the negative ones at the second half.
+\end{itemize}
+\begin{lstlisting}
+train_arrays = numpy.zeros((25000, 100))
+train_labels = numpy.zeros(25000)
+
+for i in range(12500):
+    prefix_train_pos = 'TRAIN_POS_' + str(i)
+    prefix_train_neg = 'TRAIN_NEG_' + str(i)
+    train_arrays[i] = model[prefix_train_pos]
+    train_arrays[12500 + i] = model[prefix_train_neg]
+    train_labels[i] = 1
+    train_labels[12500 + i] = 0
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training Vectors}
+The training array looks like this: rows and rows of vectors representing each sentence.
+\begin{lstlisting}
+train_arrays
+
+array([[-0.06160605,  0.05516503,  0.01638912, ..., -0.08273854,
+        -0.10678532, -0.06596036],
+       ..., 
+
+       [-0.03137796, -0.08573121,  0.05011817, ...,  0.02356516,
+        -0.07285614,  0.06581243]])
+		
+train_labels
+
+array([ 1.,  1.,  1., ...,  0.,  0.,  0.])
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Testing Vectors}
+We do the same for testing data -- data that we are going to feed to the classifier after we've trained it using the training data. 
+\begin{lstlisting}
+test_arrays = numpy.zeros((25000, 100))
+test_labels = numpy.zeros(25000)
+
+for i in range(12500):
+    prefix_test_pos = 'TEST_POS_' + str(i)
+    prefix_test_neg = 'TEST_NEG_' + str(i)
+    test_arrays[i] = model.docvecs[prefix_test_pos]
+    test_arrays[12500 + i] = model.docvecs[prefix_test_neg]
+    test_labels[i] = 1
+    test_labels[12500 + i] = 0
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Classification}
+Train a logistic regression classifier using the training data
+\begin{lstlisting}
+classifier = LogisticRegression()
+classifier.fit(train_arrays, train_labels)
+classifier.score(test_arrays, test_labels)
+0.86968
+\end{lstlisting}
+\end{frame}

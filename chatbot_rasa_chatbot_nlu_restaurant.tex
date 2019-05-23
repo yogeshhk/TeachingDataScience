@@ -1,0 +1,157 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Example: Restaurant Chatbot}
+\end{center}
+
+{\tiny (Ref: https://rasa.com/docs/nlu/0.13.5/quickstart/)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Getting Started with Rasa NLU}
+\begin{itemize}
+\item Goal: to help people search for restaurants
+\item Let's assume that anything our users say can be categorized into one of the following intents:
+\begin{itemize}
+\item greet
+\item restaurant\_search
+\item thankyou
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Greet}
+ Of course there are many ways our users might greet our bot:
+\begin{itemize}
+\item ``Hi!''
+\item ``Hey there!''
+\item ``Hello again :)''
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Search}
+And even more ways to say that you want to look for restaurants:
+\begin{itemize}
+\item ``Do you know any good pizza places?''
+\item ``I'm in the North of town and I want Chinese food''
+\item ``I'm hungry''
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Processing}
+\begin{itemize}
+\item The first job of Rasa NLU is to assign any given sentence to one of the intent categories: greet, restaurant\_search, or thankyou.
+\item The second job is to label words like ``chinese'' and ``North'' as cuisine and location entities, respectively. 
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Prepare your NLU Training Data}
+\begin{itemize}
+\item Training data is essential for developing chatbots and voice apps. The data is just a list of messages that you expect to receive, annotated with the intent and entities Rasa NLU should learn to extract.
+\item The best way to get training data is from real users, and a good way to get it is to pretend to be the bot yourself. But to help get you started, we have some demo data here. See Training Data Format for details of the data format.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Prepare your NLU Training Data}
+ Make file ``nlu.md'' with following content
+ \scriptsize
+\begin{lstlisting}
+## intent:greet
+- hey
+- hello
+- hi
+- good morning
+- good evening
+- hey there
+
+## intent:restaurant_search
+- i'm looking for a place to eat
+- I want to grab lunch
+- I am searching for a dinner spot
+- i'm looking for a place in the [north](location) of town
+- show me [chinese](cuisine) restaurants
+- show me a [mexican](cuisine) place in the [centre](location)
+
+:
+:
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Prepare your NLU Training Data}
+ Make file ``nlu.md'' with following content
+ \scriptsize
+\begin{lstlisting}
+:
+- i am looking for an [indian](cuisine) spot
+- search for restaurants
+- anywhere in the [west](location)
+- anywhere near [18328](location)
+- I am looking for [asian fusion](cuisine) food
+- I am looking a restaurant in [29432](location)
+
+## intent:thankyou
+- thanks!
+- thank you
+- thx
+- thanks very much
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Define your Machine Learning Model}
+ \begin{itemize}
+\item Rasa NLU has a number of different components, which together make a pipeline. 
+\item Create a markdown file with the pipeline you want to use. 
+\item In this case, we’re using the pre-defined tensorflow\_embedding pipeline.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Define your Machine Learning Model}
+ Make file ``nlu\_config.yml'' with following content
+ \scriptsize
+\begin{lstlisting}
+language: en
+pipeline: tensorflow_embedding
+\end{lstlisting}
+To choose which pipeline is best for you read Choosing a Rasa NLU Pipeline (https://rasa.com/docs/nlu/0.13.5/choosing\_pipeline/\#choosing-pipeline).
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Train your Machine Learning NLU model}
+To train a model, start the rasa\_nlu.train command, and tell it where to find your configuration and your training data:
+\begin{lstlisting}
+python -m rasa_nlu.train -c nlu_config.yml --data nlu.md -o models --fixed\_model\_name nlu --project current --verbose
+\end{lstlisting}
+We are also passing the --project current and --fixed\_model\_name nlu parameters, this means the model will be saved at ./models/current/nlu relative to your working directory.
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Using your Machine Learning NLU model}
+\begin{itemize}
+\item There are two ways you can use your model, directly from python, or by starting a http server. 
+\item Interpreter
+\begin{lstlisting}
+from rasa_nlu.model import Interpreter
+import json
+interpreter = Interpreter.load("./models/current/nlu")
+message = "let's see some italian restaurants"
+result = interpreter.parse(message)
+print(json.dumps(result, indent=2))
+\end{lstlisting}
+\item HTTP
+\begin{lstlisting}
+curl -X POST "localhost:5000/parse" -d "{/"q/":/"I am looking for Mexican food/"}" | python -m json.tool
+\end{lstlisting}
+\end{itemize}
+
+\end{frame}

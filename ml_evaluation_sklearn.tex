@@ -1,0 +1,298 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Model Evaluation with Scikit-Learn}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Classification Model Evaluation for Pima-Indians Diabetis Dataset}
+
+{\tiny (Ref: Metrics To Evaluate Machine Learning Algorithms in Python - Jason Brownlee)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Read Data}
+Import Pima Inidans dataset and split into Features (X) and target (Y)
+\begin{lstlisting}
+import pandas
+import scipy
+import numpy
+
+url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/ pima-indians-diabetes.data.csv"
+names = ['preg', 'plas', 'pres', 'skin', 'test', 'mass', 'pedi', 'age', 'class']
+
+dataframe = pandas.read_csv(url, names=names)
+array = dataframe.values
+
+# separate array into input and output components
+X = array[:,0:8]
+Y = array[:,8]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Classification Accuracy}
+
+	\begin{itemize}
+	\item Classification accuracy is the number of correct predictions made as a ratio of all predictions made.
+	\item This is the most common evaluation metric for classification problems, it is also the most misused. 
+	\item It is really only suitable when there are an equal number of observations in each class (which is rarely the case) and that all predictions and prediction errors are equally important, which is often not the case.
+	\end{itemize}
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Classification Accuracy}
+\begin{lstlisting}
+from sklearn import model_selection
+from sklearn.linear_model import LogisticRegression
+
+seed = 7
+kfold = model_selection.KFold(n_splits=10, random_state=seed)
+model = LogisticRegression()
+scoring = 'accuracy'
+results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
+print("Accuracy: %.3f (%.3f)") % (results.mean(), results.std())
+
+Accuracy: 0.770 (0.048)
+\end{lstlisting}
+Accuracy score of approximately 77\% accurate
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Logarithmic Loss}
+
+	\begin{itemize}
+	\item Logarithmic loss (or logloss) is a performance metric for evaluating the predictions of probabilities of membership to a given class.
+	\item The scalar probability between 0 and 1 can be seen as a measure of confidence for a prediction by an algorithm. Predictions that are correct or incorrect are rewarded or punished proportionally to the confidence of the prediction.
+	\end{itemize}
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Logarithmic Loss}
+\begin{lstlisting}
+seed = 7
+kfold = model_selection.KFold(n_splits=10, random_state=seed)
+model = LogisticRegression()
+scoring = 'neg_log_loss'
+results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
+print("Logloss: %.3f (%.3f)") % (results.mean(), results.std())
+
+Logloss: -0.493 (0.047)
+\end{lstlisting}
+
+Smaller logloss is better with 0 representing a perfect logloss. As mentioned above, the measure is inverted to be ascending when using the cross\_val\_score() function.
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Area Under ROC Curve}
+
+	\begin{itemize}
+	\item Area under ROC Curve (or AUC for short) is a performance metric for binary classification problems.
+	\item The AUC represents a model’s ability to discriminate between positive and negative classes. An area of 1.0 represents a model that made all predictions perfectly. An area of 0.5 represents a model as good as random. Learn more about ROC here.
+	\item ROC can be broken down into sensitivity and specificity. A binary classification problem is really a trade-off between sensitivity and specificity.
+		\begin{itemize}
+
+	\item Sensitivity is the true positive rate also called the recall. It is the number instances from the positive (first) class that actually predicted correctly.
+	\item Specificity is also called the true negative rate. Is the number of instances from the negative class (second) class that were actually predicted correctly.
+	\end{itemize}
+	\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Area Under ROC Curve}
+\begin{lstlisting}
+seed = 7
+kfold = model_selection.KFold(n_splits=10, random_state=seed)
+model = LogisticRegression()
+scoring = 'roc_auc'
+results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
+print("AUC: %.3f (%.3f)") % (results.mean(), results.std())
+
+AUC: 0.824 (0.041)
+\end{lstlisting}
+
+The AUC is relatively close to 1 and greater than 0.5, suggesting some skill in the predictions.
+ \end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Confusion Matrix}
+
+	\begin{itemize}
+	\item The confusion matrix is a handy presentation of the accuracy of a model with two or more classes.
+	\item For example, a machine learning algorithm can predict 0 or 1 and each prediction may actually have been a 0 or 1. 
+	\item Predictions for 0 that were actually 0 appear in the cell for prediction=0 and actual=0, whereas predictions for 0 that were actually 1 appear in the cell for prediction = 0 and actual=1. And so on.
+	\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Confusion Matrix}
+\begin{lstlisting}
+test_size = 0.33
+seed = 7
+X_train, X_test, Y_train, Y_test = model_selection.train_test_split(X, Y, test_size=test_size, random_state=seed)
+model = LogisticRegression()
+model.fit(X_train, Y_train)
+predicted = model.predict(X_test)
+matrix = confusion_matrix(Y_test, predicted)
+print(matrix)
+
+[[141  21]
+ [ 41  51]]
+\end{lstlisting}
+
+The majority of the predictions fall on the diagonal line of the matrix (which are correct predictions).
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Classification Report}
+
+	\begin{itemize}
+	\item Scikit-learn does provide a convenience report when working on classification problems to give you a quick idea of the accuracy of a model using a number of measures.
+	\item The classification\_report() function displays the precision, recall, f1-score and support for each class.
+	\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Classification Report}
+\begin{lstlisting}
+test_size = 0.33
+seed = 7
+X_train, X_test, Y_train, Y_test = model_selection.train_test_split(X, Y, test_size=test_size, random_state=seed)
+model = LogisticRegression()
+model.fit(X_train, Y_train)
+predicted = model.predict(X_test)
+report = classification_report(Y_test, predicted)
+print(report)
+
+             precision    recall  f1-score   support
+
+        0.0       0.77      0.87      0.82       162
+        1.0       0.71      0.55      0.62        92
+
+avg / total       0.75      0.76      0.75       254
+\end{lstlisting}
+
+You can see good prediction and recall for the algorithm.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Regression Model Evaluation for Boston House Price Dataset}
+
+{\tiny (Ref: Metrics To Evaluate Machine Learning Algorithms in Python - Jason Brownlee)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Read Data}
+Import Boston House Price dataset and split into Features (X) and target (Y)
+\begin{lstlisting}
+import pandas
+
+url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/housing.data"
+names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'LSTAT', 'MEDV']
+dataframe = pandas.read_csv(url, delim_whitespace=True, names=names)
+array = dataframe.values
+X = array[:,0:13]
+Y = array[:,13]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Mean Absolute Error}
+
+	\begin{itemize}
+	\item The Mean Absolute Error (or MAE) is the sum of the absolute differences between predictions and actual values. It gives an idea of how wrong the predictions were.
+	\item The measure gives an idea of the magnitude of the error, but no idea of the direction (e.g. over or under predicting).
+	\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Classification Report}
+\begin{lstlisting}
+seed = 7
+kfold = model_selection.KFold(n_splits=10, random_state=seed)
+model = LinearRegression()
+scoring = 'neg_mean_absolute_error'
+results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
+print("MAE: %.3f (%.3f)") % (results.mean(), results.std())
+
+MAE: -4.005 (2.084)
+\end{lstlisting}
+
+A value of 0 indicates no error or perfect predictions. Like logloss, this metric is inverted by the cross\_val\_score() function.
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Mean Squared Error}
+
+	\begin{itemize}
+	\item The Mean Squared Error (or MSE) is much like the mean absolute error in that it provides a gross idea of the magnitude of error.
+	\item Taking the square root of the mean squared error converts the units back to the original units of the output variable and can be meaningful for description and presentation. This is called the Root Mean Squared Error (or RMSE).
+	\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Mean Squared Error}
+\begin{lstlisting}
+seed = 7
+kfold = model_selection.KFold(n_splits=10, random_state=seed)
+model = LinearRegression()
+scoring = 'neg_mean_squared_error'
+results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
+print("MSE: %.3f (%.3f)") % (results.mean(), results.std())
+
+MSE: -34.705 (45.574)
+\end{lstlisting}
+
+This metric too is inverted so that the results are increasing. Remember to take the absolute value before taking the square root if you are interested in calculating the RMSE.
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{$R^2$ Metric}
+
+	\begin{itemize}
+	\item The $R^2$ (or R Squared) metric provides an indication of the goodness of fit of a set of predictions to the actual values. In statistical literature, this measure is called the coefficient of determination.
+	\item This is a value between 0 and 1 for no-fit and perfect fit respectively.
+	\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{$R^2$ Metric}
+\begin{lstlisting}
+seed = 7
+kfold = model_selection.KFold(n_splits=10, random_state=seed)
+model = LinearRegression()
+scoring = 'r2'
+results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
+print("R^2: %.3f (%.3f)") % (results.mean(), results.std())
+
+R^2: 0.203 (0.595)
+\end{lstlisting}
+
+This metric too is inverted so that the results are increasing. Remember to take the absolute value before taking the square root if you are interested in calculating the RMSE.
+\end{frame}
+

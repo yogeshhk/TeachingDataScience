@@ -1,0 +1,563 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Chatbot on Movie Dataset using Tensorflow}
+
+\tiny{(Ref: Deep Learning and NLP A-Z - Kirill Eremenko)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Setup}
+
+\begin{itemize}
+\item Conda install Tensorflow on Python 3.5 (it has some issues with Python 3.6)
+\item Dataset: Cornell Movie Dialog corpus http://www.cs.cornell.edu/~cristian/Cornell\_Movie-Dialogs\_Corpus.html
+\item Need: movie\_conversations.txt (Conversations to message ids) and movie\_lines.txt (message ids to text)
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Data Preprocessing}
+Import libraries and data
+\begin{lstlisting}
+import numpy as np
+import tensorflow as tf
+import re
+import time
+
+lines = open("data/movie_lines.txt",encoding="utf-8",errors="ignore").read().split("\n")
+conversations = open("data/movie_conversations.txt",encoding="utf-8",errors="ignore").read().split("\n")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Creating a Dictionary}
+\begin{itemize}
+\item Map lines with ids.
+\item Finally we need a map with input to output lines. 
+\item In the movie\_lines.txt, the ids are given as L*** and the last column has the actual line.
+\end{itemize}
+
+
+\begin{lstlisting}
+L1045 +++$+++ u0 +++$+++ m0 +++$+++ BIANCA +++$+++ They do not!
+
+id2line = {}
+for line in lines:
+    words = line.split(" +++$+++ ")
+    if len(words) == 5:
+        id2line[words[0]] = words[4]
+        
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Creating a List of Conversations}
+\begin{itemize}
+\item Only last column is important, get it by splitting and keeping last word
+\item Remove square brackets and quotes as well.
+\item Split by ``,'' to get the last column ids into an array
+\end{itemize}
+
+
+\begin{lstlisting}
+u0 +++$+++ u2 +++$+++ m0 +++$+++ ['L194', 'L195', 'L196', 'L197']
+
+conversations_ids = []
+for conversation in conversations[:-1]: # avoiding the last row which is empty
+    cleaned_last_column = conversation.split(" +++$+++ ")[-1][1:-1].replace("'","").replace(" ","")
+    conversations_ids.append(cleaned_last_column.split(","))
+        
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Making Question Answer Pairs}
+\begin{itemize}
+\item We want two same size lists, one for questions and the other for corresponding answers.
+\item In Conversations, 1st is question, 2nd will be answer, then in next pair, 2nd will be question and 3rd will be answer and so on \ldots
+\item Once we get the ids in each pair, we fetch corresponding text-lines from the id2line dictionary
+\end{itemize}
+
+
+\begin{lstlisting}
+questions = []
+answers = []
+for conversation in conversations_ids:
+    for i in range(len(conversation) - 1):
+        questions.append(id2line[conversation[i]])
+        answers.append(id2line[conversation[i+1]])
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cleaning}
+\begin{lstlisting}
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r"i'm","i am",text)
+    text = re.sub(r"he's","he is",text)
+    text = re.sub(r"she's","she is",text)
+    text = re.sub(r"that's","that is",text)
+    text = re.sub(r"what's","what is",text)    
+    text = re.sub(r"where's","where is",text)        
+    text = re.sub(r"\'ll"," will",text)         
+    text = re.sub(r"\'ve"," have",text) 
+    text = re.sub(r"\'re"," are",text)     
+    text = re.sub(r"\'d"," would",text)      
+    text = re.sub(r"don't","do not",text)
+    text = re.sub(r"can't","cannot",text)    
+    text = re.sub(r"won't","would not",text)        
+    text = re.sub(r"[-{}\"#@;,<>()]","",text)
+    return text
+
+clean_questions = [clean_text(q) for q in questions]
+clean_answers = [clean_text(a) for a in answers]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Preprocessing}
+\begin{itemize}
+\item Remove words based on threshold frequency, just to reduce dimensionality of the problem.
+\item Will create word-frequency dictionary.
+\end{itemize}
+
+\begin{lstlisting}
+word2count = {}
+for question in clean_questions:
+    for word in question.split():
+        if word not in word2count:
+            word2count[word] = 1
+        else:
+            word2count[word] += 1
+
+for answer in clean_answers:
+    for word in answer.split():
+        if word not in word2count:
+            word2count[word] = 1
+        else:
+            word2count[word] += 1
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Preprocessing}
+\begin{itemize}
+\item Set threshold to filter out words that do not occur frequently enough
+\item For each word we will have integer index from vocab dictionary
+\end{itemize}
+
+\begin{lstlisting}
+threshold = 20
+questions_words2int = {}
+word_number = 0
+for word, count in word2count.items():
+    if count >= threshold:
+        questions_words2int[word] = word_number
+        word_number += 1
+        
+answers_words2int = {}
+word_number = 0
+for word, count in word2count.items():
+    if count >= threshold:
+        answers_words2int[word] = word_number
+        word_number += 1
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Preprocessing}
+Additional tokens
+\begin{itemize}
+\item PAD: for padding to make each sentence of equal length
+\item EOS: End Of Sentence
+\item START: Start of sentence
+\item OUT: Out of vocabulary, aka UNK?
+\end{itemize}
+
+\begin{lstlisting}
+tokens = ['<PAD>','<EOS>','<OUT>','<START>']    
+for token in tokens:
+    questions_words2int[token] = len(questions_words2int) + 1
+    answers_words2int[token] = len(answers_words2int) + 1
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Preprocessing}
+Add tokens to each questions and answers.
+\begin{lstlisting}
+questions_int2word = {w_i: w for w, w_i in questions_words2int.items()}
+answers_int2word = {w_i: w for w, w_i in answers_words2int.items()}
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Preprocessing}
+Adding EOS at the end.
+\begin{lstlisting}
+for i in range(len(clean_answers)):
+    clean_answers[i] += " <EOS>"
+\end{lstlisting}
+Not sure why not do the same to clean questions as well.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Preprocessing}
+Need to convert words to integers
+\begin{lstlisting}
+questions_to_int = []
+for question in clean_questions:
+    ints = []
+    for word in question:
+        if word not in questions_words2int:
+            ints.append(questions_words2int['OUT'])
+        else:
+            ints.append(questions_words2int[word])
+    questions_to_int.append(ints)
+\end{lstlisting}
+Similarly for answers
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Preprocessing}
+
+\begin{itemize}
+\item Sort questions and answers by Length of questions
+\item This will speed up the training and reduce the loss (?)
+\item Reduce amount of Padding (?)
+\item Will go from shortest sentence up to , say 25 word sentence. Longer sentences can be ignored
+\end{itemize}
+
+\begin{lstlisting}
+sorted_clean_questions = []
+sorted_clean_answers = []
+for length in range(1,25+1):
+    for index, question in enumerate(questions_to_int):
+        if len(question) == length:
+            sorted_clean_questions.append(questions_to_int[index])
+            sorted_clean_answers.append(answers_to_int[index])
+\end{lstlisting}
+Questions are getting sorted fine, starting from one word sentences. Answers are not sorted(?)
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+\begin{itemize}
+\item Tensorflow Placeholders are used for inputs and outputs
+\item Both are specified as $[None,None]$ for 2D arrays
+\item Learning rate and Drop out is also defined so as to adjust/feed them later
+\end{itemize}
+
+\begin{lstlisting}
+def model_inputs():
+    inputs = tf.placeholder(tf.int32,[None,None], name = "input")
+    targets = tf.placeholder(tf.int32,[None,None], name = "target")
+    lr = tf.placeholder(tf.float32,name = "learning_rate")
+    keep_prob = tf.placeholder(tf.float32,name = "dropout_rate")
+    return inputs, targets, lr, keep_prob
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+\begin{itemize}
+\item Decoder needs specific format of targets. 
+\item It has to be in batches, say, 10 sentences at a time.
+\item Each answer needs to have $<START>$ or ``SOS'' token.
+\item For now we will ignore last word, and add SOS at start (not good but ok)
+\item Strided Slice extracts substrings, from [0,0] top left corner to [ 10, -1 (without last)], and stride of 1 step in both directions.
+\item For horizontal concatenation axis will be 1 else 0.
+\end{itemize}
+
+\begin{lstlisting}
+def preprocess_targets(targets, word2int, batch_size):
+    left_side = tf.fill([batch_size, 1],word2int["<START>"]) # One vertical column of START tokens is created
+    right_side = tf.strided_slice(targets,[0,0],[batch_size,-1],[1,1]) # Matrix of targets
+    preprocessed_targets = tf.concat([left_side,right_side], 1)
+    return preprocessed_targets
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Encoder:
+\begin{lstlisting}
+def encoder_rnn_layer(rnn_inputs, rnn_size, num_layers, keep_prob, sequence_length):
+    lstm = tf.contrib.rnn.BasicLSTMCell(rnn_size)
+    lstm_dropout = tf.contrib.rnn.DropoutWrapper(lstm, input_keep_prob=keep_prob)
+    
+    encoder_cell = tf.contrib.rnn.MultiRNNCell([lstm_dropout] * num_layers)
+    _, encoder_state = tf.nn.bidirectional_dynamic_rnn(cell_fw = encoder_cell,
+                                                       cell_bw = encoder_cell,
+                                                       sequence_length = sequence_length,
+                                                       inputs = rnn_inputs,
+                                                       dtype = tf.float32)
+    return encoder_state
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Decoder:
+\begin{lstlisting}
+def encoder_rnn(rnn_inputs, rnn_size, num_layers, keep_prob, sequence_length):
+    lstm = tf.contrib.rnn.BasicLSTMCell(rnn_size)
+    lstm_dropout = tf.contrib.rnn.DropoutWrapper(lstm, input_keep_prob=keep_prob)
+    
+    encoder_cell = tf.contrib.rnn.MultiRNNCell([lstm_dropout] * num_layers)
+    _, encoder_state = tf.nn.bidirectional_dynamic_rnn(cell_fw = encoder_cell,
+                                                       cell_bw = encoder_cell,
+                                                       sequence_length = sequence_length,
+                                                       inputs = rnn_inputs,
+                                                       dtype = tf.float32)
+    return encoder_state
+\end{lstlisting}
+Takes encoder state as one of the inputs and splits out words one by one.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Attention:
+\begin{itemize}
+\item Attention Keys to be compared with target state
+\item Attention Values are used to prepare context vector prepared by Encoder.
+\item Attention Score function is used to compute similarity between keys and target state
+\item Attention Construct is used to build Attention State
+\end{itemize}
+
+\begin{lstlisting}
+def decode_training_set(encoder_state,decoder_cell,decoder_embedded_input,
+                        sequence_length, decoding_scope, 
+                        output_function, keep_prob, batch_size):
+    attention_states = tf.zeros([batch_size, 1, decoder_cell.output_size])
+    attention_keys,attention_values,\
+    attention_score_function, \
+    attention_construct_function = \
+    tf.contrib.seq2seq.prepare_attention(attention_states,
+                                         attention_option = "bahdanau",
+                                         num_units = decoder_cell.output_size)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Decoding Attention:
+\begin{lstlisting}
+    training_decoder_function = tf.contrib.seq2seq.attention_decoder_fn_train(
+            encoder_state[0],attention_keys,attention_values,
+            attention_score_function, attention_construct_function,name="attn_dec_train")
+    decoder_output, decoder_final_state, decoder_final_context_state = \
+    tf.contrib.seq2seq.dynamic_rnn_decoder(decoder_cell,
+                                           training_decoder_function,
+                                           decoder_embedded_input,
+                                           sequence_length,
+                                           decoding_scope)
+    decoder_output_dropout = tf.nn.dropout(decoder_output, keep_prob)
+    return output_function(decoder_output_dropout)                                                              
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Decoding:
+\begin{lstlisting}
+def decode_test_set(encoder_state,decoder_cell,decoder_embeddings_matrix,
+                        sos_id,eos_id,maximum_length,num_words,
+                        sequence_length, decoding_scope, 
+                        output_function, keep_prob, batch_size):
+    attention_states = tf.zeros([batch_size, 1, decoder_cell.output_size])
+    attention_keys,attention_values,attention_score_function, 
+    attention_construct_function = tf.contrib.seq2seq.prepare_attention(
+        attention_states,attention_option = "bahdanau",num_units = decoder_cell.output_size)
+                             
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Decoding:
+\begin{lstlisting}
+    test_decoder_function = tf.contrib.seq2seq.attention_decoder_fn_inference(
+        output_function, encoder_state[0],attention_keys,attention_values,
+        attention_score_function, attention_construct_function,
+        decoder_embeddings_matrix,sos_id,eos_id,maximum_length,num_words, 
+        name="attn_dec_inf")
+    test_prediction, decoder_final_state, decoder_final_context_state = \
+    tf.contrib.seq2seq.dynamic_rnn_decoder(decoder_cell,test_decoder_function,
+        scope = decoding_scope)
+    return test_prediction                                                     
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Decoding:
+\begin{lstlisting}
+def decoder_rnn(decoder_embedded_input,decoder_embeddings_matrix,encoder_state,
+                num_words, sequence_length, rnn_size, num_layers, 
+                word2int, keep_prob,batch_size):
+    with tf.variable_scope("decoding") as decoding_scope:
+        lstm = tf.contrib.rnn.BasicLSTMCell(rnn_size)
+        lstm_dropout = tf.contrib.rnn.DropoutWrapper(lstm, input_keep_prob=keep_prob)
+        decoder_cell = tf.contrib.rnn.MultiRNNCell([lstm_dropout] * num_layers)
+        weights = tf.truncated_normal_initializer(stddev = 0.1)
+        biases = tf.zeros()
+        output_function = lambda x: tf.contrib.layers.fully_connected(x,
+                    num_words,None,scope=decoding_scope,
+                    weights_initializer=weights,biases_initializer = biases)                                                  
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Decoding:
+\begin{lstlisting}
+        training_predictions = decode_training_set(encoder_state,
+                                                   decoder_cell,
+                                                   decoder_embedded_input,
+                                                   sequence_length,
+                                                   decoding_scope,
+                                                   output_function,
+                                                   keep_prob,
+                                                   batch_size)
+        decoding_scope.reuse_variables()
+        test_predictions = decode_test_set(encoder_state,decoder_cell,
+            decoder_embeddings_matrix,word2int["<START>"],word2int["<EOS>"],
+            sequence_length -1 ,num_words,decoding_scope, output_function, keep_prob, batch_size)
+        
+        return training_predictions, test_predictions                                                  
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Seq2seq:
+\begin{lstlisting}
+def seq2seq_model(inputs, targets, keep_prob, batch_size,sequence_length,
+                  answers_num_words, questions_num_words, 
+                  encoder_embedding_size, decoder_embedding_size,
+                  rnn_size, num_layers,questions_words2int):
+    encoder_embedded_input = tf.contrib.layers.embed_sequence(inputs,
+                answers_num_words + 1, encoder_embedding_size,
+                initializer=tf.random_uniform_initializer(0,1))
+    encoder_state = encoder_rnn(encoder_embedded_input, rnn_size,
+                num_layers, keep_prob, sequence_length)             
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Seq2seq:
+\begin{lstlisting}
+    preprocessed_targets = preprocessed_targets(targets, questions_words2int, batch_size)
+    decoder_embeddings_matrix = tf.Variable(tf.random_uniform([questions_num_words+1,decoder_embedding_size],0,1))
+    decoder_embedded_input = tf.nn.embedding_lookup(decoder_embeddings_matrix,preprocessed_targets )
+    training_predictions, test_predictions = decoder_rnn(decoder_embedded_input,
+                            decoder_embeddings_matrix,encoder_state,
+                            questions_num_words, sequence_length, rnn_size, num_layers, 
+                            questions_words2int, keep_prob,batch_size)
+    return training_predictions, test_predictions             
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Hyperparameters:
+\begin{lstlisting}
+epochs = 5 #100
+batch_size = 128 #64
+rnn_size = 128 # 512
+num_layers = 3
+encoding_embedding_size = 128 # 512
+decoding_embedding_size = 128 # 512
+learning_rate = 0.01
+learning_rate_decay = 0.9
+min_learning_rate = 0.0001
+keep_probability = 0.5         
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Define a session:
+\begin{lstlisting}
+tf.reset_default_graph()
+session = tf.InteractiveSession()
+
+inputs, targets, lr, keep_prob = model_inputs()
+sequence_length = tf.placeholder_with_default(25,None,name="sequence_length")
+input_shape = tf.shape(inputs)
+\end{lstlisting}
+Sentences only upto 25 length are used. None is for int array (as its not a Tensor)
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Training and Test Prediction Compute Graph:
+\begin{lstlisting}
+tf.reset_default_graph()
+session = tf.InteractiveSession()
+
+inputs, targets, lr, keep_prob = model_inputs()
+sequence_length = tf.placeholder_with_default(25,None,name="sequence_length")
+input_shape = tf.shape(inputs)
+\end{lstlisting}
+Sentences only up to 25 length are used. None is for int array (as its not a Tensor)
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Training and Test Prediction Compute Graph:
+\begin{lstlisting}
+training_predictions, test_predictions = seq2seq_model(tf.reverse(inputs,[-1]), 
+                targets, keep_prob, batch_size,sequence_length,
+                  len(answers_words2int), len(questions_words2int), 
+                  encoding_embedding_size, decoding_embedding_size,
+                  rnn_size, num_layers,questions_words2int)
+
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Chatbot with Tensorflow}
+Training:
+\begin{lstlisting}
+with tf.name_scope("optimization"):
+    loss_error = tf.contrib.seq2seq.sequence_loss(training_predictions, targets,
+                                                  tf.ones([input_shape[0], sequence_length]))
+    optimizer = tf.train.AdamOptimizer(learning_rate)
+    gradients = optimizer.compute_gradients(loss_error)
+    clipped_gradients = [(tf.clip_by_value(grad_tensor,-5.,5.),grad_variable) for grad_tensor, grad_variable in gradients]
+    optimizer_gradient_clipping = optimizer.apply_gradients(clipped_gradients)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{To be continued}
+As Udemy tutorial is based on Tensorflow 1.0 and  mine 1.5, there are some missing APIs giving errors like 
+
+AttributeError: module 'tensorflow.contrib.seq2seq' has no attribute 'prepare\_attention'
+
+I could not get corresponding code for DynamicAttentionWrapper. So, cant move further. Once the solution is known, go further from https://www.udemy.com/chatbot/learn/v4/t/lecture/8866150?start=0
+\end{frame}
+

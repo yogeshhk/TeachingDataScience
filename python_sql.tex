@@ -1,0 +1,474 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large SQLite}
+
+(Ref: SQLite-Tutorial - Brownan)
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Relational Databases}
+\begin{itemize}
+\item A relational database organizes its data into tables, sometimes called relations.
+\item Each table is made up of a fixed number of columns and zero or more rows
+\item Each column has a name, and generally has a data type (SQLite is a bit lenient on data types, but a good database design keeps a uniform type on every row in a column)
+\item A table usually has a primary key: a column or set of columns that is used to uniquely identify a row. Each row primary key must be unique througout that table.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Creation / Opening Database}
+\begin{lstlisting}
+import sqlite3
+import os.path
+def create_or_open_db(filename):
+    file_exists = os.path.isfile(filename)
+    conn = sqlite3.connect(filename)
+    if file_exists:
+        print ''' "{}" database successfully opened '''.format(filename)
+    else:
+        print ''' "{}" database successfully created '''.format(filename)
+    return conn
+conn = create_or_open_db('mycds.sqlite')
+cur = conn.cursor()
+cur.execute('SELECT SQLITE_VERSION()')
+print 'version:', cur.fetchone() 
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Creation of tables}
+If a table contains a column of type INTEGER PRIMARY KEY, then that column becomes an alias for the ROWID.
+\begin{lstlisting}
+def create_tbl_artists(conn):
+    sql = '''create table if not exists Artists(
+            ArtistID INTEGER PRIMARY KEY,
+            ArtistName TEXT);'''
+    conn.execute(sql) # shortcut for conn.cursor().execute(sql)
+    print "Created Artists table successfully"
+create_tbl_artists(conn)
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Importing data}
+Let's say we have a CSV file that holds students and their grades in certain courses:
+\begin{lstlisting}
+studentid,course,grade,credits
+1,PY205,3.8,3
+1,PY411,3.2,4
+1,PY412,3.1,4
+1,E101,3.8,2
+1,CS216,3.5,3
+2,PY205,3.1,3
+2,PY411,2.8,4
+2,PY412,2.4,4
+2,E101,2.9,2
+2,CS216,3.3,3
+\end{lstlisting}
+Both students took the same courses. Student 1 did pretty well, student 2 not as well. Grades are assigned a numerical value with A being a 4, B being a 3, etc.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Selecting data}
+We can now select the table and see what's in it using a SELECT statement, which is how you query data from a SQL database. 
+\begin{lstlisting}
+SELECT * FROM grades;
+
+1,PY205,3.8,3
+1,PY411,3.2,4
+1,PY412,3.1,4
+1,E101,3.8,2
+1,CS216,3.5,3
+2,PY205,3.1,3
+2,PY411,2.8,4
+2,PY412,2.4,4
+2,E101,2.9,2
+2,CS216,3.3,3
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Selecting data}
+\begin{itemize}
+\item SELECT - lists the columns to return in the results, or * for all columns. These can actually be any expression, which you can use to compute values, as we'll see in a bit.
+\item FROM - defines which tables to use as input to the query. If you have more than one table, then the tables are joined. More on joins later.
+\item WHERE - Defines conditional expressions that filter the rows from the input tables
+\item GROUP BY - Used in aggregate queries. More on this later.
+\item HAVING - Expressions used to filter groups on an aggregate query.
+\item ORDER BY - Expressions used to sort the results before returning them
+\item LIMIT - Places limits or returns a slice of the results.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Filtering rows with a WHERE clause}
+\begin{lstlisting}
+SELECT * FROM grades WHERE studentid=1;
+
+
+studentid   course      grade       credits   
+----------  ----------  ----------  ----------
+1           PY205       3.8         3         
+1           PY411       3.2         4         
+1           PY412       3.1         4         
+1           E101        3.8         2         
+1           CS216       3.5         3 
+
+SELECT * FROM grades WHERE course='PY205';
+
+
+studentid   course      grade       credits   
+----------  ----------  ----------  ----------
+1           PY205       3.8         3         
+2           PY205       3.1         3  
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Filtering rows with a WHERE clause}
+\begin{lstlisting}
+SELECT * FROM grades WHERE studentid=2 AND course='E101';
+
+studentid   course      grade       credits   
+----------  ----------  ----------  ----------
+2           E101        2.9         2  
+
+SELECT * FROM grades WHERE grade>3.5;
+
+studentid   course      grade       credits   
+----------  ----------  ----------  ----------
+1           PY205       3.8         3         
+1           E101        3.8         2  
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Expressions and the SELECT clause}
+\begin{lstlisting}
+SELECT studentid, grade FROM grades;
+
+studentid   grade     
+----------  ----------
+1           3.8       
+1           3.2       
+1           3.1       
+1           3.8       
+1           3.5       
+2           3.1       
+2           2.8       
+2           2.4       
+2           2.9       
+2           3.3  
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Expressions and the SELECT clause}
+This example shows computing a column from an expression. The grade points earned for a course is the grade earned times the credits. This quantity is used in computing grade point averages.
+\begin{lstlisting}
+SELECT studentid, course, grade*credits FROM grades;
+
+studentid   course      grade*credits
+----------  ----------  -------------
+1           PY205       11.4         
+1           PY411       12.8         
+1           PY412       12.4         
+1           E101        7.6          
+1           CS216       10.5         
+2           PY205       9.3          
+2           PY411       11.2         
+2           PY412       9.6          
+2           E101        5.8          
+2           CS216       9.9  
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Expressions and the SELECT clause}
+You can change the result column name by giving an alternative name like so. This is useful for clarity, but also you can refer to these names later in the query in the WHERE clause and a few other clauses.
+\begin{lstlisting}
+SELECT studentid, course, grade*credits AS gradepoints FROM grades;
+
+studentid   course      gradepoints
+----------  ----------  -----------
+1           PY205       11.4       
+1           PY411       12.8       
+1           PY412       12.4       
+1           E101        7.6        
+1           CS216       10.5       
+2           PY205       9.3        
+2           PY411       11.2       
+2           PY412       9.6        
+2           E101        5.8        
+2           CS216       9.9   
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Expressions and the SELECT clause}
+Using a CASE expression to transform numerical grades to letters:
+\begin{lstlisting}
+SELECT studentid, course,
+       CASE WHEN grade<0.66 THEN 'F'
+            WHEN grade<1.66 THEN 'D'
+            WHEN grade<2.66 THEN 'C'
+            WHEN grade<3.66 THEN 'B'
+            ELSE 'A' END
+                AS lettergrade
+    FROM grades;
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Expressions and the SELECT clause}
+\begin{lstlisting}
+studentid   course      lettergrade
+----------  ----------  -----------
+1           PY205       A          
+1           PY411       B          
+1           PY412       B          
+1           E101        A          
+1           CS216       B          
+2           PY205       B          
+2           PY411       B          
+2           PY412       C          
+2           E101        B          
+2           CS216       B  
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Expressions and the SELECT clause}
+Using a LIKE expression in the WHERE clause to match all Physics classes. LIKE expressions do pattern matching using the percent sign as a wildcard.
+\begin{lstlisting}
+SELECT * FROM grades WHERE course LIKE "PY%";
+
+studentid   course      grade       credits   
+----------  ----------  ----------  ----------
+1           PY205       3.8         3         
+1           PY411       3.2         4         
+1           PY412       3.1         4         
+2           PY205       3.1         3         
+2           PY411       2.8         4         
+2           PY412       2.4         4         
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
+\begin{itemize}
+\item SQL provides a grouping mechanism that allows you to do aggregate computations on each group. 
+\item This is done with the GROUP BY clause, which goes after the FROM and WHERE clauses.
+\item The GROUP BY clause takes one or more expressions, separated by commas, that define the groups. 
+\item Typically, these expressions will be column names but you can compute values with expressions, too.
+\item SQL will then take each row and assign it a group based on the GROUP BY expression(s). The results of the query will be one row per group.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
+\begin{itemize}
+\item Using a GROUP BY clause makes the query into an aggregate query. 
+\item In your SELECT clause, you can then use one or more aggregate functions. 
+\item The aggregate functions operate over each row in the group. 
+\item So, for example, you can compute the average grade per student like this:
+\end{itemize}
+\begin{lstlisting}
+SELECT studentid, AVG(grade) FROM grades GROUP BY studentid;
+
+studentid   AVG(grade)
+----------  ----------
+1           3.48      
+2           2.9       
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
+\begin{lstlisting}
+SELECT studentid, SUM(grade*credits)/SUM(credits) AS GPA FROM grades GROUP BY studentid;
+
+studentid   GPA       
+----------  ----------
+1           3.41875   
+2           2.8625      
+\end{lstlisting}
+\begin{itemize}
+\item This takes the total gradepoints of each group and divides them by the total credits in that group.
+\item Since the grouping is by studentid, each student is a group, and each group contains the rows for that student. 
+\item So any aggregate functions operate on the rows for each student independently.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
+If you combine the WHERE clause with an aggregate query, the WHERE clause filters the input rows before grouping. So here is the GPA of all students just for their Physics classes:
+\begin{lstlisting}
+SELECT studentid, SUM(grade*credits)/SUM(credits) AS GPA
+    FROM grades
+    WHERE course LIKE "PY%"
+    GROUP BY studentid;
+
+studentid   GPA             
+----------  ----------------
+1           3.32727272727273
+2           2.73636363636364  
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
+\begin{itemize}
+\item If you add a HAVING clause, this filters the groups. It's essentially like the WHERE clause except it applies after grouping instead of before. 
+\item You can use aggregate expressions in the HAVING clause.
+\item This selects students that have a GPA greater than 3. 
+\item Notice how we don't actually select the GPA into the results, we just get the studentids, and calculate the GPA in the HAVING clause.
+\end{itemize}
+\begin{lstlisting}
+SELECT studentid FROM grades GROUP BY studentid HAVING SUM(grade*credits)/SUM(credits) >= 3;
+
+studentid 
+----------
+1     
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
+You can also refer to a column name in other clauses. So if you do want the GPA in the results, to avoid having to duplicate the expression in both clauses, give it a name and refer to it by name:
+\begin{lstlisting}
+SELECT studentid, SUM(grade*credits)/SUM(credits) AS GPA 
+    FROM grades
+    GROUP BY studentid
+    HAVING GPA >= 3;
+
+studentid   GPA       
+----------  ----------
+1           3.41875   
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
+ if you use an aggregate function but don't use a GROUP BY clause, the query is still an aggregate query, but with one large group containing every row.
+
+This is the total GPA of all students, which may or may not be meaningful.
+\begin{lstlisting}
+SELECT SUM(grade*credits)/SUM(credits) AS GPA FROM grades; 
+
+GPA       
+----------
+3.140625  
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
+\begin{itemize}
+\item  If you select on a column that is neither an aggregate function nor a column named in the GROUP BY, you're essentially asking about a column for which there may be multiple results. \item This is allowed, but since the results only give one row per group, SQLite will pick an arbitrary row within the group to return, which is usually not meaningful.
+\end{itemize}
+\begin{lstlisting}
+SELECT studentid, course FROM grades GROUP BY studentid;
+
+studentid   course    
+----------  ----------
+1           CS216     
+2           CS216   
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Joins}
+Joins allow you to join two or more tables of data together.
+\begin{lstlisting}
+SELECT * FROM demographics;
+
+studentid   gender      age       
+----------  ----------  ----------
+1           m           22        
+2           f           19        
+3           m           20        
+\end{lstlisting}
+\begin{itemize}
+\item  Now we can join the tables together. At its core, a join is simply a cartesian-product of the rows in two input tables. 
+\item  So for every row in one input table, every row in the second table will be returned.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Joins}
+\begin{lstlisting}
+SELECT g.*, d.* FROM grades g JOIN demographics d;
+
+
+studentid   course      grade       credits     studentid   gender      age       
+----------  ----------  ----------  ----------  ----------  ----------  ----------
+1           PY205       3.8         3           1           m           22        
+1           PY205       3.8         3           2           f           19        
+:        
+2           CS216       3.3         3           2           f           19        
+2           CS216       3.3         3           3           m           20        
+\end{lstlisting}
+There are 10 rows in the grades table, and 3 rows in the demographics table, so the result set has 30 rows. Rows in the first table are repeated for each row in the second table.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Joins}
+We can filter this out by selecting only where the studentid column of the first table is equal to the studentid column of the second table. This is called a join condition and will get us the demographics and grades of the respective students.
+\begin{lstlisting}
+SELECT g.*, d.gender, d.age
+    FROM grades g JOIN demographics d ON g.studentid=d.studentid;
+
+
+studentid   course      grade       credits     gender      age       
+----------  ----------  ----------  ----------  ----------  ----------
+1           PY205       3.8         3           m           22        
+:    
+2           E101        2.9         2           f           19        
+2           CS216       3.3         3           f           19        
+\end{lstlisting}
+This performs a regular join, also known as an inner join or cross join. Only rows that match the join condition are returned.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
+\begin{itemize}
+\item In SQLite, there is no difference for an inner join in putting the join condition after the ON keyword or putting it in the WHERE clause. It makes a difference for other types of joins and other database systems though, so it's a good idea to put your join condition in the JOIN clause using the ON keyword, instead of the WHERE clause!
+
+\item There is a difference between inner joins and cross joins in other database systems, but they are equivalent in SQLite. Inner joins are usually what you want, which is why they are the default when you just say "JOIN". You can even just separate table names with a comma and leave the join keyword out entirely.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Joins and grouping}
+Joins work with groups just as you'd expect. All joins happen before grouping, so you can get a student's demographic information along with their GPA in one query:
+\begin{lstlisting}
+SELECT g.studentid, SUM(g.grade*g.credits)/SUM(g.credits) AS GPA, d.gender, d.age
+    FROM grades g JOIN demographics d ON g.studentid=d.studentid
+    GROUP BY g.studentid;
+
+studentid   GPA         gender      age       
+----------  ----------  ----------  ----------
+1           3.41875     m           22        
+2           2.8625      f           19     
+\end{lstlisting}
+If you're wondering why we couldn't just put the demographics data into the grades table, there are a couple of reasons. 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Joins and grouping}
+\begin{itemize}
+\item The rule of thumb is to look at what's unique in a table. For grades, it's the tuple of (studentid, course) columns. There should never be two rows with the same (studentid, course). (In a real system, you would also have a semester identifier in there because students can and do take courses over again)
+
+\item For the demographics table, the unique column is just the "studentid" column.
+
+\item We call the unique columns in a table a "key", and usually you can identify a single primary key. If two datasets have different primary keys, then they typically should belong in different tables. If two datasets have the same primary key, then it may make sense to combine them into one table, but organizationally it may still make sense to keep them separate.
+\end{itemize}
+\end{frame}
+
+

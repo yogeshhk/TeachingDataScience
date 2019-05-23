@@ -1,0 +1,325 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Iterators}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Usage of ``for'' loop}
+Looping over a list:
+\begin{lstlisting}
+>>> for i in [1, 2, 3, 4]:
+...     print i
+\end{lstlisting}
+
+With a string, it loops over its characters:
+\begin{lstlisting}
+>>> for c in "python":
+...     print c
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Usage of ``for'' loop}
+With a dictionary, it loops over its keys:
+\begin{lstlisting}
+>>> for k in {"x": 1, "y": 2}:
+...     print k
+\end{lstlisting}
+
+With a file, it loops over lines of the file:
+\begin{lstlisting}
+>>> for line in open("a.txt"):
+...     print line
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iterables}
+    \begin{itemize}
+    \item  So there are many types of objects which can be used with a for loop. 
+    \item These are called iterable objects.
+	\item There are many functions which consume these iterables:
+	\begin{lstlisting}
+>>> ",".join(["a", "b", "c"])
+'a,b,c'
+>>> ",".join({"x": 1, "y": 2})
+'y,x'
+>>> list("python")
+['p', 'y', 't', 'h', 'o', 'n']
+>>> list({"x": 1, "y": 2})
+['y', 'x']
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration}
+    \begin{itemize}
+    \item  The act of going over a collection
+    \item  Explicit in the form of `for'
+    \item  Implicit in many forms: list(), tuple(), dict(), map(), reduce(), zip()
+    \item Used with `in'
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration}
+    \begin{itemize}
+    \item  An iterator is an object adhering to the iterator protocol : basically this means that it has a next method, which, when called, returns the next item in the sequence, 
+    \item and when there's nothing to return, raises the StopIteration exception.
+\item 
+An iterator object allows to loop just once.
+\item  It holds the state (position) of a single iteration, or from the other side, each loop over a sequence requires a single iterator object. 
+\item This means that we can iterate over the same sequence more than once concurrently. 
+\item Separating the iteration logic from the sequence allows us to have more than one way of iteration.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration}
+    \begin{itemize}
+\item Calling the \_\_iter\_\_ method on a container to create an iterator object is the most straightforward way to get hold of an iterator. 
+\item The iter function does that for us, saving a few keystrokes.
+\item When used in a loop, StopIteration is swallowed and causes the loop to finish. 
+\item But with explicit invocation, we can see that once the iterator is exhausted, accessing it raises an exception.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration}
+    \begin{itemize}
+\item Support for iteration is pervasive in Python: all sequences and unordered containers in the standard library allow this. 
+\item The concept is also stretched to other things: e.g. file objects support iteration over lines.
+\item The file is an iterator itself and it's \_\_iter\_\_ method doesn't create a separate object: only a single thread of sequential access is allowed.
+    \end{itemize}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration Protocol}
+    \begin{itemize}
+    \item Protocol of 2 methods:
+    \begin{itemize}
+    	\item \_\_iter\_\_(): get iterator
+	\item next(): get next value, raises StopIteration when done
+
+        \end{itemize}
+        \item Explicit iterator creation with iter() 
+
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration Protocol}
+The built-in function iter takes an iterable object and returns an iterator.
+	\begin{lstlisting}
+>>> x = iter([1, 2, 3])
+>>> x
+<listiterator object at 0x1004ca850>
+>>> x.next()
+1
+>>> x.next()
+2
+>>> x.next()
+3
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration Protocol}
+
+\begin{lstlisting}
+>>> x.next()
+2
+>>> x.next()
+3
+>>> x.next()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+\end{lstlisting}
+Each time we call the next method on the iterator gives us the next element. If there are no more elements, it raises a StopIteration.
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reading Lines}
+Without Iterator:
+\begin{lstlisting}
+with open('data.txt', 'r') as f:
+    while True:
+        line = f.readline()
+        if not line: 
+            break
+        else: 
+            print(line.rstrip())
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reading Lines}
+With Iterator:
+\begin{lstlisting}
+with open('data.txt', 'r') as f:
+    for line in f:
+        print(line.rstrip())
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iterator Class}
+    \begin{itemize}
+    \item Iterators are implemented as classes. 
+    \item Here is an iterator that works like built-in range function.
+	\begin{lstlisting}
+class yrange:
+    def __init__(self, n):
+        self.i = 0
+        self.n = n
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self.i < self.n:
+            i = self.i
+            self.i += 1
+            return i
+        else:
+            raise StopIteration()
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iterator Class}
+    \begin{itemize}
+    \item The \_\_iter\_\_ method is what makes an object iterable. Behind the scenes, the iter function calls \_\_iter\_\_ method on the given object.
+    \item The return value of \_\_iter\_\_ is an iterator.
+    \item It should have a next method and raise StopIteration when there are no more elements.
+	\begin{lstlisting}
+>>> y = yrange(3)
+>>> y.next()
+0
+>>> y.next()
+1
+>>> y.next()
+2
+>>> y.next()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "<stdin>", line 14, in next
+StopIteration
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration Usage}
+Many built-in functions accept iterators as arguments.
+\begin{lstlisting}
+>>> list(yrange(5))
+[0, 1, 2, 3, 4]
+>>> sum(yrange(5))
+10
+\end{lstlisting}
+In the above case, both the iterable and iterator are the same object. Notice that the \_\_iter\_\_ method returned self. It need not be the case always.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration Usage}
+Iterable and Iterator can be different
+\begin{lstlisting}
+class zrange:
+    def __init__(self, n):
+        self.n = n
+
+    def __iter__(self):
+        return zrange_iter(self.n)
+
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration Usage}
+Iterable and Iterator can be different
+\begin{lstlisting}
+class zrange_iter:
+    def __init__(self, n):
+        self.i = 0
+        self.n = n
+
+    def __iter__(self):
+        # Iterators are iterables too.
+        # Adding this functions to make them so.
+        return self
+
+    def next(self):
+        if self.i < self.n:
+            i = self.i
+            self.i += 1
+            return i
+        else:
+            raise StopIteration()
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration Usage}
+If both iteratable and iterator are the same object, it is consumed in a single iteration.
+\begin{lstlisting}
+>>> y = yrange(5)
+>>> list(y)
+[0, 1, 2, 3, 4]
+>>> list(y)
+[]
+>>> z = zrange(5)
+>>> list(z)
+[0, 1, 2, 3, 4]
+>>> list(z)
+[0, 1, 2, 3, 4]
+\end{lstlisting}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration Advantages}
+    \begin{itemize}
+    \item Cleaner code
+    \item     Iterators can work with infinite sequences
+    \item     Iterators save resources
+    \end{itemize}
+   \end{frame}
+   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Iteration Assinment}
+Write an iterator class reverse\_iter, that takes a list and iterates it from the reverse direction:
+\begin{lstlisting}
+>>> it = reverse_iter([1, 2, 3, 4])
+>>> it.next()
+4
+>>> it.next()
+3
+>>> it.next()
+2
+>>> it.next()
+1
+>>> it.next()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+\end{lstlisting}
+\end{frame}
+
+
+
+
+

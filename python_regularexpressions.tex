@@ -1,0 +1,1418 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Regular Expressions}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Finding words}
+\begin{itemize}
+\item Ctrl+F find string in a text
+\item What variations of the string you can have
+\item Case
+\item Whole/part.
+\item Thats about it.
+\item If you want to find ANY number in the text?
+\item Something like `*.txt' for filenames, but for numbers, in our case.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Regular Expressions}
+\begin{itemize}
+\item String matching
+\item Substitution
+\item Patterns, classes
+\item Python's regular expression module: \texttt{re}
+\item NLTK's utility function: \texttt{re\_show}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{re}
+We can access the machinery of regular expressions through its
+\lstinline{re} module.  Let's see what \lstinline{re} provides:
+\begin{lstlisting}
+>>> import re
+>>> dir(re)
+['DOTALL', 'I', 'IGNORECASE', 'L', 'LOCALE', 'M', 'MULTILINE', 
+'S', 'U', 'UNICODE', 'VERBOSE', 'X', '__all__', '__builtins__',
+'__doc__', '__file__', '__name__', 'compile', 'engine', 'error',
+'escape', 'findall', 'match', 'purge', 'search', 'split', 'sub',
+'subn', 'template']
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{re}
+ A
+regular expression pattern itself is a string.  For example, the
+string
+\begin{lstlisting}
+"alpha beta"
+\end{lstlisting}
+is a pattern that, when given any string that contains ``alpha beta''
+anywhere in it, will match successfully.  Nothing too exciting. But how about:
+\begin{lstlisting}
+"a+"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{re}
+
+\begin{lstlisting}
+"a+"
+\end{lstlisting}
+\begin{itemize}
+\item Here, the \lstinline-+- doesn't literally stand for the plus character:
+instead, it attaches a meaning to the character right before it.  This
+particular example, as a regular expression, means ``One or more
+\texttt{a}'s''.  
+\item So if we're looking for repetition, using \lstinline-+-
+works very well.  
+\item In regular expression terms, \lstinline-+- is a
+metacharacter, and there are quite a few of them. 
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{re}
+We can list out a
+few others:
+\begin{itemize}
+\item \lstinline+.+ matches any single character
+\item \lstinline+*+ matches zero or more of the last character
+\item \lstinline+?+ matches zero or one of the last character
+\end{itemize}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Starting to use}
+
+
+\begin{lstlisting}
+>>> import re
+>>> x = re.search("cat","A cat and a rat can't be friends.")
+>>> print(x)
+<_sre.SRE_Match object at 0x7fd4bf238238>
+>>> x = re.search("cow","A cat and a rat can't be friends.")
+>>> print(x)
+None
+\end{lstlisting}
+\begin{itemize}
+\item re.search(expr,s) checks a string s for an occurrence of a substring which matches the regular expression expr.
+\item If a match has been possible, we get a so-called match object as a result, otherwise the value will be None.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Starting to use}
+We get an SRE object returned, which is taken as a True value, and None, which is the return value if it doesn't match, is taken as False:
+
+\begin{lstlisting}
+>>> if re.search("cat","A cat and a rat can't be friends."):
+...     print("Some kind of cat has been found :-)")
+... else:
+...     print("No cat has been found :-)")
+... 
+Some kind of cat has been found :-)
+>>> if re.search("cow","A cat and a rat can't be friends."):
+...     print("Cats and Rats and a cow.")
+... else:
+...     print("No cow around.")
+... 
+No cow around.
+\end{lstlisting}
+\begin{itemize}
+\item re.search(expr,s) checks a string s for an occurrence of a substring which matches the regular expression expr.
+\item If a match has been possible, we get a so-called match object as a result, otherwise the value will be None.
+\end{itemize}
+\end{frame}
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{Starting to use}
+%Let's show a regular
+%expression that can recognize most \lstinline{http} urls!
+%\begin{lstlisting}
+%"http://[\w\.-/]+\.?(?![\w.-/])"
+%\end{lstlisting}
+%Admittedly, trying to figure out this regular expression takes a lot
+%of time; however, because they're just strings, we can break them
+%down, comment them heavily, and then use them.
+%\begin{lstlisting}
+%LETTERS_OR_SYMBOLS = r'[\w\.-/]+'
+%OPTIONAL_LITERAL_PERIOD = r'\.?'
+%LOOKAHEAD_NOT_LETTER_OR_SYMBOL = r'(?![\w.-/])'
+%whole_re_pattern = 'http://' + LETTERS_OR_SYMBOLS + OPTIONAL_LITERAL_PERIOD \
+%                             + LOOKAHEAD_NOT_LETTER_OR_SYMBOL
+%\end{lstlisting}
+%\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{Substitutions}
+%
+%\begin{itemize}
+%\item E.g. replace all instances of \texttt{l} with \texttt{s}.
+%\item Creates an output string (doesn't modify input)
+%
+%\begin{lstlisting}
+%  >>> re.sub('l', 's', sent)
+%  'cosoursess green ideas sseep furioussy'
+%\end{lstlisting}
+%
+%\item Work on substrings (NB not words)
+%
+%\begin{lstlisting}
+%  >>> re.sub('green', 'red', sent)
+%  'colourless red ideas sleep furiously'
+%\end{lstlisting}
+%\end{itemize}
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{More Complex Patterns}
+%
+%\begin{itemize}
+%\item Disjunction:
+%
+%\begin{lstlisting}
+%  >>> re_show('(green|sleep)', sent)
+%  colourless {green} ideas {sleep} furiously
+%  >>> re.findall('(green|sleep)', sent)
+%  ['green', 'sleep']
+%\end{lstlisting}
+%
+%\item Character classes, e.g. non-vowels followed by vowels:
+%
+%\begin{lstlisting}
+%  >>> re_show('[^aeiou][aeiou]', sent)
+%  {co}{lo}ur{le}ss g{re}en{ i}{de}as s{le}ep {fu}{ri}ously
+%  >>> re.findall('[^aeiou][aeiou]', sent)
+%  ['co', 'lo', 'le', 're', ' i', 'de', 'le', 'fu', 'ri']
+%\end{lstlisting}
+%\end{itemize}
+%\end{frame}
+%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Motivating regular expressions}
+
+\textbf{Regular expressions} help describe complex patterns of words
+
+Examples:
+
+\begin{itemize}
+
+ \item In a large document I want to find addresses with a zip code
+   starting with 411 (around Pune, India)
+\item Find all gmail addresses occurring in a long text
+\end{itemize}
+
+It would be nice to have a compact way of
+    representing all of these options.
+
+ Anything where you have to match a complex pattern so-called
+     \textbf{regular expressions} are useful.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+  \frametitle{Regular expressions: Tools that use them}
+
+  \begin{itemize}
+  \item A variety of unix tools (grep, sed, \ldots), editors (emacs,
+    jEdit, \ldots), and programming languages (perl, python, Java, \ldots)
+    incorporate regular expressions.
+
+  \item Implementations are very efficient so that large text files
+    can be searched quickly
+\item The various tools differ w.r.t. the exact syntax of the regular
+expressions they allow, but knowledge of one transfers
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Any Character}
+
+\begin{itemize}
+\item Say, we are inetersted in any word which ends with "at".
+\item The syntax of regular expressions supplies a metacharacter ".", which is used like a placeholder for "any character". 
+\item The regular expression of our example can be written like this: 
+
+\begin{lstlisting}
+r" .at " 
+\end{lstlisting}
+\item This RE matches three letter words, isolated by blanks, which end in "at". Now we get words like "rat", "cat", "bat", "eat", "sat" and many others. 
+\item But what, if the text contains "words" like "@at" or "3at"? These words match as well and this means that we have created over matching again. 
+\item Will see how to avoid it, later.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Starting to use}
+\begin{itemize}
+\item There's something somewhat new here that we haven't seen yet ---
+what's that ``\texttt{r}'' in front of the quotes?  
+\item  In Python, it's
+called a ``raw'' string.  Basically, it turns off the special meaning
+of the backslash, so that the \lstinline+\+ literally means backslash.
+\item We'll see raw strings a lot, especially with regular expressions that
+use a lot of backslashes.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{. - A period}
+Matches any single character except newline character.
+\begin{lstlisting}
+re.search(r'Co.k.e', 'Cookie').group()
+
+'Cookie'
+\end{lstlisting}
+
+The group() function returns the string matched by the re. (more on it, later)
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Character Classes}
+
+\begin{itemize}
+\item Square brackets, "[" and "]", are used to include a character class. [xyz] means e.g. either an "x", an "y" or a "z". 
+\item Let's look at a more practical example:
+
+\begin{lstlisting}
+r"M[ae][iy]er"
+\end{lstlisting}
+\item This is a regular expression, which matches a surname which is quite common in German. 
+\item A name with the same pronunciation and four different spellings: Maier, Mayer, Meier, Meyer 
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Character Classes}
+
+\begin{itemize}
+\item Instead of a choice between two characters, we often need a choice between larger character classes. 
+\item We might need e.g. a class of letters between "a" and "e" or between "0" and "5"
+\item To manage such character classes the syntax of regular expressions supplies a metacharacter "-". [a-e] a simplified writing for [abcde] or [0-5] denotes [012345]. 
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Character Classes}
+
+\begin{itemize}
+\item The only other special character inside square brackets (character class choice) is the caret "\^".
+\item  If it is used directly after an opening sqare bracket, it negates the choice. [\^0-9] denotes the choice "any character but a digit". 
+\item The position of the caret within the square brackets is crucial. If it is not positioned as the first character following the opening square bracket, it has no special meaning. 
+\item [\^abc] means anything but an "a", "b" or "c" 
+\item [a\^bc] means an "a", "b", "c" or a "\^". 
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Regular Expressions, Some Basics (from Jurafsky Slides) } 
+
+%%Do the slides where there are the basics of how to computer regular expressions
+%%False Negative/ False positive rates.  
+%%Include cheating detection as a closely related tool.  
+%%Show how to apply this with a few examples before launching in earnest to the bag of words
+
+%%Then, show how to do this in both python and R 
+%%python has the advantage of being easier to write files
+%%the R example can show how to count incidence of something happening  
+
+%%wcopyfind for uptake and joint press releases 
+
+\begin{itemize}
+\item[-] Disjunctions
+\end{itemize}
+\begin{center}
+\begin{tabular} {lll} 
+\textbf{RE} & \textbf{Match} & \textbf{Patterns Matched}\\
+{\tt [mM]oney } & Money or money  & ``\underline{Money}" \\
+{\tt [abc] } & `a', `b', \emph{or} `c'  & ``Investing in Ir\underline{a}n" \\
+               &                              & ``is d\underline{a}ngerous \underline{b}usiness"\\
+{\tt [1234567890]} & any digit &     ``sitting on \$\underline{7}.\underline{5} billion dollars"      \\
+   &   & ``\underline{2}\underline{0}\underline{0}\underline{5} and \underline{2}\underline{0}\underline{0}\underline{6}, more than " \\
+   &  &   ``\$\underline{1}\underline{5}\underline{0} million  dollars"    \\
+{\tt [$\backslash$.] } & A period &`` `Run!', he screamed\underline{.}" 
+\end{tabular}
+\end{center}
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{Predefined Character Classes}
+%
+%\begin{itemize}
+%\item \\d	Matches any decimal digit; equivalent to the set [0-9].
+%\item \\D	The complement of \\d. It matches any non-digit character; equivalent to the set [\^0-9].
+%\item \\s	Matches any whitespace character; equivalent to [ \\t\\n\\r\\f\\v].
+%\item \\S	The complement of \\\s. It matches any non-whitespace character; equiv. to [\^ \\t\\n\\r\\f\\v].
+%\item \\w	Matches any alphanumeric character; equivalent to [a-zA-Z0-9\_]. With LOCALE, it will match the set [a-zA-Z0-9\_] plus characters defined as letters for the current locale.
+%\item \\W	Matches the complement of \\w.
+%%\\\b	Matches the empty string, but only at the start or end of a word.
+%%\\\B	Matches the empty string, but not at the start or end of a word.
+%\item \\	Matches a literal backslash.
+%\end{itemize}
+%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{Word boundaries}
+%
+%\begin{itemize}
+%\item \\\d	Matches any decimal digit; equivalent to the set [0-9].
+%\item \\\D	The complement of \\\d. It matches any non-digit character; equivalent to the set [\^0-9].
+%\item \\\s	Matches any whitespace character; equivalent to [ \\\t\\\n\\\r\\\f\\\v].
+%\item \\\S	The complement of \\\s. It matches any non-whitespace character; equiv. to [\^ \\\t\\\n\\\r\\\f\\\v].
+%\item \\\w	Matches any alphanumeric character; equivalent to [a-zA-Z0-9\_]. With LOCALE, it will match the set [a-zA-Z0-9\_] plus characters defined as letters for the current locale.
+%\item \\\W	Matches the complement of \\\w.
+%%\\\b	Matches the empty string, but only at the start or end of a word.
+%%\\\B	Matches the empty string, but not at the start or end of a word.
+%\item \\\\	Matches a literal backslash.
+%\end{itemize}
+%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile] 
+\frametitle{Regular Expressions, Some Basics (from Jurafsky Slides) } 
+\begin{itemize}
+\item[-] Ranges 
+\end{itemize}
+\begin{center}
+\begin{tabular} {lll} 
+\textbf{RE} & \textbf{Match} & \textbf{Patterns Matched}\\
+{\tt [A-Z]}  & an upper case letter   & ``\underline{R}ep. \underline{A}nthony \underline{W}einer\\
+  &    &   (\underline{D}-\underline{B}rooklyn \& \underline{Q}ueens)" \\
+{\tt [a-z]}  & a lower case letter &   ``ACORN'\underline{s}" \\
+{\tt [0-9]}  & a single digit  & ``(\underline{9}th CD) " 
+\end{tabular}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Regular Expressions, Some Basics (from Jurafsky Slides) } 
+\begin{itemize}
+\item[-] Negations 
+\end{itemize}
+\begin{center}
+\begin{tabular}{lll}
+\textbf{RE} & \textbf{Match} & \textbf{Patterns Matched}\\
+{\tt [\^{}A-Z] } & not an upper case letter &  ``ACORN\alert{\underline{'}\underline{s}}" \\
+{\tt[\^{}Ss] } & neither `S' nor `s' & ``\alert{\underline{ACORN'}}s" \\
+{\tt[\^{}\textbackslash.] } & not a period & `` `\underline{Run!', he screamed}." \\
+\end{tabular}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Regular Expressions, Some Basics (from Jurafsky Slides) } 
+\begin{itemize}
+\item[-] Optional Characters: {\tt ?}, {\tt *}, {\tt +} 
+\end{itemize}
+\begin{center}
+\begin{tabular}{lll}
+\textbf{RE} & \textbf{Match} & \textbf{Patterns Matched}\\
+{\tt colou?r } &  Words with {\tt u}  0 or 1 times& ``\underline{color}"  or \\
+                   &                                & ``\underline{colour} " \\
+{\tt oo*h!}     & Words with {\tt o}  0 or more times & ``\underline{oh!}" or \\
+                      &                                                   &   ``\underline{ooh!}" or \\
+                       &                                                   &   ``\underline{oooh!}" \\ 
+{\tt o+h!} &   Words with {\tt o} 1 or more times & ``\underline{oh!}" or \\
+  &                                                   &   ``\underline{ooh!}" or \\
+    &                                                   &   ``\underline{oooooh!}" or \\                       
+\end{tabular}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Regular Expressions, Some Basics (from Jurafsky Slides) } 
+\begin{itemize}
+\item[-] Wild Cards \alert{{\tt .} } 
+\end{itemize}
+\begin{center}
+\begin{tabular}{lll}
+\textbf{RE} & \textbf{Match} & \textbf{Patterns Matched}\\
+{\tt beg\alert{.}n} & Any word with ``beg" then ``n" & ``beg\textcolor{blue}{i}n" or \\
+                          &                                            &  ``beg\textcolor{blue}{a}n" or \\
+                          &                                            &  ``beg\textcolor{blue}{u}n" or \\
+                          &                                            &  ``beg\textcolor{blue}{g}n" (Poor grammar!) 
+                          
+ \end{tabular}
+ \end{center}
+ 
+ \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Regular Expressions, Some Basics (from Jurafsky Slides) } 
+
+\begin{itemize}
+\item[-] Start of the line anchor \alert{\^{}}, end of the line anchor \alert{\$}
+\end{itemize}
+
+
+\begin{center}
+\begin{tabular}{lll}
+\textbf{RE} & \textbf{Match} & \textbf{Patterns Matched}\\
+{\tt \alert{\^{}}[A-Z] } & Upper case start of line & ``\underline{P}alo Alto" \\
+                            &                                                        & ``the town of \textcolor{gray}{P}alo Alto" \\
+{\tt \alert{\^{}}[\^{}A-Z] } & Not upper case start of line &      ``\underline{t}he town of Palo Alto" \\
+                            &                                                        & ``\textcolor{gray}{P}alo Alto" \\
+{\tt \alert{\^{}}.} & Start of line  & ``\underline{P}alo Alto" \\
+                            &                                                        & ``\underline{t}he town of Palo Alto" \\
+{\tt .\alert{\$} }      & Identify character that ends a line &    ``Wait\alert{\underline{!}}" \\
+                              &                                                & ``This is the end\alert{\underline{.}}" \\
+
+ \end{tabular}
+ \end{center}                   
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Regular Expressions, Some Basics (from Jurafsky Slides) } 
+
+\begin{itemize}
+\item[-] ``Or"$|$ statements, Useful short hand 
+\end{itemize}
+\begin{center}
+\begin{tabular}{lll}
+\textbf{RE} & \textbf{Match} & \textbf{Patterns Matched}\\
+yours$|$mine & Matches``yours" or ``mine" & ``it's either \underline{yours} or \underline{mine}"\\
+$\backslash$ d  & Any digit  & ``\underline{1}-Mississippi" \\
+$\backslash$ D  & Any non-digit & ``1\underline{-Mississippi}" \\
+$\backslash$ s & Any whitespace character & ``1,\underline{ }2"\\
+$\backslash$ S & Any non-whitespace character & ``\underline{1,} \underline{2}" \\
+$\backslash$ w & Any alpha-numeric  &  ``\underline{1}-\underline{Mississippi} " \\
+$\backslash$ W & Any non-alpha numeric & ``1\underline{-}Mississippi"  \\
+\end{tabular}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Regular Expressions, Some Basics (from Jurafsky Slides) } 
+
+\begin{itemize}
+\item[-] ``Or"$|$ statements, Useful short hand 
+\end{itemize}
+\begin{center}
+\begin{tabular}{lll}
+\textbf{RE} & \textbf{Match} & \textbf{Patterns Matched}\\
+yours$|$mine & Matches``yours" or ``mine" & ``it's either \underline{yours} or \underline{mine}"\\
+$\backslash$ d  & Any digit  & ``\underline{1}-Mississippi" \\
+$\backslash$ D  & Any non-digit & ``1\underline{-Mississippi}" \\
+$\backslash$ s & Any whitespace character & ``1,\underline{ }2"\\
+$\backslash$ S & Any non-whitespace character & ``\underline{1,} \underline{2}" \\
+$\backslash$ w & Any alpha-numeric  &  ``\underline{1}-\underline{Mississippi} " \\
+$\backslash$ W & Any non-alpha numeric & ``1\underline{-}Mississippi"  \\
+\end{tabular}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Starting to use}
+When we find ourselves using a certain regular expression over and
+over, we can cache a regular expression by \lstinline{compile()}ing it:
+\begin{lstlisting}
+>>> myre = re.compile(r"http://[\w\.-]+\.?(?![\w.-])")
+\end{lstlisting}
+What we get back is a regular expression object that remembers the
+pattern it uses to search for things.  Let's see it in action.
+\begin{lstlisting}
+>>> myre.search('all your http are belong to us')     ## no match
+>>> myre.search("let's try another url: http://perl.com.")
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Starting to use}
+What makes compiling a regular expression especially neat is that we
+can make lists of regular expressions, put them in dictionaries, and
+pass them around as objects, just like any other Python type.
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Compiling Regular Expressions } 
+
+\begin{itemize}
+\item Regular expressions are compiled into \lstinline|RegexObject| instances,
+\item It has methods for various operations such as searching for
+pattern matches or performing string substitutions.
+\end{itemize}
+\begin{lstlisting}
+>>> import re
+>>> p = re.compile('ab*')
+>>> print(p)
+<re.RegexObject instance at 80b4150>
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Compiling Regular Expressions } 
+ \lstinline{re.compile()} also accepts an optional \lstinline{flags}
+argument, used to enable various special features and syntax
+variations.  
+
+\begin{lstlisting}
+>>> p = re.compile('ab*', re.IGNORECASE)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Performing Matches } 
+\lstinline{RegexObject} instances have several
+methods and attributes.  Only the most significant ones will be
+covered here
+\begin{tabular}{c|l}
+code & Method/Attribute  Purpose \\
+{match()} & {Determine if the RE matches at start.}\\
+  {search()} & {Looks for any location where this RE matches.} \\
+  {findall()}&{Find all substrings ; returns as a list.}\\
+  {finditer()} & {Find all matched substrings; returns as an iterator.}\\
+\end{tabular}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Performing Matches } 
+
+\begin{itemize}
+\item \lstinline{match()} and \lstinline|search()| return \lstinline|None| if no match
+can be found.  
+\item If they're successful, a \lstinline|MatchObject| instance is
+returned, containing information about the match: where it starts and
+ends, the substring it matched, and more.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Performing Matches } 
+
+ Now you can query the \lstinline|MatchObject| for information about the
+matching string.  \lstinline|MatchObject| instances also have several
+methods and attributes; the most important ones are:
+\begin{tabular}{c|l}
+code & Method/Attribute  Purpose \\
+  \lstinline|group()| & {Return the string matched by the RE}\\
+  \lstinline|start()| &{Return the starting position of the match}\\
+  \lstinline|end()|&{Return the ending position of the match}\\
+  \lstinline|span()|&{Return a tuple containing the (start, end)}\\
+\end{tabular}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Performing Matches } 
+Trying these methods will soon clarify their meaning:
+\begin{lstlisting}
+>>> m.group()
+'tempo'
+>>> m.start(), m.end()
+(0, 5)
+>>> m.span()
+(0, 5)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Performing Matches } 
+\begin{lstlisting}
+import re
+
+line = "Cats are smarter than dogs"
+
+matchObj = re.match( r'(.*) are (.*?) .*', line, re.M|re.I)
+
+if matchObj:
+   print "matchObj.group() : ", matchObj.group()
+   print "matchObj.group(1) : ", matchObj.group(1)
+   print "matchObj.group(2) : ", matchObj.group(2)
+else:
+   print "No match!!''
+   
+matchObj.group() :  Cats are smarter than dogs
+matchObj.group(1) :  Cats
+matchObj.group(2) :  smarter   
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Performing Searches } 
+\begin{lstlisting}
+import re
+
+line = "Cats are smarter than dogs";
+
+searchObj = re.search( r'(.*) are (.*?) .*', line, re.M|re.I)
+
+if searchObj:
+   print "searchObj.group() : ", searchObj.group()
+   print "searchObj.group(1) : ", searchObj.group(1)
+   print "searchObj.group(2) : ", searchObj.group(2)
+else:
+   print "Nothing found!!"
+   
+searchObj.group() :  Cats are smarter than dogs
+searchObj.group(1) :  Cats
+searchObj.group(2) :  smarter
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Matching Versus Searching } 
+match checks for a match only at the beginning of the string, while search checks for a match anywhere in the string (this is what Perl does by default).
+\begin{lstlisting}
+import re
+
+line = "Cats are smarter than dogs";
+
+matchObj = re.match( r'dogs', line, re.M|re.I)
+if matchObj:
+   print "match --> matchObj.group() : ", matchObj.group()
+else:
+   print "No match!!"
+
+searchObj = re.search( r'dogs', line, re.M|re.I)
+if searchObj:
+   print "search --> searchObj.group() : ", searchObj.group()
+else:
+   print "Nothing found!!"
+   
+No match!!
+search --> matchObj.group() :  dogs
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Search and Replace } 
+
+\begin{lstlisting}
+import re
+
+phone = "2004-959-559 # This is Phone Number"
+
+# Delete Python-style comments
+num = re.sub(r'#.*$', "", phone)
+print "Phone Num : ", num
+
+# Remove anything other than digits
+num = re.sub(r'\D', "", phone)    
+print "Phone Num : ", num
+
+Phone Num :  2004-959-559
+Phone Num :  2004959559
+\end{lstlisting}
+
+\end{frame}
+
+
+
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{Regular Expressions, Some Basics (from Jurafsky Slides) } 
+%Quick Example to Illuminate Differences: 
+%
+%
+%A ``simple" example: identify all instances of \alert{{\tt the}}.
+%
+%
+%\begin{itemize}
+%\item \alert{{\tt the } }
+%\item  Misses capitalized examples
+%\item  \alert{{\tt [tT]he}}
+%\item  Returns words that are too long ({\tt theocrat}, {\tt theme} )
+%\item  \alert{[\^{}a-zA-Z][tT]he[\^{}a-zA-Z] }
+%\item  Misses the first ``the" in a sentence 
+%\item  \alert{(\^{} $|$ [\^{} a-zA-Z])[tT]he[\^{} a-zA-Z] } 
+%\end{itemize}
+%
+%\end{frame}
+
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \begin{frame}[fragile]
+%%\frametitle{An Example: Searching for Tea Party Language}
+%%
+%%\only<1-4>{Grimmer, Westwood, and Messing (2014): Criticism and credit \\}
+%%\only<5>{Goodman, Grimmer, Parker, Zlotnik (2014): Criticism}
+%%
+%%
+%%\begin{center}
+%%\only<1-2>{\invisible<1, 3->{
+%%\scalebox{0.475}{\includegraphics{BigGovernment.pdf}}
+%%}}
+%%
+%%\only<3>{
+%%\scalebox{0.475}{\includegraphics{BudgetDeficit.pdf}}
+%%}
+%%
+%%\only<4>{
+%%\scalebox{0.475}{\includegraphics{AntiDemRepPlot.pdf}}
+%%}
+%%
+%%\only<5>{
+%%	
+%%\scalebox{0.475}{\includegraphics{TeaPartShiftPress.pdf}}
+%%
+%%}
+%%
+%%\end{center}
+%%
+%%
+%%
+%%\end{frame}
+
+%%
+%%
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \begin{frame}[fragile]
+%%\frametitle{Regular Expressions on Steroids: Cheating Detection Software}
+%%
+%%\begin{itemize}
+%%\item[-] WCopyFind:
+%%\begin{footnotesize}
+%%{\tt http://plagiarism.bloomfieldmedia.com/z-wordpress/software/wcopyfind/}\end{footnotesize}
+%%\invisible<1>{\item[-] What constitutes \alert{plagiarism}?}
+%%\invisible<1-2>{\item[-] \alert{Edit distance}: }
+%%\begin{itemize}
+%%\invisible<1-3>{\item[-] Heuristically: how many letters to change from $a$ to $b$ }
+%%\end{itemize}
+%%\invisible<1-4>{\item[-] Sets many parameters: }
+%%\begin{itemize}
+%%\invisible<1-5>{\item[-] Number of differences between pair of ``strings"}
+%%\invisible<1-6>{\item[-] Length of character strings to consider}
+%%\invisible<1-7>{\item[-] Number of matching strings to constitute match}
+%%\end{itemize}
+%%\invisible<1-8>{\item[-] Useful:}
+%%\begin{itemize}
+%%\invisible<1-9>{\item[-] Media uptake}
+%%\invisible<1-10>{\item[-] Joint Press Releases} 
+%%\end{itemize}
+%%\end{itemize}
+%%
+%%\end{frame}
+%%
+
+%
+%%\subsection{Syntax of regular expressions}
+%\newcommand{\A}{\texttt{\ensuremath{\,\hat{ }\,}}}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{The syntax of regular expressions (I)}
+%
+%Regular expressions consist of
+%\begin{itemize}
+%\item strings of literal characters: \texttt{c}, \texttt{A100},
+%  \texttt{natural language}, \texttt{30 years!}
+%\item disjunction:
+%\begin{itemize}
+%\item ordinary disjunction: \texttt{devoured|ate}, \texttt{famil(y|ies)}
+%\item character classes: \texttt{[Tt]he}, \texttt{bec[oa]me}
+%\item ranges: \texttt{[A-Z]} (any capital letter)
+%\end{itemize}
+%
+%\item negation: 
+%  \mbox{\begin{tabular}[t]{@{}l@{}}
+% \texttt{[{\A}a]} (any symbol but \texttt{a})\\
+% \texttt{[{\A}A-Z0-9]} (not an uppercase letter or number)
+%  \end{tabular}}
+%\end{itemize}
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{Specific character classes}
+%
+%Use \textbf{aliases} to designate particular recurrent sets of characters
+%\begin{itemize}
+%\item \texttt{$\backslash$d} = \texttt{[0-9]}: digit
+%\item \texttt{$\backslash$D} = \texttt{[\^{}$\backslash$d]}: non-digit
+%\item \texttt{$\backslash$w} = \texttt{[a-zA-Z0-9\_]}: alphanumeric
+%\item \texttt{$\backslash$W} = \texttt{[\^{}$\backslash$w]}:
+%  non-alphanumeric
+%\item \texttt{$\backslash$s} =
+%  \texttt{[$\backslash$r$\backslash$t$\backslash$n$\backslash$f]}:
+%  whitespace character
+%  \begin{itemize}
+%  \item \texttt{$\backslash$r}: space, \texttt{$\backslash$t}: tab,
+%    \texttt{$\backslash$n}: newline, \texttt{$\backslash$f}: formfeed
+%  \end{itemize}
+%\item \texttt{$\backslash$S} \texttt{[\^{}$\backslash$s]}:
+%  non-whitespace
+%\end{itemize}
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{The syntax of regular expressions (II)}
+%
+%\begin{itemize}
+%\item counters
+%\begin{itemize}
+%\item optionality: \texttt{?}\\
+%\texttt{colou?r}
+%\item any number of occurrences: \texttt{*} (Kleene star)\\
+% \texttt{[0-9]* years}
+%\item at least one  occurrence: \texttt{+}\\
+% \texttt{[0-9]+ dollars}
+%\end{itemize}
+%\item wildcard for any character: .\\
+%\texttt{beg.n} for any character in between \texttt{beg} and \texttt{n} 
+%\item Parentheses to group items together\\
+%  \texttt{ant(farm)?}
+%\item Escaped characters to specify characters with special meanings:\\
+%  \texttt{$\backslash$*, $\backslash$+, $\backslash$?, $\backslash$(,
+%    $\backslash$), $\backslash |$, $\backslash$[, $\backslash$]}
+%\end{itemize}
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{The syntax of regular expressions (III)}
+%
+%\begin{itemize}
+%% \item Escaped characters: to specify a character with a special
+%%   meaning (\texttt{*}, \texttt{+}, \texttt{?}, \texttt{(}, \texttt{)},
+%%   \texttt{|}, \texttt{[}, \texttt{]}) it is preceded by a backslash
+%%   (\texttt{$\backslash$})
+%
+%%   e.g., a period is expressed as \texttt{$\backslash$.}
+%
+%\item Operator precedence, from highest to lowest:
+%\begin{itemize}
+%\item[] parentheses \texttt{()}
+%\item[] counters \texttt{* + ?}
+%\item[] character sequences
+%\item[] disjunction \texttt{|}
+%\end{itemize}
+%\end{itemize}
+%
+%\begin{itemize}
+%\item \texttt{fire|ing} =  \emph{fire} or \emph{ing}
+%\item \texttt{fir(e|ing)} = \emph{fir} followed by either \emph{e} or
+%  \emph{ing}
+%\end{itemize}
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]
+%\frametitle{The syntax of regular expressions (IV)}
+%
+%Anchors: anchor expressions to various parts of the string
+%\begin{itemize}
+%\item \texttt{\^{}} =  start of line
+%  \begin{itemize}
+%  \item do not confuse with \texttt{[\^{}...]} used to express
+%    negation
+%  \end{itemize}
+%\item \texttt{\$} = end of line
+%\item \texttt{$\backslash$b} = non-word character (i.e., word boundary)
+%  \begin{itemize}
+%  \item word characters are digits, underscores, or letters, i.e.,
+%    \texttt{[0-9A-Za-z\_]}
+%  \end{itemize}
+%\end{itemize}
+%
+%Instead of writing out specific numbers of occurrences, repetition can
+%be represented between \{ \}
+%\begin{itemize}
+%\item \texttt{a\{4\}} = 4 \emph{a}'s
+%\item \texttt{a\{1,4\}} = 1-4 \emph{a}'s
+%\end{itemize}
+%
+%
+%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]
+\frametitle{Some RE practice}
+
+\begin{itemize}
+\item What does \texttt{$\backslash$\$[0-9]+($\backslash$.[0-9][0-9])} signify?
+\item Write a RE to capture the times on a digital watch (hours and minutes).  Think about:
+	\begin{itemize}
+	\item the (im)possible values for the hours
+	\item the (im)possible values for the minutes
+	\end{itemize}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Exercise}
+Write a program to check the validity of password input by users.
+  \begin{itemize}
+  \item At least 1 letter between [a-z]
+  \item At least 1 number between [0-9]
+  \item At least 1 letter between [A-Z]
+  \item At least 1 character from [\$\#@]
+  \item Minimum length of transaction password: 6
+  \item Maximum length of transaction password: 12
+  \item Your program should accept a sequence of comma separated passwords and will check them according to the above criteria. Passwords that match the criteria are to be printed, each separated by a comma.
+  \item Example: If the following passwords are given as input to the program: ABd1234@1,a F1\#,2w3E*,2We3345
+  \item Then, the output of the program should be: ABd1234@1
+  \end{itemize}  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Solution}
+  \begin{lstlisting}
+import re
+value = []
+items=[x for x in input().split(',')]
+for p in items:
+    if len(p)<6 or len(p)>12:
+        continue
+    else:
+        pass
+    if not re.search("[a-z]",p):
+        continue
+    elif not re.search("[0-9]",p):
+        continue
+    elif not re.search("[A-Z]",p):
+        continue
+    elif not re.search("[$#@]",p):
+        continue
+    elif re.search("\s",p):
+        continue
+    else:
+        pass
+    value.append(p)
+print(",".join(value))
+  \end{lstlisting}
+\end{frame}
+
+%%%\subsection{Grep} %: An example for using regular expressions}
+%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% \begin{frame}[fragile]
+%%%\frametitle{Grep}
+%%%
+%%%\begin{itemize}
+%%%\item grep is a powerful and efficient program for searching in text
+%%%  files using regular expressions.
+%%%\item It is standard on Unix, Linux, and Mac OSX, and there also are
+%%%  various ports to Windows {\scriptsize (e.g.,
+%%%    \url{http://gnuwin32.sourceforge.net/packages/grep.htm},
+%%%    \url{http://www.interlog.com/~tcharron/grep.html} or
+%%%    \url{http://www.wingrep.com/})}.
+%%%\item The version of grep that supports the full set of operators
+%%%  mentioned above is generally called egrep (for extended grep).
+%%%\end{itemize}
+%%%\end{frame}
+%%%
+%%% \begin{frame}[fragile]
+%%%  \frametitle{Grep: Examples for using regular expressions (I)} 
+%%%  
+%%%  In the following, we assume a text file \texttt{f.txt} containing,
+%%%  among others, the strings that we mention as matching.
+%%%
+%%%\begin{itemize}
+%%%  \item Strings of literal characters: 
+%%%    
+%%%    \texttt{egrep 'and' f.txt} matches \texttt{\underline{and}},
+%%%    \texttt{Ayn R\underline{and}}, \texttt{C\underline{and}y} and so
+%%%    on
+%%%
+%%%  \item Character classes:  
+%%%    
+%%%    \texttt{egrep 'the year [0-9][0-9][0-9][0-9]' f.txt} matches
+%%%    \texttt{the year 1776}, \texttt{the year 1812},
+%%%    \texttt{the year 2001}, and so on
+%%%
+%%%%   \item Escaped characters: 
+%%%    
+%%%%     \texttt{egrep 'why$\backslash$?' f.txt} matches \texttt{why?},
+%%%%     whereas \texttt{egrep 'why?' f.txt} matches \texttt{why} and
+%%%%     \texttt{wh}
+%%%\end{itemize}
+%%%\end{frame}
+%%%
+%%% \begin{frame}[fragile]
+%%%\frametitle{Grep: Examples for using regular expressions (II)}
+%%%
+%%%\begin{itemize}
+%%%   \item disjunction (\texttt{|}):  
+%%%     \texttt{egrep 'couch|sofa' f.txt} matches \texttt{couch} or \texttt{sofa}
+%%%
+%%%\item grouping with parentheses: 
+%%%  
+%%%  \texttt{egrep 'un(interest|excit)ing' f.txt} matches
+%%%  \texttt{uninteresting} or \texttt{unexciting}.
+%%%    
+%%%  \item Any character (.):
+%%%    
+%%%    \texttt{egrep 'o.e' f.txt} matches \texttt{ore}, \texttt{one},
+%%%    \texttt{ole}
+%%%\end{itemize}
+%%%\end{frame}
+%%%
+%%%
+%%% \begin{frame}[fragile]
+%%%\frametitle{Grep: Examples for using regular expressions (III)}
+%%%
+%%%\begin{itemize}
+%%%  \item Kleene star (*):
+%%%    
+%%%    \texttt{egrep 'a*rgh' f.txt} matches \texttt{argh}, \texttt{aargh},
+%%%    \texttt{aaargh}
+%%%    
+%%%%     \texttt{egrep 'sha(la)*' f.txt} matches \texttt{sha},
+%%%%     \texttt{shala}, \texttt{shalala}, or if you're Van Morrison
+%%%%     \texttt{shalalalalalalalala}
+%%%
+%%%  \item One or more (+):
+%%%    
+%%%    \texttt{egrep 'john+y' f.txt} matches \texttt{johny},
+%%%    \texttt{johnny}, \ldots, but not \texttt{johy}
+%%%
+%%%    %Note that this is equivalent to \texttt{johnn*y}
+%%%
+%%%  \item Optionality (?):
+%%%    
+%%%    \texttt{egrep 'joh?n' f.txt} matches \texttt{jon} and \texttt{john}
+%%%\end{itemize}
+%%%\end{frame}
+%%%
+%%%\section{help/help to}
+%%% \begin{frame}[fragile]
+%%%\frametitle{Revisiting \emph{help}/\emph{help to}}
+%%%
+%%%%Our Perl program that searched for variants of \emph{help}
+%%%% \begin{itemize}
+%%%% \item Let's (re)-unpack that a bit
+%%%% \end{itemize}
+%%%
+%%%% \end{frame}
+%%%
+%%%%  \begin{frame}[fragile]
+%%%% \frametitle{Searching for our specific patterns}
+%%%
+%%%% We're going to switch to Perl (see \verb#help.pl#) ...
+%%%% it's %just so much easier \&
+%%%% better-documented for using regular expressions
+%%%
+%%%We compared \emph{help V} \& \emph{help to V}
+%%%\begin{itemize}
+%%%\item and \emph{help NP V} \& \emph{help NP to V}
+%%%\item For these latter cases, we simplified the NP to be a single noun
+%%%  (tag starts with \texttt{n}) or pronoun (\texttt{p})
+%%%\end{itemize}
+%%%
+%%%The patterns we used:
+%%%\begin{itemize}
+%%%\item \emph{help} V: \verb#\b(help\w*?/v\w*?\s+\w+/v\w*?)\b#
+%%%\item \emph{help to} V:
+%%%  \verb#\b(help\w*?/v\w*?\s+to/to\s+\w+/v\w*?)\b#
+%%%\item \emph{help} NP V:
+%%%  \verb#\b(help\w*?/v\w*?\s+\w+/[np]\w*?\s+\w+/v\w*?)\b#
+%%%\item \emph{help} NP \emph{to} V:
+%%%  \verb#\b(help\w*?/v\w*?\s+\w+/[np]\w*?\s+to/to\s+\w+/v\w*?)\b#
+%%%% \item \verb#help.*/V.* .+/V.*#
+%%%% \item \verb#help.*/V.* to/TO .+/V.*#
+%%%% \item \verb#help.*/V.* .*/N.* .+/V.*#
+%%%% \item \verb#help.*/V.* .*/N.* to/TO .+/V.*#
+%%%\end{itemize}
+%%%
+%%%%How can we ignore case?
+%%%
+%%%\end{frame}
+%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% \begin{frame}[fragile]
+%%%\frametitle{Breaking down the regular expression}
+%%%
+%%%\begin{itemize}
+%%%\item[] \verb#\b(help\w*?/v\w*?\s+\w+/v\w*?)\b#
+%%%\end{itemize}
+%%%
+%%%So, what do we see here?
+%%%
+%%%\begin{itemize}
+%%%\item Word boundaries before \emph{help} \& at the end
+%%%
+%%%%  of the expression
+%%%\item \verb.help. followed by a sequence of 0 or more (\verb.*.) word
+%%%  characters (\verb.\w.)
+%%%  \begin{itemize}
+%%%  \item This matches \emph{help}, \emph{helps}, \emph{helpful}, etc.
+%%%  \item We'll talk about \verb.*?. momentarily
+%%%  \end{itemize}
+%%%\item \verb./v\w*?.: this matches a string starting with \emph{/v} \&
+%%%  followed by any word characters
+%%%  \begin{itemize}
+%%%  \item Taking these 2 together matches, e.g., \emph{helping/vbg}
+%%%  \end{itemize}
+%%%\item \verb.\s+.: 1 or more whitespace characters
+%%%\item \verb.\w+/v\w*?.: matches any verb
+%%%  \begin{itemize}
+%%%  \item With \verb.\w+., we match \emph{any} word, not just
+%%%    \emph{help}
+%%%  \end{itemize}
+%%%\end{itemize}
+%%%
+%%%% We'll deal with this more later in the semester, but let's walk
+%%%% through a few things
+%%%% \begin{itemize}
+%%%% \item[] \verb#while (m{\b(help\w*?/v\w*?\s+\w+/v\w*?)\b}gi)#
+%%%% \end{itemize}
+%%%
+%%%% Perl options
+%%%% \begin{itemize}
+%%%% \item Perl is matching the current line against this regular
+%%%%   expression, within \verb#m{...}#
+%%%% \item The \verb.g. at the end specifies \emph{global} matching, in
+%%%%   case there is more than one match (also why we have a
+%%%%   \verb.while. loop)
+%%%% \item The \verb.i. at the end makes it case-insensitive
+%%%% \end{itemize}
+%%%
+%%%\end{frame}
+%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% \begin{frame}[fragile]
+%%%\frametitle{Greediness \& Capturing parentheses}
+%%%
+%%%\begin{itemize}
+%%%\item Greediness
+%%%  \begin{itemize}
+%%%  \item In Perl, \verb.*. is \emph{greedy}: it tries to match as much
+%%%    text as possible
+%%%    \begin{itemize}
+%%%    \item Consider a text \emph{John goes to the store} and an RE
+%%%      \verb#t.*s#
+%%%    \item With the normal, greedy \verb.*., this matches \emph{to the s}
+%%%    \item With the non-greedy \verb.*?. (i.e., \verb#t.*?s#), this
+%%%      matches \emph{the s}
+%%%    \end{itemize}
+%%%  \end{itemize}
+%%%\item Capturing parentheses: parentheses do more than just distinguish
+%%%  subparts of an RE
+%%%  \begin{itemize}
+%%%  \item They ``capture'' the part(s) of the RE you may want further
+%%%    access to
+%%%  \item \verb#\b(help\w*?/v\w*?\s+\w+/v\w*?)\b#
+%%%    \begin{itemize}
+%%%    \item We can use \verb.$1. to refer to the captured part of the RE
+%%%      (and \verb.$2. if there were a second capture, etc.)
+%%%    \item e.g., \verb.<word>(\w+)</word>. will match the whole string,
+%%%      but only capture the part in-between the XML tags
+%%%    \end{itemize}
+%%%  \end{itemize}
+%%%\end{itemize}
+%%%
+%%%\end{frame}
+%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%  \begin{frame}[fragile]
+%%% \frametitle{Breaking down the regular expression (2)}
+%%%
+%%% \begin{itemize}
+%%% \item[] \verb#while (m{\b(help\w*?/v\w*?\s+\w+/v\w*?)\b}gi)#
+%%% \end{itemize}
+%%% This is the formal way of saying \emph{help} (or its variants), used
+%%% as a verb (\verb.v.) and followed by any verb
+%%%
+%%% \begin{itemize}
+%%% \item \verb#\b# specifies a word boundary
+%%% \item \verb#\w# specifies only word characters, and \verb#*?# specifies
+%%%   0 or more of them, i.e., possible word endings
+%%%   \begin{itemize}
+%%%   \item FYI (for those ``in the know''): \verb#*?# is the non-greedy
+%%%     version of the usually greedy \verb#*#
+%%%   \end{itemize}
+%%% \item \verb#\s# specifies white-space characters, and \verb#+#
+%%%   specifies one or more of them (this is more robust than just putting
+%%%   a space)
+%%% \end{itemize}
+%%%
+%%% \end{frame}
+%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%  \begin{frame}[fragile]
+%%% \frametitle{Breaking down the regular expression (3)}
+%%%
+%%% This regular expression:
+%%% \begin{itemize}
+%%% \item[] \verb#\b(help\w*?/v\w*?\s+\w+/v\w*?)\b#
+%%% \end{itemize}
+%%%
+%%% is trying to say this:
+%%% \begin{itemize}
+%%% \item[] \verb#help(s|ed|ing|ful|...)/verb <word>/verb#
+%%% \end{itemize}
+%%%
+%%% \bigskip
+%%%
+%%% Don't worry about the details today; just trust me that it works as it
+%%% should
+%%% \begin{itemize}
+%%% \item and focus on making little changes to search for what you want
+%%% \end{itemize}
+%%%
+%%% \end{frame}
+
+
+%\section{Online web searching}
+
+%  \begin{frame}[fragile]
+% \frametitle{Corpora}
+%   \begin{itemize}
+%   \item A \textbf{corpus} is a collection of text.
+%   \item Corpora with the works of various writers, newspaper texts,
+%     etc. have been collected and electronically encoded.
+%   \item Corpora can be quite large
+
+%   \item The \href{http://www.natcorp.ox.ac.uk/}{British National
+%       Corpus} is a 100 million word collection representing a wide
+%     cross-section of current written and spoken British English.
+    
+%   \item Another example is the
+%     \href{http://people.csail.mit.edu/people/koehn/publications/europarl/}{European
+%       Parliament Proceedings Parallel Corpus 1996--2003}.
+%   \end{itemize}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \begin{frame}[fragile]
+%%\frametitle{Online web searching with REs}
+%%
+%%Various online web interfaces allow RE queries
+%%
+%%\begin{itemize}
+%%
+%%% \item Both the BNC and the European Parliament corpus can be searched
+%%%   using on-line web-forms.
+%%
+%%% \item Both of the web forms allow \textbf{regular expressions} for
+%%%   advanced searching.
+%%    
+%%\item To provide efficient searching in large corpora, in these search
+%%  engines regular expressions over characters are often limited to
+%%  single tokens (i.e. generally words)
+%%
+%%\item BNC:
+%%  \begin{itemize}
+%%  \item web form: \url{http://www.natcorp.ox.ac.uk/using/index.xml?ID=simple}
+%%    %\url{http://sara.natcorp.ox.ac.uk/lookup.html}
+%%    % \url{http://thetis.bl.uk/lookup.html} is the same machine
+%%  \item regular expressions are enclosed in \texttt{\{ \}}
+%%  \end{itemize}
+%%
+%%% \item European Parliament Corpus:
+%%%   \begin{itemize}
+%%%   \item web form:
+%%%     \url{http://logos.uio.no/cgi-bin/opus/opuscqp.pl?corpus=EUROPARL;lang=en}
+%%%   \item in the simplest case, regular expressions are encosed in
+%%%     \texttt{" "}
+%%%   \end{itemize}
+%%\item Internet corpora:
+%%  \begin{itemize}
+%%  \item \url{http://corpus.leeds.ac.uk/internet.html}
+%%  \item See notes on query language:
+%%    \url{http://corpus.leeds.ac.uk/help.html}
+%%  \end{itemize}
+%%\end{itemize}
+%%\end{frame}
+
+
+%  \begin{frame}[fragile]
+%   \frametitle{Exploring regular expressions}
+
+%   To explore the use of regular expressions, check out
+%   \url{http://www.lexmasterclass.com/exercises/regex/index.html} which
+%   offers exercises with immediate feedback (by showing the matched
+%   characters in red).
+
+% \end{frame}
+
+%TODO: CHANGE regular expression synax to reflect corpus searching
+
+
+% \begin{frame}[fragile]
+%\frametitle{Future improvements}
+
+%\begin{itemize}
+%  \item Natural Language Querying (askjeeves.com)
+
+%    $\to$ But do we even want natural language querying?
+
+%%  \item concept-based searching (vs. current \textbf{literal}
+%%    searching) (howstuffworks)
+%  \item Automatic synonym finder $\to$ concept-based searching
+%  \item Regular expression search
+%\end{itemize}
+%\end{frame}

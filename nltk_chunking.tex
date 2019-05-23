@@ -1,0 +1,150 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
+{\Large Chunking in NTLK}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{A Simple NP Chunker}
+  \scriptsize
+
+\begin{lstlisting}
+    import nltk
+    grammar = r"""
+    NP:
+      {<DT>?<JJ>*<NN>}    # chunk determiners, adjectives and nouns
+      {<NNP>+}            # chunk sequences of proper nouns
+    """
+    cp = nltk.RegexpParser(grammar)
+    tagged_tokens = [("the", "DT"), ("little", "JJ"), ("cat", "NN"),
+         ("sat", "VBD"), ("on", "IN"), ("the", "DT"), ("mat", "NN")]
+
+    >>> print cp.parse(tagged_tokens)
+    (S (NP the/DT little/JJ cat/NN) sat/VBD on/IN (NP the/DT mat/NN))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Developing Chunkers}
+  \tiny
+
+\begin{lstlisting}
+    cp1 = nltk.RegexpParser(r"""
+    NP: {<DT><JJ><NN>}      # Chunk det+adj+noun
+        {<DT|NN>+}          # Chunk sequences of NN and DT
+    """)
+    cp2 = nltk.RegexpParser(r"""
+    NP: {<DT|NN>+}          # Chunk sequences of NN and DT
+        {<DT><JJ><NN>}      # Chunk det+adj+noun
+    """)
+    
+    >>> print cp1.parse(tagged_tokens, trace=1)
+    # Input:
+     <DT>  <JJ>  <NN>  <VBD>  <IN>  <DT>  <NN> 
+    # Chunk det+adj+noun:
+    {<DT>  <JJ>  <NN>} <VBD>  <IN>  <DT>  <NN> 
+    # Chunk sequences of NN and DT:
+    {<DT>  <JJ>  <NN>} <VBD>  <IN> {<DT>  <NN>}
+\end{lstlisting}
+
+\begin{itemize}
+  \item tracing; rule ordering; overlapping contexts
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Chinking Example}
+  \scriptsize
+
+\begin{lstlisting}
+    >>> grammar = r"""
+    ... NP:
+    ...   {<.*>+}          # Chunk everything
+    ...   }<VBD|IN>+{      # Chink sequences of VBD and IN
+    ... """
+    >>> cp = nltk.RegexpParser(grammar)
+    >>> print cp.parse(tagged_tokens)
+    (S:
+      (NP: ('the', 'DT') ('little', 'JJ') ('cat', 'NN'))
+      ('sat', 'VBD')
+      ('on', 'IN')
+      (NP: ('the', 'DT') ('mat', 'NN')))
+    >>> print nltk.chunk.accuracy(cp, nltk.corpus.conll2000.chunked_sents(chunk_types=('NP',)))
+    0.581041433607
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunker evaluation in NLTK}
+  \scriptsize
+
+\begin{lstlisting}
+>>> chunkscore = nltk.chunk.ChunkScore()
+>>> for chunk_struct in nltk.corpus.treebank.chunked_sents()[:10]:
+...     test_sent = cp.parse(chunk_struct.leaves())
+...     chunkscore.score(chunk_struct, test_sent)
+>>> print chunkscore
+ChunkParse score:
+    Precision:  48.6%
+    Recall:     34.0%
+    F-Measure:  40.0%
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error Analysis: Missed Chunks}
+  \scriptsize
+
+\begin{lstlisting}
+>>> from random import randint
+>>> missed = chunkscore.missed()
+>>> for i in range(15):
+...     print missed[randint(0,len(missed)-1)]
+(('A', 'DT'), ('Lorillard', 'NNP'), ('spokewoman', 'NN'))
+(('it', 'PRP'),)
+(('symptoms', 'NNS'),)
+(('even', 'RB'), ('brief', 'JJ'), ('exposures', 'NNS'))
+(('its', 'PRP$'), ('Micronite', 'NN'), ('cigarette', 'NN'), ('filters', 'NNS'))
+(('30', 'CD'), ('years', 'NNS'))
+(('workers', 'NNS'),)
+(('preliminary', 'JJ'), ('findings', 'NNS'))
+(('Medicine', 'NNP'),)
+(('cancer', 'NN'), ('deaths', 'NNS'))
+(('Consolidated', 'NNP'), ('Gold', 'NNP'), ('Fields', 'NNP'), ('PLC', 'NNP'))
+(('Medicine', 'NNP'),)
+(('its', 'PRP$'), ('Micronite', 'NN'), ('cigarette', 'NN'), ('filters', 'NNS'))
+(('a', 'DT'), ('forum', 'NN'))
+(('researchers', 'NNS'),)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error Analysis: Incorrect Chunks}
+  \scriptsize
+
+\begin{lstlisting}
+>>> incorrect = chunkscore.incorrect()
+>>> for i in range(15):
+...     print incorrect[randint(0,len(incorrect)-1)]
+(('New', 'JJ'), ('York-based', 'JJ'))
+(('Micronite', 'NN'), ('cigarette', 'NN'))
+(('a', 'DT'), ('forum', 'NN'), ('likely', 'JJ'))
+(('later', 'JJ'),)
+(('later', 'JJ'),)
+(('brief', 'JJ'),)
+(('preliminary', 'JJ'),)
+(('New', 'JJ'), ('York-based', 'JJ'))
+(('resilient', 'JJ'),)
+(('group', 'NN'),)
+(('cancer', 'NN'),)
+(('the', 'DT'),)
+(('cancer', 'NN'),)
+(('Micronite', 'NN'), ('cigarette', 'NN'))
+(('A', 'DT'),)
+\end{lstlisting}
+\end{frame}
+
