@@ -2,12 +2,11 @@
 
 ## Thoughts
 * From classes to masses with clarity and cartoons!!
-* All tex sources and images have been open sourced as I have taken from others, learnt from others, although I have added some of mine, I need to give it back!!
-* LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:6523000857385103360
+* All tex sources and images have been open sourced as I have taken from others, learnt from others, although I have added some of mine, I need to give it back!! LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:6523000857385103360
 
 ## To Dos
 *	Update beamers with toolbar links or references below, submit to github
-*	Incorporate: Pictorial simplified concepts/maths, cartoons on board, story at start
+*	Incorporate: Pictorial simplified concepts/maths, cartoons on board, story at start, visual/graphics recording (like Rachael Smith)
 
 ## Data Science Course Series
 
@@ -26,7 +25,11 @@
 	*	Library based tex file, say, sklearn_decisiontree.tex will have just template code and short fully working examples from Mastering Machine Learning whereas the sklearn_decisiontree.ipynb will have running workflows. No need to sync both. You may want to keep ipynb’s pdf in LaTeX/images directory for reference
 
 ## References to be used for updating the Training Material
-
+*	Visual Notes, Graphics Recording
+	* Graham Shaw https://www.youtube.com/user/VisionLearning/videos
+	* 50+ Awesome Resources to Create Visual Notes, Graphic Recordings & Sketchnotes https://creativemarket.com/blog/50-awesome-resources-to-create-visual-notes-graphic-recordings-sketchnotes
+	* Bullet Journal / Planner Icon Doodles | Doodle with Me https://www.youtube.com/watch?v=o1zdgGGUtNo&list=PLx5c844mTRMAKUS2eJJWpKgSJnUgKrLpS
+	* Learning Graphic Facilitation - 7 Elements by Bigger Picture https://www.youtube.com/watch?v=S5DJC6LaOCI
 *	Mathematics
     * Essence of linear algebra - 3Blue1Brown https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab
     * Statistics Brandon Foltz https://www.youtube.com/user/BCFoltz/playlists
@@ -36,7 +39,8 @@
     * Seeing Theory https://seeing-theory.brown.edu/index.html 
     * Rahul Patwari https://www.youtube.com/user/oldblueday/playlists 
 *	Python
-    * Advanced Python or Understanding Python – YouTube https://www.youtube.com/watch?v=E_kZDvwofHY 
+    * Real Python Tutorials https://realpython.com/ nice cartoon tutorials on various subtopics
+	* Advanced Python or Understanding Python – YouTube https://www.youtube.com/watch?v=E_kZDvwofHY 
     * Introduction - Intermediate Python Programming p. 1 – YouTube https://www.youtube.com/watch?v=YSe9Tu_iNQQ&list=PLQVvvaa0QuDfju7ADVp5W1GF9jVhjbX-_ 
     * Python Programming Tutorials https://pythonprogramming.net/  
     * Google's Python Class | Python Education | Google Developers https://www.youtube.com/playlist?list=PL5-da3qGB5IA5NwDxcEJ5dvt8F9OQP7q5   
@@ -121,3 +125,4 @@
     * Siraj Maths ML DL https://www.youtube.com/channel/UCWN3xxRkmTPmbKwht9FuE5A/playlists
     * Victor Lavrenko Text mining, ML, DL https://www.youtube.com/user/victorlavrenko/playlists
     * Well Academy Python AI https://www.youtube.com/channel/UCQA9tK0nRK1e_Bqg0uETs8A/playlists
+
