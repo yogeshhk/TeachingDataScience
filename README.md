@@ -6,6 +6,7 @@ Copyright (C) 2019 Yogesh H Kulkarni
 ## Requirements:
 * LaTeX (tested with MikTex 2.9 on Windows 7, 64bit)
 * Need to install LaTeX packages, as and when you get such warning/suggestions.
+* Using TexWorks as IDE
 
 ## How to Run:
 * Driver files for the courses are named with "Main_Workshop/Seminar_<course>_CheatSheet/Presentation.tex"
