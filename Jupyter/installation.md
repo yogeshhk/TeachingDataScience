@@ -36,6 +36,11 @@ Rasa NLU + Core is now in the single package
 pip install rasa
 ```
 
+If you get Microsoft Build tool error, 
+- Go to https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017
+- Build tools for Visual Studio 19 are fine too. Select only C++ Build tools. Install.
+- Re-run rasa install command 
+
 Additionally, spaCy:
 ```
 pip install rasa[spacy]
@@ -43,25 +48,24 @@ python -m spacy download en
 python -m spacy download en_core_web_md
 python -m spacy link en_core_web_md en
 ```
-If you get Microsoft Build tool error, 
-- Go to https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017
-- Build tools for Visual Studio 19 are fine too. Select only C++ Build tools (4.53 GB)
-- Re-run rasa_nlu[spacy] command 
-
 If you get linking permission error, 
 - Run cmd as administrator, 
 - Activate rasa env
 - Do all the above spacy commands.
 
+To show conda envs in notebook
+```
+conda install nb_conda_kernels
+```
 
 
 ### Create Project Structure
-For training/data files, we create a data directory under BASE_DIR and create the training file nlu.md in that.
+For training/data files, we create a ``data'' directory under BASE_DIR and create the training file nlu.md in that.
 Also have stories.md there. Sample files are in data dir.
 
-In BASE_DIR have nlu_config.yml like below:
+Create ``config'' dir in BASE_DIR, have nlu_config.yml like below:
 ```
 language: "en"
 pipeline: "spacy_sklearn"
 ```
-
+Create ``models'' directory inside BASE_DIR
