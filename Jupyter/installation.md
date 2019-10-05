@@ -31,31 +31,29 @@ WINDOWS: activate bot
 ```
 
 Install latest Rasa stack
-Rasa NLU
+Rasa NLU + Core is now in the single package
 ```
-pip install rasa_nlu
+pip install rasa
 ```
 
-For dependencies
-spaCy+sklearn (pipeline)
+Additionally, spaCy:
 ```
-pip install rasa_nlu[spacy]
-python3 -m spacy download en
-python3 -m spacy download en_core_web_md
-python3 -m spacy link en_core_web_md en
+pip install rasa[spacy]
+python -m spacy download en
+python -m spacy download en_core_web_md
+python -m spacy link en_core_web_md en
 ```
-If you get Microsoft Build tool error, do following and re-run the above commands
+If you get Microsoft Build tool error, 
+- Go to https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017
+- Build tools for Visual Studio 19 are fine too. Select only C++ Build tools (4.53 GB)
+- Re-run rasa_nlu[spacy] command 
 
-Go to https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017
+If you get linking permission error, 
+- Run cmd as administrator, 
+- Activate rasa env
+- Do all the above spacy commands.
 
-Build tools for Visual Studio 19 are fine too. Select only C++ Build tools (4.53 GB)
 
-
-
-Tensorflow (pipeline)
-```
-pip install rasa_nlu[tensorflow]
-```
 
 ### Create Project Structure
 For training/data files, we create a data directory under BASE_DIR and create the training file nlu.md in that.
