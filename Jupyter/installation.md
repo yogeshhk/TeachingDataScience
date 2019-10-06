@@ -60,12 +60,15 @@ conda install nb_conda_kernels
 
 
 ### Create Project Structure
-For training/data files, we create a ``data'' directory under BASE_DIR and create the training file nlu.md in that.
-Also have stories.md there. Sample files are in data dir.
-
-Create ``config'' dir in BASE_DIR, have nlu_config.yml like below:
+- For training/data files, we create a ``data'' directory under BASE_DIR and create the training file nlu.md in that.
+Also have stories.md there. 
+- Create ``config'' dir in BASE_DIR, have nlu_config.yml like below:
 ```
 language: "en"
 pipeline: "spacy_sklearn"
 ```
-Create ``models'' directory inside BASE_DIR
+- Create ``models'' directory inside BASE_DIR
+
+
+### Others
+- Download ngrok from https://ngrok.com/download
