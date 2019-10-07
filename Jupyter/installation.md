@@ -21,8 +21,10 @@ conda update conda
 Create the virtual environment
 
 ```
-conda create --name rasa python=3.6
+conda create --name rasa python=3.7
 ```
+
+Python 3.6 as different asyncio format, so better to do it in 3.7
 
 Activate the new environment to use it
 ```
@@ -30,8 +32,9 @@ LINUX, macOS: conda activate botenv
 WINDOWS: activate bot
 ```
 
-Install latest Rasa stack
-Rasa NLU + Core is now in the single package
+Install latest Rasa stack.
+Rasa NLU + Core is now in the single package. Do not install them separately like in past. Your mileage may vary.
+
 ```
 pip install rasa
 ```
