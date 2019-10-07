@@ -61,6 +61,18 @@ To show conda envs in notebook
 conda install nb_conda_kernels
 ```
 
+asyncio.run is available in Python >= 3.7, for earlier versions, there is another arrangement.
+
+Apart from this, need to
+- pip install nest_asyncio
+- write following code in the first cell
+```
+    import nest_asyncio
+
+    nest_asyncio.apply()
+    print("Event loop ready.")
+```
+(Ref: https://rasa.com/docs/rasa/api/jupyter-notebooks/)
 
 ### Create Project Structure
 - For training/data files, we create a ``data'' directory under BASE_DIR and create the training file nlu.md in that.
