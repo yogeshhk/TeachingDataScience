@@ -74,16 +74,8 @@ Apart from this, need to
 ```
 (Ref: https://rasa.com/docs/rasa/api/jupyter-notebooks/)
 
-### Create Project Structure
-- For training/data files, we create a ``data'' directory under BASE_DIR and create the training file nlu.md in that.
-Also have stories.md there. 
-- Create ``config'' dir in BASE_DIR, have nlu_config.yml like below:
-```
-language: "en"
-pipeline: "spacy_sklearn"
-```
-- Create ``models'' directory inside BASE_DIR
-
-
 ### Others
 - Download ngrok from https://ngrok.com/download
+
+
+
