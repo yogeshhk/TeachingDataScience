@@ -10,7 +10,7 @@ import logging
 import requests
 import json
 import os
-from rasa_core_sdk import Action
+from rasa_sdk import Action
 
 logger = logging.getLogger(__name__)
 
