@@ -10,18 +10,21 @@ import logging
 import requests
 import json
 import os
-from rasa_core_sdk import Action
+from rasa_sdk import Action
 
 logger = logging.getLogger(__name__)
 
 API_URL = "https://cricapi.com/api/"
-API_KEY = os.environ.get('CRICINFOAPI')
+API_KEY = os.environ.get('CRICINFOAPI',"")
 
 class ApiAction(Action):
     def name(self):
         return "action_match_news"
 
     def run(self, dispatcher, tracker, domain):
+        if API_KEY == "":
+            dispatcher.utter_message("Need to define environment variable CRICINFOAPI with key from " + API_URL)
+            return []    
         print(API_URL + "matches" + "?apikey=" + API_KEY)
         res = requests.get(API_URL + "matches" + "?apikey=" + API_KEY) #, verify=False
         if res.status_code == 200:
