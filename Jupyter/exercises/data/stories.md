@@ -1,44 +1,25 @@
-
-## news path 1
+## new rasa user
 * greet
   - utter_greet
-* current_matches
-  - action_match_news
-  - utter_did_that_help
-* affirm or thanks
-  - utter_gratitude
-* goodbye
-  - utter_goodbye
-
-## news path 2
-* current_matches
-  - action_match_news
-  - utter_did_that_help
-* affirm or thanks
-  - utter_gratitude
-* goodbye
-  - utter_goodbye
-
-## news path 3
-* greet
-  - utter_greet
-* current_matches
-  - action_match_news
-  - utter_did_that_help
+* name{"name":"Alice"}
+  - utter_ask_location
+* location{"location":"New York"}
+  - utter_used_rasa
 * deny
-  - utter_ask_again
-* current_matches
-  - action_match_news
-  - utter_did_that_help
-* affirm or thanks
-  - utter_gratitude
-* goodbye
-  - utter_goodbye
+  - utter_docs
 
-## greet path
+## existing rasa user 1
 * greet
   - utter_greet
-
-## goodbye path
+* name{"name":"Tom"}
+  - utter_ask_location
+* location{"location":"Berlin"}
+  - utter_used_rasa
+* affirm
+  - utter_send_blog
+* subscribe
+  - action_subscribe
 * goodbye
   - utter_goodbye
+
+
