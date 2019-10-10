@@ -1,6 +1,5 @@
 # Installation
 
-(Ref: Build a Conversational Chatbot with Rasa Stack and Python— Rasa NLU - Romil Jain)
 
 ## Conda installation
 Install the Conda(miniconda) from https://docs.conda.io/en/latest/miniconda.html as per the OS
