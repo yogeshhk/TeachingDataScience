@@ -1,5 +1,4 @@
-# Rasa Command line
-
+# Rasa Command line Script
 
 ## Init
 ```
@@ -21,41 +20,51 @@ python -W ignore -m rasa run actions
 "-W ignore" removes the numpy FutureWarnings
 
 ## Execution
-Command Line (action_endpoint should be local host in this case)
-```
-python -W ignore -m rasa shell --quiet --enable-api --log-file out.log --cors *
-```
+-	Command Line (action_endpoint should be local host in this case)
+	```
+	python -W ignore -m rasa shell --quiet --enable-api --log-file out.log --cors *
+	```
 
-Local UI
-```
-python -W ignore -m rasa x --cors *
-```
-Rasa X gives nice UI out of the box to test the bot and manage its data and conversations.
+-	Local UI (Optional)
+	```
+	python -W ignore -m rasa x --cors *
+	```
+	Rasa X gives nice UI out of the box to test the bot and manage its data and conversations.
 
 
 ## Slack
--  Create a workspace, a channel, an app and a bot.
--  Re-install the app
+-  Create a workspace ("DataHacksConf2019"), a channel ("#rasachatbot") and an app ("rasachatbotdemo").
+-  Note down Bot user OAuth (starting with xoxb)
 -  Turn Event subscription ON. Subscribe to workspace events: message.channel , message.groups , message.im and message.mpim
+-  Re-install the app
+
+- Change credentials.yml file with the Slack chat bot OAuth token (starts with xoxb) and channel ("#rasachatbot")
+
 -  Ngrok: In a separate window 
 	```
-	C:\Temp\ngrok.exe http 5005
+	C:\Temp\ngrok.exe http 5055
 	```
-	Note down the token like 9bdfa563 
+	Note down the token like 3d3f77f1 
 
 - Change endpoints.yml (same port as ngrok)
 	```
 	action_endpoint:
-	 url: "http://9bdfa563.ngrok.io:5005/webhook"
+	 url: "http://3d3f77f1.ngrok.io:5055/webhook"
 	```
-- Change credentials.yml file with the Slack chat bot OAuth token (starts with xoxob)
-
-- In another window, with activate rasa environment
+- In another window, with activate rasa environment on a different port 5002
 	```
-	python -W ignore -m rasa run --connector slack --port 5005 --cors *
+	python -W ignore -m rasa run --connector slack --port 5002 --cors *
 	```
+	You will get a message like this:  Starting Rasa server on http://localhost:5002
+	Now, deploy port 5002 to the internet:
+	```
+	C:\Temp\ngrok.exe http 5002
+	```	
+	Note down different ngrok token, use that below in Slack
+	
 - In Slack App Event subscription, Verify (rasa server, ngrok, actions, all must be running)
 	```
-	https://9bdfa563.ngrok.io/webhooks/slack/webhook
+	https://0c2fb87b.ngrok.io/webhooks/slack/webhook
 	```
 	
+- Start chatting in Slack
