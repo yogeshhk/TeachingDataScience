@@ -13,7 +13,7 @@ rasa train
 ```
 
 ## Server
-Run rasa server by
+Run rasa action server by
 ```
 python -W ignore -m rasa run actions
 ```
