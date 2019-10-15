@@ -16,7 +16,6 @@ Refer @installation.md
 	```
 - Slack Error:  error 500: " Your URL didn’t respond with the value of the challenge parameter." Bad Gateaway for ngrok window
 	-??
-	
 -  Error: asyncio  - Task exception was never retrieved
 	- ?? Rasa requires 2-core VM. As soon as I tested it with 2-cores VM, it resolved the issue.
 - Error: If No policy ensemble or domain set. Skipping action prediction :

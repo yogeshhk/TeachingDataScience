@@ -26,6 +26,13 @@ Command Line (action_endpoint should be local host in this case)
 python -W ignore -m rasa shell --quiet --enable-api --log-file out.log --cors *
 ```
 
+Local UI
+```
+python -W ignore -m rasa x --cors *
+```
+Rasa X gives nice UI out of the box to test the bot and manage its data and conversations.
+
+
 ## Slack
 -  Create a workspace, a channel, an app and a bot.
 -  Re-install the app
