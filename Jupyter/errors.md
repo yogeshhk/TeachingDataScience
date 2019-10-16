@@ -1,9 +1,4 @@
-# README
-
-## Installation
-Refer @installation.md
-
-## Errors and Solutions
+# Errors and Solutions
 - np errors/warnings from tensorflow
 	- use "python -W rasa ..." format for rasa command line. "-W" suppresses the warnings
 	```
