@@ -1,31 +1,34 @@
 # Rasa Command line Script
 
-## Init
+- Init the project structure and default files
 ```
 rasa init  --no-prompt
 ``` 
 Creates project structure and dummy files. Good to run and execute
-Add your data to nlu.md, stories.md and wherever needed.
+Replace your data in nlu.md, stories.md and wherever needed.
 
-## Train
+- Train both NLU and Dialog models together
 ```
 rasa train
 ```
+- Have endpoints.yml, this is for actions, a separate process
+	```
+	action_endpoint:
+		  url: "http://localhost:5055/webhook"
+	```			
 
-## Server
-Run rasa action server by
+- Run rasa action server by
 ```
 python -W ignore -m rasa run actions
 ```
 "-W ignore" removes the numpy FutureWarnings
 
-## Execution
 -	Command Line (action_endpoint should be local host in this case)
 	```
 	python -W ignore -m rasa shell --quiet --enable-api --log-file out.log --cors *
 	```
 
--	Local UI (not tested)
+-	Local UI (Optional)
 	```
 	python -W ignore -m rasa x --cors *
 	```
@@ -39,32 +42,25 @@ python -W ignore -m rasa run actions
 	-  Re-install the app
 
 	- Change credentials.yml file with the Slack chat bot OAuth token (starts with xoxb) and channel ("#rasachatbot")
-
-%	-  Ngrok: In a separate window 
-%		```
-%		C:\Temp\ngrok.exe http 5055
-%		```
-%		Note down the token like b2727640 
-
-	- In another window, with activate rasa environment on a different port 5002
 		```
-		python -W ignore -m rasa run --connector slack --port 5002 --cors *
+		slack:
+			slack_token: "xoxb-XXXXXXXXXXXXXXXXXXXXXXXX"
+		```
+	- In another window, with activate rasa environment on a different port 5004
+		```
+		python -W ignore -m rasa run --connector slack --port 5004 --cors *
 		```
 		You will get a message like this:  Starting Rasa server on http://localhost:5002
-		Now, deploy port 5002 to the internet:
+		
+	- Now, deploy port 5004 to the internet:
 		```
 		C:\Temp\ngrok.exe http 5002
 		```	
-		Note down different ngrok token, 375d7c95, use that below in Slack
+		Note down different ngrok token, aa98d86f, use that below in Slack
 		
-	- Change endpoints.yml (same port as ngrok)
-		```
-		action_endpoint:
-		 url: "http://375d7c95.ngrok.io:5002/webhook"
-		```		
 	- In Slack App Event subscription, Verify (rasa server, ngrok, actions, all must be running)
 		```
-		https://375d7c95.ngrok.io/webhooks/slack/webhook
+		https://aa98d86f.ngrok.io/webhooks/slack/webhook
 		```
 		
 	- Start chatting in Slack

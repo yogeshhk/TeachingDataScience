@@ -17,4 +17,5 @@
 	- retrain the model ; rasa train
 
 
+- Need to start rasa server on , say 5004, first, then ngrok http on 5004, then get the ngrok url token, put it in Slack Verify then only it verifies fine else it errors. Order seems important
 
