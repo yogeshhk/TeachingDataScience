@@ -12,8 +12,28 @@
 \item A chat room for all your company communications.
 \item Essentially a replacement for your emails
 \item Organizes into Workshapces (Groups)
-\item Within Workspaces you can have channels (Projects) with different people.
+\item Within Workspaces you can have Apps and channels (Projects) with different people.
 \item Slack integrates with a host of other apps so you can manage your entire workflow through one platform
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pre-requsites}
+Following are Rasa specific actions that need to be done before going to Slack Deployment:
+\begin{itemize}
+\item Train both NLU and Dialog models together : \lstinline|rasa train|
+\item Have endpoints.yml, this is for actions, a separate window, activate env: 
+\begin{lstlisting}
+action_endpoint:
+	  url: "http://localhost:5055/webhook"
+\end{lstlisting}
+\item Run rasa action server by
+\begin{lstlisting}
+python -W ignore -m rasa run actions
+\end{lstlisting}
+``-W ignore'' removes the numpy FutureWarnings
+\item Because action\_endpoint is for the actions, not for anything else, and it can run on different/default port 5055.
 \end{itemize}
 
 \end{frame}
@@ -49,10 +69,20 @@
 \item In ``Add features and functionalities'' panel, select ``Bots'' tab.
 \item Also, available on the left hand menu, you will see ``Features'', Select ``Bots Users''
 \item ``Add a Bot user'' with defaults
-\item Select ``OAuth \& Permissions'', review if all ok. No changes may be needed here.
-\item Click ``Basic Information' on left hand menu, you should see both ``Bots'' and ``Permissions'' tabs selected.
+\item Select ``OAuth \& Permissions'', Note down OAuth token (starts with xoxb)
+\item Have credentials.yml: 
+\begin{lstlisting}
+slack:
+	slack_token: "xoxb-XXXXXXXXXXXXXXXXXXXXXXXX"
+\end{lstlisting}
 \end{itemize}
 
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Slack App}
+State should look like:
 \begin{center}
 \includegraphics[width=0.7\linewidth]{rasa28}
 \end{center}
@@ -61,6 +91,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Slack App}
 \begin{itemize}
+\item Click ``Basic Information' on left hand menu, you should see both ``Bots'' and ``Permissions'' tabs selected.
 \item Scroll to Display Information and add more about our bot like a picture, a description and a background colour.
 \item Picture needs to be specific quality as shown in the picture below.
 \item Save all changes (button below)
@@ -73,70 +104,7 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Ngrok}
-\begin{itemize}
-\item Ngrok is a multiplatform tunnelling. 
-\item It assigns ip, so basically the app running on our local would be available via the internet publicly.
-\item Gives your machine a domain name so that Facebook, Slack, etc. know where to send messages to reach your local machine.
-\item Download ngrok from https://ngrok.com/download 	
-\item Extrtact the zip to the exe. Its a command line application.
-\item Now ,Start it with which port we want to expose to the public internet : \lstinline| ./ngrok http 5004|
-\end{itemize}
-
-\begin{center}
-\includegraphics[width=0.5\linewidth]{rasa30}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Deploy Chatbot on Slack}
-Create ``run.py''
-\begin{lstlisting}
-from rasa_core.channels.slack import SlackInput
-from rasa_core.agent import Agent
-from rasa_core.interpreter import RegexInterpreter
-from rasa_core.interpreter import RasaNLUInterpreter
-nlu_interpreter = RasaNLUInterpreter('./models/nlu/default/current')
-agent = Agent.load('./models/dialogue', interpreter = nlu_interpreter)
-input_channel = SlackInput(
-        slack_token="******************************"
-        # this is the `bot_user_o_auth_access_token`
-        #slack_channel="YOUR_SLACK_CHANNEL"
-            # the name of your channel to which the bot posts (optional)
-    )
-# set serve_forever=True if you want to keep the server running
-s = agent.handle_channels([input_channel], 5004, serve_forever=True)
-\end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Deploy Chatbot on Slack}
-The Slack Token can be optained from
-
-
-\begin{center}
-\includegraphics[width=0.8\linewidth]{rasa31}
-\end{center}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Deployment}
-\begin{itemize}
-\item Start the Agent by running run.py file .
-\item Start the ngrok on port 5004 and grab your ngrok\_url.
-\item Provide the ngrok url to ``Event Subscriptions'' page of the Slack configuration. Wait for it to be verified.
-\end{itemize}
-
-\begin{center}
-\includegraphics[width=0.8\linewidth]{rasa32}
-\end{center}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Deployment}
+\begin{frame}[fragile]\frametitle{Event Subscriptions}
 \begin{itemize}
 \item Subscribe to some workplace events like:
 \item ``app\_mention'' so that our bot responds when someone mentions it by name
@@ -149,17 +117,115 @@ The Slack Token can be optained from
 \end{center}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Start chatting }
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Slack Rasa Message flow}
 \begin{itemize}
-\item Save your all work.
-\item Now that everything is set up, you can just go to your Slack workspace and start chatting with your bot.
-\item  Ensure the custom actions server is running (if you have custom actions)
-\item Ensure ngrok is running on port 5004
+\item $Slack \rightarrow ngrok \rightarrow Rasa$ is the main message flow path. 
+\item So, between rasa server and ngrok the port has to be same, say 5004. 
+\item Then between ngrok and slack the url token has to be same. This how chaining/binding is done.
+\item Another observation: Need to start rasa server on , say 5004, first, then ngrok http on 5004, then get the ngrok url token, put it in Slack Verify then only it verifies fine else it errors. Order seems important
 \end{itemize}
 
 \begin{center}
-\includegraphics[width=0.5\linewidth]{rasa34}
+\includegraphics[width=\linewidth]{rasachatbot2}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Rasa Server}
+In another window, with activate rasa environment on a different port 5004
+
+\begin{lstlisting}
+python -W ignore -m rasa run --connector slack --port 5004 --cors *
+\end{lstlisting}
+You will get a message like this:  Starting Rasa server on http://localhost:5004
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ngrok}
+\begin{itemize}
+\item Ngrok is a multiplatform tunnelling. 
+\item It assigns ip, so basically the app running on our local would be available via the internet publicly.
+\item Gives your machine a domain name so that Facebook, Slack, etc. know where to send messages to reach your local machine.
+\item Download ngrok from https://ngrok.com/download 	
+\item Extrtact the zip to the exe. Its a command line application.
+\item Now ,Start it with which port we want to expose to the public internet : \lstinline| ./ngrok http 5004|
+\item Note down different ngrok token, aa98d86f, use that later in Slack
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.5\linewidth]{rasa30}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Slack Verify}
+In Slack App Event subscription, Verify (rasa server, ngrok, actions, all must be running)
+\begin{lstlisting}
+https://aa98d86f.ngrok.io/webhooks/slack/webhook
+\end{lstlisting}
+You should get the green tick here. Now you are ready to chat!!
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Deploy Chatbot on Slack}
+% Create ``run.py''
+% \begin{lstlisting}
+% from rasa_core.channels.slack import SlackInput
+% from rasa_core.agent import Agent
+% from rasa_core.interpreter import RegexInterpreter
+% from rasa_core.interpreter import RasaNLUInterpreter
+% nlu_interpreter = RasaNLUInterpreter('./models/nlu/default/current')
+% agent = Agent.load('./models/dialogue', interpreter = nlu_interpreter)
+% input_channel = SlackInput(
+        % slack_token="******************************"
+        % # this is the `bot_user_o_auth_access_token`
+        % #slack_channel="YOUR_SLACK_CHANNEL"
+            % # the name of your channel to which the bot posts (optional)
+    % )
+% # set serve_forever=True if you want to keep the server running
+% s = agent.handle_channels([input_channel], 5004, serve_forever=True)
+% \end{lstlisting}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Deploy Chatbot on Slack}
+% The Slack Token can be optained from
+
+
+% \begin{center}
+% \includegraphics[width=0.8\linewidth]{rasa31}
+% \end{center}
+% \end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Deployment}
+% \begin{itemize}
+% \item Start the Agent by running run.py file .
+% \item Start the ngrok on port 5004 and grab your ngrok\_url.
+% \item Provide the ngrok url to ``Event Subscriptions'' page of the Slack configuration. Wait for it to be verified.
+% \end{itemize}
+
+% \begin{center}
+% \includegraphics[width=0.8\linewidth]{rasa32}
+% \end{center}
+% \end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Start chatting }
+
+\begin{center}
+\includegraphics[width=\linewidth]{rasachatbotonslackrunning}%{rasa34}
 \end{center}
 
 Yup !! we Done

@@ -11,7 +11,7 @@ Replace your data in nlu.md, stories.md and wherever needed.
 ```
 rasa train
 ```
-- Have endpoints.yml, this is for actions, a separate process
+- Have endpoints.yml, this is for actions, a separate window, activa
 	```
 	action_endpoint:
 		  url: "http://localhost:5055/webhook"
@@ -41,7 +41,7 @@ python -W ignore -m rasa run actions
 	-  Turn Event subscription ON. Subscribe to workspace events: message.channel , message.groups , message.im and message.mpim
 	-  Re-install the app
 
-	- Change credentials.yml file with the Slack chat bot OAuth token (starts with xoxb) and channel ("#rasachatbot")
+	- Change credentials.yml file with the Slack chat bot OAuth token (starts with xoxb) 
 		```
 		slack:
 			slack_token: "xoxb-XXXXXXXXXXXXXXXXXXXXXXXX"
@@ -50,11 +50,11 @@ python -W ignore -m rasa run actions
 		```
 		python -W ignore -m rasa run --connector slack --port 5004 --cors *
 		```
-		You will get a message like this:  Starting Rasa server on http://localhost:5002
+			You will get a message like this:  Starting Rasa server on http://localhost:5004
 		
 	- Now, deploy port 5004 to the internet:
 		```
-		C:\Temp\ngrok.exe http 5002
+		C:\Temp\ngrok.exe http 5004
 		```	
 		Note down different ngrok token, aa98d86f, use that below in Slack
 		
