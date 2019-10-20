@@ -1,6 +1,6 @@
 # Rasa Command line Script
 
-- Init the project structure and default files
+- (If Blank Project) Init the project structure and default files
 ```
 rasa init  --no-prompt
 ``` 
@@ -11,13 +11,13 @@ Replace your data in nlu.md, stories.md and wherever needed.
 ```
 rasa train
 ```
-- Have endpoints.yml, this is for actions, a separate window, activa
+- Have endpoints.yml, this is for actions and nothing else, so its port (default 5055) can be different.
 	```
 	action_endpoint:
 		  url: "http://localhost:5055/webhook"
 	```			
 
-- Run rasa action server by
+- Run rasa action server in a separate window, activate rasa env, then
 ```
 python -W ignore -m rasa run actions
 ```
