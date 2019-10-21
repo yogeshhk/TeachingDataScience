@@ -1,6 +1,5 @@
 # Installation
 
-
 ## Conda installation
 Install the Conda(miniconda) from https://docs.conda.io/en/latest/miniconda.html as per the OS
 
@@ -27,8 +26,8 @@ Python 3.6 as different asyncio format, so better to do it in 3.7
 
 Activate the new environment to use it
 ```
-LINUX, macOS: conda activate botenv
-WINDOWS: activate bot
+LINUX, macOS: conda activate rasa
+WINDOWS: activate rasa
 ```
 
 Install latest Rasa stack.
@@ -62,9 +61,9 @@ conda install nb_conda_kernels
 
 asyncio.run is available in Python >= 3.7, for earlier versions, there is another arrangement.
 
-Apart from this, need to
+Apart from this, may need to
 - pip install nest_asyncio
-- write following code in the first cell
+- write following code to test, in ipynb put this in the first cell
 ```
     import nest_asyncio
 
@@ -74,7 +73,8 @@ Apart from this, need to
 (Ref: https://rasa.com/docs/rasa/api/jupyter-notebooks/)
 
 ### Others
-- Download ngrok from https://ngrok.com/download
+- Download and install ngrok from https://ngrok.com/download
+- Need to have API keys for Slack, CRICINFO, ZOMATO, etc
 
 
 
