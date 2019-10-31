@@ -42,6 +42,11 @@ If you get Microsoft Build tool error,
 - Build tools for Visual Studio 19 are fine too. Select only C++ Build tools. Install.
 - Re-run rasa install command 
 
+If you want rasa-x
+```
+pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
+```
+
 Additionally, spaCy:
 ```
 pip install rasa[spacy]
