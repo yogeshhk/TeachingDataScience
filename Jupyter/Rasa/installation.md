@@ -62,7 +62,7 @@ conda install nb_conda_kernels
 asyncio.run is available in Python >= 3.7, for earlier versions, there is another arrangement.
 
 Apart from this, may need to
-- pip install nest_asyncio
+- \lstinline|pip install nest_asyncio|
 - write following code to test, in ipynb put this in the first cell
 ```
     import nest_asyncio
