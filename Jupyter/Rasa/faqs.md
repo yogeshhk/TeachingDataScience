@@ -1,4 +1,17 @@
-# Errors and Solutions
+# FAQs
+
+## Queries
+- Are entities and Slots same, as they seem to represent similar information?
+
+	No. Entities are in NLU and Slots are in Core. Thats just architectural difference. But for working also they can be different.
+	Say, NLU entity can be location, but can be filled into two different slots of Source location and Destination location.
+	(Ref: https://forum.rasa.com/t/mapping-same-entity-to-different-slots/1389)
+	
+- Whats the difference between Slots Filling and Forms Actions?
+	Slots are the information needed to process a request or an API. FormAction is mechanism to iterate over slots and automatically ask if any of the slots has not been filled.
+	(Ref: https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/)
+
+## Errors and Solutions
 - np errors/warnings from tensorflow
 	- use "python -W rasa ..." format for rasa command line. "-W" suppresses the warnings
 	```
