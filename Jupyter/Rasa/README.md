@@ -1,4 +1,10 @@
-# FAQs
+# Workshop README
+
+ToDOs
+- Instalations must be ready as per OS, no time for that during workshop
+- API registrations must be done, so keep API keys ready.
+- Can do projects in Pair Programming
+- Have participants read the slides to avoid monotonocity
 
 ## Queries
 - Are entities and Slots same, as they seem to represent similar information?
