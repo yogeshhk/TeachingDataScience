@@ -1,0 +1,135 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Advance Topics}
+
+% {\tiny (Ref: https://www.rasa.com/docs/getting-started/overview/ )}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Fallback Policy}
+
+{\tiny (Ref: https://rasa.com/docs/rasa/core/fallback-actions/ )}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Why Fallback?}
+\begin{itemize}
+\item At certain point, due to insufficient, incorrect user response, the dialog management system is not able to decide the NEXT step.
+\item Typically, you give\-up saying that ``Sorry, I didn’t understand that''.
+\item There are various ways to handle such cases called ``Fallbacks''.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{How: Fallback?}
+\begin{itemize}
+\item FallbackPolicy has one fallback action
+\item Will be executed if the intent recognition has a confidence below nlu\_threshold or
+\item If none of the dialogue policies predict an action with confidence higher than core\_threshold
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Configuring Fallback}
+\begin{lstlisting}
+policies:
+  - name: "FallbackPolicy"
+    nlu_threshold: 0.4
+    core_threshold: 0.3
+    fallback_action_name: "action_default_fallback"
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Default Fallback}
+\begin{itemize}
+\item ``action\_default\_fallback'' is a default action
+\item Rasa Core which sends the ``utter\_default'' template message to the user. 
+\item Make sure to specify the ``utter\_default'' in your domain file. 
+\item Will also revert back to the state of the conversation before the user message that caused the fallback, 
+\item So that it will not influence the prediction of future actions. 
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Custom Fallback}
+\begin{lstlisting}
+policies:
+  - name: "FallbackPolicy"
+    nlu_threshold: 0.4
+    core_threshold: 0.3
+    fallback_action_name: "my_fallback_action"
+\end{lstlisting}
+
+Derive your action from \lstinline|ActionDefaultFallback|
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Custom Fallback Story}
+ If you have a specific intent, let's say it's called ``out\_of\_scope'', that should always trigger the fallback action, add this as a story:
+\begin{lstlisting}
+## fallback story
+* out_of_scope
+  - action_default_fallback
+\end{lstlisting}
+
+Derive your action from \lstinline|ActionDefaultFallback|
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Two-stage Fallback Policy}
+\begin{itemize}
+\item TwoStageFallbackPolicy handles low {\bf NLU} confidence in multiple stages by trying to disambiguate the user input 
+\item Low {\bf core} confidence is handled in the same manner as the FallbackPolicy
+\item If NLU has low confidence, then user is asked to affirm the intent (Default action: ``action\_default\_ask\_affirmation'')
+\item If they affirm, the story continues as if the intent was classified with high confidence from the beginning.
+\item If they deny, the user is asked to rephrase their message.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Two-stage Fallback Policy}
+ Rephrasing (default action: ``action\_default\_ask\_rephrase''):
+\begin{itemize}
+\item If the classification of the rephrased intent was confident, the story continues as if the user had this intent from the beginning.
+\item If the rephrased intent was not classified with high confidence, the user is asked to affirm the classified intent.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Two-stage Fallback Policy}
+ Second affirmation (default action: ``action\_default\_ask\_affirmation''):
+\begin{itemize}
+\item If the user affirms the intent, the story continues as if the user had this intent from the beginning.
+\item If the user denies, the original intent is classified as the specified ``deny\_suggestion\_intent\_name'', and an ultimate fallback action ``fallback\_nlu\_action\_name'' is triggered (e.g. a handoff to a human).
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Two-stage Fallback Policy}
+Rasa Core provides the default implementations of:
+\begin{itemize}
+\item ``action\_default\_ask\_affirmation''
+\item ``action\_default\_ask\_rephrase'' utters the response template ``utter\_ask\_rephrase'' (be sure to specify this template in your domain file)
+\item The implementation of both actions can be overwritten with custom actions
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Two-stage Fallback Policy}
+\begin{lstlisting}
+policies:
+  - name: TwoStageFallbackPolicy
+    nlu_threshold: 0.3
+    core_threshold: 0.3
+    fallback_core_action_name: "action_default_fallback"
+    fallback_nlu_action_name: "action_default_fallback"
+    deny_suggestion_intent_name: "out_of_scope"
+\end{lstlisting}
+
+\end{frame}
