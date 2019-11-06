@@ -1,0 +1,120 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Policies}
+
+{\tiny (Ref:https://rasa.com/docs/rasa/core/policies/ )}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{What are Policies?}
+\begin{itemize}
+\item Policy class decides which action to take at every step in the conversation
+\item There are different policies to choose from, 
+\item You can include multiple policies in a single Agent
+\item Important hyperparameter in Policy is ``max\_history'' 
+\item It controls how much dialogue history the model looks at to decide which action to take next.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Config}
+\begin{itemize}
+\item config.yml file takes a policies key which you can use to customize the policies your assistant uses.
+\item Below, the last two lines show how to use a custom policy class and pass arguments to it.
+\end{itemize}
+
+\begin{lstlisting}
+policies:
+  - name: "KerasPolicy"
+    featurizer:
+    - name: MaxHistoryTrackerFeaturizer
+      max_history: 5
+      state_featurizer:
+        - name: BinarySingleStateFeaturizer
+  - name: "MemoizationPolicy"
+    max_history: 5
+  - name: "FallbackPolicy"
+    nlu_threshold: 0.4
+    core_threshold: 0.3
+    fallback_action_name: "my_fallback_action"
+  - name: "path.to.your.policy.class"
+    arg1: "..."
+\end{lstlisting}
+
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Action Selection}
+\begin{itemize}
+\item At every turn, each policy defined in your configuration will predict a next action with a certain confidence level.
+\item Final action is decided which has the highest confidence.
+\item In case of clash, pre-defnied priorities are used.
+\begin{itemize}
+\item 5. FormPolicy
+\item 4. FallbackPolicy and TwoStageFallbackPolicy
+\item 3. MemoizationPolicy and AugmentedMemoizationPolicy
+\item 2. MappingPolicy
+\item 1. EmbeddingPolicy, KerasPolicy, and SklearnPolicy
+\end{itemize}
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Keras Policy}
+\begin{itemize}
+\item Uses a neural network implemented in Keras to select the next action
+\item The default architecture is based on an LSTM, 
+\item But you can override the KerasPolicy.model\_architecture method to implement your own architecture.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Mapping Policy}
+\begin{itemize}
+\item Used to directly map intents to actions.
+\item The mappings are assigned by giving an intent the property triggers, e.g.:
+\begin{lstlisting}
+intents:
+ - ask_is_bot:
+     triggers: action_is_bot
+\end{lstlisting}
+\item An intent can only be mapped to at most one action. 
+\item The bot will run the mapped action once it receives a message of the triggering intent. 
+\item Afterwards, it will listen for the next message. 
+\item With the next user message, normal prediction will resume.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Memoization Policy}
+\begin{itemize}
+\item Just memorizes the conversations in your training data. 
+\item It predicts the next action with confidence 1.0 if this exact conversation exists in the training data, otherwise it predicts None with confidence 0.0.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Fallback Policy}
+ The FallbackPolicy invokes a fallback action if at least one of the following occurs:
+\begin{itemize}
+\item The intent recognition has a confidence below nlu\_threshold.
+\item The highest ranked intent differs in confidence with the second highest ranked intent by less than ambiguity\_threshold.
+\item None of the dialogue policies predict an action with confidence higher than core\_threshold.
+\end{itemize}
+
+There is a special case called ``Two-Stage Fallback Policy'' also.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Form Policy}
+\begin{itemize}
+\item The FormPolicy is an extension of the MemoizationPolicy which handles the filling of forms. 
+\item Once a FormAction is called, the FormPolicy will continually predict the FormAction until all required slots in the form are filled. 
+\end{itemize}
+\end{frame}
