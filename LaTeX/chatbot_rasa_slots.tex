@@ -1,0 +1,124 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Slots}
+
+{\tiny (Ref: https://rasa.com/docs/rasa/core/slots/)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{What are slots?}
+\begin{itemize}
+\item Slots are your bot's memory.
+\item User info is stored in them, a key-value store
+\item External info is also stored in them (e.g. the result of a database query)
+\item Most slot types influence how dialog progresses. Except one 'unfeaturized'
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{How Rasa Uses Slots?}
+\begin{itemize}
+\item The Policy doesn’t have access to the value of your slots. 
+\item It receives a featurized representation.
+\item The policy just sees a 1 or 0 depending on whether it is set.
+\item You should choose your slot types carefully!
+\item Depending on the type, featurization will happen.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Slots Set from NLU}
+\begin{itemize}
+\item If your NLU model picks up an entity, and your domain contains a slot with the same name, the slot will be set automatically. 
+\item For example:
+\begin{lstlisting}
+# story_01
+* greet{"name": "Ali"}
+  - slot{"name": "Ali"}
+  - utter_greet
+\end{lstlisting}
+\item In this case, you don’t have to include the \- slot{} part in the story, because it is automatically picked up.
+\item To disable this behavior for a particular slot, you can set the auto\_fill attribute to False in the domain file:
+\begin{lstlisting}
+slots:
+  name:
+    type: text
+    auto_fill: False
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Slots Set By Clicking Buttons}
+\begin{itemize}
+\item You can specify in domain file like this: 
+\begin{lstlisting}
+utter_ask_color:
+- text: "what color would you like?"
+  buttons:
+  - title: "blue"
+    payload: '/choose{"color": "blue"}'
+  - title: "red"
+    payload: '/choose{"color": "red"}'
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Slots Set by Actions}
+\begin{itemize}
+\item To set slots by returning events in custom actions
+\item Stories need to include the slots. 
+\item For example, you have a custom action to fetch a user’s profile, and you have a categorical slot called account\_type. 
+\item When the fetch\_profile action is run, it returns a rasa.core.events.SlotSet event:
+\begin{lstlisting}
+slots:
+   account_type:
+      type: categorical
+      values:
+      - premium
+      - basic
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Slots Set by Actions}
+ actions.py
+\begin{lstlisting}
+from rasa_sdk.actions import Action
+from rasa_sdk.events import SlotSet
+import requests
+
+class FetchProfileAction(Action):
+    def name(self):
+        return "fetch_profile"
+
+    def run(self, dispatcher, tracker, domain):
+        url = "http://myprofileurl.com"
+        data = requests.get(url).json
+        return [SlotSet("account_type", data["account_type"])]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Slots Set by Actions}
+stories.md
+\begin{lstlisting}
+# story_01
+* greet
+  - action_fetch_profile
+  - slot{"account_type" : "premium"}
+  - utter_welcome_premium
+
+# story_02
+* greet
+  - action_fetch_profile
+  - slot{"account_type" : "basic"}
+  - utter_welcome_basic
+\end{lstlisting}
+\end{frame}
