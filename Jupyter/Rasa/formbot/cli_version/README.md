@@ -17,34 +17,56 @@ assistant on your local machine. The `formbot` consists of the following files:
 - **domain.yml** contains the domain of the assistant  
 - **endpoints.yml** contains the webhook configuration for the custom actions
 
+<YK> Removed  - name: DucklingHTTPExtractor from config.yml as I did not have duckling docker 
+
 ## How to use this example?
 
 Using this example you can build an actual assistant which demonstrates the
 functionality of the `FormAction`. You can test the example using the following
 steps:
 
-1. Train a Rasa model containing the Rasa NLU and Rasa Core models by running:
+- Train a Rasa model containing the Rasa NLU and Rasa Core models by running:
     ```
-    rasa train
+    python -W ignore -m rasa train
     ```
     The model will be stored in the `/models` directory as a zipped file.
 
-2. Run an instance of [duckling](https://rasa.com/docs/rasa/nlu/components/#ducklinghttpextractor)
-   on port 8000 by either running the docker command
-   ```
-   docker run -p 8000:8000 rasa/duckling
-   ```
-   or [installing duckling](https://github.com/facebook/duckling#requirements) directly on your machine and starting the server.
 
-3. Test the assistant by running:
+- In one window:
     ```
-    rasa run actions&
-    rasa shell -m models --endpoints endpoints.yml
+	python -W ignore -m rasa run actions
+    ```
+    This will start the action server which in turn is running Forms Action
+
+- In another window:
+    ```
+	python -W ignore -m rasa shell --quiet --enable-api --log-file out.log --cors * -m models --endpoints endpoints.yml
     ```
     This will load the assistant in your command line for you to chat.
-
-For more information about the individual commands, please check out our
-[documentation](http://rasa.com/docs/rasa/user-guide/command-line-interface/).
-
-## Encountered any issues?
-Let us know about it by posting on [Rasa Community Forum](https://forum.rasa.com)!
+	
+## Sample Chat
+Bot loaded. Type a message and press enter (use '/stop' to exit):
+Your input ->  hi
+Hello! I am restaurant search assistant! How can I help?
+Your input ->  I would like a resturant
+what cuisine?
+Your input ->  chinese
+how many people?
+Your input ->  for three people?
+do you want to seat outside?
+Your input ->  yes
+please provide additional preferences
+Your input ->  no
+please give your feedback on your experience so far
+Your input ->  good
+All done!
+I am going to run a restaurant search using the following parameters:
+ - cuisine: chinese
+ - num_people: 3
+ - outdoor_seating: True
+ - preferences: no additional preferences
+ - feedback: good
+Your input ->  /stop
+## Reference
+- Article https://blog.rasa.com/building-contextual-assistants-with-rasa-formaction/?_ga=2.224850522.1350868921.1573130601-1504673344.1570291649
+- Repo https://github.com/RasaHQ/rasa/tree/master/examples/formbot 
