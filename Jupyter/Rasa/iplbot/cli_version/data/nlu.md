@@ -1,3 +1,4 @@
+<!--- Make sure to update this training data file with more training examples from https://forum.rasa.com/t/rasa-starter-pack/704 --> 
 
 ## intent:goodbye  
 - Bye 
@@ -55,6 +56,7 @@
 - amazing, thanks
 - cool, thanks
 - cool thank you
+- yes, thanks!
 
 ## intent:affirm
 - y

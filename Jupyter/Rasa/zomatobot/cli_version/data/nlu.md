@@ -1,7 +1,7 @@
 <!--- Make sure to update this training data file with more training examples from https://forum.rasa.com/t/rasa-starter-pack/704 --> 
 
 ## intent:goodbye  
-- Bye 			
+- Bye 
 - Goodbye
 - See you later
 - Bye bot
@@ -13,7 +13,7 @@
 - See you
 - goodnight
 - have a nice day
-- i am off
+- i'm off
 - see you later alligator
 - we'll speak soon
 - end

@@ -54,13 +54,14 @@ python -W ignore -m rasa run actions
 		
 	- Now, deploy port 5004 to the internet:
 		```
-		C:\Temp\ngrok.exe http 5004
+		C:\Installables\ngrok.exe http 5004
 		```	
-		Note down different ngrok token, aa98d86f, use that below in Slack
+		Note down different ngrok token, 753fc752, use that below in Slack
 		
-	- In Slack App Event subscription, Verify (rasa server, ngrok, actions, all must be running)
+	- In Slack App Event subscription, https://api.slack.com/apps/AP4SPEK7Z?created=1
+	   Verify (rasa server, ngrok, actions, all must be running)
 		```
-		https://aa98d86f.ngrok.io/webhooks/slack/webhook
+		https://753fc752.ngrok.io/webhooks/slack/webhook
 		```
 		
-	- Start chatting in Slack
+	- Start chatting in Slack https://app.slack.com/client/TP57ETXHU/CNRGL66AX 

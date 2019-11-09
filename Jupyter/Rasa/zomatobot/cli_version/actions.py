@@ -1,15 +1,17 @@
+
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from datetime import datetime
 
 import logging
 import requests
 import json
 import os
-from rasa_core_sdk import Action
-from rasa_core_sdk.events import SlotSet
+from rasa_sdk import Action
+from rasa.core.events import SlotSet
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +19,7 @@ logger = logging.getLogger(__name__)
 ZOMATO_API_KEY = os.environ.get('ZOMATO_API_KEY',"")# Set your Zomato API key in Environment variable
 API_URL = 'https://developers.zomato.com/api/v2.1/'
 HEADERS = {
-'User-agent': 'curl/7.43.0', 
+'User-agent': 'curl/7.43.0',
 'Accept': 'application/json',
 'user_key': ZOMATO_API_KEY
 }
@@ -51,7 +53,7 @@ class ActionRestaurantSearch(Action):
 	def get_location(self, location):
 		# fetch location id
 		req_url = API_URL + 'locations?query=' + location
-		
+
 		res = requests.get(req_url, headers=HEADERS)
 
 		# default delhi lat and long
@@ -76,7 +78,9 @@ class ActionRestaurantSearch(Action):
 		dispatcher.utter_message(location+cuisine)
 
 		latitude, longitude = self.get_location(location)
-
+		if ZOMATO_API_KEY == "":
+			dispatcher.utter_message("Need to define environment variable ZOMATO_API_KEY with key from " + API_URL)
+			return []
 		req_url = API_URL + 'search?q=' + cuisine + '&lat=' +latitude+ '&lon=' + longitude + '&sort=rating'
 		print("Request URL :{}".format(req_url))
 
@@ -84,7 +88,7 @@ class ActionRestaurantSearch(Action):
 
 		if res.status_code == 200:
 			print("Request successful ...")
-		
+
 			restaurants = self.parse_search(res.json()['restaurants'])
 			out_greet_msg = '*Here are top results for {} in {}*'.format(cuisine, location)
 			dispatcher.utter_message(out_greet_msg)

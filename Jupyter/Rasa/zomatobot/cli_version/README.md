@@ -45,7 +45,7 @@ python -W ignore -m rasa shell --quiet --enable-api --log-file out.log --cors *
 ## Sample chat:
 	-> Hi
 	<- Hey! What can I do for you?
-	-> I am hungry
+	-> I want north indian in gurgoan
 	<-
 			*Here are top results for north indian in gurgoan*
 		Restaurant: Krispy Krunchy Chicken
@@ -73,3 +73,44 @@ python -W ignore -m rasa shell --quiet --enable-api --log-file out.log --cors *
 		Bye
 	->  /stop
 	
+## How to run on SLACK
+Window#1:
+- activate rasa env
+- Train both NLU and Dialog models together by 
+```
+rasa train
+```
+- Models zip having both NLU and Core gets stored inside "models" directory
+
+Window#2:
+- Add your ZOMATO_API_KEY to Environment variable, then open a new window and activate rasa env
+- Have endpoints.yml, this is for actions and nothing else, so its port (default 5055) can be different.
+	```
+	action_endpoint:
+		  url: "http://localhost:5055/webhook"
+	```			
+
+- Run rasa action server in a separate window, activate rasa env, then 
+```
+python -W ignore -m rasa run actions
+```
+"-W ignore" removes the numpy FutureWarnings
+
+- In another window, with activate rasa environment on a different port 5004
+	```
+	python -W ignore -m rasa run --connector slack --port 5004 --cors *
+	```
+		You will get a message like this:  Starting Rasa server on http://localhost:5004
+	
+- Now, deploy port 5004 to the internet:
+	```
+	C:\Installables\ngrok.exe http 5004
+	```	
+	Note down different ngrok token, dca93080, use that below in Slack
+	
+- In Slack App Event subscription, https://api.slack.com/apps/AP4SPEK7Z?created=1
+   Verify (rasa server, ngrok, actions, all must be running)
+	```
+	https://dca93080.ngrok.io/webhooks/slack/webhook
+	```
+- Start chatting in Slack https://app.slack.com/client/TP57ETXHU/CNRGL66AX 
