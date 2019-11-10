@@ -611,17 +611,71 @@ You should get an interactive session in which you should follow the expected fl
  \begin{frame}[fragile]\frametitle{Config file}
  
  The training configuration is defined as below . It contains two main info language of your bot and the NLP library to use.
- 
+ From Rasa 1 onwards there is no different policies.yml. That info is merged into config file itself
  
 nlu\_config.yml
 
 
 \begin{lstlisting}
-pipeline: "spacy_sklearn"
+# Configuration for Rasa NLU.
 language: "en"
+### pipeline: supervised_embeddings or pretrained_embeddings_spacy
+pipeline:
+- name: "nlp_spacy"
+- name: "tokenizer_spacy"
+- name: "intent_entity_featurizer_regex"
+- name: "intent_featurizer_spacy"
+- name: "ner_spacy"
+- name: "ner_crf"
+- name: "ner_synonyms"
+- name: "intent_classifier_sklearn"
+
+# Configuration for Rasa Core.
+policies:
+  - name: MemoizationPolicy
+  - name: KerasPolicy
+  - name: MappingPolicy
 \end{lstlisting}
 
-We will define the pipeline to use for training the NLU model, here we will use spacy to do so.
+Pipeline can be specified as combo or explicit.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Choosing a Pipeline}
+\begin{itemize}
+\item If you have less than 1000 total training examples, and there is a spaCy model for your language, use the pretrained\_embeddings\_spacy pipeline else  use the supervised\_embeddings pipeline.
+\item pretrained\_embeddings\_spacy pipeline: uses pre-trained word vectors from either GloVe or fastText. 
+\item supervised\_embeddings pipeline: fits these specifically for your dataset.
+\item The advantage of the pretrained\_embeddings\_spacy pipeline that word similarity is already in place.
+\item The advantage of the supervised\_embeddings pipeline is that your word vectors will be customised for your domain and not generic similarity.
+\end{itemize}
+
+
+{\tiny (Ref: https://rasa.com/docs/rasa/nlu/choosing-a-pipeline/)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Explicit Pipeline}
+ 
+supervised\_embeddings is equivalent to 
+
+\begin{lstlisting}
+language: "en"
+
+pipeline:
+- name: "WhitespaceTokenizer"
+- name: "RegexFeaturizer"
+- name: "CRFEntityExtractor"
+- name: "EntitySynonymMapper"
+- name: "CountVectorsFeaturizer"
+- name: "CountVectorsFeaturizer"
+  analyzer: "char_wb"
+  min_ngram: 1
+  max_ngram: 4
+- name: "EmbeddingIntentClassifier"
+\end{lstlisting}
+You can customize, only care to be taken is that order is important. NER can not come before tokernizer!!
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
