@@ -18,6 +18,33 @@ You can find some training data inside the `./data/nlu.md` file. NLU training da
  - example2
  ...
 ```
+
+#### 1.2 Train the NLU model
+
+Train the current data with
+```
+python -W ignore -m rasa train nlu
+```
+
+Run nlu by
+```
+python -W ignore -m rasa shell nlu --quiet --cors *
+```
+
+Try sentences like:
+- Hi
+- Bye
+- I come from Pune (or your city)
+- Can I subscribe?
+
+Are they giving correct intent and entities?
+
+
+Add some words from your language in intent sections, like 'Namaste','achchha', etc
+
+Re-train, re-run nlu and try your words!!!
+
+
 Add a new intent `name` with a few training examples (don't forget to annotate entities). For example, your new defined intent can look something like:  
 
 ```
@@ -26,25 +53,24 @@ Add a new intent `name` with a few training examples (don't forget to annotate e
  - I am [Tina](name)
  - Call me [Sarah](name)
  ``` 
----
 
-#### 1.2 Create NLU model configuration pipeline
+Re-train, re-run and try these new sentences in different combinations
+
+#### 1.3 Create NLU model configuration pipeline
 
 `config.yml` file contains a sample configuration of the model pipeline. You can modify the pipeline if you
 like by adding new [pipeline components](http://rasa.com/docs/rasa/nlu/choosing-a-pipeline/). 
 
----
+Try combo pipelines, one time each
+```
+language: "en"
 
-#### 1.3 Train the NLU model
-Once you update the training data and model configuration, train the NLU model by running:
+pipeline: "pretrained_embeddings_spacy" 
+pipeline: "supervised_embedding"
+```
 
-`rasa train nlu`
+Re-train, re-run and try these new sentences in different combinations
 
-Once mode is trained, it will be saved in a `./models` directory of you project. Test the model by running:
-
-`rasa shell nlu`
-
----
 
 #### 1.4 Add synonyms
 Synonyms can help you normalize the extracted entity values. It's very useful if
@@ -59,7 +85,8 @@ example:
 - I am based in the [New York](location:NYC)
 ```
 
----
+Re-train, re-run and try these new sentences.
+
 
 #### 1.5 Add out-of-scope
 While it's impossible to teach your assistant to understand every possible
@@ -75,8 +102,8 @@ of random user inputs.
 - Who made you?
 ```
 
+Re-train, re-run and try these new sentences.
 
----
 
 #### 1.6 Add multi-intents
 Another advanced use case which you should train your assistant to handle is dealing
@@ -89,6 +116,8 @@ your bot to understand such inputs, create a new multi-intent for affirmation an
 - Yep. I would also like to become a subscriber to the Rasa newsletter.
 - Yes I have. Also, add me to the Rasa newsletter subscriber list.
 ```
+
+Re-train, re-run and try these new sentences.
 
 ## 2. Dialogue management with Rasa 1.0
 
@@ -103,7 +132,9 @@ new dialogue turn.
 ---
 
 #### 2.2 Update the domain
-A file called `domain.yml` contains the domain configuration of your assistant. It contains all the information an assistant needs to know to operate. Update the domain to include all newly created intents (`name`, `chitchat`, `affirm+subscribe`), entities (`name`), slots and if you like, you can add more possible response templates.
+A file called `domain.yml` contains the domain configuration of your assistant. 
+It contains all the information an assistant needs to know to operate. 
+Update the domain to include all newly created intents (`name`, `chitchat`, `affirm+subscribe`), entities (`name`), slots and if you like, you can add more possible response templates.
 
 ---
 
@@ -135,7 +166,7 @@ class ActionSubscribe(Action):
              domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
          image = requests.get('http://shibe.online/api/shibes?count=1').json()[0]
 
-         dispatcher.utter_message("Congratulatons! You have just subscribed to Rasa newsletter. As a little celebration gift, check out this cool doggo: {}".format(image))
+         dispatcher.utter_message("Congratulations! You have just subscribed to Rasa newsletter. As a little celebration gift, check out this cool doggo: {}".format(image))
 
          return []
 ```
@@ -151,9 +182,20 @@ Start the server for Rasa custom actions:
 
 `rasa run actions`
 
-Once the server is up and runniing you can talk to your bot by running:
+Once the server is up and running you can talk to your bot by running:
 
-`rasa shell`
+```
+python -W ignore -m rasa shell --quiet --enable-api --log-file out.log --cors *
+```
+
+Your input ->  Hi
+Hey! I am Sara and I would like to help you get started with Rasa. What is your name?
+Your input ->  I am Tom
+Hi Tom! And where are you from?
+Your input ->  I am from Berlin
+Great! Have you used Rasa before?
+Your input ->  No
+The best way to get started with Rasa is to check our docs at https://rasa.com/docs
 
 Rasa also comes with handy functions which allow to visualize training stories. To do that, run:
 
