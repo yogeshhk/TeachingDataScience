@@ -28,9 +28,9 @@ python -W ignore -m rasa train nlu
 
 Run nlu by
 ```
-python -W ignore -m rasa shell nlu --quiet --cors *
+python -W ignore -m rasa shell nlu --quiet 
 ```
-
+!--cors *
 Try sentences like:
 - Hi
 - Bye
@@ -48,7 +48,7 @@ Re-train, re-run nlu and try your words!!!
 Add a new intent `name` with a few training examples (don't forget to annotate entities). For example, your new defined intent can look something like:  
 
 ```
-## intent:name
+## intent:get_name
  - My name is [Tom](name)
  - I am [Tina](name)
  - Call me [Sarah](name)

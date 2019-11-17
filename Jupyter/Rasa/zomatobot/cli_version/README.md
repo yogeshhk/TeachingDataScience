@@ -106,11 +106,11 @@ python -W ignore -m rasa run actions
 	```
 	C:\Installables\ngrok.exe http 5004
 	```	
-	Note down different ngrok token, dca93080, use that below in Slack
+	Note down different ngrok token, 1f6bfc7c, use that below in Slack
 	
 - In Slack App Event subscription, https://api.slack.com/apps/AP4SPEK7Z?created=1
    Verify (rasa server, ngrok, actions, all must be running)
 	```
-	https://dca93080.ngrok.io/webhooks/slack/webhook
+	https://1f6bfc7c.ngrok.io/webhooks/slack/webhook
 	```
 - Start chatting in Slack https://app.slack.com/client/TP57ETXHU/CNRGL66AX 
