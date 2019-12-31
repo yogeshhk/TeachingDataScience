@@ -1,5 +1,26 @@
 # Notes on Teaching Data Science
 
+## Playbook
+Goal: to give back to society. If any $: donate
+Logistics:
+- Day/time: Saturdays, else NO
+- Topics: Computational Contracts [Rasa, py-ml-dl-nlp, if asked, only]
+- Logistics:
+    - Email beforehand, beamer pdf, install md
+    - Travel arrangements needed? done?
+    - $$:
+       - Edu: free or whatever they give. 
+       - Commercial: 600/ppl/hr + GST (to CA)
+       - gstn 27AEKPK9577L1ZK
+       - adh 4016 4179 9732
+       - icic0000039 003901000597
+    - Get pictures, store them in admin
+    - Add this as activity to GDE app
+    - Post on LinkedIn with pictures, tag GDE, send to Rasa (get swag)
+    - Donate $ to CoEP, jagriti, aai for causes 
+
+- Experfy/INE $ for donations
+
 ## Thoughts
 * From classes to masses with clarity and cartoons!!
 * All tex sources and images have been open sourced as I have taken from others, learnt from others, although I have added some of mine, I need to give it back!! LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:6523000857385103360
