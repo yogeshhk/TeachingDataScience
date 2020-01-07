@@ -1,6 +1,6 @@
 # Exercise
 
-This file contains the walkthrough of the exercise to be completed using this repository.
+This file contains the walk-through of the exercise to be completed using this repository.
 
 ## 1. Natural language understanding with Rasa 1.0
 

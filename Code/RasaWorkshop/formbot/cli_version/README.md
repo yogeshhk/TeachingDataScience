@@ -48,9 +48,9 @@ steps:
 Bot loaded. Type a message and press enter (use '/stop' to exit):
 Your input ->  hi
 Hello! I am restaurant search assistant! How can I help?
-Your input ->  I would like a resturant
+Your input ->  I would like a restaurant
 what cuisine?
-Your input ->  chinese
+Your input ->  Chinese
 how many people?
 Your input ->  for three people?
 do you want to seat outside?
