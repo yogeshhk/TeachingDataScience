@@ -4,7 +4,7 @@
 Goal: to give back to society. If any $: donate
 Logistics:
 - Day/time: Saturdays, else NO
-- Topics: Computational Contracts [Rasa, py-ml-dl-nlp, if asked, only]
+- Topics: Tensorflow and NLP
 - Logistics:
     - Email beforehand, beamer pdf, install md
     - Travel arrangements needed? done?
@@ -40,10 +40,12 @@ Logistics:
 	*	Main_Workshop/Seminar_Presentation/CourseMaterial.tex are the driver files
 	*	They intern contain common content files, which have included actual source files
 	*	Make bat files compile the appropriate sources
-*	Jupyter directory (not uploaded, as it is mostly from others github repos, nothing much of mine)
+*	Code directory 
 	*	Has running python or ipython notebook files with necessary images and data
 	*	Naming should be such that corresponding latex file can be associated
 	*	Library based tex file, say, sklearn_decisiontree.tex will have just template code and short fully working examples from Mastering Machine Learning whereas the sklearn_decisiontree.ipynb will have running workflows. No need to sync both. You may want to keep ipynb’s pdf in LaTeX/images directory for reference
+*	References directory (not uploaded, as it is mostly from others github repos, nothing much of mine)
+	*	Has papers, code, ppts as base material to be used for content preparation
 
 ## References to be used for updating the Training Material
 *	Visual Notes, Graphics Recording
