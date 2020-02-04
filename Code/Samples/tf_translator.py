@@ -276,3 +276,117 @@ class LuongAttention(tf.keras.Model):
         context = tf.matmul(alignment, encoder_output)
 
         return context, alignment
+
+
+class Decoder(tf.keras.Model):
+    def __init__(self, vocab_size, embedding_size, rnn_size):
+        super(Decoder, self).__init__()
+
+        # Create a LuongAttention object
+        self.attention = LuongAttention(rnn_size)
+
+        self.rnn_size = rnn_size
+        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_size)
+        self.lstm = tf.keras.layers.LSTM(
+            rnn_size, return_sequences=True, return_state=True)
+
+        self.wc = tf.keras.layers.Dense(rnn_size, activation='tanh')
+        self.ws = tf.keras.layers.Dense(vocab_size)
+
+    def call(self, sequence, state, encoder_output):
+        # Remember that the input to the decoder
+        # is now a batch of one-word sequences,
+        # which means that its shape is (batch_size, 1)
+        embed = self.embedding(sequence)
+
+        # Therefore, the lstm_out has shape (batch_size, 1, rnn_size)
+        lstm_out, state_h, state_c = self.lstm(embed, initial_state=state)
+        # Use self.attention to compute the context and alignment vectors
+        # context vector's shape: (batch_size, 1, rnn_size)
+        # alignment vector's shape: (batch_size, 1, source_length)
+        context, alignment = self.attention(lstm_out, encoder_output)
+        # Combine the context vector and the LSTM output
+        # Before combined, both have shape of (batch_size, 1, rnn_size),
+        # so let's squeeze the axis 1 first
+        # After combined, it will have shape of (batch_size, 2 * rnn_size)
+        lstm_out = tf.concat([tf.squeeze(context, 1), tf.squeeze(lstm_out, 1)], 1)
+
+        # lstm_out now has shape (batch_size, rnn_size)
+        lstm_out = self.wc(lstm_out)
+
+        # Finally, it is converted back to vocabulary space: (batch_size, vocab_size)
+        logits = self.ws(lstm_out)
+
+        return logits, state_h, state_c, alignment
+
+
+@tf.function
+def train_step(source_seq, target_seq_in, target_seq_out, en_initial_states):
+    loss = 0
+    with tf.GradientTape() as tape:
+        en_outputs = encoder(source_seq, en_initial_states)
+        en_states = en_outputs[1:]
+        de_state_h, de_state_c = en_states
+
+        # We need to create a loop to iterate through the target sequences
+        for i in range(target_seq_out.shape[1]):
+            # Input to the decoder must have shape of (batch_size, length)
+            # so we need to expand one dimension
+            decoder_in = tf.expand_dims(target_seq_in[:, i], 1)
+            logit, de_state_h, de_state_c, _ = decoder(
+                decoder_in, (de_state_h, de_state_c), en_outputs[0])
+
+            # The loss is now accumulated through the whole batch
+            loss += loss_func(target_seq_out[:, i], logit)
+
+    variables = encoder.trainable_variables + decoder.trainable_variables
+    gradients = tape.gradient(loss, variables)
+    optimizer.apply_gradients(zip(gradients, variables))
+
+    return loss / target_seq_out.shape[1]
+
+
+def predict(test_source_text=None):
+    if test_source_text is None:
+        test_source_text = raw_data_en[np.random.choice(len(raw_data_en))]
+    print(test_source_text)
+    test_source_seq = en_tokenizer.texts_to_sequences([test_source_text])
+    print(test_source_seq)
+
+    en_initial_states = encoder.init_states(1)
+    en_outputs = encoder(tf.constant(test_source_seq), en_initial_states)
+
+    de_input = tf.constant([[fr_tokenizer.word_index['<start>']]])
+    de_state_h, de_state_c = en_outputs[1:]
+    out_words = []
+    alignments = []
+
+    while True:
+        de_output, de_state_h, de_state_c, alignment = decoder(
+            de_input, (de_state_h, de_state_c), en_outputs[0])
+        de_input = tf.expand_dims(tf.argmax(de_output, -1), 0)
+        out_words.append(fr_tokenizer.index_word[de_input.numpy()[0][0]])
+
+        alignments.append(alignment.numpy())
+
+        if out_words[-1] == '<end>' or len(out_words) >= 20:
+            break
+
+    print(' '.join(out_words))
+    return np.array(alignments), test_source_text.split(' '), out_words
+
+decoder = Decoder(fr_vocab_size, EMBEDDING_SIZE, LSTM_SIZE)
+
+for e in range(NUM_EPOCHS):
+    en_initial_states = encoder.init_states(BATCH_SIZE)
+
+    for batch, (source_seq, target_seq_in, target_seq_out) in enumerate(dataset.take(-1)):
+        loss = train_step(source_seq, target_seq_in,
+                          target_seq_out, en_initial_states)
+
+    print('Epoch {} Loss {:.4f}'.format(e + 1, loss.numpy()))
+
+    try:
+        predict()
+    except Exception:
+        continue
