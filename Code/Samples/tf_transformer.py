@@ -1,96 +1,84 @@
-# Reference: https://machinetalk.org/2019/04/29/create-the-transformer-with-tensorflow-2-0/
 
 import tensorflow as tf
-import tensorflow_hub as hub
-import matplotlib.pyplot as plt
 import numpy as np
-import os
-import pandas as pd
+import unicodedata
 import re
-import seaborn as sns
 
-def load_directory_data(directory):
-    data = {}
-    data['senetence'] = []
-    data['sentiment'] = []
-    for file_path in os.listdir(directory):
-        with tf.io.gfile.GFile(os.path.join(directory,file_path),'r') as f:
-            data['senetence'].append(f.read())
-            data['sentiment'].append(re.match("\d+_(\d+)\.txt", file_path).group(1))
-    return pd.DataFrame.from_dict(data)
+raw_data = (
+    ('What a ridiculous concept!', 'Quel concept ridicule !'),
+    ('Your idea is not entirely crazy.', "Votre idée n'est pas complètement folle."),
+    ("A man's worth lies in what he is.", "La valeur d'un homme réside dans ce qu'il est."),
+    ('What he did is very wrong.', "Ce qu'il a fait est très mal."),
+    ("All three of you need to do that.", "Vous avez besoin de faire cela, tous les trois."),
+    ("Are you giving me another chance?", "Me donnez-vous une autre chance ?"),
+    ("Both Tom and Mary work as models.", "Tom et Mary travaillent tous les deux comme mannequins."),
+    ("Can I have a few minutes, please?", "Puis-je avoir quelques minutes, je vous prie ?"),
+    ("Could you close the door, please?", "Pourriez-vous fermer la porte, s'il vous plaît ?"),
+    ("Did you plant pumpkins this year?", "Cette année, avez-vous planté des citrouilles ?"),
+    ("Do you ever study in the library?", "Est-ce que vous étudiez à la bibliothèque des fois ?"),
+    ("Don't be deceived by appearances.", "Ne vous laissez pas abuser par les apparences."),
+    ("Excuse me. Can you speak English?", "Je vous prie de m'excuser ! Savez-vous parler anglais ?"),
+    ("Few people know the true meaning.", "Peu de gens savent ce que cela veut réellement dire."),
+    ("Germany produced many scientists.", "L'Allemagne a produit beaucoup de scientifiques."),
+    ("Guess whose birthday it is today.", "Devine de qui c'est l'anniversaire, aujourd'hui !"),
+    ("He acted like he owned the place.", "Il s'est comporté comme s'il possédait l'endroit."),
+    ("Honesty will pay in the long run.", "L'honnêteté paye à la longue."),
+    ("How do we know this isn't a trap?", "Comment savez-vous qu'il ne s'agit pas d'un piège ?"),
+    ("I can't believe you're giving up.", "Je n'arrive pas à croire que vous abandonniez."),
+)
 
-def load_dataset(directory):
-    pos_df = load_directory_data(os.path.join(directory,'pos'))
-    neg_df = load_directory_data(os.path.join(directory, 'neg'))
-    pos_df['polarity'] = 1
-    neg_df['polarity'] = 0
-    return pd.concat([pos_df,neg_df]).sample(frac=1).reset_index(drop=True)
+def unicode_to_ascii(s):
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s)
+        if unicodedata.category(c) != 'Mn')
 
-def download_and_load_dataset(force_download=False):
-    dataset = tf.keras.utils.get_file(
-        fname ="aclImdb.tar.gz",
-        origin="http://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz",
-        extract=True)
-    train_df = load_dataset(os.path.join(os.path.dirname(dataset),
-                                       "aclImdb", "train"))
-    test_df = load_dataset(os.path.join(os.path.dirname(dataset),
-                                        "aclImdb", "test"))
-    return train_df, test_df
 
-# tf.compat.v1.logging.set_verbosity(tf.logging.ERROR)
-train_df, test_df = download_and_load_dataset()
-print(train_df.head())
-# Training input on the whole training set with no limit on training epochs.
-train_input_fn = tf.compat.v1.estimator.inputs.pandas_input_fn(
-    train_df, train_df["polarity"], num_epochs=None, shuffle=True)
+def normalize_string(s):
+    s = unicode_to_ascii(s)
+    s = re.sub(r'([!.?])', r' \1', s)
+    s = re.sub(r'[^a-zA-Z.!?]+', r' ', s)
+    s = re.sub(r'\s+', r' ', s)
+    return s
 
-# Prediction on the whole training set.
-predict_train_input_fn = tf.compat.v1.estimator.inputs.pandas_input_fn(
-    train_df, train_df["polarity"], shuffle=False)
-# Prediction on the test set.
-predict_test_input_fn = tf.compat.v1.estimator.inputs.pandas_input_fn(
-    test_df, test_df["polarity"], shuffle=False)
+# We will now split the data into two separate lists, each contains its own sentences.
+# Then we will apply the functions above and add two special tokens: <start> and <end>:
+# <img src="inputoutput_en_decoder.png">
+# The encoder requires only sequences from source language as inputs.
+# The decoder requires two versions of destination language’s sequences, one for inputs and one for targets.
+raw_data_en, raw_data_fr = list(zip(*raw_data)) # unzipping
+raw_data_en = [ normalize_string(data) for data in raw_data_en]
+raw_data_fr_in = ['<start> ' + normalize_string(data) for data in raw_data_fr]
+raw_data_fr_out = [normalize_string(data) + ' <end>' for data in raw_data_fr]
 
-embedded_text_feature_column = hub.text_embedding_column(
-    key="sentence",
-    module_spec="https://tfhub.dev/google/nnlm-en-dim128/1")
+en_tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
+en_tokenizer.fit_on_texts(raw_data_en) # gives integer index to all words
+data_en = en_tokenizer.texts_to_sequences(raw_data_en) # make integer index sequence of word sequence in the sentence
+print(data_en)
+# [[8, 5, 21, 22, 23], [24, 25, 6, 26, 27, 28, 1], [5, 29, 30, 31, 32, 9, 8, 7, 6, 1], ...]
+# Need to pad zeros so that all sequences have the same length. Else, we won’t be able to create tf.data.Dataset object
+data_en = tf.keras.preprocessing.sequence.pad_sequences(data_en,padding='post')
+print(data_en)
+# [[ 8  5 21 22 23  0  0  0  0  0]
+#  [24 25  6 26 27 28  1  0  0  0]
+#  [ 5 29 30 31 32  9  8  7  6  1],...]
 
-estimator = tf.compat.v1.estimator.DNNClassifier(
-    hidden_units=[500, 100],
-    feature_columns=[embedded_text_feature_column],
-    n_classes=2,
-    optimizer=tf.compat.v1.train.AdamOptimizer(learning_rate=0.003))
+#  Do the same with French sentences
+fr_tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
 
-# Training for 1,000 steps means 128,000 training examples with the default
-# batch size. This is roughly equivalent to 5 epochs since the training dataset
-# contains 25,000 examples.
-estimator.train(input_fn=train_input_fn, steps=1000)
+# We can call fit_on_texts multiple times on different corpora and it will update vocabulary automatically.
+# ATTENTION: always finish with fit_on_texts before moving on
+fr_tokenizer.fit_on_texts(raw_data_fr_in)
+fr_tokenizer.fit_on_texts(raw_data_fr_out)
 
-train_eval_result = estimator.evaluate(input_fn=predict_train_input_fn)
-test_eval_result = estimator.evaluate(input_fn=predict_test_input_fn)
+data_fr_in = fr_tokenizer.texts_to_sequences(raw_data_fr_in)
+data_fr_in = tf.keras.preprocessing.sequence.pad_sequences(data_fr_in,
+                                                           padding='post')
 
-print("Training set accuracy: {accuracy}".format(**train_eval_result))
-print("Test set accuracy: {accuracy}".format(**test_eval_result))
+data_fr_out = fr_tokenizer.texts_to_sequences(raw_data_fr_out)
+data_fr_out = tf.keras.preprocessing.sequence.pad_sequences(data_fr_out,
+                                                            padding='post')
 
-def get_predictions(estimator, input_fn):
-  return [x["class_ids"][0] for x in estimator.predict(input_fn=input_fn)]
-
-LABELS = [
-    "negative", "positive"
-]
-
-# Create a confusion matrix on training data.
-with tf.Graph().as_default():
-  cm = tf.confusion_matrix(train_df["polarity"],
-                           get_predictions(estimator, predict_train_input_fn))
-  with tf.Session() as session:
-    cm_out = session.run(cm)
-
-# Normalize the confusion matrix so that each row sums to 1.
-cm_out = cm_out.astype(float) / cm_out.sum(axis=1)[:, np.newaxis]
-
-sns.heatmap(cm_out, annot=True, xticklabels=LABELS, yticklabels=LABELS)
-plt.xlabel("Predicted");
-plt.ylabel("True")
-
-plt.show()
+# We only need to create an instance of tf.data.Dataset
+dataset = tf.data.Dataset.from_tensor_slices((data_en, data_fr_in, data_fr_out))
+dataset = dataset.shuffle(20).batch(5)
+print(dataset)
