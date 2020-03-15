@@ -3,22 +3,15 @@
 ## Playbook
 Goal: to give back to society. If any $: donate
 Logistics:
-- Day/time: Saturdays, else NO
+- Day/time: Saturdays Mornings, else NO
 - Topics: Tensorflow and NLP
 - Logistics:
-    - Email beforehand, beamer pdf, install md
-    - Travel arrangements needed? done?
-    - $$:
-       - Edu: free or whatever they give. 
-       - Commercial: 600/ppl/hr + GST (to CA)
-       - gstn 27AEKPK9577L1ZK
-       - adh 4016 4179 9732
-       - icic0000039 003901000597
-    - Get pictures, store them in admin
+    - Email beforehand, beamer pdf
+    - Travel arrangements done?
+    - Get pictures, store them in Admin
     - Add this as activity to GDE app
-    - Post on LinkedIn with pictures, tag GDE, send to Rasa (get swag)
-    - Donate $ to CoEP, jagriti, aai for causes 
-
+    - Post on LinkedIn with pictures
+    - Donate $ to CoEP Alumni, Jagriti, Aai for causes 
 - Experfy/INE $ for donations
 
 ## Notes
