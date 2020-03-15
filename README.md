@@ -1,12 +1,34 @@
 # Teaching Data Science
 LaTeX course notes for Python, Machine Learning, Deep Learning, Natural Language Processing, etc. Core content is in the form for Beamer slides, which in turn can get compiled into presentation mode as well as two-column course notes mode.
 
+All tex sources and images have been open sourced as I have taken from others, learnt from others, although I have added some of mine, I need to give it back!! LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:6523000857385103360
+
 Copyright (C) 2019 Yogesh H Kulkarni
 
 ## Requirements:
 * LaTeX (tested with MikTex 2.9 on Windows 7, 64bit)
 * Need to install LaTeX packages, as and when you get such warning/suggestions.
 * Using TexWorks as IDE
+
+
+<!-- ## Data Science Course Series
+
+<img src="LaTeX/images/teaching_data_science_series.png"/> -->
+
+## Code Arrangement
+*	LaTeX directory 
+	* Has tex sources along with necessary images
+	*	Naming: subject_maintopic_subtopic.tex eg maths_linearalgebra_matrices.tex
+	*	Main_Workshop/Seminar_Presentation/CourseMaterial.tex are the driver files
+	*	They intern contain common content files, which have included actual source files
+	*	Make bat files compile the appropriate sources
+*	Code directory 
+	*	Has running python or ipython notebook files with necessary images and data
+	*	Naming should be such that corresponding latex file can be associated
+	*	Library based tex file, say, sklearn_decisiontree.tex will have just template code and short fully working examples from Mastering Machine Learning whereas the sklearn_decisiontree.ipynb will have running workflows. No need to sync both. You may want to keep ipynb’s pdf in LaTeX/images directory for reference
+*	References directory (not uploaded, as it is mostly from others github repos, nothing much of mine)
+	*	Has papers, code, ppts as base material to be used for content preparation
+
 
 ## How to Run:
 * Driver files for the courses are named with "Main_Workshop/Seminar_<course>_CheatSheet/Presentation.tex"
