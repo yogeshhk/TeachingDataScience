@@ -20,6 +20,10 @@ Logistics:
 	- Representation Leartning == Learning features automatically
 	- Done by Neural Networks
 
+* Jordan Boyd-Graber ML NLP Play list https://www.youtube.com/user/ezubaric/playlists
+
+* 
+
 ## References to be used for updating the Training Material
 *	Visual Notes, Graphics Recording
 	* Graham Shaw https://www.youtube.com/user/VisionLearning/videos
