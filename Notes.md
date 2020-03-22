@@ -1,6 +1,6 @@
 # Notes on Teaching Data Science
 
-## Playbook
+<!-- ## Playbook
 Goal: to give back to society. If any $: donate
 Logistics:
 - Day/time: Saturdays Mornings, else NO
@@ -13,7 +13,7 @@ Logistics:
     - Post on LinkedIn with pictures
     - Donate $ to CoEP Alumni, Jagriti, Aai for causes 
 - Experfy/INE $ for donations
-
+ -->
 ## Notes
 
 * Representation Learning - Yoshua Bengio https://www.youtube.com/watch?v=O6itYc2nnnM
@@ -22,7 +22,6 @@ Logistics:
 
 * Jordan Boyd-Graber ML NLP Play list https://www.youtube.com/user/ezubaric/playlists
 
-* 
 
 ## References to be used for updating the Training Material
 *	Visual Notes, Graphics Recording
