@@ -37,6 +37,17 @@ Copyright (C) 2019 Yogesh H Kulkarni
 * You can compile individual "Main_Workshop/Seminar_<course>_CheatSheet/Presentation.tex" also using your LaTeX system.
 * Instead of these given driver files, you can have your own main files and include just the *content.tex files.
 
+## Video Recordings
+- Using OBS: Open-source Free-ware
+
+	- Sources: Windows Capture
+	- Settings:
+		- Hot Keys: Alt + 10 to start recording, Alt + F11 to stop
+		- Output format : mkv, easier to mix, can be converted to mp4 by File->Remux
+		- Output gets stored in Videos folder
+- OpenTech to edit video, save to join
+- Handbrake to compress video
+
 ## Disclaimer:
 * Author (yogeshkulkarni@yahoo.com) gives no guarantee of the correctness of the content. Notes have been built using lots of publicly available material. 
 * Although care has been taken to cite the original sources as much as possible, but there could be some missing ones. Do point them and I will update wherever possible. 
