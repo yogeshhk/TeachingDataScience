@@ -24,6 +24,7 @@ Logistics:
 
 
 ## References to be used for updating the Training Material
+* Shala 2020 IITB https://www.youtube.com/channel/UCobe_Yc7nV6kux94A5doIiA/videos
 *	Visual Notes, Graphics Recording
 	* Graham Shaw https://www.youtube.com/user/VisionLearning/videos
 	* 50+ Awesome Resources to Create Visual Notes, Graphic Recordings & Sketchnotes https://creativemarket.com/blog/50-awesome-resources-to-create-visual-notes-graphic-recordings-sketchnotes
