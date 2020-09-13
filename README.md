@@ -1,11 +1,12 @@
 # Teaching Data Science
-LaTeX course notes for Python, Machine Learning, Deep Learning, Natural Language Processing, etc. Core content is in the form for Beamer slides, which in turn can get compiled into presentation mode as well as two-column course notes mode.
+
+Repository for LaTeX course notes for Python, Machine Learning, Deep Learning, Natural Language Processing, etc. Core content is in the form for Beamer slides, which in turn can get compiled into presentation mode as well as two-column course notes mode.
 
 All tex sources and images have been open sourced as I have taken from others, learnt from others, although I have added some of mine, I need to give it back!! LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:6523000857385103360
 
 Copyright (C) 2019 Yogesh H Kulkarni
 
-## Requirements:
+## Requirements to compile LaTeX code to pdfs:
 * LaTeX (tested with MikTex 2.9 on Windows 7, 64bit)
 * Need to install LaTeX packages, as and when you get such warning/suggestions.
 * Using TexWorks as IDE
@@ -15,7 +16,7 @@ Copyright (C) 2019 Yogesh H Kulkarni
 
 <img src="LaTeX/images/teaching_data_science_series.png"/> -->
 
-## Code Arrangement
+## LaTeX Code Arrangement
 *	LaTeX directory 
 	* Has tex sources along with necessary images
 	*	Naming: subject_maintopic_subtopic.tex eg maths_linearalgebra_matrices.tex
@@ -30,23 +31,12 @@ Copyright (C) 2019 Yogesh H Kulkarni
 	*	Has papers, code, ppts as base material to be used for content preparation
 
 
-## How to Run:
+## How to Run LaTeX:
 * Driver files for the courses are named with "Main_Workshop/Seminar_<course>_CheatSheet/Presentation.tex"
 * Both the Cheatsheet (meaning course notes in two column format) and Presentation.tex refer to same core content file, which in turn contains are the topic files.
 * Run make bat for the course you need. Inside, its just a texify command, so you can modify it as per your OS.
 * You can compile individual "Main_Workshop/Seminar_<course>_CheatSheet/Presentation.tex" also using your LaTeX system.
 * Instead of these given driver files, you can have your own main files and include just the *content.tex files.
-
-## Video Recordings
-- Using OBS: Open-source Free-ware
-
-	- Sources: Windows Capture
-	- Settings:
-		- Hot Keys: Alt + 10 to start recording, Alt + F11 to stop
-		- Output format : mkv, easier to mix, can be converted to mp4 by File->Remux
-		- Output gets stored in Videos folder
-- OpenTech to edit video, save to join
-- Handbrake to compress video
 
 ## Disclaimer:
 * Author (yogeshkulkarni@yahoo.com) gives no guarantee of the correctness of the content. Notes have been built using lots of publicly available material. 

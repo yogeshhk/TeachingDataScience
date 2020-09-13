@@ -1,19 +1,49 @@
 # Notes on Teaching Data Science
 
-<!-- ## Playbook
-Goal: to give back to society. If any $: donate
+<!--
+## Rational
+- For Giving back from classes to masses, dyan-eshwar. 
+- If any $: Donate to CoEP Alumni, Jagriti, Aai for causes (Experfy/INE already)
+- For better own understanding
+- For global recogn/respect/network => future opportunities 
+-->
+
+Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
+
+## Topics
+- CNN RNN at TFUG Pune
+- Journey of Vectorizers based on Murthy's ODSC 2019 talk
+- MidcurveNN
+- DL in Genomics
+
+## Playbook
 Logistics:
 - Day/time: Saturdays Mornings, else NO
-- Topics: Tensorflow and NLP
-- Logistics:
-    - Email beforehand, beamer pdf
-    - Travel arrangements done?
-    - Get pictures, store them in Admin
-    - Add this as activity to GDE app
-    - Post on LinkedIn with pictures
-    - Donate $ to CoEP Alumni, Jagriti, Aai for causes 
-- Experfy/INE $ for donations
- -->
+- Pre-Talk:
+    - Prep material over week, *_seminar.tex and ipynb for 40 minutes
+    - Create Google calendar event with meet link, 
+    - Create Benner from ppt
+		- Create TFUG Pune Meetup event with google meet link, publish with banner
+    - Advertise meetup link: my LinkedIn, Icertis Teams, GDE whatsapp grps
+    - Copy material pdf/ipynbs under TFUGPune folder, sync with GDrive
+- During Talk: Take pictures
+- Post-Talk:
+    - Fill GDE Advocu entry with picture taken
+    - Fill GDE New event survey link
+    - Share github sources of the talk on meetup, post pictures there
+
+## Video Recordings
+- Using OBS: Open-source Free-ware
+
+	- Sources: Windows Capture
+	- Settings:
+		- Hot Keys: Alt + 10 to start recording, Alt + F11 to stop
+		- Output format : mkv, easier to mix, can be converted to mp4 by File->Remux
+		- Output gets stored in Videos folder
+- OpenTech to edit video, save to join
+- Handbrake to compress video
+-->
+
 ## Notes
 
 * Representation Learning - Yoshua Bengio https://www.youtube.com/watch?v=O6itYc2nnnM
