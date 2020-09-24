@@ -5,6 +5,28 @@
   \end{center}
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Recap: NN types: ANN, CNN, RNN}
+
+\begin{itemize}
+\item In ANN, columns are independent of each other. None of the neighbor information is used. Shuffling columns does not have any effect on the model/results.
+\item In CNN, spatial (not `special') column-neighbors are used to form features, which help in discerning the categories in the classification.
+\item In RNN, temporal (no, `temporary') neighbors/column-wise are used to form features, which help in predictions.
+\end{itemize}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large Need for RNN}
+  \end{center}
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Why RNN?}
 
@@ -19,28 +41,6 @@
 
 
 \end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{NN types: ANN, CNN, RNN}
-
-\begin{itemize}
-\item In ANN, rows are independent of each other. None of the neighbor information is used.
-\item In CNN, spatial (not `special') neighbors are used to form features, which help in discerning the categories in the classification.
-\item In RNN, temporal (no, `temporary') neighbors are used to form features, which help in predictions.
-\end{itemize}
-
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-  \begin{center}
-    {\Large Toy Example of RNN}
-  \end{center}
-\end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Toy Example: Scenario I: Cook}
@@ -262,6 +262,7 @@ Recurrent
 % \end{center}
 % \end{frame}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
   \begin{center}
@@ -309,6 +310,7 @@ Usage of RNN layer:
 % \item X is of size [ batch size, number of steps, number of dimensions]
 % \item batch size: window of inputs data points, at once
 \item Simple cell is just one node and an activation function, thats it.
+\item GRU (Gated Recurrent Units) and LSTM (Long Short Term Memory) are two other types of RNN cells.
 \item RNN layer will process sequential data. Output is flattened vector
 \item Dense Layer is normal ANN, for prediction or classification (Y)
 \end{itemize}
@@ -482,6 +484,14 @@ RNN can be imagined to be a usual ANN, with additional nodes from next layer bac
 % \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large Memory in RNN}
+  \end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{What is Neural Memory?}
 
 \begin{itemize}
@@ -512,6 +522,14 @@ $ (input + prev\_hidden) \rightarrow hidden \rightarrow output$
 \item Why the hidden layer? Well, we could technically do this. 
 $(input + prev\_input) \rightarrow hidden \rightarrow output$
 \end{itemize}
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{rnn33}
+
+{\tiny (Ref: Weights and Biases : Introduction to RNNs)}
+\end{center}
+
+
 \end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -529,14 +547,79 @@ $(input + prev\_input) \rightarrow hidden \rightarrow output$
 \begin{frame}[fragile] \frametitle{What is Neural Memory?}
 Each cell
 \begin{itemize}
-\item $h_t = tanh(W_{hh}h_{t-1} + W_{xh}X_t$
-\item $y_t = W_{hy}h_t$
+\item $h_t = tanh(W_{hh}h_{t-1} + W_{xh}X_t + b_h)$
+\item $y_t = tanh(W_{hy}h_t + b_y)$
 \item Back-propagation will adjust all the weights for all unrolled time-steps.
 \end{itemize}
 
 
 \begin{center}
+\includegraphics[width=0.3\linewidth,keepaspectratio]{rnn35}
+
+{\tiny (Ref: RNN with Keras: Understanding computations - Alexis Huet)}
+
+
 \includegraphics[width=0.8\linewidth,keepaspectratio]{rnn31}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN with 2 hidden layers or units}
+Each cell
+\begin{itemize}
+\item $h_t' = tanh(W_{hh}h_{t-1} + W_{xh}X_t + b_h)$
+\item $h_t' = tanh(W_{hh}'h_{t-1}' + W_{xh}'X_t + b_h')$
+\item $y_t = tanh(W_{hy}h_t' + b_y)$
+\item Back-propagation will adjust all the weights for all unrolled time-steps.
+\end{itemize}
+
+
+\begin{center}
+\includegraphics[width=0.3\linewidth,keepaspectratio]{rnn36}
+
+{\tiny (Ref: RNN with Keras: Understanding computations - Alexis Huet)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{GRU cell}
+Each cell
+\begin{align}
+z_t =& \sigma(W_{zx} x_t + W_{zh} h_{t-1} + b_z) \\
+r_t =& \sigma(W_{rx} x_t + W_{rh} h_{t-1} + b_r) \\
+\tilde{h}_t =& \tanh(W_{ox} x_t + W_{oh} r_t h_{t-1} + b_o) \\
+ \\
+h_t =& z_t h_{t-1} + (1 - z_t) \tilde{h}_t
+\end{align} %]]>
+
+
+\begin{center}
+\includegraphics[width=0.3\linewidth,keepaspectratio]{rnn37}
+
+{\tiny (Ref: RNN with Keras: Understanding computations - Alexis Huet)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM cell}
+Each cell
+% <![CDATA[
+\begin{align}
+i_t =& \sigma(W_{ix} x_t + W_{ih} h_{t-1} + b_i) \\
+f_t =& \sigma(W_{fx} x_t + W_{fh} h_{t-1} + b_f) \\
+\tilde{c}_t =& \tanh(W_{cx} x_t + W_{ch} h_{t-1} + b_c) \\
+o_t =& \sigma(W_{ox} x_t + W_{oh} h_{t-1} + b_o) \\
+ \\
+c_t =& f_t c_{t-1} + i_t \tilde{c}_t \\
+h_t =& o_t \tanh(c_t)
+\end{align} %]]>
+
+
+\begin{center}
+\includegraphics[width=0.2\linewidth,keepaspectratio]{rnn38}
+
+{\tiny (Ref: RNN with Keras: Understanding computations - Alexis Huet)}
 \end{center}
 \end{frame}
 
@@ -633,7 +716,15 @@ Focus on the last hidden layer (4th line).
 % %%%\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNN - Summary}
+\begin{frame}
+  \begin{center}
+    {\Large Graphical view of RNN}
+  \end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN in Steps}
 \begin{center}
 \includegraphics[width=0.6\linewidth,keepaspectratio]{rnn4}
 \end{center}
@@ -646,7 +737,7 @@ Focus on the last hidden layer (4th line).
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNN - Summary}
+\begin{frame}[fragile] \frametitle{RNN in Steps}
 \begin{center}
 \includegraphics[width=0.6\linewidth,keepaspectratio]{rnn4}
 \end{center}
@@ -658,7 +749,7 @@ Focus on the last hidden layer (4th line).
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNN - Summary}
+\begin{frame}[fragile] \frametitle{RNN in Steps}
 \begin{center}
 \includegraphics[width=0.6\linewidth,keepaspectratio]{rnn4}
 \end{center}
@@ -670,7 +761,7 @@ Focus on the last hidden layer (4th line).
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNN - Summary}
+\begin{frame}[fragile] \frametitle{RNN in Steps}
 \begin{itemize}
 \item Also notice that the hidden layer is the barrier between the input and the output. 
 \item In reality, the output is no longer a pure function of the input. 
@@ -680,7 +771,7 @@ Focus on the last hidden layer (4th line).
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNN - Summary}
+\begin{frame}[fragile] \frametitle{RNN in Steps}
 \begin{center}
 \includegraphics[width=0.6\linewidth,keepaspectratio]{rnn4}
 \end{center}
@@ -691,7 +782,10 @@ Focus on the last hidden layer (4th line).
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Back-propagation Through Time}
+\begin{frame}[fragile] \frametitle{RNN in Steps}
+
+Back-propagation Through Time
+
 \begin{center}
 \includegraphics[width=0.6\linewidth,keepaspectratio]{rnn5}
 \end{center}
@@ -703,7 +797,7 @@ Focus on the last hidden layer (4th line).
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Back-propagation Through Time}
+\begin{frame}[fragile] \frametitle{RNN in Steps}
 \begin{center}
 \includegraphics[width=0.6\linewidth,keepaspectratio]{rnn5}
 \end{center}
@@ -725,6 +819,12 @@ Focus on the last hidden layer (4th line).
 %%\end{frame}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large Implementation of RNN}
+  \end{center}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{RNN Inputs Specification}
@@ -742,6 +842,75 @@ Say,
 
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN Inputs Specification}
+\begin{itemize}
+\item batch\_input\_shape to be with shape: \lstinline|(batch_size, X.shape[1], 1)|
+\item So batch size* 1000 examples will go at a time. Total, 10 such batches.
+\item Each of the 1000 example contains \lstinline|X.shape[1]| time-stamps (number of pink boxes in your image, same as number of features, ie 64) and each time-stamp is shape 1 (scalar). Dimensionality of that entity is 1. It can be a vector as well.
+\item So input shape is \lstinline|(1000,64,1)|
+\end{itemize}
+
+*Batch size pertains to the amount of training samples to consider at a time for updating your network weights. Training can be erratic if weigts are updated for each row.
+% \begin{center}
+% \includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
+% \end{center}
+
+{\tiny (More info: https://stats.stackexchange.com/questions/153531/what-is-batch-size-in-neural-network)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN LAYER Specification}
+RNN Layer can have multiple hidden states, physically but internally to the cell. Each physical RNN cell (called units) unrolls time-step wise.
+
+\begin{itemize}
+\item Do we have to have RNN units, ie green, boxes, sames as number of columns or features, ie 64. %Green boxes are just time-step wise rolling, ie looping.
+\item No! units will be your output dim. Thats inside direction, its about number of internal state values, which are given as outputs as well as hidden states passed to the next time-step.
+\item This is '\ldots to MANY" architecture, for predicting next $n$ outputs.
+\item Units will be the shape of the RNN's internal states. 
+% \item So, if you declare units=2000 your output will be (1000,2000).)
+% \item Each weight matrix will be num features x num outputs.
+% \item Each output will get tuned, optimized as per its given output label.
+% \item More units, is better to model the function. In case you want singular output you can still have more units and then later, add a dense layer to reduce the dimension to 1.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{rnn34}
+
+{\tiny (Ref: Weights and Biases : Introduction to RNNs)}
+
+\end{center}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN LAYER Specification}
+RNN Layer can have multiple hidden states, physically but internally to the cell. Each physical RNN cell (called units) unrolls time-step wise.
+
+\begin{itemize}
+% \item Do we have to have RNN units, ie green, boxes, sames as number of columns or features, ie 64. %Green boxes are just time-step wise rolling, ie looping.
+% \item No! units will be your output dim. Thats inside direction, its about number of internal state values, which are given as outputs as well as hidden states passed to the next time-step.
+% \item This is '\ldots to MANY" architecture, for predicting next $n$ outputs.
+% \item Units will be the shape of the RNN's internal states. 
+\item So, if you declare units=2000 your output will be (1000,2000).)
+\item Each weight matrix will be num features x num outputs.
+\item Each output will get tuned, optimized as per its given output label.
+\item More units, is better to model the function. In case you want singular output you can still have more units and then later, add a dense layer to reduce the dimension to 1.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{rnn34}
+
+{\tiny (Ref: Weights and Biases : Introduction to RNNs)}
+
+\end{center}
+
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{RNN Model}
@@ -767,6 +936,25 @@ model.fit(tr_X, tr_y,
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN Parameters calculations}
+
+\begin{itemize}
+\item num\_units = equals the number of units in the RNN
+\item num\_features = equals the number features of your input
+\item input\_weights = num\_features*num\_units
+\item recurrent\_weights = num\_units*num\_units
+\item biases = num\_units*1
+\item total params = recurrent\_weights + input\_weights + biases
+\end{itemize}
+
+% \begin{center}
+% \includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
+% \end{center}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{RNNs Model Summary}
 \begin{lstlisting}
 Layer (type)                 Output Shape              Param #   
@@ -782,64 +970,22 @@ _________________________________________________________________
 \end{lstlisting}
 
 
-\begin{center}
-\includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
-\end{center}
+% \begin{center}
+% \includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
+% \end{center}
 
 
 \end{frame}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNN Inputs Specification}
-\begin{itemize}
-\item batch\_input\_shape to be with shape: \lstinline|(batch_size, X.shape[1], 1)|
-\item So batch size 1000 examples will go at a time. Total, 10 such batches.
-\item Each of the 1000 example contains \lstinline|X.shape[1]| time-stamps (number of pink boxes in your image, same as number of features, ie 64) and each time-stamp is shape 1 (scalar). Dimensionality of that entity is 1. It can be a vector as well.
-\item So input shape is \lstinline|(1000,64,1)|
-\end{itemize}
-
-\begin{center}
-\includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
-\end{center}
 
 
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNN Inputs Specification}
-
-\begin{itemize}
-\item Do we have to have RNN units, ie green, boxes, sames as number of columns or features, ie 64.
-\item No! units will be your output dim.
-\item Units will be the shape of the RNN's internal state. 
-\item So, if you declare units=2000 your output will be (1000,2000).)
-\end{itemize}
-
-\begin{center}
-\includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
-\end{center}
-
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNN Inputs Specification}
-
-\begin{itemize}
-\item num\_units = equals the number of units in the RNN
-\item num\_features = equals the number features of your input
-\item input\_weights = num\_features*num\_units
-\item recurrent\_weights = num\_units*num\_units
-\item biases = num\_units*1
-\item total params = recurrent\_weights + input\_weights + biases
-\end{itemize}
-
-\begin{center}
-\includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
-\end{center}
-
-
+\begin{frame}
+  \begin{center}
+    {\Large Conclusions}
+  \end{center}
 \end{frame}
 
 
