@@ -140,6 +140,7 @@ Logistics:
     * NLP and all : https://www.cs.bgu.ac.il/~elhadad/nlp18.html
     * Standord NLP https://www.youtube.com/watch?v=nfoudtpBV68&list=PL6397E4B26D00A269
     * From Languages to Information https://www.youtube.com/channel/UC_48v322owNVtORXuMeRmpA/playlists?view=50&sort=dd&shelf_id=2 https://web.stanford.edu/class/cs124/ 
+		* Analytics Vidhya NLP Learning Path 2020 https://www.analyticsvidhya.com/blog/2020/01/learning-path-nlp-2020/?utm_source=feedburner
     * LinkedIn refs
         * 1. Machine Translation (https://lnkd.in/fAYvEne)
         * 2. Question Answering (Like Chat-bot) (https://lnkd.in/fFZmP4f)
