@@ -1,2 +1,2 @@
 @echo off
-for /r %%i in (Main_Workshop_DeepNLP*.tex) do texify -cp %%i
+for /r %%i in (Main_*_DeepNLP*.tex) do texify -cp %%i
