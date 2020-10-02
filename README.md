@@ -28,13 +28,15 @@ Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
 Logistics:
 - Day/time: Saturdays Mornings, 9 to 10 am, else NO
 - Pre-Talk:
-    - Prep materialas *_seminar.tex and ipynb for 40 minutes talk and then QnA
+    - Prep materials *_seminar.tex and ipynb for 40 minutes talk and then QnA
     - Create Google calendar event with Google Meet link
     - Create Banner png from admin/template.ppt
 		- Create TFUG Pune Meetup event with Google Meet link and Banner png
-    - Advertise the Meetup link: my LinkedIn, Company Teams, GDE whatsapp grps
+    - Advertise the Meetup link: my LinkedIn, Company Teams, GDE WhatsApp grps
     - Copy material pdf/ipynbs under TFUGPune folder, sync with GDrive
-- During Talk: Take pictures
+- During Talk:
+    - Take pictures or screenshots
+    - Share links: my github page, yati.io, linkedin profile
 - Post-Talk:
     - Fill GDE Advocu entry with picture taken
     - Fill GDE New event survey link
