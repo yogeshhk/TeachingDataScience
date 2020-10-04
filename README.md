@@ -34,7 +34,9 @@ Logistics:
 		- Create TFUG Pune Meetup event with Google Meet link and Banner png
     - Advertise the Meetup link: my LinkedIn, Company Teams, GDE WhatsApp grps
     - Copy material pdf/ipynbs under TFUGPune folder, sync with GDrive
+		- No recording or YouTube streaming, content is open-sourced anyway
 - During Talk:
+		- Simplify with Doodles
     - Take pictures or screenshots
     - Share links: my github page, yati.io, linkedin profile
 - Post-Talk:
