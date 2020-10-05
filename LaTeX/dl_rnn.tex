@@ -646,13 +646,13 @@ Each cell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{GRU cell}
 Each cell
-\begin{align}
+\begin{align*}
 z_t =& \sigma(W_{zx} x_t + W_{zh} h_{t-1} + b_z) \\
 r_t =& \sigma(W_{rx} x_t + W_{rh} h_{t-1} + b_r) \\
 \tilde{h}_t =& \tanh(W_{ox} x_t + W_{oh} r_t h_{t-1} + b_o) \\
  \\
 h_t =& z_t h_{t-1} + (1 - z_t) \tilde{h}_t
-\end{align} %]]>
+\end{align*} %]]>
 
 
 \begin{center}
@@ -666,7 +666,7 @@ h_t =& z_t h_{t-1} + (1 - z_t) \tilde{h}_t
 \begin{frame}[fragile] \frametitle{LSTM cell}
 Each cell
 % <![CDATA[
-\begin{align}
+\begin{align*}
 i_t =& \sigma(W_{ix} x_t + W_{ih} h_{t-1} + b_i) \\
 f_t =& \sigma(W_{fx} x_t + W_{fh} h_{t-1} + b_f) \\
 \tilde{c}_t =& \tanh(W_{cx} x_t + W_{ch} h_{t-1} + b_c) \\
@@ -674,7 +674,7 @@ o_t =& \sigma(W_{ox} x_t + W_{oh} h_{t-1} + b_o) \\
  \\
 c_t =& f_t c_{t-1} + i_t \tilde{c}_t \\
 h_t =& o_t \tanh(c_t)
-\end{align} %]]>
+\end{align*} %]]>
 
 
 \begin{center}
@@ -889,9 +889,9 @@ Back-propagation Through Time
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{RNN Inputs Specification}
-Say,
+FIXED sequence length case: Say,
 \begin{itemize}
-\item Dataset has 10000 rows and 64 features/columns.
+\item Dataset has 10000 rows and 64 features/columns
 \item Need to generate classification model, binary, so labels are 0 or 1.
 \item How does RNN handle this matrix (i.e., (1000,64))? Does it input each column something like this figure?
 \item Should SimpleRNN() units always be equal to the number of features?
@@ -911,16 +911,51 @@ Say,
 \item So batch size* 1000 examples will go at a time. Total, 10 such batches.
 \item Each of the 1000 example contains \lstinline|X.shape[1]| time-stamps (number of pink boxes in your image, same as number of features, ie 64) and each time-stamp is shape 1 (scalar). Dimensionality of that entity is 1. It can be a vector as well.
 \item So input shape is \lstinline|(1000,64,1)|
+\item The larger a batch, the more representative the computed gradient is for the whole data set, but larger memory requirements
 \end{itemize}
-
-*Batch size pertains to the amount of training samples to consider at a time for updating your network weights. Training can be erratic if weigts are updated for each row.
-% \begin{center}
-% \includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
-% \end{center}
 
 {\tiny (More info: https://stats.stackexchange.com/questions/153531/what-is-batch-size-in-neural-network)}
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN Inputs Specification: Batch Size, Num Steps}
+\begin{itemize}
+\item `batch size' pertains to the amount of training samples to consider at a time for updating your network weights. Training can be erratic if weights are updated for each row. After a training pass of size batch\_size, the gradient of your loss function with respect to each of the network parameters is computed and your weights updated.
+\item Till the batch is over, losses per training sample are either averaged or accumulated, with that values, weights are updated. {\tiny (Ref: https://stats.stackexchange.com/questions/174708/how-are-weights-updated-in-the-batch-learning-method-in-neural-networks)}
+
+\item In RNN, it is computationally very, very expensive to calculate the gradients of the loss function with respect to network parameters if you have to consider back-propagation through all states since the creation of your network, there is a neat little trick to speed up your computation: approximate your gradients with a subset of historical network states num\_steps.
+\end{itemize}
+
+*
+% \begin{center}
+% \includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
+% \end{center}
+
+{\tiny (More info: https://stackoverflow.com/questions/44381450/doubts-regarding-batch-size-and-time-steps-in-rnn)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN Inputs Specification: Batch Size, Num Steps}
+Example: data size of 100; batch size of 5, for 30 network parameter updates during each epoch. 
+\begin{itemize}
+\item Propagates the first 5 training examples, updates its parameters based on the optimization method provided, then takes the next 5, until it made a full pass over the data. 
+\item num\_steps determines the amount of cells you unroll and hence the amount of data used in gradient computation. 
+\item As each cell/layer shares parameters, this does not result in an increase in parameters to optimize, but it enables context learning, which is why you'd want RNNs in the first place
+\end{itemize}
+So, NUM STEPS is the number of `features' you LOOK BACK (in case of text-words input) or consider while computing gradients and updating the weights.
+
+*
+% \begin{center}
+% \includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
+% \end{center}
+
+{\tiny (More info: https://stackoverflow.com/questions/44381450/doubts-regarding-batch-size-and-time-steps-in-rnn)}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{RNN LAYER Specification}
@@ -968,6 +1003,47 @@ RNN Layer can have multiple hidden states, physically but internally to the cell
 {\tiny (Ref: Weights and Biases : Introduction to RNNs)}
 
 \end{center}
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN Inputs Specification}
+VARIABLE sequence length case: Say,
+\begin{itemize}
+\item Can either PAD the sequence with '0's and make it FIXED size, for each batch (or overall), else specify 'None' for that variable for time steps in Keras.  If you don't want `0' padding, then you can specify sample weights. 
+\item Now, suppose length of training examples in
+\begin{align*}
+batch-1 &= 10, \\
+batch-2 &= 15. \\
+batch-3 &= 18 \ldots
+\end{align*}
+\item Now while training batch-1 , RNN will be unrolled/looped 10 times. For batch-2, 15 times and so on. The number of weights do not change, or even the network architecture does not change, but just the times same architecture is looped, changes in each batch.
+\end{itemize}
+
+{\tiny (Ref: https://datascience.stackexchange.com/questions/26366/training-an-rnn-with-examples-of-different-lengths-in-keras)}.
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN Inputs Specification}
+\begin{itemize}
+
+\item But, within a batch, do we need same fixed length of all sequences?
+\item Because Tensorflow (or any other framework) works on tensors/arrays and those can't be "ragged" like $[[1,2,3],[4,5]]$. 
+\item They need to be rectangular. Thats why within a batch, it needs to be fixed size. 
+\item Anyway achieved by num steps parameter, it extends or truncates. 
+\item The reason a fixed length is used in keras, is because it greatly improves performance by creating tensors of fixed shapes. 
+\item But that's only for training. After training, you'll have learned the right weights for your task.
+\end{itemize}
+
+{\tiny (Ref: https://datascience.stackexchange.com/questions/26366/training-an-rnn-with-examples-of-different-lengths-in-keras)}.
+% \begin{center}
+% \includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
+% \end{center}
 
 
 \end{frame}
@@ -1344,6 +1420,21 @@ _________________________________________________________________
 
 \begin{center}
 \includegraphics[width=\linewidth,keepaspectratio]{rnn42}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN vanishing gradients}
+\begin{itemize}
+\item Vanilla RNNs suffers at vanishing gradients problems.
+\item A modest recurrent neural network may have 200-to-400 input time steps, resulting conceptually in a very deep network.
+\item The derivative the activation nonlinearities, sigmoid or tanh, is smaller
+than 1.
+\item Therefore, the hidden transfer function should be a linear function. Relu (rectilinear activation function) looks and acts like a linear function, making it easier to train and less likely to saturate, but is, in fact, a nonlinear function. The ReLU derivative is a constant of either 0 or 1, so it isn’t as likely to suffer from vanishing gradients.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{rnn46}
 \end{center}
 \end{frame}
 

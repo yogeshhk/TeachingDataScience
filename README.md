@@ -12,7 +12,7 @@ Copyright (C) 2019 Yogesh H Kulkarni
 - For Giving back from classes to masses, dyan-eshwar. 
 - If any $: Donate to CoEP Alumni, Jagriti, Aai for causes (Experfy/INE already)
 - For better own understanding
-- Tensorflow (Google backing, good production ready tooling)
+- Tensorflow (No conflict of interest, Google backing, good production ready, Demand for job & training)
 -->
 
 Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
