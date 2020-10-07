@@ -13,6 +13,7 @@ Copyright (C) 2019 Yogesh H Kulkarni
 - If any $: Donate to CoEP Alumni, Jagriti, Aai for causes (Experfy/INE already)
 - For better own understanding
 - Tensorflow (No conflict of interest, Google backing, good production ready, Demand for job & training)
+- Swift for Tensorflow : +{Fast, typed-based, uncommon, nascent:scope4contribution, less crowded in trainings}, -{production-ready-ness, no ecosystem}
 -->
 
 Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
@@ -21,8 +22,9 @@ Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
 - RNN [Presentation done]
 - Word embeddings [Presentation done]
 - MidcurveNN @ DevFests [Presentation done]
-- DL in Bioinformatics [Under Construction]
-- TBD [References below]
+- TensorFlow Data [Presentation done]
+- Swift4TensorFlow [Under Construction]
+- More topics, in  References below
 
 ## Playbook (conduct lectures under TFUG Pune)
 Logistics:
