@@ -14,6 +14,8 @@ Copyright (C) 2019 Yogesh H Kulkarni
 - For better own understanding
 - Tensorflow (No conflict of interest, Google backing, good production ready, Demand for job & training)
 - Swift for Tensorflow : +{Fast, typed-based, uncommon, nascent:scope4contribution, less crowded in trainings}, -{production-ready-ness, no ecosystem}
+https://github.com/tensorflow/swift/blob/master/docs/WhySwiftForTensorFlow.md
+
 -->
 
 Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
@@ -89,6 +91,15 @@ Logistics:
 * Run make bat for the course you need. Inside, its just a texify command, so you can modify it as per your OS.
 * You can compile individual "Main_Workshop/Seminar_<course>_CheatSheet/Presentation.tex" also using your LaTeX system.
 * Instead of these given driver files, you can have your own main files and include just the *content.tex files.
+
+## Notes
+### Languages for Deep Learning
+* Python +: lots of ML/DL libraries (ecosystem), easy to learn/prototype
+* Python -: not fast, not safe, C/C++ inside, not typed
+* Julia +: Speed of C, usable like Python, Stats like R, string processing like Perl
+* Julia -: no direct support for Tensorflow but has SciML
+* Swift +: backed by Apple/Google, High to low level, very hackable, directly on LLVM (low level virtual machine)
+* Swift -: swift for Tensorflow still under development
 
 ## References to be used for updating the Training Material
 * Representation Learning - Yoshua Bengio https://www.youtube.com/watch?v=O6itYc2nnnM
