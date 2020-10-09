@@ -79,6 +79,128 @@ dataset = tf.data.Dataset.from_tensor_slices(dict(df))
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create target variable}
+\begin{lstlisting}
+import pathlib
+
+dataset_url = 'http://storage.googleapis.com/download.tensorflow.org/data/petfinder-mini.zip'
+csv_file = 'datasets/petfinder-mini/petfinder-mini.csv'
+
+tf.keras.utils.get_file('petfinder_mini.zip', dataset_url,
+                        extract=True, cache_dir='.')
+dataframe = pd.read_csv(csv_file) 
+
+\end{lstlisting}
+
+After modifying the label column, 0 will indicate the pet was not adopted, and 1 will indicate it was.
+
+\begin{lstlisting}
+# In the original dataset "4" indicates the pet was not adopted.
+dataframe['target'] = np.where(dataframe['AdoptionSpeed']==4, 0, 1)
+
+# Drop un-used columns.
+dataframe = dataframe.drop(columns=['AdoptionSpeed', 'Description'])
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Split Dataframe}
+\begin{lstlisting}
+train, test = train_test_split(dataframe, test_size=0.2)
+train, val = train_test_split(train, test_size=0.2)
+print(len(train), 'train examples')
+print(len(val), 'validation examples')
+print(len(test), 'test examples')
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Categorical columns}
+\lstinline|get_category_encoding_layer| function returns a layer which maps values from a vocabulary to integer indices and one-hot encodes the features.
+
+\begin{lstlisting}
+def get_category_encoding_layer(name, dataset, dtype, max_tokens=None):
+  # Create a StringLookup layer which will turn strings into integer indices
+  if dtype == 'string':
+    index = preprocessing.StringLookup(max_tokens=max_tokens)
+  else:
+    index = preprocessing.IntegerLookup(max_values=max_tokens)
+
+  # Prepare a Dataset that only yields our feature
+  feature_ds = dataset.map(lambda x, y: x[name])
+
+  # Learn the set of possible values and assign them a fixed integer index.
+  index.adapt(feature_ds)
+
+  # Create a Discretization for our integer indices.
+  encoder = preprocessing.CategoryEncoding(max_tokens=index.vocab_size())
+
+  # Prepare a Dataset that only yields our feature.
+  feature_ds = feature_ds.map(index)
+
+  # Learn the space of possible indices.
+  encoder.adapt(feature_ds)
+
+  # Apply one-hot encoding to our indices. The lambda function captures the
+  # layer so we can use them, or include them in the functional model later.
+  return lambda feature: encoder(index(feature))
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Choosing Columns}
+
+\begin{lstlisting}
+batch_size = 256
+train_ds = df_to_dataset(train, batch_size=batch_size)
+val_ds = df_to_dataset(val, shuffle=False, batch_size=batch_size)
+test_ds = df_to_dataset(test, shuffle=False, batch_size=batch_size)
+
+all_inputs = []
+encoded_features = []
+
+# Numeric features.
+for header in ['PhotoAmt', 'Fee']:
+  numeric_col = tf.keras.Input(shape=(1,), name=header)
+  normalization_layer = get_normalization_layer(header, train_ds)
+  encoded_numeric_col = normalization_layer(numeric_col)
+  all_inputs.append(numeric_col)
+  encoded_features.append(encoded_numeric_col)
+\end{lstlisting}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Choosing Columns}
+
+\begin{lstlisting}
+# Categorical features encoded as integers.
+age_col = tf.keras.Input(shape=(1,), name='Age', dtype='int64')
+encoding_layer = get_category_encoding_layer('Age', train_ds, dtype='int64',
+                                             max_tokens=5)
+encoded_age_col = encoding_layer(age_col)
+all_inputs.append(age_col)
+encoded_features.append(encoded_age_col)
+
+# Categorical features encoded as string.
+categorical_cols = ['Type', 'Color1', 'Color2', 'Gender', 'MaturitySize',
+                    'FurLength', 'Vaccinated', 'Sterilized', 'Health', 'Breed1']
+for header in categorical_cols:
+  categorical_col = tf.keras.Input(shape=(1,), name=header, dtype='string')
+  encoding_layer = get_category_encoding_layer(header, train_ds, dtype='string',
+                                               max_tokens=5)
+  encoded_categorical_col = encoding_layer(categorical_col)
+  all_inputs.append(categorical_col)
+  encoded_features.append(encoded_categorical_col)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{From Python Generator}
 \lstinline|tf.data.Dataset.from_generator|
 
@@ -163,6 +285,14 @@ dataset = tf.data.Dataset.make_csv_dataset(path,batch_size=32,
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large Text Data}
+	
+  \end{center}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Loading text data}
 
@@ -232,17 +362,14 @@ titanic_lines = tf.data.TextLineDataset(titanic_file)
 \end{frame}
 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
   \begin{center}
-    {\Large TensorFlow Data with Image Data Generator}
+    {\Large Image Data}
 	
-{\tiny (Ref: Building data pipelines with tf.data - Sayak Paul)}
-
   \end{center}
 \end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Loading Images}
@@ -282,6 +409,81 @@ Initialize TF Dataset from directory of files (see ``train\_aug'' from ImageData
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Download Data}
+
+Assume Data is in following directory tree:
+
+\begin{lstlisting}
+import pathlib
+dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
+data_dir = tf.keras.utils.get_file(origin=dataset_url, 
+                                   fname='flower_photos', 
+                                   untar=True)
+data_dir = pathlib.Path(data_dir)
+
+flowers_photos/
+  daisy/
+  dandelion/
+  roses/
+  sunflowers/
+  tulips/
+	
+	
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Load Data}
+
+\begin{lstlisting}
+batch_size = 32
+img_height = 180
+img_width = 180
+
+train_ds = tf.keras.preprocessing.image_dataset_from_directory(
+  data_dir,
+  validation_split=0.2,
+  subset="training",
+  seed=123,
+  image_size=(img_height, img_width),
+  batch_size=batch_size)
+	
+val_ds = tf.keras.preprocessing.image_dataset_from_directory(
+  data_dir,
+  validation_split=0.2,
+  subset="validation",
+  seed=123,
+  image_size=(img_height, img_width),
+  batch_size=batch_size)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Visualize Data}
+
+\begin{lstlisting}
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(10, 10))
+for images, labels in train_ds.take(1):
+  for i in range(9):
+    ax = plt.subplot(3, 3, i + 1)
+    plt.imshow(images[i].numpy().astype("uint8"))
+    plt.title(class_names[labels[i]])
+    plt.axis("off")
+\end{lstlisting}
+
+\begin{center}
+\includegraphics[width=0.3\linewidth,keepaspectratio]{tfdata14}
+\end{center}
+
+{\tiny (Ref: https://www.tensorflow.org/tutorials/load\_data/images)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Image Preprocessing}
 
 \begin{lstlisting}
@@ -313,6 +515,39 @@ show(image, label)
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Standardize Data}
+
+\begin{lstlisting}
+from tensorflow.keras import layers
+normalization_layer = tf.keras.layers.experimental.preprocessing.Rescaling(1./255)
+\end{lstlisting}
+There are two ways to use this layer. You can apply it to the dataset by calling map:
+\begin{lstlisting}
+normalized_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
+image_batch, labels_batch = next(iter(normalized_ds))
+first_image = image_batch[0]
+# Notice the pixels values are now in `[0,1]`.
+print(np.min(first_image), np.max(first_image)) 
+\end{lstlisting}
+Or, you can include the layer inside your model definition to simplify deployment.
+\begin{lstlisting}
+
+num_classes = 5
+
+model = tf.keras.Sequential([
+  layers.experimental.preprocessing.Rescaling(1./255),
+  layers.Conv2D(32, 3, activation='relu'),
+  layers.MaxPooling2D(),
+  layers.Flatten(),
+  layers.Dense(128, activation='relu'),
+  layers.Dense(num_classes)
+])
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Image Preprocessing}
 
 If you want to apply a random rotation, the tf.image module only has tf.image.rot90, which is not very useful for image augmentation.
@@ -329,6 +564,15 @@ rot_ds = images_ds.map(tf_random_rotate_image)
 for image, label in rot_ds.take(2):
   show(image, label)
 \end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large Time Series Data}
+	
+  \end{center}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -425,15 +669,12 @@ Putting this together you might write this function:
 \begin{lstlisting}
 def make_window_dataset(ds, window_size=5, shift=1, stride=1):
   windows = ds.window(window_size, shift=shift, stride=stride)
-
-  def sub_to_batch(sub):
+  def sub_to_batch(sub): # function defined within function!!
     return sub.batch(window_size, drop_remainder=True)
-
   windows = windows.flat_map(sub_to_batch)
   return windows
 
 ds = make_window_dataset(range_ds, window_size=10, shift = 5, stride=3)
-
 for example in ds.take(10):
   print(example.numpy())
 	
@@ -477,6 +718,14 @@ for inputs,labels in dense_labels_ds.take(3):
 {\tiny (Ref: Building data pipelines with tf.data - Sayak Paul)}
 
 \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large Conclusions}
+	
+  \end{center}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
