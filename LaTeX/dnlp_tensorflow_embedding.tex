@@ -3,4 +3,329 @@
 \begin{center}
 {\Large Word Embeddings in Tensorflow}
 \end{center}
+
+{\tiny (Ref: How to Use Word Embedding Layers for Deep Learning with Keras
+by Jason Brownlee)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Word Embedding (Recap)}
+
+\begin{itemize}
+\item Word embeddings provide a dense representation of words and their relative similarity.
+\item Improvement over sparse representations like Bag of Words
+\item Can be pre-built on generic corpus or built from scratch with own corpus
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tensorflow/Keras Embedding Layer}
+
+\begin{itemize}
+\item Requires that the input data be integer encoded, so that each word is represented by a unique integer. Tokenizer API can be used to generate this format.
+\item Like a lookup table that maps from integer indices (which stand for specific words) to dense vectors (their embeddings).
+\item Usage:
+\begin{itemize}
+\item Used alone to learn a word embedding that can be saved and used in another model later.
+\item Used as part of a deep learning model where the embedding is learned along with the model itself.
+\item Used to load a pre-trained word embedding model, a type of transfer learning.
+\end{itemize}
+
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Embedding Layer Input Specification}
+
+\begin{itemize}
+\item {\bf input\_dim}: Size of the vocabulary. For example, if your data is integer encoded to values between 0-10, then the size of the vocabulary would be 11 words.
+\item {\bf output\_dim}: Size of the vector space in which words will be embedded, ie size of the output vectors from this layer for each word. For example, it could be 32 or 100 or even larger.
+\item {\bf input\_length}: This is the length of input sequences, as you would define for any input layer of a Keras model. For example, if all of your input documents are comprised of 1000 words, this would be 1000.
+\end{itemize}
+
+\begin{lstlisting}
+e = Embedding(200, 32, input_length=50)
+\end{lstlisting}
+
+Above Embedding layer is with a vocabulary of 200 (e.g. integer encoded words from 0 to 199, inclusive), a vector space of 32 dimensions in which words will be embedded, and input documents that have 50 words each.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Embedding Layer}
+
+\begin{lstlisting}
+# Embed a 1,000 word vocabulary into 5 dimensions.
+embedding_layer = tf.keras.layers.Embedding(1000, 5)
+\end{lstlisting}
+
+\begin{itemize}
+\item Initially all 5000 weights are initialized randomly (just like any other layer).
+\item During training, they are gradually adjusted via backpropagation. 
+\item Once trained, the learned word embeddings will roughly encode similarities between words (as they were learned for the specific problem your model is trained on).
+\end{itemize}
+
+{\tiny (Ref: https://www.tensorflow.org/tutorials/text/word\_embeddings)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Embedding Layer Output}
+
+\begin{itemize}
+\item The output of the Embedding layer is a 2D vector with one embedding for each word in the input sequence of words (input document).
+\item If you wish to connect a Dense layer directly to an Embedding layer, you must first flatten the 2D output matrix to a 1D vector using the Flatten layer.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Word Embeddings via Layers in Keras/Tensorflow}
+\end{center}
+
+{\tiny (Ref: How to Use Word Embedding Layers for Deep Learning with Keras
+by Jason Brownlee)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Embedding Layer Example: Inputs}
+
+Sentiment analysis classification on 10 documents.
+
+\begin{lstlisting}
+# define documents
+docs = ['Well done!',
+		'Good work',
+		'Great effort',
+		'nice work',
+		'Excellent!',
+		'Weak',
+		'Poor effort!',
+		'not good',
+		'poor work',
+		'Could have done better.']
+# define class labels
+labels = array([1,1,1,1,1,0,0,0,0,0])
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Embedding Layer Example: Encoding}
+
+Integer encoding. Estimating the vocabulary size of 50, which is much larger than needed, but thats ok.
+
+Keras provides the one\_hot() function that creates a hash of each word as an efficient integer encoding.
+
+\begin{lstlisting}
+# integer encode the documents
+vocab_size = 50
+encoded_docs = [one_hot(d, vocab_size) for d in docs]
+print(encoded_docs)
+
+[[6, 16], [42, 24], [2, 17], [42, 24], [18], [17], [22, 17], [27, 42], [22, 24], [49, 46, 16, 34]]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Embedding Layer Example: Padding}
+
+\begin{itemize}
+\item The sequences have different lengths and Keras prefers inputs to be vectorized and all inputs to have the same length. 
+\item Pad all input sequences to have the length of 4. 
+\item Again, we can do this with a built in Keras function, in this case the pad\_sequences() function.
+\end{itemize}
+
+\begin{lstlisting}
+# pad documents to a max length of 4 words
+max_length = 4
+padded_docs = pad_sequences(encoded_docs, maxlen=max_length, padding='post')
+print(padded_docs)
+
+[[ 6 16  0  0]
+ [42 24  0  0]
+ [ 2 17  0  0]
+ [42 24  0  0]
+ [18  0  0  0]
+ [17  0  0  0]
+ [22 17  0  0]
+ [27 42  0  0]
+ [22 24  0  0]
+ [49 46 16 34]]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Embedding Layer Example: Model}
+
+The Embedding has a vocabulary of 50 and an input length of 4. Lets choose a small embedding space of 8 dimensions. The output from the Embedding layer will be 4 vectors of 8 dimensions each, one for each word. We flatten this to a one 32-element vector to pass on to the Dense output layer.
+
+\begin{lstlisting}
+# define the model
+model = Sequential()
+model.add(Embedding(vocab_size, 8, input_length=max_length))
+model.add(Flatten())
+model.add(Dense(1, activation='sigmoid'))
+# compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+# summarize the model
+print(model.summary())
+
+Layer (type)                 Output Shape              Param #
+=================================================================
+embedding_1 (Embedding)      (None, 4, 8)              400
+_________________________________________________________________
+flatten_1 (Flatten)          (None, 32)                0
+_________________________________________________________________
+dense_1 (Dense)              (None, 1)                 33
+=================================================================
+\end{lstlisting}
+\end{frame} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Embedding Layer Example: Evaluation}
+
+\begin{lstlisting}
+# fit the model
+model.fit(padded_docs, labels, epochs=50, verbose=0)
+# evaluate the model
+loss, accuracy = model.evaluate(padded_docs, labels, verbose=0)
+print('Accuracy: %f' % (accuracy*100))
+
+Accuracy: 100.000000
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Glove Keras/Tensorflow}
+\end{center}
+
+{\tiny (Ref: How to Use Word Embedding Layers for Deep Learning with Keras
+by Jason Brownlee)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Glove Word Embedding}
+
+\begin{itemize}
+\item Glove provides a suite of pre-trained word embeddings on their website released under a public domain license
+\item The smallest package of embeddings is 822Mb, called “glove.6B.zip“. It was trained on a dataset of one billion tokens (words) with a vocabulary of 400 thousand words. 
+\item There are a few different embedding vector sizes, including 50, 100, 200 and 300 dimensions.
+\item You can download this collection of embeddings and we can seed the Keras Embedding layer with weights from the pre-trained embedding for the words in your training dataset.
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Glove Embedding Example: Input}
+
+\begin{lstlisting}
+# define documents
+docs = ['Well done!',
+		'Good work',
+		'Great effort',
+		'nice work',
+		'Excellent!',
+		'Weak',
+		'Poor effort!',
+		'not good',
+		'poor work',
+		'Could have done better.']
+# define class labels
+labels = array([1,1,1,1,1,0,0,0,0,0])
+# prepare tokenizer
+t = Tokenizer()
+t.fit_on_texts(docs)
+vocab_size = len(t.word_index) + 1
+# integer encode the documents
+encoded_docs = t.texts_to_sequences(docs)
+print(encoded_docs)
+# pad documents to a max length of 4 words
+max_length = 4
+padded_docs = pad_sequences(encoded_docs, maxlen=max_length, padding='post')
+print(padded_docs)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Glove Embedding Example: Load Glove}
+
+Load the entire GloVe word embedding file into memory as a dictionary of word to embedding array.
+
+\begin{lstlisting}
+# load the whole embedding into memory
+embeddings_index = dict()
+f = open('glove.6B.100d.txt')
+for line in f:
+	values = line.split()
+	word = values[0]
+	coefs = asarray(values[1:], dtype='float32')
+	embeddings_index[word] = coefs
+f.close()
+print('Loaded %s word vectors.' % len(embeddings_index))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Glove Embedding Example: Prep Input}
+
+Create a matrix of one embedding for each word in the training dataset. We can do that by enumerating all unique words in the Tokenizer.word\_index and locating the embedding weight vector from the loaded GloVe embedding.
+
+\begin{lstlisting}
+# create a weight matrix for words in training docs
+embedding_matrix = zeros((vocab_size, 100))
+for word, i in t.word_index.items():
+	embedding_vector = embeddings_index.get(word)
+	if embedding_vector is not None:
+		embedding_matrix[i] = embedding_vector
+\end{lstlisting}
+
+The result is a matrix of weights only for words we will see during training.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Glove Embedding Example: Embedding Layer}
+
+The embedding layer can be seeded with the GloVe word embedding weights. We chose the 100-dimensional version, therefore the Embedding layer must be defined with output\_dim set to 100. Finally, we do not want to update the learned word weights in this model, therefore we will set the trainable attribute for the model to be False.
+
+\begin{lstlisting}
+# define model
+model = Sequential()
+e = Embedding(vocab_size, 100, weights=[embedding_matrix], input_length=4, trainable=False)
+model.add(e)
+model.add(Flatten())
+model.add(Dense(1, activation='sigmoid'))
+# compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+# summarize the model
+print(model.summary())
+# fit the model
+model.fit(padded_docs, labels, epochs=50, verbose=0)
+# evaluate the model
+loss, accuracy = model.evaluate(padded_docs, labels, verbose=0)
+print('Accuracy: %f' % (accuracy*100))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Summary}
+
+\begin{itemize}
+\item Keras supports word embeddings via the Embedding layer.
+\item How to learn a word embedding while fitting a neural network.
+\item How to use a pre-trained word embedding in a neural network.
+\end{itemize}
+
+
 \end{frame}
