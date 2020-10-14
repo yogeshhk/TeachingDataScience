@@ -21,7 +21,6 @@ https://github.com/tensorflow/swift/blob/master/docs/WhySwiftForTensorFlow.md
 Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
 
 ## Planned Topics
-- RNN [Presentation done]
 - Word embeddings [Presentation done]
 - MidcurveNN @ DevFests [Presentation done]
 - TensorFlow Data [Presentation done]
@@ -102,6 +101,16 @@ Logistics:
 * Swift -: swift for Tensorflow still under development
 
 ## References to be used for updating the Training Material
+* Swift For Tensorflow
+  * Swift for TensorFlow https://www.tensorflow.org/swift
+	* Lesson 13 2019 fastai v3 Basics of Swift for Deep Learning https://www.youtube.com/watch?v=ldP6EEuWDhk
+	* Swift: Google's bet on differentiable programming | Tryolabs Blog https://tryolabs.com/blog/2020/04/02/swift-googles-bet-on-differentiable-programming/
+	* Ayush517/S4TF-Tutorials: https://github.com/Ayush517/S4TF-Tutorials
+	* param087/swiftML: Swift library for Machine Learning https://github.com/param087/swiftML/
+	* Swift in Sixty Seconds - YouTube https://www.youtube.com/playlist?list=PLuoeXyslFTuajnHpp2jKCyOz2ZhP5OTkN FOR 2 DAY Workshop just like Python
+	* A deeper dive into Swift for Tensorflow | Webinar - YouTube  https://www.youtube.com/watch?v=WxFPrypPBpU&feature=emb_logo
+	* Introduction to Swift for Tensorflow - Brett Koonce - YouTube https://www.youtube.com/watch?v=mo3fSb620og
+	
 * Representation Learning - Yoshua Bengio https://www.youtube.com/watch?v=O6itYc2nnnM
 * Jordan Boyd-Graber ML NLP Play list https://www.youtube.com/user/ezubaric/playlists
 * Shala 2020 IITB https://www.youtube.com/channel/UCobe_Yc7nV6kux94A5doIiA/videos
