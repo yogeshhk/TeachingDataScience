@@ -110,6 +110,7 @@ Logistics:
 	* Swift in Sixty Seconds - YouTube https://www.youtube.com/playlist?list=PLuoeXyslFTuajnHpp2jKCyOz2ZhP5OTkN FOR 2 DAY Workshop just like Python
 	* A deeper dive into Swift for Tensorflow | Webinar - YouTube  https://www.youtube.com/watch?v=WxFPrypPBpU&feature=emb_logo
 	* Introduction to Swift for Tensorflow - Brett Koonce - YouTube https://www.youtube.com/watch?v=mo3fSb620og
+	* Active projects: https://github.com/tensorflow/swift-apis
 	
 * Representation Learning - Yoshua Bengio https://www.youtube.com/watch?v=O6itYc2nnnM
 * Jordan Boyd-Graber ML NLP Play list https://www.youtube.com/user/ezubaric/playlists
