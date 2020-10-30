@@ -21,11 +21,11 @@ https://github.com/tensorflow/swift/blob/master/docs/WhySwiftForTensorFlow.md
 Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
 
 ## Planned Topics
-- Word embeddings [Presentation done]
-- MidcurveNN @ DevFests [Presentation done]
-- TensorFlow Data [Presentation done]
-- Swift4TensorFlow [Under Construction]
-- More topics, in  References below
+- TensorFlow Data at TFUG Pune in Nov 2020
+- Word embeddings at TFUG Pune in Dec 2020
+- Jan 23: Maths for AI: Intro + Calculus
+- Feb 20: Maths for AI: Linear Algebra
+- Mar 20: Maths for AI: Stats and Probability
 
 ## Playbook (conduct lectures under TFUG Pune)
 Logistics:
@@ -121,6 +121,14 @@ Logistics:
 	* Bullet Journal / Planner Icon Doodles | Doodle with Me https://www.youtube.com/watch?v=o1zdgGGUtNo&list=PLx5c844mTRMAKUS2eJJWpKgSJnUgKrLpS
 	* Learning Graphic Facilitation - 7 Elements by Bigger Picture https://www.youtube.com/watch?v=S5DJC6LaOCI
 *	Mathematics
+		* Mathematics For Machine Learning | Essential Mathematics - Machine Learning Tutorial | Simplilearn https://www.youtube.com/watch?v=iyxqcS1u5go
+		* Statistics Fundamentals https://www.youtube.com/playlist?list=PLblh5JKOoLUK0FLuzwntyYI10UQFUhsY9
+		* Essential Mathematics for Machine Learning https://www.youtube.com/playlist?list=PLLy_2iUCG87D1CXFxE-SxCFZUiJzQ3IvE
+		* Mathematics of Machine Learning https://www.youtube.com/playlist?list=PLmAuaUS7wSOP-iTNDivR0ANKuTUhEzMe4
+		* Maths for ML https://gwthomas.github.io/docs/math4ml.pdf
+		* The NOT definitive guide to learning math for machine learning https://medium.com/analytics-vidhya/the-not-definitive-guide-to-learning-math-for-machine-learning-cecab8e0aec7
+		* Maths for ML https://mml-book.github.io/
+		* Computational Statistics | SciPy 2017 Tutorial | Allen Downey https://www.youtube.com/watch?v=He9MCbs1wgE
     * Essence of linear algebra - 3Blue1Brown https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab
     * Statistics Brandon Foltz https://www.youtube.com/user/BCFoltz/playlists
     * Intro - The Math of Intelligence – YouTube
