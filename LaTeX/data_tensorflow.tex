@@ -126,22 +126,16 @@ def get_category_encoding_layer(name, dataset, dtype, max_tokens=None):
     index = preprocessing.StringLookup(max_tokens=max_tokens)
   else:
     index = preprocessing.IntegerLookup(max_values=max_tokens)
-
   # Prepare a Dataset that only yields our feature
   feature_ds = dataset.map(lambda x, y: x[name])
-
   # Learn the set of possible values and assign them a fixed integer index.
   index.adapt(feature_ds)
-
   # Create a Discretization for our integer indices.
   encoder = preprocessing.CategoryEncoding(max_tokens=index.vocab_size())
-
   # Prepare a Dataset that only yields our feature.
   feature_ds = feature_ds.map(index)
-
   # Learn the space of possible indices.
   encoder.adapt(feature_ds)
-
   # Apply one-hot encoding to our indices. The lambda function captures the
   # layer so we can use them, or include them in the functional model later.
   return lambda feature: encoder(index(feature))
@@ -521,7 +515,9 @@ show(image, label)
 from tensorflow.keras import layers
 normalization_layer = tf.keras.layers.experimental.preprocessing.Rescaling(1./255)
 \end{lstlisting}
+
 There are two ways to use this layer. You can apply it to the dataset by calling map:
+
 \begin{lstlisting}
 normalized_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
 image_batch, labels_batch = next(iter(normalized_ds))
@@ -529,11 +525,17 @@ first_image = image_batch[0]
 # Notice the pixels values are now in `[0,1]`.
 print(np.min(first_image), np.max(first_image)) 
 \end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Standardize Data}
+
 Or, you can include the layer inside your model definition to simplify deployment.
+
 \begin{lstlisting}
-
 num_classes = 5
-
 model = tf.keras.Sequential([
   layers.experimental.preprocessing.Rescaling(1./255),
   layers.Conv2D(32, 3, activation='relu'),

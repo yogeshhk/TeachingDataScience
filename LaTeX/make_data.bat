@@ -1,2 +1,2 @@
 @echo off
-for /r %%i in (Main_Workshop_Data*.tex) do texify -cp %%i
+for /r %%i in (Main_*_Data*.tex) do texify -cp %%i
