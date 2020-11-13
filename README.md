@@ -21,9 +21,8 @@ https://github.com/tensorflow/swift/blob/master/docs/WhySwiftForTensorFlow.md
 Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
 
 ## Planned Topics
-- TensorFlow Data at TFUG Pune in Nov 2020
-- Word embeddings at TFUG Pune in Dec 2020
-- Jan 23: Maths for AI: Intro + Calculus
+- Dec  5: Word embeddings
+- Jan 23: Maths for AI: Basics, Calculus
 - Feb 20: Maths for AI: Linear Algebra
 - Mar 20: Maths for AI: Stats and Probability
 
@@ -34,7 +33,7 @@ Logistics:
     - Prep materials *_seminar.tex and ipynb for 40 minutes talk and then QnA
     - Create Google calendar event with Google Meet link
     - Create Banner png from admin/template.ppt
-		- Create TFUG Pune Meetup event with Google Meet link and Banner png
+		- Create TFUG Pune Meetup event with Google Meet link and Banner png, good intro text
     - Advertise the Meetup link: my LinkedIn, Company Teams, GDE WhatsApp grps
     - Copy material pdf/ipynbs under TFUGPune folder, sync with GDrive
 		- No recording or YouTube streaming, content is open-sourced anyway
@@ -91,16 +90,16 @@ Logistics:
 * You can compile individual "Main_Workshop/Seminar_<course>_CheatSheet/Presentation.tex" also using your LaTeX system.
 * Instead of these given driver files, you can have your own main files and include just the *content.tex files.
 
-## Notes
+<!-- ## Notes
 ### Languages for Deep Learning
 * Python +: lots of ML/DL libraries (ecosystem), easy to learn/prototype
 * Python -: not fast, not safe, C/C++ inside, not typed
 * Julia +: Speed of C, usable like Python, Stats like R, string processing like Perl
 * Julia -: no direct support for Tensorflow but has SciML
 * Swift +: backed by Apple/Google, High to low level, very hackable, directly on LLVM (low level virtual machine)
-* Swift -: swift for Tensorflow still under development
+* Swift -: swift for Tensorflow still under development -->
 
-## References to be used for updating the Training Material
+<!-- ## References to be used for updating the Training Material
 * Swift For Tensorflow
   * Swift for TensorFlow https://www.tensorflow.org/swift
 	* Lesson 13 2019 fastai v3 Basics of Swift for Deep Learning https://www.youtube.com/watch?v=ldP6EEuWDhk
@@ -121,21 +120,12 @@ Logistics:
 	* Bullet Journal / Planner Icon Doodles | Doodle with Me https://www.youtube.com/watch?v=o1zdgGGUtNo&list=PLx5c844mTRMAKUS2eJJWpKgSJnUgKrLpS
 	* Learning Graphic Facilitation - 7 Elements by Bigger Picture https://www.youtube.com/watch?v=S5DJC6LaOCI
 *	Mathematics
-		* Mathematics For Machine Learning | Essential Mathematics - Machine Learning Tutorial | Simplilearn https://www.youtube.com/watch?v=iyxqcS1u5go
 		* Statistics Fundamentals https://www.youtube.com/playlist?list=PLblh5JKOoLUK0FLuzwntyYI10UQFUhsY9
-		* Essential Mathematics for Machine Learning https://www.youtube.com/playlist?list=PLLy_2iUCG87D1CXFxE-SxCFZUiJzQ3IvE
 		* Mathematics of Machine Learning https://www.youtube.com/playlist?list=PLmAuaUS7wSOP-iTNDivR0ANKuTUhEzMe4
-		* Maths for ML https://gwthomas.github.io/docs/math4ml.pdf
 		* The NOT definitive guide to learning math for machine learning https://medium.com/analytics-vidhya/the-not-definitive-guide-to-learning-math-for-machine-learning-cecab8e0aec7
 		* Maths for ML https://mml-book.github.io/
-		* Computational Statistics | SciPy 2017 Tutorial | Allen Downey https://www.youtube.com/watch?v=He9MCbs1wgE
     * Essence of linear algebra - 3Blue1Brown https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab
     * Statistics Brandon Foltz https://www.youtube.com/user/BCFoltz/playlists
-    * Intro - The Math of Intelligence – YouTube
-    * StatQuest: https://www.youtube.com/channel/UCtYLUTtgS3k1Fg4y5tAhLbw
-    * Mathematical Monk https://www.youtube.com/channel/UCcAtD_VYwcYwVbTdvArsm7w
-    * Seeing Theory https://seeing-theory.brown.edu/index.html 
-    * Rahul Patwari https://www.youtube.com/user/oldblueday/playlists 
 *	Python
     * Real Python Tutorials https://realpython.com/ nice cartoon tutorials on various subtopics
 	* Advanced Python or Understanding Python – YouTube https://www.youtube.com/watch?v=E_kZDvwofHY 
@@ -224,7 +214,7 @@ Logistics:
     * Siraj Maths ML DL https://www.youtube.com/channel/UCWN3xxRkmTPmbKwht9FuE5A/playlists
     * Victor Lavrenko Text mining, ML, DL https://www.youtube.com/user/victorlavrenko/playlists
     * Well Academy Python AI https://www.youtube.com/channel/UCQA9tK0nRK1e_Bqg0uETs8A/playlists
-
+ -->
 
 ## Disclaimer:
 * Author (yogeshkulkarni@yahoo.com) gives no guarantee of the correctness of the content. Notes have been built using lots of publicly available material. 
