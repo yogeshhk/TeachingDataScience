@@ -2,6 +2,308 @@
 \begin{frame}[fragile]\frametitle{}
 
 \begin{center}
+{\Large Deep Dive into Word Vectors}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Word2Vec Procedure}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{emb12}
+\end{center}
+
+{\tiny (Ref: Word Embeddings - Elena Voita, Yandex Research)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Word2Vec Optimization}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{emb13}
+\end{center}
+
+$\theta$s are all the weights in the neural network.
+
+{\tiny (Ref: Word Embeddings - Elena Voita, Yandex Research)}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Intuitive Idea}
+% \begin{center}
+% \includegraphics[width=\linewidth,keepaspectratio]{word22}
+% \end{center}
+% \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Word2Vec: CBOW}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{emb14}
+\end{center}
+
+{\tiny (Ref: Word Embeddings - Elena Voita, Yandex Research)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW (Continuous Bag of words)}
+\begin{itemize}
+\item Predicts the probability of a word given a context. 
+\item A context may be a single word or a group of words. 
+\item  Corpus =``Hey, this is sample corpus using only one context word.''
+\item training set with window 1
+\item The input layer and the target, both are one- hot encoded of size [1 X V]. Here V=10 in the above example.
+\item There are two sets of weights. one is between the input and the hidden layer and second between hidden and output layer.
+\item N is the number of dimensions, say 4.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.3\linewidth,keepaspectratio]{word35}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW (Continuous Bag of words)}
+\begin{itemize}
+\item The context words form the input layer. 
+\item Each word is encoded in one-hot form.
+\item There is a single hidden layer and an output layer.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{word35}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW (Continuous Bag of words)}
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{word49}
+\end{center}
+\begin{itemize}
+\item $V^T(1xv) \times W_1(vxN) = Hidden(1xN)$
+\item $Hidden(1xN)  \times W_2(Nxv) = Output(1xv)$
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW (Continuous Bag of words)}
+\begin{itemize}
+\item The training objective is to maximize the conditional probability of observing the actual output word (the focus word) given the input context words, with regard to the weights. 
+\item Since our input vectors are one-hot, multiplying an input vector by the weight matrix W1 amounts to simply selecting a row from W1.
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{word50}
+\end{center}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW (Continuous Bag of words)}
+\begin{itemize}
+\item Lets say V=8, N=3 
+\item Means that $W_1$ and $W_2$ will be 8 x 3 and 3x 8 matrices,
+
+\begin{center}
+$W_1$
+
+\includegraphics[width=0.4\linewidth,keepaspectratio]{word57}
+
+$W_2$
+
+\includegraphics[width=0.8\linewidth,keepaspectratio]{word58}
+\end{center}
+\item Input is ``cat''' $[0 1 0 0 0 0 0 0]^T$
+\item Target is ``climbed'' = $[0 0 0 1 0 0 0 0 ]t$
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW (Continuous Bag of words)}
+\begin{itemize}
+\item Output at the hidden layer neurons can be computed as: $H^t = X^tW_1 = [-0.490796, -0.229903, 0.065460]$
+\item Similarly for hidden to output layer: $H^tW_2$ = {\small[ 0.100934,  -0.309331,  -0.122361,  -0.151399,   0.143463,  -0.051262,  -0.079686,   0.112928]}
+\item Since the goal is produce probabilities for words in the output layer, softmax is used
+\item Thus, the probabilities for eight words in the corpus are:{\small 0.143073,   0.094925,   0.114441,   0.111166,   0.149289,   0.122874,   0.119431,   0.144800}
+\item Error is by subtracting probability vector from the target vector.
+\item Once the error is known, the weights in the matrices $W_2$ and $W_1$ can be updated using backpropagation.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW (Continuous Bag of words)}
+\begin{itemize}
+\item Given C input word vectors, the activation function for the hidden layer h amounts to simply summing the corresponding `hot' rows in W1, and dividing by C to take their average.
+\item This implies that the link (activation) function of the hidden layer units is simply linear (i.e., directly passing its weighted sum of inputs to the next layer). 
+\item From the hidden layer to the output layer, the second weight matrix W2 can be used to compute a score for each word in the vocabulary, and softmax can be used to obtain the posterior distribution of words.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW (Continuous Bag of words)}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{word55}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW (Continuous Bag of words)}
+\begin{itemize}
+\item The input is multiplied by the input-hidden weights and called hidden activation. 
+\item The hidden input gets multiplied by hidden- output weights and output is calculated.
+\item Error between output and target is calculated and propagated back to re-adjust the weights.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.3\linewidth,keepaspectratio]{word36}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW}
+Advantages of CBOW:
+\begin{itemize}
+\item  Being probabilistic is nature, it is supposed to perform superior to deterministic methods(generally).
+\item      It is low on memory. It does not need to have huge RAM requirements like that of co-occurrence matrix where it needs to store three huge matrices.
+\end{itemize}
+Disadvantages  of CBOW:
+\begin{itemize}
+\item  CBOW takes the average of the context of a word (as seen above in calculation of hidden activation). For example, Apple can be both a fruit and a company but CBOW takes an average of both the contexts and places it in between a cluster for fruits and companies.
+\item  Training a CBOW from scratch can take forever if not properly optimized.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Word2Vec: Skip-Gram}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{emb15}
+\end{center}
+
+{\tiny (Ref: Word Embeddings - Elena Voita, Yandex Research)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Skip-Gram Model}
+\begin{itemize}
+\item Skip-gram follows the same topology as of CBOW. 
+\item It just flips CBOW's architecture on its head. The aim of skip-gram is to predict the context given a word. 
+\item C=``Hey, this is sample corpus using only one context word.''
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{word37}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Skip-Gram Model}
+\begin{itemize}
+\item Since context window is of 1 on both the sides, there will be ``two'' one hot encoded target variables and ``two'' corresponding outputs as can be seen by the blue section in the image.
+\item Two separate errors are calculated with respect to the two target variables and the two error vectors obtained are added element-wise to obtain a final error vector which is propagated back to update the weights.
+\item The weights between the input and the hidden layer are taken as the word vector representation after training.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Skip-Gram Model}
+\begin{itemize}
+\item Constructed with the focus word as the single input vector, and 
+\item the target context words are now at the output layer
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{word35}
+\end{center}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Skip-Gram Model}
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{word51}
+\end{center}
+\begin{itemize}
+\item $V^T(1xv) \times W_1(vxN) = Hidden(1xN)$
+\item $Hidden(1xN)  \times W_2(Nxv) = Output(1xv)  \quad  C \quad times$
+\end{itemize}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Skip-Gram Model}
+\begin{itemize}
+\item At the output layer, we now output C multinomial distributions instead of just one. 
+\item The training objective is to minimize the summed prediction error across all context words in the output layer. 
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Skip-Gram Model}
+Context words=2, V= 10, N=4
+\begin{itemize}
+\item Input one-hot encoded vector.
+\item  Weight matrix between the hidden layer and the output layer.
+\item Matrix multiplication of hidden activation and the hidden output weights. There will be two rows calculated for two target(context) words.
+\item Each output is converted into its softmax probabilities
+\item Error is calculated for all output
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Skip-Gram Model}
+Advantages of Skip-Gram Model
+\begin{itemize}
+\item Skip-gram model can capture two semantics for a single word. i.e it will have two vector representations of Apple. One for the company and other for the fruit.
+\item     Skip-gram with negative sub-sampling outperforms every other method generally.
+\end{itemize}
+Disadvantages  of  Skip-Gram Model:
+\begin{itemize}
+\item Very vulnerable, and not a robust concept
+\item Can take a long time to train
+\item Non-uniform results
+\item Hard to understand 
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Skip-Gram Model}
+\begin{itemize}
+\item Skip- Gram maximizes the log - likelihood:
+\begin{center}
+\includegraphics[width=0.4\linewidth,keepaspectratio]{word27}
+\end{center}
+\item Where:
+\begin{itemize}
+\item T - \# of words in the corpus.
+\item c - unidirectional window size of the context.
+\end{itemize}
+\end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Skip-Gram Model}
+\begin{itemize}
+\item Corpus: ''If a dog chews shoes, whose shoes does he choose?''
+\begin{center}
+\includegraphics[width=0.4\linewidth,keepaspectratio]{word28}
+\end{center}
+\item Where:
+\begin{itemize}
+\item Input word: shoes
+\item Window size: 2.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
 {\Large Word2Vec: Theory}
 
 {\tiny (Ref:The backpropagation algorithm for Word2Vec - Marginalia )}
