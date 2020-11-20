@@ -1,23 +1,21 @@
 # TensorFlow User Group Pune
 
 ## Playbook
-Logistics:
-- Decide Speaker, topic, review past lectures/content
-- Decide Day/time: Saturdays Mornings, 9 to 10 am, else NO
-- Pre-Talk:
-    - Get content and ipynb, talk for 50 minutes, 10 minutes QnA
-    - Create Google calendar event with Google Meet link, add TFUG organizers
-    - Create Banner png from admin/template.ppt
-		- Create TFUG Pune Meetup event with Google Meet link and Banner png
-    - Advertise the Meetup link on: TFUG folks LinkedIn wall, Company Teams, GDE whatsapp grps
-    - Copy material pdf/ipynbs under TFUGPune folder, sync with GDrive
-		- Stream Data setup steps, in case needed or just Google Meet with no recording [tbd: Akshay]
-- During Talk: Take pictures, Questions on Chat Window, other folks can answer, myself will answer at the End
-- Post-Talk:
-    - Fill GDE Advocu entry with picture taken
-    - Fill GDE New event survey link
-    - Share github sources of the talk on the TFUG Meetup, post pictures there
-
+- Pre-event:
+		- Decide Speaker/topic
+		- Decide Day/time: Saturdays Mornings, 9 to 10 am, else NO
+		- Get content and ipynb, talk for 50 minutes, 10 minutes QnA
+		- TFUG:
+				- Prep GCal invite with organizers + meet link, 
+				- Prep ppt banner + post on meetup with meet link
+				- Share meetup post a few days before on LinkedIn
+				- In the meetup post, use language of which problem is being solved
+		- All: Prep and upload presentation on gDrive or sync github
+- In-event: Take pictures screenshots during event
+- Post-event:
+		- TFUG: Add entry to gde.advocu and TFUG new event survey
+		- Others: post after the event on LinkedIn w pictures and peppy text
+				
 ## Lectures
 |     Date    |     Topic and Presenter    |     Venue/Video/Slides    |     Attendance    |
 |-|-|-|-|
