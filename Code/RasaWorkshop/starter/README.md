@@ -24,7 +24,7 @@ assistant on your local machine. The `formbot` consists of the following files:
 
 ## How to use this example?
 
-- Train a Rasa model containing the Rasa NLU and Rasa Core models by running:
+- (Optional) Train a Rasa model containing the Rasa NLU and Rasa Core models by running:
     ```
     python -W ignore -m rasa train
     ```

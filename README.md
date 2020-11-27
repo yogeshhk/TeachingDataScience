@@ -34,7 +34,7 @@ Logistics:
     - Create Google calendar event with Google Meet link
     - Create Banner png from admin/template.ppt
 		- Create TFUG Pune Meetup event with Google Meet link and Banner png, good intro text
-    - Advertise the Meetup link: my LinkedIn, Company Teams, GDE WhatsApp grps
+    - Advertise the Meetup link: my LinkedIn, Company Teams, GDE WhatsApp groups
     - Copy material pdf/ipynbs under TFUGPune folder, sync with GDrive
 		- No recording or YouTube streaming, content is open-sourced anyway
 - During Talk:

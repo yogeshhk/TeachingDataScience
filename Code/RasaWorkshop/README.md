@@ -1,7 +1,7 @@
 # Rasa full-day Workshop
 
 ## ToDOs
-- Instalations must be ready as per OS, no time for that during workshop
+- Installations must be ready as per OS, no time for that during workshop
 - API registrations must be done, so keep API keys ready.
 - Story (google home gift, zingat, sorry, family member)
 - Can do projects in Pair Programming
