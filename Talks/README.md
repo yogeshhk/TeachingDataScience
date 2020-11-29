@@ -4,17 +4,19 @@
 - Pre-event:
 		- Decide Speaker/topic
 		- Decide Day/time: Saturdays Mornings, 9 to 10 am, else NO
-		- Get content and ipynb, talk for 50 minutes, 10 minutes QnA
+		- Prep beamer and ipynb, talk for 50 minutes, 10 minutes QnA
 		- TFUG:
 				- Prep GCal invite with organizers + meet link, 
 				- Prep ppt banner + post on meetup with meet link
-				- Share meetup post a few days before on LinkedIn
-				- In the meetup post, use language of which problem is being solved
+				- Prep meetup post, use language of which problem is being solved
+				- Share meetup post a few days before on LinkedIn, also on GDE WhatsAPP group
 		- All: Prep and upload presentation on gDrive or sync github
 - In-event: Take pictures screenshots during event
 - Post-event:
-		- TFUG: Add entry to gde.advocu and TFUG new event survey
+		- TFUG: Add entry to gde.advocu and TFUG new event survey, meetup group album
 		- Others: post after the event on LinkedIn w pictures and peppy text
+		- Store pics in TeachingDataScience Talks folder
+		- Send link to presentation to org or upload on the meetup page
 				
 ## Lectures
 |     Date    |     Topic and Presenter    |     Venue/Video/Slides    |     Attendance    |
@@ -27,5 +29,9 @@
 |     10 Oct 2020    |     Introduction to RNN with Tensorflow 2.0 - Yogesh Kulkarni    |   [Slides]()       |  |
 |			7 Nov 2020  | Introduction to Tensorflow Data - Yogesh Kulkarni | | |
 |			5 Dec 2020  | Introduction to Word Embedding - Yogesh Kulkarni | | |
+|				Jan 2021	| Maths4AI: Basics, Calculus - Yogesh Kulkarni | | |
+|				Feb 2021	| Maths4AI: Linear Algebra - Yogesh Kulkarni | | |
+|				Mar 2021	| Maths4AI: Statistics - Yogesh Kulkarni | | |
+
 ## To Dos
 -
