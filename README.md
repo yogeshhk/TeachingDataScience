@@ -17,7 +17,7 @@ Copyright (C) 2019 Yogesh H Kulkarni
 https://github.com/tensorflow/swift/blob/master/docs/WhySwiftForTensorFlow.md
 
 -->
-
+<!-- 
 Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
 
 ## Planned Topics
@@ -30,21 +30,22 @@ Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
 Logistics:
 - Day/time: Saturdays Mornings, 9 to 10 am, else NO
 - Pre-Talk:
-    - Prep materials *_seminar.tex and ipynb for 40 minutes talk and then QnA
+    - Prep materials _seminar.tex and ipynb for 40 minutes talk and then QnA
     - Create Google calendar event with Google Meet link
     - Create Banner png from admin/template.ppt
 		- Create TFUG Pune Meetup event with Google Meet link and Banner png, good intro text
     - Advertise the Meetup link: my LinkedIn, Company Teams, GDE WhatsApp groups
-    - Copy material pdf/ipynbs under TFUGPune folder, sync with GDrive
+    - Copy material pdf/ipynbs under github Talks/presentations folder
 		- No recording or YouTube streaming, content is open-sourced anyway
 - During Talk:
-		- Simplify with Doodles
+<!-- 		- Simplify with Doodles (?, tablet)
+		 -->
     - Take pictures or screenshots
-    - Share links: my github page, yati.io, linkedin profile
+    - At the end of the talk, share links to my github page, yati.io, linkedin profile
 - Post-Talk:
     - Fill GDE Advocu entry with picture taken
     - Fill GDE New event survey link
-    - Share github sources of the talk on meetup, post pictures there
+    - Share beamer pdf of the talk on meetup, post pictures there
 
 ## Video Recordings
 - Using OBS: Open-source Free-ware
@@ -55,9 +56,9 @@ Logistics:
 		- Output gets stored in Videos folder
 - OpenTech to edit video, save to join
 - Handbrake to compress video
+ -->
 
-
-## LaTex to pdfs
+## Steps for LaTex to pdfs
 
 ### Code Arrangement
 *	LaTeX directory 
@@ -99,7 +100,7 @@ Logistics:
 * Swift +: backed by Apple/Google, High to low level, very hackable, directly on LLVM (low level virtual machine)
 * Swift -: swift for Tensorflow still under development -->
 
-<!-- ## References to be used for updating the Training Material
+<!-- ## Good resources for learning
 * Swift For Tensorflow
   * Swift for TensorFlow https://www.tensorflow.org/swift
 	* Lesson 13 2019 fastai v3 Basics of Swift for Deep Learning https://www.youtube.com/watch?v=ldP6EEuWDhk
