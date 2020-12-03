@@ -114,8 +114,104 @@ Output: `Nationalities religious or political groups'
 \begin{frame}[fragile]\frametitle{}
 
 \begin{center}
-{\Large Spacy Custom NER -TBD-}
+{\Large Spacy Custom NER}
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom NER Process}
 
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{ie15}
+\end{center}
+
+{\tiny (Ref: Training Custom NER - Nishanth N)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training Data Format}
+
+
+\begin{lstlisting}
+
+TRAIN_DATA = [
+    ('Who is Nishanth?', {
+        'entities': [(7, 15, 'PERSON')]
+    }),
+     ('Who is Kamal Khumar?', {
+        'entities': [(7, 19, 'PERSON')]
+    }),
+    ('I like London and Berlin.', {
+        'entities': [(7, 13, 'LOC'), (18, 24, 'LOC')]
+    })
+]
+\end{lstlisting}
+
+{\tiny (Ref: Training Custom NER - Nishanth N)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{NER Pipeline}
+
+
+\begin{lstlisting}
+
+nlp = spacy.load(model)  
+ner = nlp.create_pipe('ner')
+nlp.add_pipe(ner, last=True)
+
+for _, annotations in TRAIN_DATA:
+    for ent in annotations.get('entities'):
+        ner.add_label(ent[2])
+				
+# Disable pipeline components you dont need to change
+pipe_exceptions = ["ner", "trf_wordpiecer", "trf_tok2vec"]
+unaffected_pipes = [pipe for pipe in nlp.pipe_names if pipe not in pipe_exceptions]
+
+\end{lstlisting}
+
+{\tiny (Ref: Training Custom NER - Nishanth N)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training}
+
+
+\begin{lstlisting}
+# Disable pipeline components you dont need to change
+other_pipes = [pipe for pipe in nlp.pipe_names if pipe != 'ner']
+with nlp.disable_pipes(*other_pipes):  # only train NER
+    optimizer = nlp.begin_training()
+    for itn in range(n_iter):
+        random.shuffle(TRAIN_DATA)
+        losses = {}
+        for text, annotations in tqdm(TRAIN_DATA):
+            nlp.update(
+                [text],  
+                [annotations],  
+                drop=0.5,  
+                sgd=optimizer,
+                losses=losses)
+        print(losses)
+\end{lstlisting}
+
+{\tiny (Ref: Training Custom NER - Nishanth N)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Testing}
+
+
+\begin{lstlisting}
+doc = nlp("I was driving a Alto")
+print("Entities", [(ent.text, ent.label_) for ent in doc.ents])
+\end{lstlisting}
+
+{\tiny (Ref: Training Custom NER - Nishanth N)}
+
+\end{frame}
