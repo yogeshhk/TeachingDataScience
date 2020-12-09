@@ -71,178 +71,148 @@ Based on OS, version, etc an installation command can be generated at https://sp
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Tokenization}
-
-\begin{lstlisting}
-import spacy
-nlp = spacy.load('en_core_web_sm')
-text = 'Apple is looking for buying a U.K. startup for $1 billion'
-doc = nlp(text)
-for token in doc:
-    print(token.text)
-		
-Apple
-is
-looking
-for
-buying
-a
-U.K.
-startup
-for
-$
-1
-billion
-\end{lstlisting}
-	
-{\tiny (Ref: https://spacy.io/usage/spacy-101)}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Sentence Segmentation}
-
-\begin{lstlisting}
-text = 'Apple is looking for buying a U.K. startup. Government has given permission.'
-
-doc = nlp(text)
-for sent in doc.sents:
-    print(sent)
-		
-Apple is looking for buying a U.K. startup.
-Government has given permission.
-\end{lstlisting}
-	
-{\tiny (Ref: https://spacy.io/usage/spacy-101)}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Parts of Speech [POS] Tagging }
-
-\begin{lstlisting}
-print(doc)
-
->> Apple is looking for buying a U.K. startup for $1 billion
-
-for token in doc:
-    print(token.text, token.pos_)
-
-Apple PROPN
-is AUX
-looking VERB
-for ADP
-buying VERB
-a DET
-U.K. PROPN
-startup NOUN
-for ADP
-$ SYM
-1 NUM
-billion NUM
-\end{lstlisting}
-	
-{\tiny (Ref: https://spacy.io/usage/spacy-101)}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Named Entity Recognition NER}
-
-\begin{lstlisting}
-print(doc)
-
->> Apple is looking for buying a U.K. startup for $1 billion
-
-for token in doc:
-    print(token.text, token.label_)
-
-Apple ORG
-U.K. GPE
-$1 billion MONEY
-
-doc = nlp('Apple is looking for buying a UK startup for $1 billion in 2020')
-displacy.render(doc, style = 'ent')
-\end{lstlisting}
+\begin{frame}[fragile]\frametitle{Pre Trained models}
+\begin{itemize}
+\item Pre-trained models, like 'en\_core\_web\_sm', have various NLP sub components defined. `sm' is for small.
+\item Similarly other models like  'en\_core\_web\_md' (medium) and 'en\_core\_web\_lg' (large) are some of the English models.
+\item Similarly `de\_core\_news\_sm' (German) and  `es\_core\_news\_sm' (Spanish) are some other language models.
+\end{itemize}
 
 \begin{center}
-\includegraphics[width=0.8\linewidth,keepaspectratio]{spacy6}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{spacy7}
 \end{center}
 
-{\tiny (Ref: https://spacy.io/usage/spacy-101)}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Sentence Segmentation}
-
-\begin{lstlisting}
-text = 'Apple is looking for buying a U.K. startup. Government has given permission.'
-
-doc = nlp(text)
-for sent in doc.sents:
-    print(sent)
-		
-Apple is looking for buying a U.K. startup.
-Government has given permission.
-\end{lstlisting}
-	
-{\tiny (Ref: https://spacy.io/usage/spacy-101)}
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Phrase Matching }
-
+\begin{frame}[fragile]\frametitle{Spacy Load under the hood}
   \begin{itemize}
-    \item Like Regular Expressions
-		\item Rule-based matcher engines and components can find words and phrases
-		\item Can give access to the tokens within the document and their relationships.
-		\item Can easily access and analyze the surrounding tokens, merge spans into single tokens or add entries to the named entities in doc.ents.
+    \item Easy to create own pipeline with reusable components.
+		\item Includes spaCy’s default tagger, parser and entity recognizer, but also your own custom processing functions.
+		\item At loading a model, spaCy loos at meta.json
+		\begin{lstlisting}
+meta.json:
+{
+  "lang": "en",
+  "name": "core_web_sm",
+  "description": "Example model for spaCy",
+  "pipeline": ["tagger", "parser", "ner"]
+}
+\end{lstlisting}
+
+\item Iterate over the pipeline names and create each component using \lstinline|create_pipe|, which looks them up in Language.factories
+\item Add each pipeline component to the pipeline in order, using \lstinline|add_pipe|
+
   \end{itemize}
 	
-{\tiny (Ref: https://spacy.io/usage/spacy-101)}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Token-based matching }
-
-  \begin{itemize}
-    \item `Matcher' rules can refer to token annotations (e.g. the token text or tag\_, and flags (e.g. IS\_PUNCT).
-		\item Lets you pass in a custom callback to act on matches – for example, to merge entities and apply custom labels
-		\item To match large terminology lists, use the PhraseMatcher, which accepts Doc objects as match patterns
-		\item Sample pattern \lstinline|[{"LOWER": "hello"}, {"IS_PUNCT": True}, {"LOWER": "world"}]|
-  \begin{itemize}
-    \item A token whose lowercase form matches “hello”, e.g. “Hello” or “HELLO”.
-    \item A token whose is\_punct flag is set to True, i.e. any punctuation.
-    \item A token whose lowercase form matches “world”, e.g. “World” or “WORLD”.
-  \end{itemize}		
-  \end{itemize}
 	
 {\tiny (Ref: https://spacy.io/usage/spacy-101)}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pipeline under the hood}
+  \begin{itemize}
+    \item When you call nlp on a text, spaCy will tokenize it and then call each component on the Doc, in order.
+		\begin{lstlisting}
+doc = nlp.make_doc("This is a sentence")   # create a Doc from raw text
+for name, proc in nlp.pipeline:             # iterate over components in order
+    doc = proc(doc)                         # apply each component
+
+print(nlp.pipeline)
+# [('tagger', <spacy.pipeline.Tagger>), ('parser', <spacy.pipeline.DependencyParser>), ('ner', <spacy.pipeline.EntityRecognizer>)]
+print(nlp.pipe_names)
+# ['tagger', 'parser', 'ner']
+\end{lstlisting}
+
+\item All components return the modified document, which is then processed by the component next in the pipeline.
+
+  \end{itemize}
+	
+	
+{\tiny (Ref: https://spacy.io/usage/spacy-101)}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Token-based matching }
+\begin{frame}[fragile]\frametitle{Built-in pipeline components}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{spacy10}
+\end{center}
 
-\begin{lstlisting}
-from spacy.matcher import Matcher
-from spacy.tokens import Span
-text = 'Hello, world! hello world'
-doc = nlp(text)
+\end{frame}
 
-pattern = [{'LOWER': 'hello'}, {'IS_PUNCT': True, 'OP': '?'}, {'LOWER': 'world'}]
-matcher = Matcher(nlp.vocab)
-matcher.add('hw', None, pattern)
-matches = matcher(doc)
-print(macthes)
-[(17790654416186116455, 0, 3), (17790654416186116455, 4, 6)]
-
-for match_id, start, end in matches:
-    string_id = nlp.vocab.strings[match_id]
-    span = doc[start:end]
-    print(match_id, string_id, start, end, span.text)
-		
-17790654416186116455 hw 0 3 Hello, world
-17790654416186116455 hw 4 6 hello world		
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Disabling}
+  \begin{itemize}
+    \item If you don’t need a particular component of the pipeline – for example, the tagger or the parser, you can disable loading it
+		\begin{lstlisting}
+nlp = spacy.load("en_core_web_sm", disable=["tagger", "parser"])
+nlp = English().from_disk("/model", disable=["ner"])
 \end{lstlisting}
+
+\item If you only need a Doc object with named entities, there’s no need to run all pipeline components on it
+		\begin{lstlisting}
+for doc in nlp.pipe(texts, disable=["tagger", "parser"]):
+    # Do something with the doc here
+\end{lstlisting}
+  \end{itemize}
+	
+	
+{\tiny (Ref: https://spacy.io/usage/spacy-101)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom Component}
+  \begin{itemize}
+    \item A component receives a Doc object and can modify it
+
+
+\item  By adding a component to the pipeline, you’ll get access to the Doc at any point during processing
+  \end{itemize}
+	
+		\begin{lstlisting}
+import spacy
+
+def my_component(doc):
+    print("After tokenization, this doc has {} tokens.".format(len(doc)))
+    print("The part-of-speech tags are:", [token.pos_ for token in doc])
+    if len(doc) < 10:
+        print("This is a pretty short document.")
+    return doc
+
+nlp = spacy.load("en_core_web_sm")
+nlp.add_pipe(my_component, name="print_info", last=True)
+print(nlp.pipe_names)  # ['tagger', 'parser', 'ner', 'print_info']
+doc = nlp("This is a sentence.")
+\end{lstlisting}	
+	
+{\tiny (Ref: https://spacy.io/usage/spacy-101)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom Component Class}
+You can also wrap your component as a class to allow initializing it with custom settings and hold state within the component. This is useful for stateful components, especially ones which depend on shared data.
+		\begin{lstlisting}
+class EntityMatcher(object):
+    name = "entity_matcher"
+    def __init__(self, nlp, terms, label):
+        patterns = [nlp.make_doc(text) for text in terms]
+        self.matcher = PhraseMatcher(nlp.vocab)
+        self.matcher.add(label, None, *patterns)
+
+    def __call__(self, doc):
+        matches = self.matcher(doc)
+        for match_id, start, end in matches:
+            span = Span(doc, start, end, label=match_id)
+            doc.ents = list(doc.ents) + [span]
+        return doc
+
+nlp = spacy.load("en_core_web_sm")
+terms = ("cat", "dog", "tree kangaroo", "giant sea spider")
+entity_matcher = EntityMatcher(nlp, terms, "ANIMAL")
+
+nlp.add_pipe(entity_matcher, after="ner")
+\end{lstlisting}	
 	
 {\tiny (Ref: https://spacy.io/usage/spacy-101)}
 \end{frame}
