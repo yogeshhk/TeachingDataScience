@@ -29,8 +29,8 @@
   \begin{itemize}
     \item Not a platform or “an API” or software as a service, or a web application
 		\item Not an out-of-the-box chat bot engine.
-		\item Not research software.  It’s built on the latest research, but it’s designed to get things done.
-		\item Not a company. It’s an open-source library. Company's name is `Explosion AI'.
+		\item Not research software.  It's built on the latest research, but it's designed to get things done.
+		\item Not a company. It's an open-source library. Company's name is `Explosion AI'.
   \end{itemize}
 	
 \end{frame}
@@ -43,6 +43,150 @@ Based on OS, version, etc an installation command can be generated at https://sp
 \begin{center}
 \includegraphics[width=0.8\linewidth,keepaspectratio]{spacy3}
 \end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Core Idea}
+  \begin{itemize}
+    \item Model object, typically called as `nlp' is the core object.
+			\item Can use it like a function to analyze text.
+		\item It contains processing pipeline
+		\item It also includes language specific rules, say, for tokenization.
+		\item You can either load it \lstinline|nlp = spacy.load('...')| or instantiate from existing class \lstinline|nlp = English()|
+		\item `nlp' object after processing `text' produces `doc' object \lstinline|doc = nlp(text)|
+		\item `doc' has all the text processing results stored
+		\item `doc' can be instantiated also \lstinline|doc = Doc(nlp.vocab, words=words, spaces=spaces)|
+		\item `span' object has multiple tokens. Its just a view and not actual data. \lstinline|span = doc[1:3]|
+  \end{itemize}
+	
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{spacy17}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+  \begin{itemize}
+    \item Import the English class from spacy.lang.en and create the nlp object.
+    \item Create a doc and print its text.
+  \end{itemize}
+
+  \begin{lstlisting}
+from spacy.lang.____ import ____
+
+nlp = ____
+
+doc = nlp("This is a sentence.")
+
+print(____.text)
+  \end{lstlisting}
+
+Extra: Import the German class from spacy.lang.de and create the nlp object and use it on ``Ich liebe!''
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+  \begin{itemize}
+    \item Import the English language class and create the nlp object.
+    \item Process the text and instantiate a Doc object in the variable doc.
+    \item Select the first token of the Doc and print its text.
+  \end{itemize}
+
+  \begin{lstlisting}
+from spacy.lang.____ import ____
+
+nlp = ____
+
+doc = nlp("I like tree kangaroos and narwhals.")
+
+first_token = doc[____]
+
+print(first_token.____)
+  \end{lstlisting}
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practices}
+
+  \begin{itemize}
+    \item Doc and Span are very powerful and hold references and relationships of words and sentences
+    \item Convert result to strings as late as possible. 
+		\item If you do it too early, you'll lose all relationships between the tokens.
+    \item Use token attributes if available – for example, \lstinline|token.i|  for the token index
+    \item Don't forget to pass in the shared vocab
+  \end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Evaluate}
+
+Whats wrong with following code?
+
+  \begin{lstlisting}
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("Berlin looks like a nice city")
+
+# Get all tokens and part-of-speech tags
+token_texts = [token.text for token in doc]
+pos_tags = [token.pos_ for token in doc]
+
+for index, pos in enumerate(pos_tags):
+    # Check if the current token is a proper noun
+    if pos == "PROPN":
+        # Check if the next token is a verb
+        if pos_tags[index + 1] == "VERB":
+            result = token_texts[index]
+            print("Found proper noun before a verb:", result)
+  \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Assignment}
+
+
+  \begin{itemize}
+    \item Rewrite the code to use the native token attributes instead of lists of token\_texts and pos\_tags.
+    \item Loop over each token in the doc and check the token.pos\_ attribute.
+    \item Use doc[token.i + 1] to check for the next token and its .pos\_ attribute.
+    \item If a proper noun before a verb is found, print its token.text.
+  \end{itemize}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+  \begin{lstlisting}
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("Berlin looks like a nice city")
+
+# Get all tokens and part-of-speech tags
+token_texts = [token.text for token in doc]
+pos_tags = [token.pos_ for token in doc]
+
+for index, pos in enumerate(pos_tags):
+    # Check if the current token is a proper noun
+    if pos == "PROPN":
+        # Check if the next token is a verb
+        if pos_tags[index + 1] == "VERB":
+            result = token_texts[index]
+            print("Found proper noun before a verb:", result)
+  \end{lstlisting}
 
 \end{frame}
 
@@ -89,7 +233,7 @@ Based on OS, version, etc an installation command can be generated at https://sp
 \begin{frame}[fragile]\frametitle{spaCy Load under the hood}
   \begin{itemize}
     \item Easy to create own pipeline with reusable components.
-		\item Includes spaCy’s default tagger, parser and entity recognizer, but also your own custom processing functions.
+		\item Includes spaCy's default tagger, parser and entity recognizer, but also your own custom processing functions.
 		\item At loading a model, spaCy loos at meta.json
 		\begin{lstlisting}
 meta.json:
@@ -142,13 +286,13 @@ print(nlp.pipe_names)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Disabling}
   \begin{itemize}
-    \item If you don’t need a particular component of the pipeline – for example, the tagger or the parser, you can disable loading it
+    \item If you don't need a particular component of the pipeline – for example, the tagger or the parser, you can disable loading it
 		\begin{lstlisting}
 nlp = spacy.load("en_core_web_sm", disable=["tagger", "parser"])
 nlp = English().from_disk("/model", disable=["ner"])
 \end{lstlisting}
 
-\item If you only need a Doc object with named entities, there’s no need to run all pipeline components on it
+\item If you only need a Doc object with named entities, there's no need to run all pipeline components on it
 		\begin{lstlisting}
 for doc in nlp.pipe(texts, disable=["tagger", "parser"]):
     # Do something with the doc here
@@ -164,7 +308,7 @@ for doc in nlp.pipe(texts, disable=["tagger", "parser"]):
     \item A component receives a Doc object and can modify it
 
 
-\item  By adding a component to the pipeline, you’ll get access to the Doc at any point during processing
+\item  By adding a component to the pipeline, you'll get access to the Doc at any point during processing
   \end{itemize}
 	
 		\begin{lstlisting}
@@ -241,9 +385,9 @@ coffee
 \end{lstlisting}
 
   \begin{itemize}
-    \item All strings are encoded, the entries in the vocabulary don’t need to include the word text themselves. Instead, they can look it up in the StringStore via its hash value. 
+    \item All strings are encoded, the entries in the vocabulary don't need to include the word text themselves. Instead, they can look it up in the StringStore via its hash value. 
 		\item Each entry in the vocabulary, also called Lexeme, contains the context-independent information about a word. 
-		\item For example, no matter if “love” is used as a verb or a noun in some context, its spelling and whether it consists of alphabetic characters won’t ever change. Its hash value will also always be the same.
+		\item For example, no matter if “love” is used as a verb or a noun in some context, its spelling and whether it consists of alphabetic characters won't ever change. Its hash value will also always be the same.
   \end{itemize}
 
 
@@ -264,6 +408,35 @@ for word in doc:
 	\begin{center}
 \includegraphics[width=\linewidth,keepaspectratio]{spacy15}
 \end{center}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+  \begin{itemize}
+    \item Look up the string “cat” in nlp.vocab.strings to get the hash.
+    \item Look up the hash to get back the string.
+  \end{itemize}
+	
+	
+\begin{lstlisting}
+from spacy.lang.en import English
+
+nlp = English()
+doc = nlp("I have a cat")
+
+# Look up the hash for the word "cat"
+cat_hash = ____.____.____[____]
+print(cat_hash)
+
+# Look up the cat_hash to get the string
+cat_string = ____.____.____[____]
+print(cat_string)
+\end{lstlisting}
+
+
 
 
 \end{frame}

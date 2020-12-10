@@ -64,11 +64,11 @@ looking for buying
 \item First, the raw text is split on whitespace characters, similar to \lstinline|text.split(' ')|.
 \item Then checks each toekn if:
 \begin{itemize}
-\item Does the substring match a tokenizer exception rule? For example, “don’t” does not contain whitespace, but should be split into two tokens, “do” and “n’t”, while “U.K.” should always remain one token.
+\item Does the substring match a tokenizer exception rule? For example, “don't” does not contain whitespace, but should be split into two tokens, “do” and “n't”, while “U.K.” should always remain one token.
 \item Can a prefix, suffix or infix be split off? For example punctuation like commas, periods, hyphens or quotes.
 \end{itemize}
 
-\item If there’s a match, the rule is applied and the tokenizer continues its loop, starting with the newly split substrings. 
+\item If there's a match, the rule is applied and the tokenizer continues its loop, starting with the newly split substrings. 
 \item This way, spaCy can split complex, nested tokens like combinations of abbreviations and multiple punctuation marks.
 \item Each available language has its own subclass like English or German, that loads in lists of hard-coded data and exception rules.
 \end{itemize}
@@ -169,6 +169,22 @@ nlp.vocab['no'].is_stop = False # need to force it
 \begin{frame}[fragile]\frametitle{Token-based Matching }
 
   \begin{itemize}
+	\item Works on Doc objects, not just strings. Each dictionary describes one token. The keys are the names of token attributes, mapped to their expected values.
+	\item Matches on tokens and token attributes
+	\item Uses the model's predictions. Example: "duck" (verb) vs. "duck" (noun)
+	\item Match pattern: Lists of dictionaries, one per token
+	\item Match exact token texts: \lstinline|[{"TEXT": "iPhone"}, {"TEXT": "X"}]|. We're looking for two tokens with the text "iPhone" and "X".
+	\item Match lexical attributes" \lstinline|[{"LOWER": "iphone"}, {"LOWER": "x"}]|. We're looking for two tokens whose lowercase forms equal "iphone" and "x".
+	\item Match any token attributes \lstinline|[{"LEMMA": "buy"}, {"POS": "NOUN"}]|. We're matching a token with the lemma "buy", plus a noun. The lemma is the base form, so this pattern would match phrases like "buying milk" or "bought flowers".
+
+  \end{itemize}
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Token-based Matching }
+
+  \begin{itemize}
     \item `Matcher' rules can refer to token annotations (e.g. the token text or tag\_, and flags (e.g. IS\_PUNCT).
 		\item Lets you pass in a custom callback to act on matches – for example, to merge entities and apply custom labels
 		\item To match large terminology lists, use the PhraseMatcher, which accepts Doc objects as match patterns
@@ -181,7 +197,6 @@ nlp.vocab['no'].is_stop = False # need to force it
   \end{itemize}
 	
 \end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Rule-based Matcher Explorer}
@@ -224,7 +239,7 @@ for match_id, start, end in matches:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Regex-based matching }
 
-In some cases, only matching tokens and token attributes isn’t enough, then comes REGEX operator which  operates on single tokens only. 
+In some cases, only matching tokens and token attributes isn't enough, then comes REGEX operator which  operates on single tokens only. 
 
 \begin{lstlisting}
 pattern = [{"TEXT": {"REGEX": "^[Uu](\.?|nited)$"}},
@@ -272,6 +287,79 @@ for match_id, start, end in matches:
 \end{lstlisting}
 
 
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+  \begin{itemize}
+	\item Import the Matcher from spacy.matcher.
+	\item Initialize it with the nlp object's shared vocab.
+	\item Create a pattern that matches the "TEXT" values of two tokens: "iPhone" and "X".
+	\item Use the matcher.add method to add the pattern to the matcher.
+	\item Call the matcher on the doc and store the result in the variable matches.
+	\item Iterate over the matches and get the matched span from the start to the end index.
+
+  \end{itemize}
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+  \begin{lstlisting}
+import spacy
+
+# Import the Matcher
+from spacy.____ import ____
+
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("Upcoming iPhone X release date leaked as Apple reveals pre-orders")
+
+# Initialize the Matcher with the shared vocabulary
+matcher = ____(____.____)
+
+# Create a pattern matching two tokens: "iPhone" and "X"
+pattern = [____]
+
+# Add the pattern to the matcher
+____.____("IPHONE_X_PATTERN", None, ____)
+
+# Use the matcher on the doc
+matches = ____
+print("Matches:", [doc[start:end].text for match_id, start, end in matches])
+
+  \end{lstlisting}
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+Write one pattern that only matches mentions of the full iOS versions: “iOS 7”, “iOS 11” and “iOS 10”.
+
+  \begin{lstlisting}
+import spacy
+from spacy.matcher import Matcher
+
+nlp = spacy.load("en_core_web_sm")
+matcher = Matcher(nlp.vocab)
+doc = nlp(
+    "After making the iOS update you won't notice a radical system-wide "
+    "redesign: nothing like the aesthetic upheaval we got with iOS 7. Most of "
+    "iOS 11's furniture remains the same as in iOS 10. But you will discover "
+    "some tweaks once you delve a little deeper."
+)
+pattern = [{"TEXT": ____}, {"IS_DIGIT": ____}]
+matcher.add("IOS_VERSION_PATTERN", None, pattern)
+matches = matcher(doc)
+print("Total matches found:", len(matches))
+
+for match_id, start, end in matches:
+    print("Match found:", doc[start:end].text)
+  \end{lstlisting}
+	
 \end{frame}
 
 
