@@ -7,17 +7,371 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Summary}
-Results
+\begin{frame}[fragile]\frametitle{Text Classification}
+
 
 \begin{itemize}
-\item Bag of words and simple linear models actually work for 
-texts
-\item  The accuracy gain from deep learning models is not mind 
-blowing for sentiment classification
+\item As a pipeline component \lstinline|textcat (TextCategorizer)|, 
+\item Can assign categories (or labels) to text data and use that as training data for a neural network.
+\item General steps:
+\begin{itemize}
+\item Add the textcat component to the existing pipeline.
+\item Add valid labels to the textcat component.
+\item Load, shuffle, and split your data.
+\item Train the model, evaluating on each training loop.
+\item Use the trained model to predict the sentiment of non-training data.
+\item Optionally, save the trained model.
+  \end{itemize}
+
   \end{itemize}
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Sentiment Analyzer}
+
+
+General steps:
+\begin{itemize}
+\item Download data (https://ai.stanford.edu/~amaas/data/sentiment/)
+\item Loading data
+\item Preprocessing
+\item Training the classifier
+\item Classifying data
+\end{itemize}
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Load Data}
+
+\begin{itemize}
+\item Load text and labels from the file and directory structures.
+\item Shuffle the data.
+\item Split the data into training and test sets.
+\item Return the two sets of data.
+\end{itemize}
+
+
+\begin{lstlisting}
+def load_training_data(
+    data_directory: str = "aclImdb/train",
+    split: float = 0.8,
+    limit: int = 0
+) -> tuple:
+\end{lstlisting}
+
+* Note the use of Python 3’s type annotations to make it absolutely clear which types your function expects and what it will return.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Load Data and Preprocessing}
+
+\begin{lstlisting}
+def load_training_data(data_directory: str = "aclImdb/train",
+    split: float = 0.8,limit: int = 0) -> tuple:
+    reviews = []
+    for label in ["pos", "neg"]:
+        labeled_directory = f"{data_directory}/{label}"
+        for review in os.listdir(labeled_directory):
+            if review.endswith(".txt"):
+                with open(f"{labeled_directory}/{review}") as f:
+                    text = f.read()
+                    text = text.replace("<br />", "\n\n")
+                    if text.strip():
+                        spacy_label = {
+                            "cats": {
+                                "pos": "pos" == label,
+                                "neg": "neg" == label
+                            }
+                        }
+                        reviews.append((text, spacy_label))
+    random.shuffle(reviews)
+    if limit:
+        reviews = reviews[:limit]
+    split = int(len(reviews) * split)
+    return reviews[:split], reviews[split:]												
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training Classifier}
+
+\begin{itemize}
+\item Modifying the base spaCy pipeline to include the textcat component
+\item Building a training loop to train the textcat component
+\item Evaluating the progress of your model training after a given number of training loops
+\end{itemize}
+
+Uses convolutional neural network (CNN) for classifying text data.
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Modifying Pipeline }
+
+\begin{lstlisting}
+import os
+import random
+import spacy
+
+def train_model(
+    training_data: list,
+    test_data: list,
+    iterations: int = 20
+) -> None:
+    # Build pipeline
+    nlp = spacy.load("en_core_web_sm")
+    if "textcat" not in nlp.pipe_names:
+        textcat = nlp.create_pipe(
+            "textcat", config={"architecture": "simple_cnn"}
+        )
+        nlp.add_pipe(textcat, last=True)	
+    else:
+        textcat = nlp.get_pipe("textcat")
+
+    textcat.add_label("pos")
+    textcat.add_label("neg")				
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Training Loop }
+
+\begin{itemize}
+\item Set pipeline to train only the textcat component, 
+\item Generate batches of data for it with spaCy’s minibatch() and compounding() utilities, 
+\item Go through them and update your model.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Training Loop }
+
+\begin{lstlisting}
+def train_model(
+    training_data: list,
+    test_data: list,
+    iterations: int = 20
+) -> None:
+
+		:
+		:
+
+    textcat.add_label("pos")
+    textcat.add_label("neg")			
+		
+    # Train only textcat
+    training_excluded_pipes = [
+        pipe for pipe in nlp.pipe_names if pipe != "textcat"
+    ]		
+    with nlp.disable_pipes(training_excluded_pipes):
+        optimizer = nlp.begin_training()
+        # Training loop
+        print("Beginning training")
+        batch_sizes = compounding(
+            4.0, 32.0, 1.001
+        )  # A generator that yields infinite series of input numbers		
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Training Loop }
+
+\begin{lstlisting}
+def train_model(training_data: list,test_data: list,iterations: int = 20
+) -> None:
+		:
+		:
+    with nlp.disable_pipes(training_excluded_pipes):
+        optimizer = nlp.begin_training()
+        # Training loop
+        print("Beginning training")
+        batch_sizes = compounding(
+            4.0, 32.0, 1.001
+        )  # A generator that yields infinite series of input numbers		
+        for i in range(iterations):
+            loss = {}
+            random.shuffle(training_data)
+            batches = minibatch(training_data, size=batch_sizes)
+            for batch in batches:
+                text, labels = zip(*batch)
+                nlp.update(
+                    text,
+                    labels,
+                    drop=0.2,
+                    sgd=optimizer,
+                    losses=loss
+                )				
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Evaluating Model Training }
+
+\begin{itemize}
+\item A separate evaluate\_model() function.
+\item Run the documents in your test set against the unfinished model to get your model’s predictions 
+\item Compare them to the correct labels of that data.
+\item For evaluate\_model(), pass in the pipeline’s tokenizer component, the textcat component, and your test dataset:
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Evaluating Model Training }
+
+\begin{lstlisting}
+def evaluate_model(tokenizer, textcat, test_data: list) -> dict:
+    reviews, labels = zip(*test_data)
+    reviews = (tokenizer(review) for review in reviews)
+    true_positives = 0
+    false_positives = 1e-8  # Can't be 0 because of presence in denominator
+    true_negatives = 0
+    false_negatives = 1e-8
+    for i, review in enumerate(textcat.pipe(reviews)):
+        true_label = labels[i]
+        for predicted_label, score in review.cats.items():
+            # Every cats dictionary includes both labels. You can get all
+            # the info you need with just the pos label.
+            if (predicted_label == "neg"):
+                continue
+            if score >= 0.5 and true_label["pos"]:
+                true_positives += 1
+            elif score >= 0.5 and true_label["neg"]:
+                false_positives += 1
+            elif score < 0.5 and true_label["neg"]:
+                true_negatives += 1
+            elif score < 0.5 and true_label["pos"]:
+                false_negatives += 1
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Evaluating Model Training }
+
+\begin{lstlisting}
+def evaluate_model(
+    tokenizer, textcat, test_data: list
+) -> dict:
+		:
+		:
+    precision = true_positives / (true_positives + false_positives)
+    recall = true_positives / (true_positives + false_negatives)
+
+    if precision + recall == 0:
+        f_score = 0
+    else:
+        f_score = 2 * (precision * recall) / (precision + recall)
+    return {"precision": precision, "recall": recall, "f-score": f_score}								
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Evaluating Model Training }
+
+\begin{lstlisting}
+def train_model(training_data: list, test_data: list, iterations: int = 20):
+    # Previously seen code omitted for brevity.
+        # Training loop
+        print("Beginning training")
+        print("Loss\tPrecision\tRecall\tF-score")
+        batch_sizes = compounding(
+            4.0, 32.0, 1.001
+        )  # A generator that yields infinite series of input numbers
+        for i in range(iterations):
+						:
+						:
+            with textcat.model.use_params(optimizer.averages):
+                evaluation_results = evaluate_model(
+                    tokenizer=nlp.tokenizer,
+                    textcat=textcat,
+                    test_data=test_data
+                )
+                print(
+                    f"{loss['textcat']}\t{evaluation_results['precision']}"
+                    f"\t{evaluation_results['recall']}"
+                    f"\t{evaluation_results['f-score']}"
+                )		
+    # Save model
+    with nlp.use_params(optimizer.averages):
+        nlp.to_disk("model_artifacts")								
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Test Model}
+
+\begin{itemize}
+\item Time to test it against a real review.
+\item Load the previously saved model.
+\end{itemize}
+
+\begin{lstlisting}
+TEST_REVIEW = """..."""				
+def test_model(input_data: str = TEST_REVIEW):
+    #  Load saved trained model
+    loaded_model = spacy.load("model_artifacts")
+    # Generate prediction
+    parsed_text = loaded_model(input_data)
+    # Determine prediction to return
+    if parsed_text.cats["pos"] > parsed_text.cats["neg"]:
+        prediction = "Positive"
+        score = parsed_text.cats["pos"]
+    else:
+        prediction = "Negative"
+        score = parsed_text.cats["neg"]
+    print(
+        f"Review text: {input_data}\nPredicted sentiment: {prediction}"
+        f"\tScore: {score}"
+    )			
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Main}
+
+\begin{lstlisting}
+if __name__ == "__main__":
+    train, test = load_training_data(limit=2500)
+    train_model(train, test)
+    print("Testing model")
+    test_model()
+\end{lstlisting}
+
+\begin{itemize}
+\item What did the model predict? 
+\item Do you agree with the result? 
+\item What happens if you increase or decrease the limit parameter when loading the data? 
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What Next?}
+
+\begin{itemize}
+\item Rewrite your code to remove stop words during preprocessing or data loading. How does the mode performance change? Can you incorporate this preprocessing into a pipeline component instead?
+\item Explore the configuration parameters for the textcat pipeline component and experiment with different configurations.
+\end{itemize}
+
+\end{frame}
+
 
 
 
