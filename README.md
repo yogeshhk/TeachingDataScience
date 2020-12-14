@@ -39,7 +39,7 @@ Logistics:
 		- No recording or YouTube streaming, content is open-sourced anyway
 - During Talk:
 <!-- 		- Simplify with Doodles (?, tablet)
-		 -->
+
     - Take pictures or screenshots
     - At the end of the talk, share links to my github page, yati.io, linkedin profile
 - Post-Talk:
@@ -57,8 +57,67 @@ Logistics:
 - OpenTech to edit video, save to join
 - Handbrake to compress video
  -->
+## Seminar Topics (1-2 hours long)
+- Introduction to Artificial Intelligence (Non-technical)
+- Introduction to Artificial Intelligence and Machine Learning (Technical)
 
-## Steps for LaTex to pdfs
+- Introduction to Maths 4 AI: Calculus
+- Introduction to Maths 4 AI: Linear Algebra
+- Introduction to Maths 4 AI: Statistics and Probability
+
+- Introduction to Python (Technical)
+
+- Introduction to Data (Data Engineering, Tensorflow)
+- Introduction to Data Analytics (Data Processing with Pandas)
+
+- Introduction to Machine Learning (Technical)
+- Introduction to ANN (Artificial Neural Networks, Tensorflow)
+- Introduction to CNN (Convolutional Neural Networks, Tensorflow)
+- Introduction to RNN (Convolutional Neural Networks, Tensorflow)
+
+- Introduction to NLP (Natural Language Processing)
+- Introduction to Word Embedding (Word 2 Vec, Tensorflow)
+- Introduction to Deep NLP (Natural Language Processing with Neural Networks)
+- Introduction to Conversational AI (Chatbot)
+- Introduction to Text Mining (Topic Modeling, Custom NER)
+
+- Introduction to Explainable AI (Non-technical)
+- Decoding Gartner Hype Cycles for Emerging Technologies (Non-technical)
+- Deep Learning for Geometric Algorithms (Research)
+
+## Workshop Topics (2-5 days long if full-time)
+- Introduction to Python (Technical)
+- Introduction to Data Analytics (Data Processing with Pandas)
+
+- Introduction to Maths 4 AI
+
+- Introduction to Machine Learning (Technical)
+- Introduction to Deep Learning (Technical)
+
+- Introduction to NLP (Natural Language Processing)
+- Introduction to Deep NLP (Natural Language Processing with Neural Networks)
+
+- Introduction to Conversational AI (Chatbot)
+
+## Talks (An hour long)
+- Mid-Career Transitions into ML-AI, with Yogesh Kulkarni https://www.youtube.com/watch?v=IQzWosVzkM4
+- Encoder-Decoder Neural Network for Computing Midcurve of Thin Polygon by Yogesh Kulkarni https://www.youtube.com/watch?v=ZY0nuykqgoE
+- Workshop: Introduction to RNN with TensorFlow https://www.youtube.com/watch?v=qFrdm_9fjJY
+
+## Online Courses
+- Experfy: Introduction to Artificial Intelligence, Learn what exactly AI is, what are its different facets.
+https://www.experfy.com/training/courses/introduction-to-artificial-intelligence
+
+- Experfy: Unsupervised Learning: Dimensionality Reduction and Representation, Overcoming the Curse of Dimensionality
+https://www.experfy.com/training/courses/unsupervised-learning-dimensionality-reduction-and-representation
+
+- Experfy: Hands-on Project - Data Preparation, Modeling & Visualization
+https://www.experfy.com/training/courses/hands-on-project-data-preparation-modeling-visualization
+
+- INE: Introduction to Machine Learning 
+https://my.ine.com/DataScience/courses/2eaf6b98/introduction-to-machine-learning
+
+## Steps for LaTex source files to pdfs
 
 ### Code Arrangement
 *	LaTeX directory 
