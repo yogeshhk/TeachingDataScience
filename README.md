@@ -57,7 +57,10 @@ Logistics:
 - OpenTech to edit video, save to join
 - Handbrake to compress video
  -->
-## Seminar Topics (1-2 hours long)
+ 
+## Trainings/Talks
+
+### Seminar Topics (1-2 hours long)
 - Introduction to Artificial Intelligence (Non-technical)
 - Introduction to Artificial Intelligence and Machine Learning (Technical)
 
@@ -85,7 +88,7 @@ Logistics:
 - Decoding Gartner Hype Cycles for Emerging Technologies (Non-technical)
 - Deep Learning for Geometric Algorithms (Research)
 
-## Workshop Topics (2-5 days long if full-time)
+### Workshop Topics (2-5 days long if full-time)
 - Introduction to Python (Technical)
 - Introduction to Data Analytics (Data Processing with Pandas)
 
@@ -99,12 +102,12 @@ Logistics:
 
 - Introduction to Conversational AI (Chatbot)
 
-## Talks (An hour long)
-- Mid-Career Transitions into ML-AI, with Yogesh Kulkarni https://www.youtube.com/watch?v=IQzWosVzkM4
-- Encoder-Decoder Neural Network for Computing Midcurve of Thin Polygon by Yogesh Kulkarni https://www.youtube.com/watch?v=ZY0nuykqgoE
-- Workshop: Introduction to RNN with TensorFlow https://www.youtube.com/watch?v=qFrdm_9fjJY
+### Talks (An hour long)
+- Choose To Thinq: Mid-Career Transitions into ML-AI, with Yogesh Kulkarni https://www.youtube.com/watch?v=IQzWosVzkM4
+- ODSC 2019: Encoder-Decoder Neural Network for Computing Midcurve of Thin Polygon by Yogesh Kulkarni https://www.youtube.com/watch?v=ZY0nuykqgoE
+- AI Pillipinas: Introduction to RNN with TensorFlow https://www.youtube.com/watch?v=qFrdm_9fjJY
 
-## Online Courses
+### Online Courses (Paid)
 - Experfy: Introduction to Artificial Intelligence, Learn what exactly AI is, what are its different facets.
 https://www.experfy.com/training/courses/introduction-to-artificial-intelligence
 
