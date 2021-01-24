@@ -29,9 +29,7 @@
 |     10 Oct 2020    |     Introduction to RNN with Tensorflow 2.0 - Yogesh Kulkarni    |   [Slides]()       |  |
 |			7 Nov 2020  | Introduction to Tensorflow Data - Yogesh Kulkarni | | |
 |			5 Dec 2020  | Introduction to Word Embedding - Yogesh Kulkarni | | |
-|				Jan 2021	| Maths4AI: Basics, Calculus - Yogesh Kulkarni | | |
+|		 23 Jan 2021	| Maths4AI: Basics, Calculus - Yogesh Kulkarni | | |
 |				Feb 2021	| Maths4AI: Linear Algebra - Yogesh Kulkarni | | |
 |				Mar 2021	| Maths4AI: Statistics - Yogesh Kulkarni | | |
-
-## To Dos
--
+|				??? 2021	| Text Mining - Yogesh Kulkarni | | |

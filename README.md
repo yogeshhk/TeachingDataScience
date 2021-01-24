@@ -66,7 +66,7 @@ Logistics:
 
 - Introduction to Maths 4 AI: Calculus
 - Introduction to Maths 4 AI: Linear Algebra
-- Introduction to Maths 4 AI: Statistics and Probability
+- Introduction to Maths 4 AI: Statistics
 
 - Introduction to Python (Technical)
 
