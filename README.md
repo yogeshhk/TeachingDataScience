@@ -12,19 +12,9 @@ Copyright (C) 2019 Yogesh H Kulkarni
 - For Giving back from classes to masses, dyan-eshwar. 
 - If any $: Donate to CoEP Alumni, Jagriti, Aai for causes (Experfy/INE already)
 - For better own understanding
-- Tensorflow (No conflict of interest, Google backing, good production ready, Demand for job & training)
-- Swift for Tensorflow : +{Fast, typed-based, uncommon, nascent:scope4contribution, less crowded in trainings}, -{production-ready-ness, no ecosystem}
-https://github.com/tensorflow/swift/blob/master/docs/WhySwiftForTensorFlow.md
-
 -->
 <!-- 
 Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
-
-## Planned Topics
-- Dec  5: Word embeddings
-- Jan 23: Maths for AI: Basics, Calculus
-- Feb 20: Maths for AI: Linear Algebra
-- Mar 20: Maths for AI: Stats and Probability
 
 ## Playbook (conduct lectures under TFUG Pune)
 Logistics:
@@ -154,25 +144,8 @@ https://my.ine.com/DataScience/courses/2eaf6b98/introduction-to-machine-learning
 * Instead of these given driver files, you can have your own main files and include just the *content.tex files.
 
 <!-- ## Notes
-### Languages for Deep Learning
-* Python +: lots of ML/DL libraries (ecosystem), easy to learn/prototype
-* Python -: not fast, not safe, C/C++ inside, not typed
-* Julia +: Speed of C, usable like Python, Stats like R, string processing like Perl
-* Julia -: no direct support for Tensorflow but has SciML
-* Swift +: backed by Apple/Google, High to low level, very hackable, directly on LLVM (low level virtual machine)
-* Swift -: swift for Tensorflow still under development -->
 
 <!-- ## Good resources for learning
-* Swift For Tensorflow
-  * Swift for TensorFlow https://www.tensorflow.org/swift
-	* Lesson 13 2019 fastai v3 Basics of Swift for Deep Learning https://www.youtube.com/watch?v=ldP6EEuWDhk
-	* Swift: Google's bet on differentiable programming | Tryolabs Blog https://tryolabs.com/blog/2020/04/02/swift-googles-bet-on-differentiable-programming/
-	* Ayush517/S4TF-Tutorials: https://github.com/Ayush517/S4TF-Tutorials
-	* param087/swiftML: Swift library for Machine Learning https://github.com/param087/swiftML/
-	* Swift in Sixty Seconds - YouTube https://www.youtube.com/playlist?list=PLuoeXyslFTuajnHpp2jKCyOz2ZhP5OTkN FOR 2 DAY Workshop just like Python
-	* A deeper dive into Swift for Tensorflow | Webinar - YouTube  https://www.youtube.com/watch?v=WxFPrypPBpU&feature=emb_logo
-	* Introduction to Swift for Tensorflow - Brett Koonce - YouTube https://www.youtube.com/watch?v=mo3fSb620og
-	* Active projects: https://github.com/tensorflow/swift-apis
 	
 * Representation Learning - Yoshua Bengio https://www.youtube.com/watch?v=O6itYc2nnnM
 * Jordan Boyd-Graber ML NLP Play list https://www.youtube.com/user/ezubaric/playlists
