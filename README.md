@@ -44,7 +44,7 @@ Logistics:
 		- Hot Keys: Alt + 10 to start recording, Alt + F11 to stop
 		- Output format : mkv, easier to mix, can be converted to mp4 by File->Remux
 		- Output gets stored in Videos folder
-- OpenTech to edit video, save to join
+- OpenShot to edit video, save to join
 - Handbrake to compress video
  -->
  
