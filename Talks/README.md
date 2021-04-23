@@ -1,4 +1,4 @@
-# TensorFlow User Group Pune
+<!-- # TensorFlow User Group Pune
 
 ## Playbook
 - Pre-event:
@@ -32,4 +32,4 @@
 |		 23 Jan 2021	| Maths4AI: Basics, Calculus - Yogesh Kulkarni | | |
 |				Feb 2021	| Maths4AI: Linear Algebra - Yogesh Kulkarni | | |
 |				Mar 2021	| Maths4AI: Statistics - Yogesh Kulkarni | | |
-|				??? 2021	| Text Mining - Yogesh Kulkarni | | |
+|				??? 2021	| Text Mining - Yogesh Kulkarni | | | -->
