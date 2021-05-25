@@ -1,9 +1,9 @@
 # The Nature of Code - Daniel Shiffman http://natureofcode.com
-# Example 1-2: Probability Basics
+# Example I-1: Random Walker
 # PyP5 port by: Yogesh Kulkarni
 # Adpoted from processing.py based implementation at:
-# https://github.com/nature-of-code/noc-examples-python/blob/master/introduction/NOC_I_3_RandomWalkTendsToRight
-# Reference Youtube Video: https://www.youtube.com/watch?v=rqecAdEGW6I&list=PLRqwX-V7Uu6aFlwukCmDf0-1-uSR7mklK&index=3
+# https://github.com/nature-of-code/noc-examples-python/tree/master/introduction/NOC_I_1_RandomWalkTraditional
+# Reference Youtube Video: https://www.youtube.com/watch?v=rqecAdEGW6I&list=PLRqwX-V7Uu6aFlwukCmDf0-1-uSR7mklK&index=2
 
 from p5 import *
 import random
@@ -16,18 +16,17 @@ class Walker(object):
 
     def render(self):
         stroke(0)
-        strokeWeight(2)
         point(self.x, self.y)
 
     # Randomly move up, down, left, right, or stay in one place
     def step(self):
-        r = random.random()
-        # A 40% of moving to the right!
-        if r < 0.4:
+        choice = int(random.randint(0,3))
+
+        if choice == 0:
             self.x += 1
-        elif r < 0.6:
+        elif choice == 1:
             self.x -= 1
-        elif r < 0.8:
+        elif choice == 2:
             self.y += 1
         else:
             self.y -= 1

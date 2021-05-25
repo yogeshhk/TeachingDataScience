@@ -1,5 +1,5 @@
 # The Nature of Code - Daniel Shiffman http://natureofcode.com
-# Example 1-3-2: Gaussian Distribution
+# Example I-3-b: Gaussian Distribution
 # PyP5 port by: Yogesh Kulkarni
 # Adpoted from processing.py based implementation at:
 # https://github.com/nature-of-code/noc-examples-python/blob/master/introduction/NOC_I_4_Gaussian
