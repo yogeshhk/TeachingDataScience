@@ -31,7 +31,7 @@ class Mover(object):
         stroke(0)
         strokeWeight(2)
         fill(0, 127)
-        ellipse(self.position.x, self.position.y, self.mass * 16, self.mass * 16)
+        ellipse(self.position.x, self.position.y, self.mass * 20, self.mass * 20)
 
     def checkEdges(self):
         if (self.position.x > width):
@@ -49,17 +49,19 @@ def setup():
     global movers
     movers = []
     for i in range(num_movers):
-        movers.append(Mover(random.uniform(0.1, 4), 0, 0))
+        movers.append(Mover(random.uniform(0.1, 4), random.uniform(0,640), 200))
 
 def draw():
     background(255)
 
     for m in movers:
-        wind = Vector(0.01, 0)
         gravity = Vector(0, 0.1)
-
-        m.applyForce(wind)
+        gravity *= m.mass # next, internally it will get divided, so as to keep gravitational acceleration constant
         m.applyForce(gravity)
+
+        if mouse_is_pressed:
+            wind = Vector(0.01, 0)
+            m.applyForce(wind)
 
         m.update()
         m.display()
