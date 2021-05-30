@@ -11,14 +11,14 @@ Copyright (C) 2021 Yogesh H Kulkarni
 
 ## To Dos
 - Read papers at:
-    - https://visxai.io/
-		- https://distill.pub/
+  - https://visxai.io/
+  - https://distill.pub/
 - Try github repos at:
-    - https://github.com/rulematrix/rule-matrix-py
-		- https://github.com/PAIR-code/what-if-tool
+  - https://github.com/rulematrix/rule-matrix-py
+  - https://github.com/PAIR-code/what-if-tool
 - Follow Groups at
-		- https://research.google/teams/brain/pair/
-		- http://vis.cse.ust.hk/groups/xai-vis/
+  - https://research.google/teams/brain/pair/
+  - http://vis.cse.ust.hk/groups/xai-vis/
 - Do courses, playlists:
-		- https://www.youtube.com/c/PAIRGoogle/videos
-		- https://altair-viz.github.io/altair-tutorial/README.html
+  - https://www.youtube.com/c/PAIRGoogle/videos
+  - https://altair-viz.github.io/altair-tutorial/README.html
