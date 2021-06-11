@@ -16,6 +16,7 @@ Challenges in NLP would be:
 
 ## ToDos
 -	Build Text Classifier with GNN
+- Yao text-gcnn build twitter sentiment corpus files
 -	Buy-read Book: https://www.manning.com/books/graph-powered-machine-learning 
 -	Deep learning on graphs: successes, challenges, and next steps | Graph Neural Networks https://www.youtube.com/watch?v=PLGcx65MhCc 
 -	Graph Node Embedding Algorithms (Stanford) https://www.youtube.com/watch?v=7JELX6DiUxQ 
@@ -23,6 +24,17 @@ Challenges in NLP would be:
 -	Spektral: graph deep learning, based on the Keras API and TensorFlow 2  https://graphneural.network/  https://arxiv.org/pdf/2006.12138.pdf 
 
 ## Notes
+- How to get started with Graph Machine Learning, Aleksa Gordic, https://gordicaleksa.medium.com/how-to-get-started-with-graph-machine-learning-afa53f6f963a
+	- Example of Graph based regression: Maybe the nodes in your graphs are tweets and you want to regress the probability that a certain tweet is spreading fake news. Your model would associate a number between 0 and 1 to that node and that would be an example of a node regression task.
+	- Graph embedding methods: 
+	  - 'Deep Walk': sample “sentences” from the graph by doing random walks.
+		- Once you have the sentence you can do the Word2Vec magic and learn your node embeddings such that those nodes that tend to be close in your sentences have similar embeddings.
+	- Graph Neural Networks:
+		- Spectral methods try to preserve the strict mathematical notion of convolution and had to resort to the frequency domain (Laplacian eigenbasis) for that. Main idea is to project the graph signal into that eigenbasis, filter the projected graph signal directly in the spectral domain by doing an element-wise multiplication with the filter, and reproject it back into the spatial domain. They are computationally expensive, so not used much.
+		- Spatial (message passing) methods are not convolutions in the strict mathematical sense of the word, but we still informally call them convolutions, as they were very loosely inspired by the spectral methods. The goal is to update each and every node’s representation. You have the feature vectors from your node and from his neighbors at disposal. GCN uses constants instead of learnable weights as by GAT, while aggregating neighbors.
+		  - GraphSAGE — SAmple and aggreGatE, it introduced the concept of sampling your neighborhood and a couple of optimization tricks so as to constrain the compute/memory budget.
+		  - PinSage — One of the most famous real-world applications of GNNs — recommender system at Pinterest.
+
 -	Graphs Neural Networks in NLP. Capturing the beautiful semantic… | by Purvanshi Mehta | NeuralSpace | Medium
  ![GNN IO](images/gnnio.png)
  
