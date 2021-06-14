@@ -16,9 +16,7 @@ Challenges in NLP would be:
 ## ToDos
 - DGL Tutorials https://www.dgl.ai
 - Graph Neural Nets https://www.youtube.com/playlist?list=PLBoQnSflObckArGNhOcNg7lQG_f0ZlHF5
--	Build Text Classifier with GNN, using DGL? Pytroch Geometric (installation issues on windows), tf2-gnn (pending pickle error)
 -	CS224W: Machine Learning with Graphs https://www.youtube.com/playlist?list=PLoROMvodv4rPLKxIpqhjhPgdQy7imNkDn
--	Buy-read Book: https://www.manning.com/books/graph-powered-machine-learning 
 
 ## Libraries
 - DGL https://www.dgl.ai/ Build your models with PyTorch, TensorFlow or MXNet. By Amazon.
