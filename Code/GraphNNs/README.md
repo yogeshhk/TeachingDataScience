@@ -13,11 +13,6 @@ Challenges in NLP would be:
 - Active research in Big companies, 
 - Usable in MidcurveNN
 
-## ToDos
-- DGL Tutorials https://www.dgl.ai
-- Graph Neural Nets https://www.youtube.com/playlist?list=PLBoQnSflObckArGNhOcNg7lQG_f0ZlHF5
--	CS224W: Machine Learning with Graphs https://www.youtube.com/playlist?list=PLoROMvodv4rPLKxIpqhjhPgdQy7imNkDn
-
 ## Libraries
 - DGL https://www.dgl.ai/ Build your models with PyTorch, TensorFlow or MXNet. By Amazon.
 - tf2-gnn https://github.com/microsoft/tf2-gnn Graph neural network in TensorFlow 2.0. By Microsoft.
@@ -31,6 +26,12 @@ Challenges in NLP would be:
 	- Deep Learning for non-Euclidean domain is called Geometric Deep Learning. 
 	- Graph is composed of nodes and edges of the network structure data.
 	- Manifold data is geometric surface, modeled as point cloud. Irregularly arranged and randomly distributed, thus difficult to find neighbors.
+	- Laplacian Matrix is difference of Degree Matrix (diagonal having node incidences) and the Adjacency Matrix
+	- Spectral method is the eigen-decomposition of Laplacian matrix
+	- a manifold is a topological space that locally resembles Euclidean space near each point ie Tangent plane is 2D for 3D surface at a neighborhood of a point.
+	- GCN is spectral method
+	- GNN is recursively updating the hidden representation of nodes until convergence, aka  recurrent-based spatial GCN
+	- Mixture Model Networks (MoNet) is  a uniﬁed framework that can extend the CNN structure to non-Euclidean domains (graphs and manifolds), and can learn local, stationary and combinatorial specific task characteristics.
 	
 - A Friendly Introduction to Graph Neural Networks https://www.kdnuggets.com/2020/11/friendly-introduction-graph-neural-networks.html
 	- RNNs are for sequences, which compute not only using inputs but also previous hidden state.
