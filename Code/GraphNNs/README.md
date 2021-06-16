@@ -20,6 +20,25 @@ Challenges in NLP would be:
 - Pyorch Geometric https://github.com/rusty1s/pytorch_geometric Deep learning on graphs and other irregular structures. By Facebook.
 
 ## Notes
+- KDD 2020: Hands-on Tutorials: Scalable Graph Neural Networks with Deep Graph Library https://www.youtube.com/watch?v=Nd2BbbviOdk
+  - Tasks in Graph Learning
+		- Node Classification: 
+			- Detect malicious accounts
+			- Target right customers
+		- Link Prediction
+			- Recommendations
+			- Predict missing relations in knowledge graph
+		- Graph Classification
+			- Predict property of entire graph like chemical compound
+	- Embed nodes-edges- graph info in a vector and then use it for classifies.
+		- Using manual feature engineering
+		- Using unsupervised dimensionality reduction
+		- Use Graph Neural Networks to learn embeddings, end-to-end fashion
+	- GNNs are naturally inductive because they learn the same neural networks on all the nodes and edges. A new node in graph can be used for prediction, while it has been trained on the remaining sub-graph. 
+	- GNNs do not learn embedding as such but the function from input to output. But if you use one-hot embedding on nodes-edge, then inductive bias is lost and then becomes transaction-based.
+	- GNNs take graph, update node embeddings, those then participate in node-wise prediction. Similarly for edge-graph level embeddings.
+	- For graph level embedding some aggregation (called 'readout' function) node-edge embeddings.
+
 - A Comprehensive Survey on Geometric Deep Learning - Wenming Cao, IEEE
 	- Euclidean domain == grid-like data. Full and fixed size.
 	- Non-Euclidean domain == Graphs and manifolds. Not fully connected and variable size.
