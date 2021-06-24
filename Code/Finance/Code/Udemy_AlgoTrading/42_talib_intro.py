@@ -9,15 +9,22 @@ import numpy as np
 from alpha_vantage.timeseries import TimeSeries
 import copy
 import talib
+import os
 
 talib.get_function_groups() #get a list of talib functions by group 
 
-tickers = ["MSFT","AAPL","FB","AMZN","INTC", "CSCO","VZ","IBM","QCOM","LYFT"]
+tickers = ["MSFT","AAPL","FB","AMZN","INTC"]#, "CSCO","VZ","IBM","QCOM","LYFT"]
 
 # Extract OHLCV data for the tickers
 ohlc_tech = {} # directory with ohlc value for each stock            
-key_path = "D:\\Udemy\\Quantitative Investing Using Python\\1_Getting Data\\AlphaVantage\\key.txt"
-ts = TimeSeries(key=open(key_path,'r').read(), output_format='pandas')
+# key_path = "D:\\Udemy\\Quantitative Investing Using Python\\1_Getting Data\\AlphaVantage\\key.txt"
+# key=open(key_path,'r').read()
+key = os.environ.get('ADVANTAGE_API_KEY',"")
+if key == "":
+    print("set the key first")
+else:
+    print(key)
+ts = TimeSeries(key=key, output_format='pandas') # open(key_path,'r').read()
 
 attempt = 0 # initializing passthrough variable
 drop = [] # initializing list to store tickers whose close price was successfully extracted
@@ -55,3 +62,5 @@ for ticker in tickers:
     ohlc_dict[ticker]["Beta"] = talib.BETA(ohlc_dict[ticker]["High"],
                                          ohlc_dict[ticker]["Low"],
                                          timeperiod=14)
+
+print(ohlc_dict)

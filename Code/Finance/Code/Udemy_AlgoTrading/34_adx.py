@@ -73,3 +73,7 @@ def ADX(DF,n):
             ADX.append(((n-1)*ADX[j-1] + DX[j])/n)
     df2['ADX']=np.array(ADX)
     return df2['ADX']
+
+adxdf = ADX(ohlcv,14)
+adxdf.dropna(inplace=True)
+print(adxdf.head())

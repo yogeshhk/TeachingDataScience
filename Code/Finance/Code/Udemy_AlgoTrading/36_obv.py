@@ -23,3 +23,7 @@ def OBV(DF):
     df['vol_adj'] = df['Volume'] * df['direction']
     df['obv'] = df['vol_adj'].cumsum()
     return df['obv']
+
+obvdf = OBV(ohlcv)
+obvdf.dropna(inplace=True)
+print(obvdf.head())

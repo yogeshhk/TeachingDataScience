@@ -49,3 +49,5 @@ def slope(ser,n):
     return np.array(slope_angle)
 
 """
+
+print(ohlcv.head())

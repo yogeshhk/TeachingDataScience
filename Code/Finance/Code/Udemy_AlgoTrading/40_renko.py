@@ -44,3 +44,5 @@ def renko_DF(DF):
 
 
 renko_data = renko_DF(ohlcv)
+renko_data.dropna(inplace=True)
+print(renko_data.head())
