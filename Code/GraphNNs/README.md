@@ -20,6 +20,11 @@ Challenges in NLP would be:
 - Pyorch Geometric https://github.com/rusty1s/pytorch_geometric Deep learning on graphs and other irregular structures. By Facebook.
 
 ## Notes
+- CS224W: Machine Learning with Graphs | 2021 
+	- Node Embedding: Have encoder network such that, cosine similarity of neiboring nodes is close.
+	- GNNs (Graph Neural Networks) are Deep Graph Encoders. They are end-to-end learning machines.
+	- Two steps: Decide node neighborhood, agreegate at a node using neighbors.
+
 - KDD 2020: Hands-on Tutorials: Scalable Graph Neural Networks with Deep Graph Library https://www.youtube.com/watch?v=Nd2BbbviOdk
   - Tasks in Graph Learning
 		- Node Classification: 
