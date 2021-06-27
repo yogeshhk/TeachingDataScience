@@ -18,6 +18,7 @@ Challenges in NLP would be:
 - tf2-gnn https://github.com/microsoft/tf2-gnn Graph neural network in TensorFlow 2.0. By Microsoft.
 -	Spektral: graph deep learning, based on the Keras API and TensorFlow 2  https://graphneural.network/  https://arxiv.org/pdf/2006.12138.pdf 
 - Pyorch Geometric https://github.com/rusty1s/pytorch_geometric Deep learning on graphs and other irregular structures. By Facebook.
+- Graph4NLP (video)[https://www.youtube.com/watch?v=7PiuwUBnwD0&t=586s], (presentation)[https://drive.google.com/file/d/1_7cPySt9Pzfd6MaqNihD4FkKI0qzf-s4/view]
 
 ## Notes
 - CS224W: Machine Learning with Graphs | 2021 
