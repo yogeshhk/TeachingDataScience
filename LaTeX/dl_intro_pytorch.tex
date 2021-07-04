@@ -61,13 +61,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Installation}
 
-\begin{itemize}
-\item  http://pytorch.org/ for Linux and Mac
+Visit https://pytorch.org/get-started/locally/
+
 \begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{pyt5}
+\includegraphics[width=\linewidth,keepaspectratio]{pyt39}%{pyt5}
 \end{center}
-\item For windows \lstinline|conda install -c peterjc123 pytorch|
-\end{itemize}
+
 
 \end{frame}
 
@@ -89,7 +88,7 @@
 \begin{itemize}
 \item Data:
 \begin{itemize}
-\item  Tensor
+\item Tensor
 \item Variable (for Gradient)
 \end{itemize}
 \item Function:
@@ -106,12 +105,38 @@
 \begin{frame}[fragile]
 \frametitle{What is a Tensor?}
 \begin{itemize}
+\item Tensors to encode the inputs and outputs of a model, as well as the model's parameters.
+\item Similar to NumPy's ndarrays, except that tensors can run on GPUs or other hardware accelerators. (both actually share same underlying memory, if CPU)
+
+\end{itemize}
+
+ \begin{lstlisting}
+import torch
+import numpy as np
+
+data = [[1, 2],[3, 4]]
+x_data = torch.tensor(data)
+x_data_numpy = x_data.numpy()
+
+np_array = np.array(data)
+x_np = torch.from_numpy(np_array)
+
+ \end{lstlisting}
+ 
+ 
+ \end{frame} 
+ 
+ 
+ % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{What is a Tensor?}
+\begin{itemize}
 \item All of deep learning is computations on tensors
 \item Array with dimension 0 is a scalar
 \item Array with dimension 1 is a vector
 \item Array with dimension 2 is a martix
 \item Array with dimension 3 or more is a tensor
-\item Tensors can be created from Python lists with the torch.Tensor() function.
+\item Tensors can be created from Python lists with the torch.tensor() function.
 \end{itemize}
  \end{frame} 
  
@@ -121,10 +146,9 @@
 1D Vector
  \begin{lstlisting}
  import torch
-torch.manual_seed(1)
 
 V_data = [1.,2.,3.]
-V = torch.Tensor(V_data)
+V = torch.tensor(V_data)
 print(V)
 
 >>>tensor([ 1.,  2.,  3.])
@@ -140,7 +164,7 @@ print(V)
 Matrix 
  \begin{lstlisting}
 M_data = [[1., 2., 3.], [4., 5., 6]]
-M = torch.Tensor(M_data)
+M = torch.tensor(M_data)
 print(M)
 
 >>>tensor([[ 1.,  2.,  3.],
@@ -157,7 +181,7 @@ print(M)
  \begin{lstlisting}
 T_data = [[[1.,2.], [3.,4.]],
           [[5.,6.], [7.,8.]]]
-T = torch.Tensor(T_data)
+T = torch.tensor(T_data)
 print(T)
 
 
@@ -169,7 +193,56 @@ print(T)
  \end{lstlisting}
 
  \end{frame} 
+ 
+  % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Random, Constant Tensor}
 
+\begin{lstlisting}
+shape = (2,3,)
+rand_tensor = torch.rand(shape)
+ones_tensor = torch.ones(shape)
+zeros_tensor = torch.zeros(shape)
+
+print(f"Random Tensor: \n {rand_tensor} \n")
+print(f"Ones Tensor: \n {ones_tensor} \n")
+print(f"Zeros Tensor: \n {zeros_tensor}")
+
+Random Tensor: 
+ tensor([[0.5742, 0.4606, 0.0981],
+        [0.3154, 0.0503, 0.0097]]) 
+
+Ones Tensor: 
+ tensor([[1., 1., 1.],
+        [1., 1., 1.]]) 
+
+Zeros Tensor: 
+ tensor([[0., 0., 0.],
+        [0., 0., 0.]])
+ \end{lstlisting}
+
+ \end{frame} 
+ 
+
+ % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Attributes of Tensor}
+
+\begin{lstlisting}
+tensor = torch.rand(3,4)
+
+print(f"Shape of tensor: {tensor.shape}")
+print(f"Datatype of tensor: {tensor.dtype}")
+print(f"Device tensor is stored on: {tensor.device}")
+
+Shape of tensor: torch.Size([3, 4])
+Datatype of tensor: torch.float32
+Device tensor is stored on: cpu
+ \end{lstlisting}
+
+ \end{frame} 
+ 
+ 
  % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Indexing}
@@ -199,7 +272,7 @@ tensor([[ 1.,  2.],
 \begin{itemize}
 \item Default datatype in tensor is Float
 \item For int tensor, call torch.LongTensor(), etc
-\item To create a tensor with random data and the supplied dimensionality with torch.randn()
+\item To create a tensor with random data and the supplied dimensionality with torch.rand()
 \end{itemize}
 
  \end{frame} 
@@ -208,7 +281,7 @@ tensor([[ 1.,  2.],
 \begin{frame}[fragile]
 \frametitle{Initialization}
  \begin{lstlisting}
-x = torch.randn((3, 4, 5))
+x = torch.rand((3, 4, 5))
 print(x)
 
 >>>tensor([[[-1.5256, -0.7502, -0.6540, -1.6095, -0.1002],
@@ -229,20 +302,74 @@ print(x)
 
  \end{frame} 
  
+  % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Operations on Tensors}
+\begin{itemize}
+\item 100s of operations available.
+\item Each of these operations can be run on the GPU (at typically higher speeds than on a CPU).
+\item By default, tensors are created on the CPU. 
+\item Need to explicitly move tensors to the GPU using $.to$ method (after checking for GPU availability). 
+\item Keep in mind that copying large tensors across devices can be expensive in terms of time and memory!
+\end{itemize}
+
+ \begin{lstlisting}
+# We move our tensor to the GPU if available
+if torch.cuda.is_available():
+  tensor = tensor.to('cuda')
+ \end{lstlisting}
+
+ \end{frame} 
+ 
+ 
+ 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
-\frametitle{Addition}
+\frametitle{Operations}
 Operations with Tensors
  \begin{lstlisting}
-x = torch.Tensor([1.,2.,3.])
-y = torch.Tensor([4.,5.,6.])
+x = torch.tensor([1.,2.,3.])
+y = torch.tensor([4.,5.,6.])
 z = x + y
 print(z)
 
 >>>tensor([ 5.,  7.,  9.])
+
+ \end{lstlisting}
+ 
+ Operations that store the result into the operand are called in-place. They are denoted by a \lstinline|_| suffix. For example: \lstinline|x.copy_(y), x.t_()|, will change x.
+ 
+  \begin{lstlisting}
+tensor.add_(5)
+ \end{lstlisting}
+ 
+ Note:  In-place operations save some memory, but can be problematic when computing derivatives because of an immediate loss of history. Hence, their use is discouraged.
+ \end{frame} 
+ 
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Operations}
+Multiplication
+
+\begin{lstlisting}
+# This computes the matrix multiplication between two tensors. y1, y2, y3 will have the same value
+y1 = tensor @ tensor.T
+y2 = tensor.matmul(tensor.T)
+
+y3 = torch.rand_like(tensor)
+torch.matmul(tensor, tensor.T, out=y3)
+
+
+# This computes the element-wise product. z1, z2, z3 will have the same value
+z1 = tensor * tensor
+z2 = tensor.mul(tensor)
+
+z3 = torch.rand_like(tensor)
+torch.mul(tensor, tensor, out=z3)
  \end{lstlisting}
 Many more mathematical operations are available.
  \end{frame} 
+ 
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
@@ -294,7 +421,7 @@ print(x.view(2, -1)) # Same as above.
 \begin{frame}[fragile]
 \frametitle{Variables and Tensors}
 \begin{itemize}
-\item What does torch.Tensor object has stored? : data and the shape, and maybe a few other things
+\item What does torch.tensor object has stored? : data and the shape, and maybe a few other things
 \item But when we added two tensors together, we got an output tensor. 
 \item All this output tensor knows is its data and shape. 
 \item It has no idea that it was the sum of two other tensors (it could have been read in from a file, it could be the result of some other operation, etc.)
@@ -309,8 +436,8 @@ Latest News: Variables and Tensors have merged!!!
 \frametitle{PyTorch 0.4.0 release notes}
 \begin{itemize}
 \item Tensors and Variables have merged
-\item torch.autograd.Variable and torch.Tensor are now the same class. 
-\item More precisely, torch.Tensor is capable of tracking history and behaves like the old Variable; Variable wrapping continues to work as before but returns an object of type torch.Tensor. \item No need the Variable wrapper everywhere in your code anymore.
+\item torch.autograd.Variable and torch.tensor are now the same class. 
+\item More precisely, torch.tensor is capable of tracking history and behaves like the old Variable; Variable wrapping continues to work as before but returns an object of type torch.tensor. \item No need the Variable wrapper everywhere in your code anymore.
 \end{itemize}
  \begin{lstlisting}
 >>> x = torch.DoubleTensor([1, 1, 1])
@@ -392,8 +519,8 @@ From now onwards, even if Variables and Tensors are mentioned disticnlty, from 0
 \frametitle{Tensor/Variables operations}
 
  \begin{lstlisting}
-x = torch.Tensor([1.,2.,3.])
-y = torch.Tensor([4.,5.,6.])
+x = torch.tensor([1.,2.,3.])
+y = torch.tensor([4.,5.,6.])
 x.requires_grad = True
 y.requires_grad = True
 z = x + y
@@ -452,7 +579,7 @@ print(z.grad_fn)
 >>><AddBackward1 object at 0x000000000A9D2358>
 
 var_z_data = z.data # Get the wrapped Tensor object out of var_z...
-new_var_z = torch.Tensor( var_z_data ) # Re-wrap the tensor in a new variable
+new_var_z = torch.tensor( var_z_data ) # Re-wrap the tensor in a new variable
 
 # does new_var_z have info to backprop to x and y? NO!
 print(new_var_z.grad_fn)
@@ -462,10 +589,29 @@ print(new_var_z.grad_fn)
 
 \end{frame} 
  
- 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Autograd: automatic gradient}
+\begin{itemize}
+\item Provides automatic differentiation for all operations on Tensors
+\item It is a define-by-run framework, which means that your backprop is defined by how your code is run, and that every single iteration can be different.
+\end{itemize}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Function}
+% \begin{itemize}
+% \item Implements forward and backward definitions of an autograd operation. 
+% \item Every Variable operation, creates at least a single Function node, that connects to functions that created a Variable and encodes its history.
+% \item Variable and Function are interconnected and build up an acyclic graph, that encodes a complete history of computation.
+% \item Each variable has a .grad\_fn attribute that references a Function that has created the Variable (except for Variables created by the user - their grad\_fn is None).
+% \end{itemize}
+% \end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
-\frametitle{Functions}
+\frametitle{Activation Functions}
 
 \begin{itemize}
 \item Neural network consists of composing linearities with non-linearities, a long chains of affine compositions.
@@ -566,7 +712,7 @@ $$ \theta^{(t+1)} = \theta^{(t)} - \eta \nabla_\theta L(\theta) $$
 % \begin{lstlisting}
 % import torch
 
-% x = torch.Tensor(5, 3)
+% x = torch.tensor(5, 3)
 % print(x)
 
 % 0.0000   0.0000   0.0001
@@ -604,32 +750,146 @@ $$ \theta^{(t+1)} = \theta^{(t)} - \eta \nabla_\theta L(\theta) $$
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Datasets and Dataloaders}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{DataLoaders}
-Simple data-loader, manual, and feeding ALL data to the model. No batch!!
+\begin{itemize}
+\item Need our dataset code to be decoupled from our model training code for better readability and modularity. 
+\item PyTorch provides two data primitives: \lstinline|torch.utils.data.DataLoader| and \lstinline|torch.utils.data.Dataset| that allow you to use pre-loaded datasets as well as your own data. 
+\item Dataset stores the samples and their corresponding labelse
+\item  DataLoader wraps an iterable around the Dataset to enable easy access to the samples.
+\item PyTorch domain libraries provide a number of pre-loaded datasets (such as FashionMNIST) that subclass \lstinline|torch.utils.data.Dataset|
+\end{itemize}
+
+\end{frame} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ready Datasets}
+
 \begin{lstlisting}
-xy = np.loadtxt('./data/diabetes.csv', delimiter=',', dtype=np.float32)
-x_data = Variable(torch.from_numpy(xy[:, 0:-1]))
-y_data = Variable(torch.from_numpy(xy[:, [-1]]))
+import torch
+from torch.utils.data import Dataset
+from torchvision import datasets
+from torchvision.transforms import ToTensor, Lambda
+import matplotlib.pyplot as plt
 
-# Training loop
-for epoch in range(100):
-        # Forward pass: Compute predicted y by passing x to the model
-    y_pred = model(x_data)
+training_data = datasets.FashionMNIST(
+    root="data",
+    train=True,
+    download=True,
+    transform=ToTensor()
+)
 
-    # Compute and print loss
-    loss = criterion(y_pred, y_data)
-    print(epoch, loss.data[0])
-
-    # Zero gradients, perform a backward pass, and update the weights.
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+test_data = datasets.FashionMNIST(
+    root="data",
+    train=False,
+    download=True,
+    transform=ToTensor()
+)
 \end{lstlisting}
 
-\tiny{(Ref: PyTorchZeroToAll  - Sung Kim)}
-\end{frame}
+\end{frame} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Iterating and Visualizing the Dataset}
+
+Can index Datasets manually like a list: \lstinline|training_data[index]|.
+Use matplotlib to visualize some samples in the training data.
+
+\begin{lstlisting}
+labels_map = {
+    0: "T-Shirt",
+    1: "Trouser",
+    2: "Pullover",
+    3: "Dress",
+    4: "Coat",
+    5: "Sandal",
+    6: "Shirt",
+    7: "Sneaker",
+    8: "Bag",
+    9: "Ankle Boot",
+}
+figure = plt.figure(figsize=(8, 8))
+cols, rows = 3, 3
+for i in range(1, cols * rows + 1):
+    sample_idx = torch.randint(len(training_data), size=(1,)).item()
+    img, label = training_data[sample_idx]
+    figure.add_subplot(rows, cols, i)
+    plt.title(labels_map[label])
+    plt.axis("off")
+    plt.imshow(img.squeeze(), cmap="gray")
+plt.show()
+\end{lstlisting}
+
+\end{frame} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Creating a Custom Dataset for your files}
+
+Implement \lstinline|__init__, __len__, __getitem__|.
+
+For images are stored in a directory \lstinline|img_dir|, and their labels are stored separately in a CSV file \lstinline|annotations_file|.
+
+\begin{lstlisting}
+import os
+import pandas as pd
+import torchvision.io as tvio
+
+class CustomImageDataset(Dataset):
+    def __init__(self, annotations_file, img_dir, transform=None, target_transform=None):
+        self.img_labels = pd.read_csv(annotations_file)
+        self.img_dir = img_dir
+        self.transform = transform
+        self.target_transform = target_transform
+
+    def __len__(self):
+        return len(self.img_labels)
+
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
+        image = tvio.read_image(img_path)
+        label = self.img_labels.iloc[idx, 1]
+        if self.transform:
+            image = self.transform(image)
+        if self.target_transform:
+            label = self.target_transform(label)
+        sample = {"image": image, "label": label}
+        return sample
+\end{lstlisting}
+
+\end{frame} 
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{DataLoaders}
+% Simple data-loader, manual, and feeding ALL data to the model. No batch!!
+% \begin{lstlisting}
+% xy = np.loadtxt('./data/diabetes.csv', delimiter=',', dtype=np.float32)
+% x_data = Variable(torch.from_numpy(xy[:, 0:-1]))
+% y_data = Variable(torch.from_numpy(xy[:, [-1]]))
+
+% # Training loop
+% for epoch in range(100):
+        % # Forward pass: Compute predicted y by passing x to the model
+    % y_pred = model(x_data)
+
+    % # Compute and print loss
+    % loss = criterion(y_pred, y_data)
+    % print(epoch, loss.data[0])
+
+    % # Zero gradients, perform a backward pass, and update the weights.
+    % optimizer.zero_grad()
+    % loss.backward()
+    % optimizer.step()
+% \end{lstlisting}
+
+% \tiny{(Ref: PyTorchZeroToAll  - Sung Kim)}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{DataLoaders}
@@ -696,121 +956,195 @@ Some famous datasets are in pytorch itself.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Operations}
-Additions
-\begin{lstlisting}
-x = torch.Tensor(5, 3)
-y = torch.rand(5, 3)
-print(x + y)
+\begin{frame}[fragile] \frametitle{Preparing data for training}
 
-print(torch.add(x, y))
-
-result = torch.Tensor(5, 3)
-torch.add(x, y, out=result)
-
-y.add_(x)
-\end{lstlisting}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Numpy Bridge}
 \begin{itemize}
-\item Converting a torch Tensor to a numpy array and vice versa. 
-\item The torch Tensor and numpy array will share their underlying memory locations, and changing one will change the other.
+\item The Dataset retrieves our dataset's features and labels one sample at a time.
+\item While training a model, we typically want to pass samples in ``minibatches''.
+\item Reshuffle the data at every epoch to reduce model overfitting
+\item Use Python's multiprocessing to speed up data retrieval.
 \end{itemize}
 
 \begin{lstlisting}
-a = torch.ones(5)
-b = a.numpy()
-a.add_(1)
+from torch.utils.data import DataLoader
 
-print(a)
-print(b)
-# both are with same values
+train_dataloader = DataLoader(training_data, batch_size=64, shuffle=True)
+test_dataloader = DataLoader(test_data, batch_size=64, shuffle=True)
 \end{lstlisting}
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Numpy Bridge}
-Converting numpy Array to torch Tensor
+\begin{frame}[fragile] \frametitle{Iterate through the DataLoader}
+
+\begin{itemize}
+\item Each iteration below returns a batch of \lstinline|train_features| and \lstinline|train_labels|(containing \lstinline|batch_size=64| features and labels respectively).
+\item With \lstinline|shuffle=True| data is shuffled after all batches are iterated.
+\end{itemize}
 
 \begin{lstlisting}
-import numpy as np
-a = np.ones(5)
-b = torch.from_numpy(a)
-np.add(a, 1, out=a)
-print(a)
-print(b)
+# Display image and label.
+train_features, train_labels = next(iter(train_dataloader))
+print(f"Feature batch shape: {train_features.size()}")
+print(f"Labels batch shape: {train_labels.size()}")
+img = train_features[0].squeeze()
+label = train_labels[0]
+plt.imshow(img, cmap="gray")
+plt.show()
+print(f"Label: {label}")
 
-[ 2.  2.  2.  2.  2.]
-
- 2
- 2
- 2
- 2
- 2
-[torch.DoubleTensor of size 5]
+Feature batch shape: torch.Size([64, 1, 28, 28])
+Labels batch shape: torch.Size([64])
+Label: 9
 \end{lstlisting}
-All the Tensors on the CPU except a CharTensor support converting to NumPy and back.
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
 \end{frame}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{CUDA Tensors}
-Tensors can be moved onto GPU using the .cuda function.
+\begin{frame}[fragile] \frametitle{Transforms}
+
+\begin{itemize}
+\item All TorchVision datasets have two parameters (\lstinline|transform| to modify the features and \lstinline|target_transform| to modify the labels) that accept callables containing the transformation logic. 
+\item The FashionMNIST features are in PIL Image format, and the labels are integers. 
+\item For training, we need the features as normalized tensors, and the labels as one-hot encoded tensors.
+\end{itemize}
 
 \begin{lstlisting}
-# let us run this cell only if CUDA is available
-if torch.cuda.is_available():
-    x = x.cuda()
-    y = y.cuda()
-    x + y
+from torchvision import datasets
+from torchvision.transforms import ToTensor, Lambda
 
+ds = datasets.FashionMNIST(
+    root="data",
+    train=True,
+    download=True,
+    transform=ToTensor(),
+    target_transform=Lambda(lambda y: torch.zeros(10, dtype=torch.float).scatter_(0, torch.tensor(y), value=1))
+)
 \end{lstlisting}
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Autograd: automatic gradient}
+\begin{frame}[fragile] \frametitle{Transforms}
+
 \begin{itemize}
-\item Provides automatic differentiation for all operations on Tensors
-\item It is a define-by-run framework, which means that your backprop is defined by how your code is run, and that every single iteration can be different.
+\item ToTensor converts a PIL image or NumPy ndarray into a FloatTensor and scales the image's pixel intensity values in the range [0., 1.]
+\item Lambda transforms apply any user-defined lambda function. Here, we define a function to turn the integer into a one-hot encoded tensor. It first creates a zero tensor of size 10 (the number of labels in our dataset) and calls scatter which assigns a value=1 on the index as given by the label y.
 \end{itemize}
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Dynamic Computation Graphs}
+\begin{lstlisting}
+target_transform = Lambda(lambda y: torch.zeros(
+    10, dtype=torch.float).scatter_(dim=0, index=torch.tensor(y), value=1))
+\end{lstlisting}
 
-\begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{pyt38}
-\end{center}
-PyTorch 0.4 merges the Variable and Tensor class into one, and Tensor can be made into a “Variable” by a switch rather than instantiating a new object. 
-
-{\tiny (Ref: Getting Started with PyTorch Part 1: Understanding how Automatic Differentiation works - Ayoosh Kathuria )}
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
 \end{frame}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Variable}
-\begin{itemize}
-\item autograd.Variable wraps a Tensor, and supports nearly all of operations defined on it.
-\item Records the history of operations applied to it. 
-\item Has the same API as a Tensor, with some additions like backward(). 
-\item Also holds the gradient w.r.t. the tensor.
-\item call .backward() and have all the gradients computed automatically.
-\end{itemize}
-\begin{center}
-\includegraphics[width=0.4\linewidth,keepaspectratio]{pyt1}
-\end{center}
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Function}
-\begin{itemize}
-\item Implements forward and backward definitions of an autograd operation. 
-\item Every Variable operation, creates at least a single Function node, that connects to functions that created a Variable and encodes its history.
-\item Variable and Function are interconnected and build up an acyclic graph, that encodes a complete history of computation.
-\item Each variable has a .grad\_fn attribute that references a Function that has created the Variable (except for Variables created by the user - their grad\_fn is None).
-\end{itemize}
-\end{frame}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Operations}
+% Additions
+% \begin{lstlisting}
+% x = torch.tensor(5, 3)
+% y = torch.rand(5, 3)
+% print(x + y)
+
+% print(torch.add(x, y))
+
+% result = torch.tensor(5, 3)
+% torch.add(x, y, out=result)
+
+% y.add_(x)
+% \end{lstlisting}
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Numpy Bridge}
+% \begin{itemize}
+% \item Converting a torch Tensor to a numpy array and vice versa. 
+% \item The torch Tensor and numpy array will share their underlying memory locations, and changing one will change the other.
+% \end{itemize}
+
+% \begin{lstlisting}
+% a = torch.ones(5)
+% b = a.numpy()
+% a.add_(1)
+
+% print(a)
+% print(b)
+% # both are with same values
+% \end{lstlisting}
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Numpy Bridge}
+% Converting numpy Array to torch Tensor
+
+% \begin{lstlisting}
+% import numpy as np
+% a = np.ones(5)
+% b = torch.from_numpy(a)
+% np.add(a, 1, out=a)
+% print(a)
+% print(b)
+
+% [ 2.  2.  2.  2.  2.]
+
+ % 2
+ % 2
+ % 2
+ % 2
+ % 2
+% [torch.DoubleTensor of size 5]
+% \end{lstlisting}
+% All the Tensors on the CPU except a CharTensor support converting to NumPy and back.
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{CUDA Tensors}
+% Tensors can be moved onto GPU using the .cuda function.
+
+% \begin{lstlisting}
+% # let us run this cell only if CUDA is available
+% if torch.cuda.is_available():
+    % x = x.cuda()
+    % y = y.cuda()
+    % x + y
+
+% \end{lstlisting}
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Dynamic Computation Graphs}
+
+% \begin{center}
+% \includegraphics[width=\linewidth,keepaspectratio]{pyt38}
+% \end{center}
+% PyTorch 0.4 merges the Variable and Tensor class into one, and Tensor can be made into a “Variable” by a switch rather than instantiating a new object. 
+
+% {\tiny (Ref: Getting Started with PyTorch Part 1: Understanding how Automatic Differentiation works - Ayoosh Kathuria )}
+% \end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Variable}
+% \begin{itemize}
+% \item autograd.Variable wraps a Tensor, and supports nearly all of operations defined on it.
+% \item Records the history of operations applied to it. 
+% \item Has the same API as a Tensor, with some additions like backward(). 
+% \item Also holds the gradient w.r.t. the tensor.
+% \item call .backward() and have all the gradients computed automatically.
+% \end{itemize}
+% \begin{center}
+% \includegraphics[width=0.4\linewidth,keepaspectratio]{pyt1}
+% \end{center}
+% \end{frame}
+
 
 
 
@@ -1075,7 +1409,7 @@ y was created as a result of an operation, so it has a grad\_fn.
 \begin{lstlisting}
 z = y * y * 3 # Do more operations on y
 out = z.mean()
-out.backward() # equivalent to doing out.backward(torch.Tensor([1.0]))
+out.backward() # equivalent to doing out.backward(torch.tensor([1.0]))
 print(x.grad)
 
 Variable containing:
@@ -1126,13 +1460,13 @@ with torch.no_grad():
 from torch.autograd import Variable
 import torch
 
-x = Variable(torch.Tensor([[1.0, 1.0], 
+x = Variable(torch.tensor([[1.0, 1.0], 
                            [1.0, 2.1], 
                            [1.0, 3.6], 
                            [1.0, 4.2], 
                            [1.0, 6.0], 
                            [1.0, 7.0]]))
-y = Variable(torch.Tensor([1.0, 2.1, 3.6, 4.2, 6.0, 7.0]))
+y = Variable(torch.tensor([1.0, 2.1, 3.6, 4.2, 6.0, 7.0]))
 \end{lstlisting}   
 
 {\tiny (Ref: https://discuss.pytorch.org/t/understanding-how-torch-nn-module-works/122 )} 
