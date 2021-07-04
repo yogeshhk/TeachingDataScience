@@ -22,7 +22,7 @@ In Computer Vision, following are some of the popular usecases:
 \end{itemize}
 
 \begin{center}
-\includegraphics[width=0.9\linewidth,keepaspectratio]{pyt41}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{pyt41}
 \end{center}
 
 \tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
@@ -60,8 +60,6 @@ data_train = torchvision.datasets.MNIST('./data',
 data_test = torchvision.datasets.MNIST('./data',
         download=True,train=False,transform=ToTensor())
 \end{lstlisting}
-
-Dataset has  a total of 6000 training images and 1000 testing images. Each sample is a tuple with the first element is a tensor of 1x28x28 size and the second  element is a label that specifies which digit is represented by the tensor
 
 \begin{lstlisting}
 print('Training samples:',len(data_train))
@@ -108,13 +106,18 @@ for i in range(7):
 The simplest network would include just one fully-connected layer, which is called Linear layer, with 784 inputs (one input for each pixel of the input image) and 10 outputs (one output for each class).
 
 \begin{center}
-\includegraphics[width=0.9\linewidth,keepaspectratio]{pyt43}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{pyt43}
 
-\includegraphics[width=0.9\linewidth,keepaspectratio]{pyt44}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{pyt44}
 
 \end{center}
 
 
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Training a dense neural network, NOT concolutional}
 
 \begin{lstlisting}
 net = nn.Sequential(
@@ -123,13 +126,6 @@ net = nn.Sequential(
         nn.LogSoftmax())
 \end{lstlisting}
 
-\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Training a dense neural network, NOT concolutional}
-
-
 Given any digit as input and produce a vector of probabilities as an output.
 
 
@@ -137,8 +133,8 @@ Given any digit as input and produce a vector of probabilities as an output.
 print('Digit to be predicted: ',data_train[0][1])
 torch.exp(net(data_train[0][0]))
 
->>>tensor([[0.0977, 0.0959, 0.1033, 0.1033, 0.0824, 0.1087, 0.0955, 0.0895, 0.1338,
-         0.0900]], grad_fn=<ExpBackward>)
+>>>tensor([[0.0977, 0.0959, 0.1033, 0.1033, 0.0824, 0.1087, 0.0955, 
+					0.0895, 0.1338, 0.0900]], grad_fn=<ExpBackward>)
 \end{lstlisting}
 
 As you can see the network predicts similar probabilities for each digit. This is because it has not been trained on how to recognize the digits. We need to give it our training data to train it on our dataset.
@@ -181,9 +177,7 @@ The difference between this result and expected result is calculated using a spe
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Training a dense neural network, NOT concolutional}
-
-Build a generic training function that takes the following parameters:
+\begin{frame}[fragile] \frametitle{Generic Training Function}
 
 \begin{itemize}
 \item Neural network
@@ -213,7 +207,6 @@ def train_epoch(net,dataloader,lr=0.01,optimizer=None,loss_fn = nn.NLLLoss()):
 train_epoch(net,train_loader)
 
 >>> (0.00593234608968099, 0.8924166666666666)
-
 \end{lstlisting}
 
 
@@ -221,9 +214,7 @@ train_epoch(net,train_loader)
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Training a dense neural network, NOT concolutional}
-
-Similarly, build a generic validation function 
+\begin{frame}[fragile] \frametitle{Generic Validtion Function}
 
 \begin{lstlisting}
 def validate(net, dataloader,loss_fn=nn.NLLLoss()):
@@ -248,9 +239,7 @@ validate(net,test_loader)
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Training a dense neural network, NOT concolutional}
-
-Combo generic function
+\begin{frame}[fragile] \frametitle{Generic Combo Function}
 
 \begin{lstlisting}
 def train(net,train_loader,test_loader,optimizer=None,lr=0.01,epochs=10,loss_fn=nn.NLLLoss()):
@@ -322,6 +311,447 @@ Let's create a \lstinline|weight_tensor| which will have a dimension of $784x10$
 \begin{center}
 \includegraphics[width=0.9\linewidth,keepaspectratio]{pyt46}
 \end{center}
+
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Multi-layer networks}
+
+Let's see if adding more layers will give us better performance in terms of accuracy.
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{pyt47}
+
+\includegraphics[width=0.6\linewidth,keepaspectratio]{pyt48}
+
+\end{center}
+
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Multi-layer networks: Sequential}
+
+\begin{lstlisting}
+net = nn.Sequential(
+        nn.Flatten(), 
+        nn.Linear(784,100),     # 784 inputs, 100 outputs
+        nn.ReLU(),              # Activation Function
+        nn.Linear(100,10),      # 100 inputs, 10 outputs
+        nn.LogSoftmax(dim=0))
+summary(net,input_size=(1,28,28))
+>>>
+===========================================================================
+Layer (type:depth-idx)                   Output Shape              Param #
+===========================================================================
+Sequential                                -                         -
+|--Flatten: 1-1                           [1, 784]                  -
+|--Linear: 1-2                            [1, 100]                  78,500
+|--ReLU: 1-3                              [1, 100]                  -
+|--Linear: 1-4                            [1, 10]                   1,010
+|--LogSoftmax: 1-5                        [1, 10]                   -
+===========================================================================
+Total params: 79,510
+Trainable params: 79,510
+Non-trainable params: 0
+Total mult-adds (M): 0.08
+===========================================================================
+\end{lstlisting}
+
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Training Multi-layer networks}
+
+\begin{lstlisting}
+hist = train(net,train_loader,test_loader, epochs=5)
+plot_results(hist)
+\end{lstlisting}
+
+\begin{center}
+\includegraphics[width=0.9\linewidth,keepaspectratio]{pyt49}
+\end{center}
+
+Please note the following:
+\begin{itemize}
+\item This network is more expressive than the one layered perceptron
+\item Achieves a much higher training accuracy
+\item Once the validation accuracy stops increasing - likely to result in overfitting.
+\end{itemize}
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Multi-layer networks: Class}
+
+For more complex networks, which contain shared weights, or some non-linear connections between layers.
+
+\begin{lstlisting}
+from torch.nn.functional import relu,log_softmax
+
+class MyNet(nn.Module):
+    def __init__(self):
+        super(MyNet, self).__init__()
+        self.flatten = nn.Flatten()
+        self.hidden = nn.Linear(784,100)
+        self.out = nn.Linear(100,10)
+
+    def forward(self, x):
+        x = self.flatten(x)
+        x = self.hidden(x)
+        x = relu(x)
+        x = self.out(x)
+        x = log_softmax(x,dim=0)
+        return x
+
+net = MyNet()
+
+summary(net,input_size=(1,28,28))
+\end{lstlisting}
+
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Class based definition Multi-layer networks}
+\begin{lstlisting}
+>>>
+==========================================================================
+Layer (type:depth-idx)                   Output Shape              Param #
+==========================================================================
+MyNet                                     -                        -
+|--Flatten: 1-1                           [1, 784]                  -
+|--Linear: 1-2                            [1, 100]                  78,500
+|--Linear: 1-3                            [1, 10]                   1,010
+==========================================================================
+Total params: 79,510
+Trainable params: 79,510
+Non-trainable params: 0
+Total mult-adds (M): 0.08
+==========================================================================
+\end{lstlisting}
+
+\begin{itemize}
+\item In the constructor (\lstinline|__init__|) we define all layers
+\item \lstinline|nn.Module| will automatically collect all trainable parameters from all sub-modules.
+\item The \lstinline|forward| method does the forward pass computation 
+\item When we apply our neural network to some input data x by writing \lstinline|out = net(x)|, the forward method is called.
+\end{itemize}
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Training Class based definition Multi-layer networks}
+\begin{lstlisting}
+hist = train(net,train_loader,test_loader,epochs=5)
+plot_results(hist)
+\end{lstlisting}
+
+\begin{center}
+\includegraphics[width=0.9\linewidth,keepaspectratio]{pyt50}
+\end{center}
+
+
+\begin{itemize}
+\item Multi-level networks can achieve higher accuracy than single-layer perceptron, however, they are not perfect for computer vision tasks. 
+\item In images, there are some structural patterns that can help us classify an object regardless of it's position in the image, but perceptrons do not allow us to extract those patterns and look for them selectively.
+\end{itemize}
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Convolutional neural networks}
+
+\begin{itemize}
+\item Convolutional filters are small windows that run over each pixel of the image and compute weighted average of the neighboring pixels.
+
+\item They are defined by matrices of weight coefficients. Let's see the examples of applying two different convolutional filters over our MNIST handwritten digits:
+\end{itemize}
+
+
+\begin{lstlisting}
+plot_convolution(torch.tensor([[-1.,0.,1.],[-1.,0.,1.],[-1.,0.,1.]]),'Vertical edge filter')
+plot_convolution(torch.tensor([[-1.,-1.,-1.],[0.,0.,0.],[1.,1.,1.]]),'Horizontal edge filter')
+
+\end{lstlisting}
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{pyt51}
+\end{center}
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Convolutional filters}
+
+\begin{itemize}
+\item First filter is called a vertical edge filter, and it is defined by the following matrix:
+
+$$
+\left(
+    \begin{matrix}
+     -1 & 0 & 1 \cr
+     -1 & 0 & 1 \cr
+     -1 & 0 & 1 \cr
+    \end{matrix}
+\right)
+$$
+
+\item When it encounters a vertical edge in the image, high spike value is generated. 
+
+\item An opposite thing happens when we apply horizontal edge filter - horizontal lines are amplified, and vertical are averaged out.
+
+\item  In deep learning we construct networks that learn best convolutional filters to solve classification problem.
+\end{itemize}
+
+
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Convolutional Layers}
+
+Convolutional layers are defined using \lstinline|nn.Conv2d| construction. We need to specify the following:
+
+\begin{itemize}
+\item \lstinline|in_channels| : number of input channels. 1 for grayscale.
+\item \lstinline|out_channels| : number of filters to use. We will use 9 different filters, which will give the network plenty of opportunities to explore which filters work best for our scenario.
+
+\item \lstinline|kernel_size| is the size of the sliding window. Usually $3x3$ or $5x5$ filters are used.
+
+\item Simplest CNN will contain one convolutional layer. Given the input size $28x28$, after applying nine $5x5$ filters we will end up with a tensor of $9x24x24$ (the spatial size is smaller, because there are only $24$ positions where a sliding interval of length $5$ can fit into $28$ pixels).
+
+\item After convolution, we flatten $9x24x24$ tensor into one vector of size $5184$, and then add linear layer, to produce $10$ classes. We also use \lstinline|relu| activation function in between layers.
+\end{itemize}
+
+
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Convolutional Layers}
+
+\begin{lstlisting}
+class OneConv(nn.Module):
+    def __init__(self):
+        super(OneConv, self).__init__()
+        self.conv = nn.Conv2d(in_channels=1,out_channels=9,kernel_size=(5,5))
+        self.flatten = nn.Flatten()
+        self.fc = nn.Linear(5184,10)
+
+    def forward(self, x):
+        x = nn.functional.relu(self.conv(x))
+        x = self.flatten(x)
+        x = nn.functional.log_softmax(self.fc(x),dim=1)
+        return x
+
+net = OneConv()
+
+summary(net,input_size=(1,1,28,28))
+
+\end{lstlisting}
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Convolutional Layers}
+
+\begin{lstlisting}
+>>>
+==========================================================================
+Layer (type:depth-idx)                   Output Shape              Param #
+==========================================================================
+|--Conv2d: 1-1                            [1, 9, 24, 24]            234
+|--Flatten: 1-2                           [1, 5184]                 -
+|--Linear: 1-3                            [1, 10]                   51,850
+==========================================================================
+Total params: 52,084
+Trainable params: 52,084
+Non-trainable params: 0
+Total mult-adds (M): 0.18
+==========================================================================
+\end{lstlisting}
+
+This network contains around 50k trainable parameters, compared to around 80k in fully-connected multi-layered networks. This allows us to achieve good results even on smaller datasets, because convolutional networks generalize much better.
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Convolutional Layers}
+
+
+\begin{lstlisting}
+hist = train(net,train_loader,test_loader,epochs=5)
+plot_results(hist)
+\end{lstlisting}
+
+\begin{center}
+\includegraphics[width=0.9\linewidth,keepaspectratio]{pyt52}
+\end{center}
+
+
+As you can see, we are able to achieve higher accuracy, and much faster, compared to the fully-connected networks from previous unit.
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Visualize Convolutional Layers}
+
+We can also visualize the weights of our trained convolutional layers, to try and make some more sense of what is going on:
+
+\begin{lstlisting}
+fig,ax = plt.subplots(1,9)
+with torch.no_grad():
+    p = next(net.conv.parameters())
+    for i,x in enumerate(p):
+        ax[i].imshow(x.detach().cpu()[0,...])
+        ax[i].axis('off')
+\end{lstlisting}
+
+\begin{center}
+\includegraphics[width=0.9\linewidth,keepaspectratio]{pyt53}
+\end{center}
+
+
+You can see that some of those filters look like they can recognize some oblique strokes, while others look pretty random.
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Multi-layered CNNs and pooling layers}
+
+\begin{itemize}
+
+\item First convolutional layers looks for primitive patterns, such as horizontal or vertical lines, but we can apply further convolutional layers on top of them to look for higher-level patterns, such as primitive shapes. 
+\item Then more convolutional layers can combine those shapes into some parts of the picture, up to the final object that we are trying to classify.
+\item We may also apply one trick: reducing the spatial size of the image. Once we have detected there is a horizontal stoke within sliding $3x3$ window, it is not so important at which exact pixel it occurred. 
+\item Thus we can ``scale down'' the size of the image, which is done using one of the pooling layers:
+\begin{itemize}
+\item Average Pooling takes a sliding window (for example, 2x2 pixels) and computes an average of values within the window
+\item Max Pooling replaces the window with the maximum value. The idea behind max pooling is to detect a presence of a certain pattern within the sliding window.
+\end{itemize}
+\end{itemize}
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Multi-layered CNNs and pooling layers}
+
+\begin{itemize}
+
+\item A typical CNN there would be several convolutional layers, with pooling layers in between them to decrease dimensions of the image. 
+\item We would also increase the number of filters, because as patterns become more advanced - there are more possible interesting combinations that we need to be looking for.
+
+\item Because of decreasing spatial dimensions and increasing feature/filters dimensions, this architecture is also called pyramid architecture.
+\end{itemize}
+
+
+\begin{center}
+\includegraphics[width=0.9\linewidth,keepaspectratio]{pyt54}
+\end{center}
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Multi-layered CNNs and pooling layers}
+
+\begin{lstlisting}
+class MultiLayerCNN(nn.Module):
+    def __init__(self):
+        super(MultiLayerCNN, self).__init__()
+        self.conv1 = nn.Conv2d(1, 10, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(10, 20, 5)
+        self.fc = nn.Linear(320,10)
+
+    def forward(self, x):
+        x = self.pool(nn.functional.relu(self.conv1(x)))
+        x = self.pool(nn.functional.relu(self.conv2(x)))
+        x = x.view(-1, 320)
+        x = nn.functional.log_softmax(self.fc(x),dim=1)
+        return x
+
+net = MultiLayerCNN()
+summary(net,input_size=(1,1,28,28))
+\end{lstlisting}
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Multi-layered CNNs and pooling layers}
+
+\begin{lstlisting}
+==========================================================================
+Layer (type:depth-idx)                   Output Shape              Param #
+==========================================================================
+|--Conv2d: 1-1                            [1, 10, 24, 24]           260
+|--MaxPool2d: 1-2                         [1, 10, 12, 12]           -
+|--Conv2d: 1-3                            [1, 20, 8, 8]             5,020
+|--MaxPool2d: 1-4                         [1, 20, 4, 4]             -
+|--Linear: 1-5                            [1, 10]                   3,210
+==========================================================================
+Total params: 8,490
+Trainable params: 8,490
+Non-trainable params: 0
+Total mult-adds (M): 0.47
+==========================================================================
+\end{lstlisting}
+
+\begin{itemize}
+
+\item Instead of using Flatten layer, we are flattening the tensor inside forward function using view function. Since flattening layer does not have trainable weights, no need to create a separate layer instance in constructor.
+\item We use just one instance of pooling layer as it does not contain any trainable parameters, and this one can be reused
+\item The number of trainable parameters (8.5K) is dramatically smaller than in previous cases. Small number of parameters have positive impact, because it helps to prevent overfitting even on smaller datasets.
+\end{itemize}
+
+
+\tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Multi-layered CNNs and pooling layers}
+
+\begin{lstlisting}
+hist = train(net,train_loader,test_loader,epochs=5)
+
+>>>
+Epoch  0, Train acc=0.952, Val acc=0.977, Train loss=0.001, Val loss=0.001
+Epoch  1, Train acc=0.982, Val acc=0.983, Train loss=0.000, Val loss=0.000
+Epoch  2, Train acc=0.986, Val acc=0.983, Train loss=0.000, Val loss=0.000
+Epoch  3, Train acc=0.986, Val acc=0.978, Train loss=0.000, Val loss=0.001
+Epoch  4, Train acc=0.987, Val acc=0.981, Train loss=0.000, Val loss=0.000
+\end{lstlisting}
+
+\begin{itemize}
+
+\item We are able to achieve higher accuracy than with just one layer, and much faster - just with 1 or 2 epochs. 
+\item It means that sophisticated network architecture needs much fewer data to figure out what is going on, and to extract generic patterns from our images.
+\end{itemize}
 
 
 \tiny{(Ref: Microsoft - Intro to Machine Learning using Pytorch)}
