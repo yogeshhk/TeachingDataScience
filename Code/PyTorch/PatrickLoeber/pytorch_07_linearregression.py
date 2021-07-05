@@ -1,7 +1,7 @@
 # https://www.youtube.com/watch?v=YAJ5XBwlN4o&list=PLqnslRFeH2UrcDBWF5mfPGpqQDSta6VK4&index=7
 
 # generic steps
-#   1. Design model (input, output size, forward pass)
+#   1. Design model (input size, output size, forward pass)
 #   2. Construct loss and optimizer
 #   3. Training loop
 #       - forward pass: compute prediction
