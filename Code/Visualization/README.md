@@ -9,9 +9,9 @@ Concepts or algorithms are hard to understand, many a times. Typically due unava
 Code-bases in this folder attempt to show such examples.
 
 
-What it is not: UI, UX or HCI design
-What it is: explain-ability via visualization
-Application to: AI-ML, NLP, Research papers, Education, Dashboards, etc.
+- What it is not: UI, UX or HCI design
+- What it is: explain-ability via visualization
+- Application to: AI-ML, NLP, Research papers, Education, Dashboards, etc.
 
 Copyright (C) 2021 Yogesh H Kulkarni
 
@@ -21,7 +21,9 @@ Structuring Math explanations - by Grant Sanderson, https://www.youtube.com/watc
 - Concrete before Abstract
   - Give examples first, then theory
 	- Be aware of abstractions:
+	
 		![Layers](./Manim/images/layers.png)
+		
 		![Layers Example](./Manim/images/layersexample.png)
 
 - Topic choice > production quality.
