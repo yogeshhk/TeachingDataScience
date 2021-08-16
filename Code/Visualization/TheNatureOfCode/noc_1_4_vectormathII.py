@@ -1,7 +1,7 @@
 # The Nature of Code - Daniel Shiffman http://natureofcode.com
 # Example 1-4: Vector Math II
 # PyP5 port by: Yogesh Kulkarni
-# Adpoted from processing.py based implementation at:
+# Adopted from processing.py based implementation at:
 # https://github.com/nature-of-code/noc-examples-python/blob/master/chp01_vectors/NOC_1_5_vector_magnitude
 # https://github.com/nature-of-code/noc-examples-python/blob/master/chp01_vectors/NOC_1_6_vector_normalize/
 # But followed on screen example

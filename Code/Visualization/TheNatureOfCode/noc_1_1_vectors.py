@@ -1,7 +1,7 @@
 # The Nature of Code - Daniel Shiffman http://natureofcode.com
 # Example 1-1: Vectors
 # PyP5 port by: Yogesh Kulkarni
-# Adpoted from processing.py based implementation at:
+# Adopted from processing.py based implementation at:
 # https://github.com/nature-of-code/noc-examples-python/blob/master/chp01_vectors/NOC_1_1_bouncingball_novectors
 # Reference Youtube Video: https://www.youtube.com/watch?v=rqecAdEGW6I&list=PLRqwX-V7Uu6aFlwukCmDf0-1-uSR7mklK&index=7
 

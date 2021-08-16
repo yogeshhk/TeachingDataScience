@@ -1,7 +1,7 @@
 # The Nature of Code - Daniel Shiffman http://natureofcode.com
 # Example 2-5: Drag Force
 # PyP5 port by: Yogesh Kulkarni
-# Adpoted from processing.py based implementation at:
+# Adopted from processing.py based implementation at:
 # https://github.com/nature-of-code/noc-examples-python/blob/master/chp02_forces/NOC_2_5_fluidresistance
 # But followed on screen example
 # Reference Youtube Video: https://www.youtube.com/watch?v=rqecAdEGW6I&list=PLRqwX-V7Uu6aFlwukCmDf0-1-uSR7mklK&index=17
@@ -108,7 +108,7 @@ def draw():
         mover.checkEdges()
 
     fill(0)
-    text("click mouse to reset", 10, 30)
+    #text("click mouse to reset", 10, 30)
 
 def mousePressed():
     reset()
