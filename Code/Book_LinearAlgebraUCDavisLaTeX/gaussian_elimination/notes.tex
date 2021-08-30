@@ -1,0 +1,2413 @@
+\chapter{Systems of Linear Equations }
+\label{systems}
+
+\section{Gaussian Elimination}
+\label{gaussElim}
+
+\hyperlink{system2matrix}{Systems of linear equations can be written as matrix equations.}
+Now you will learn  an efficient algorithm  for (maximally) simplifying a system of linear equations (or a matrix equation) -- Gaussian elimination.
+
+%You might get the feeling that you are learning to do Gaussian elimination only so that you can tell your computer how too do it in the future. There is more than that going on here. Let us foreshadow chapter 3; as we attempt to streamline the process of elimination we will discover the building blocks of matrices. 
+
+
+
+%In \Lecture~\ref{warmup}  we looked performed elimination on a system of equations. 
+%It was nice to do this elimination by adding subtracting an multiplying wholes equations at a time. 
+%Lets do another example with the system
+%\begin{eqnarray}
+%	x\ +\ y & = & 27\nn \\
+%	2x-\ y & = &\  0\nn \,.
+%\end{eqnarray}
+%Adding the first equation to the second then dividing by 3 gives
+%\begin{eqnarray}
+%	x\ +\ 0 & = & 9\nn \\
+%	2x-\ y & = &\  0\nn \,.
+%\end{eqnarray}
+%Subtracting rice the first from the second then dividing by $-1$ gives
+%\begin{eqnarray}
+%	x \phantom{\ +\ y}& = &\  9\nn \\
+%	\phantom{x\ +\ }y & = & 18\, .\nn
+%\end{eqnarray}
+%
+%\noindent
+%The maximum number of terms have been eliminated from each equation, and the result is an obvious statement of the solution. 
+%\\
+%
+%We also learned to write such a linear system using a matrix and two vectors. In this case the original linear system can be written
+%
+%\begin{equation*}
+%    \begin{pmatrix}
+%      1             &1  \\
+%      2             &-1
+%    \end{pmatrix}
+%  \colvec{x \\ y}
+%  =
+%  \colvec{27 \\ 0}\, .
+%\end{equation*}
+%
+%
+%\noindent
+%Likewise, the system of equations that we obtained after elimination can be written
+%
+%\begin{equation*}
+%    \begin{pmatrix}
+%      1             &0  \\
+%      0             &1
+%    \end{pmatrix}
+%  \colvec{x \\ y}
+%  =
+%  \colvec{9 \\ 18} \, .
+%\end{equation*}
+%\\
+%
+%%\noindent
+%By the way, the matrix $$I=    \begin{pmatrix}
+%      1             &0  \\
+%      0             &1
+%    \end{pmatrix}$$ is called the \emph{Identity Matrix}\index{Identity matrix!$2\times2$}.  She will be very important to us. You should check that if $v$ is any vector, then $$Iv=v\, .$$
+%    
+%Here is a nice way to summarize your goal when performing the process we are calling elimination elimination; manipulate the system of equations until the resulting system can be written as a matrix equation with the identity matrix.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Augmented Matrix Notation}
+
+%A useful shorthand for a  system of linear equations is an \hypertarget{augmented_matrix}{\emph{Augmented Matrix}}\index{Augmented matrix~$2\times2$}. 
+Efficiency demands a new notation, called an \hypertarget{augmented_matrix}{\emph{augmented matrix}},
+which we  introduce via examples: 
+
+The linear system
+$$\left\{ 
+\begin{array}{rcr}
+	x\ +\ y & = & 27 \\
+	2x-\ y & = &\  0\, ,
+\end{array}\right.
+$$
+is denoted by the augmented matrix
+
+\[
+\begin{amatrix}{2}
+1 &1 &27 \\ 2 &-1 & 0
+\end{amatrix}\, .
+\]
+
+\noindent
+This notation is  simpler than the matrix one, 
+\begin{equation*}
+    \begin{pmatrix}
+      1             &1  \\
+      2             &-1
+    \end{pmatrix}
+  \colvec{x \\ y}
+  =
+  \colvec{27 \\ 0}\, ,
+\end{equation*}
+although all three of the above denote the same thing. 
+
+\Videoscriptlink{gaussian_elimination_more_background.mp4}{Augmented Matrix Notation}{script_gaussian_elimination_more}
+
+\noindent
+Another interesting rewriting is
+$$
+x\colvec{1\\2}+y\colvec{1\\-1}=\colvec{27\\0}\, .
+$$
+This tells us that we are trying to find the combination of the vectors $\colvec{1\\2}$~and $\colvec{1\\-1}$ adds up to $\colvec{27\\0}$; 
+ the answer is  ``clearly'' $9\colvec{1\\2}+18\colvec{1\\-1}$.\\[1mm]
+
+
+Here is a larger example.
+The system
+\begin{eqnarray*}
+1x + 3y + 2z + 0w   &=&9 \\ 
+6x + 2y + 0z   -2w  &=&0  \\
+-1x+ 0 y + 1 z + 1w  &=&3 \, ,
+\end{eqnarray*}
+is denoted by the augmented matrix
+\[
+\begin{amatrix}{4}
+1 & 3 & 2 & 0  & 9 \\ 
+6 & 2 & 0  &\!\! -2 & 0  \\
+-1& 0  & 1  & 1 & 3
+\end{amatrix}\, ,
+\]
+%When writing a system of equations one can write out the terms with zero for coefficients or not
+%\begin{eqnarray*}
+%1x + 3y + 2z  \phantom{+ 0w}   =9 \\ 
+%6x + 2y \phantom{ + 0z}   -2w  =0  \\
+%-1x  \phantom{+0 y} + 1 z + 1w  =3 
+%\end{eqnarray*}
+which is equivalent to the matrix equation
+\begin{eqnarray*}
+\left(\begin{array}{rccr}
+1 & 3 & 2 & 0   \\ 
+6 & 2 & 0  & \!\!-2   \\
+\!\!-1& 0  & 1  & 1 
+\end{array}\right)
+\colvec{ x\\ y\\z\\w}
+=\colvec{ 9\\0\\3}\, .
+\end{eqnarray*}
+Again, we are trying to find which combination of the columns of the matrix adds up to the vector on the right hand side.
+
+
+
+For the the general case of $r$ linear equations in $k$ unknowns,
+the number of equations is the number of rows $r$ in the augmented matrix, and the number of columns $k$ in the matrix left of the vertical line is the number of unknowns, giving an augmented matrix of the form
+\[
+\begin{amatrix}{4}
+a^1_1 & a^1_2 & \cdots & a^1_k & b^1 \\[1mm]
+a^2_1 & a^2_2 & \cdots & a^2_k & b^2 \\[1mm] 
+\vdots & \vdots & & \vdots & \vdots  \\[1mm]
+a^r_1 & a^r_2 & \cdots & a^r_k & b^r 
+\end{amatrix}.
+\]
+Entries left of the divide carry two indices; subscripts denote column number and  superscripts row number. We emphasize, the superscripts here do {\it not} denote exponents.  
+%Aside: most people don't like  indexing by superscripts at first. However, kind of index placement will later facilitate Einstein's summation convention, which Einstein himself described as his greatest contribution to the sciences. 
+Make sure you can write out the system of equations and the associated matrix equation for any augmented matrix. 
+
+%\reading{2}{1}
+\Reading{SystemsOfLinearEquations}{1}
+
+We now have three ways of writing the same question. 
+Let's put them side by side as we solve the system by strategically adding and subtracting equations. 
+We will not tell you the motivation for this particular series of steps yet, but let you develop some intuition first. 
+
+\begin{example}  (How matrix equations and augmented matrices change in elimination)
+\begin{eqnarray*}
+   \left.
+\begin{array}{ccccr}
+	x&+&y & = & 27 \\
+	2x&-& y & = &\  0 
+     \end{array}
+   \right\} 
+   \Leftrightarrow
+    \begin{pmatrix}
+      1             &1  \\
+      2             &-1
+    \end{pmatrix}
+  \colvec{x \\ y}
+  =
+  \colvec{27 \\ 0}
+  \Leftrightarrow
+ \begin{amatrix}{2}
+1 &1 &27 \\ 2 &-1 & 0
+\end{amatrix}\, .
+  \end{eqnarray*}
+With the first equation replaced by the sum of the two equations this becomes
+\begin{eqnarray*}
+   \left.
+\begin{array}{ccccr}
+	3x& +& 0 & = & 27 \\
+	2x&-& y & = &\  0 
+     \end{array}
+   \right\} 
+   \Leftrightarrow
+    \begin{pmatrix}
+      3             &0  \\
+      2             &-1
+    \end{pmatrix}
+  \colvec{x \\ y}
+  =
+  \colvec{27 \\ 0}
+  \Leftrightarrow
+ \begin{amatrix}{2}
+3 &0 &27 \\ 2 &-1 & 0
+\end{amatrix}\, .
+  \end{eqnarray*}
+Let the new first equation be the old first equation divided by 3:
+ \begin{eqnarray*}
+   \left.
+\begin{array}{ccccr}
+	x& +& 0 & = & 9 \\
+	2x&-& y & = &\  0 
+     \end{array}
+   \right\} 
+   \Leftrightarrow
+    \begin{pmatrix}
+      1             &0  \\
+      2             &-1
+    \end{pmatrix}
+  \colvec{x \\ y}
+  =
+  \colvec{9 \\ 0}
+  \Leftrightarrow
+ \begin{amatrix}{2}
+1 &0 &9 \\ 2 &-1 & 0
+\end{amatrix}\, .
+  \end{eqnarray*}
+  Replace the second equation by the second equation minus two times the first equation: 
+\begin{eqnarray*}
+   \left.
+\begin{array}{ccccr}
+	x& +& 0 & = & 9 \\
+	0&-& y & = &\  -18
+     \end{array}
+   \right\} 
+   \Leftrightarrow
+    \begin{pmatrix}
+      1             &0  \\
+      0             &-1
+    \end{pmatrix}
+  \colvec{x \\ y}
+  =
+  \colvec{9 \\ -18}
+  \Leftrightarrow
+ \begin{amatrix}{2}
+1 &0 &9 \\ 0 &-1 & -18
+\end{amatrix}\, .
+  \end{eqnarray*}
+Let the new  second equation be the old second equation divided by -1:
+\begin{eqnarray*}
+   \left.
+\begin{array}{ccccr}
+	x &+ &0 & = & \ 9 \\
+	0& + &y & = &  18
+     \end{array}
+   \right\} 
+   \Leftrightarrow
+    \begin{pmatrix}
+      1             &0  \\
+      0             &1
+    \end{pmatrix}
+  \colvec{x \\ y}
+  =
+  \colvec{9 \\ 18}
+  \Leftrightarrow
+ \begin{amatrix}{2}
+1 &0 &9 \\ 0 &1 & 18
+\end{amatrix}\, .
+  \end{eqnarray*}
+\end{example}
+Did you see what the strategy was? To {\it eliminate} $y$ from the first equation and then {\it eliminate} $x$ from the second. The result was  the solution to the system. 
+
+Here is the big idea: 
+Everywhere in the instructions above we can replace the word ``equation" with the word ``row" and interpret them as telling us what to do with the augmented matrix instead of the system of equations.
+Performed systemically, the result is the {\bf Gaussian elimination}\index{Gaussian elimination} algorithm. 
+%
+%\begin{example} of Gaussian elimination
+%\begin{eqnarray*}
+% \begin{amatrix}{2}
+%1 &1 &27 \\ 2 &-1 & 0
+%\end{amatrix}
+%  \end{eqnarray*}
+%Let the new first row be the sum of the first and second rows
+%\begin{eqnarray*}
+% \begin{amatrix}{2}
+%3 &0 &27 \\ 2 &-1 & 0
+%\end{amatrix}
+%  \end{eqnarray*}
+%Let the new first row be the old first row divided by 3
+% \begin{eqnarray*}
+% \begin{amatrix}{2}
+%1 &0 &9 \\ 2 &-1 & 0
+%\end{amatrix}
+%  \end{eqnarray*}
+%Let the new second row be the old second row minus two times the first row 
+%\begin{eqnarray*}
+% \begin{amatrix}{2}
+%1 &0 &9 \\ 0 &-1 & -18
+%\end{amatrix}
+%  \end{eqnarray*}
+%Let the new  second row be the old second row divided by -1
+%\begin{eqnarray*}
+% \begin{amatrix}{2}
+%1 &0 &9 \\ 0 &1 & 18
+%\end{amatrix}
+%  \end{eqnarray*}
+%The solution can be read off very quickly, and the notation was very minimal. 
+%\end{example}
+% At each step, the augmented matrices encode systems of equations which have the same solutions. Lets make this idea more formal, and introduce some notation to convey the idea.
+%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Equivalence and the Act of Solving}
+
+
+%Two augmented matrices corresponding to linear systems 
+%%{\it that actually have solutions} %cmon, this idea has not even been introduced
+%are said to be \hypertarget{roweq}(row) 
+%\emph{equivalent}\index{Row equivalence} if they have the \emph{same} solutions.
+%To denote this 
+
+We now introduce the symbol $\sim$ which is called ``tilde" but should be read as  ``is (row) equivalent to''
+because at each step the augmented matrix changes by an operation on its rows but its solutions do not. For example, we found above that
+\[
+\begin{amatrix}{2}
+1 &1 &27 \\ 2 &-1 &0
+\end{amatrix}
+\sim
+\begin{amatrix}{2}
+1 &0 &9 \\ 2 &-1 & 0
+\end{amatrix}
+\sim
+\begin{amatrix}{2}
+1 & 0&9 \\   0& 1 & 18
+\end{amatrix}\, .
+\]
+The last of these augmented matrices is our favorite!
+\Videoscriptlink{gaussian_elimination_background.mp4}{Equivalence Example}{script_gaussian_elimination_background}
+
+%\videoscriptlink{gaussian_elimination_3_3_example.mp4}{A $3 \times 3$ example}{scripts_gaussian_elimination_3_3_example}
+
+Setting up a string of equivalences like this is a means of solving a system of linear equations. This is the main idea of section~\ref{RREF}.
+This next example hints at the main trick:
+
+\begin{example} (Using Gaussian elimination to solve a system of linear equations)
+\begin{eqnarray*}
+   \left.
+\begin{array}{lcr}
+	x +\ y & = & 5 \\
+	x + 2y & = &\  8
+     \end{array}
+   \right\} 
+   \Leftrightarrow
+\begin{amatrix}{2}
+1 &1 &5 \\ 1 &2 & 8
+\end{amatrix}
+\sim
+\begin{amatrix}{2}
+1 &1 &5 \\ 0 &1 & 3
+\end{amatrix}
+\sim
+\begin{amatrix}{2}
+1 &0 &2 \\ 0 &1 & 3
+\end{amatrix}
+\Leftrightarrow
+\left\{
+\begin{array}{lcr}
+	x + 0 & = & 2 \\
+	 0 + y & = &\  3
+     \end{array}
+   \right.
+\end{eqnarray*}  
+Note that in going from the first to second augmented matrix, we used the top left $1$ to make the bottom left entry zero. For this reason we call the top left entry a pivot. 
+Similarly, to get from the second to third augmented matrix,  the bottom right entry (before the divide) was used to make the top right one vanish; so the bottom right entry is also called a pivot. 
+\end{example}
+
+This name {\it pivot}  is  used to indicate the matrix
+entry used to ``zero out''  the other entries in its column; the pivot is the number used to eliminate another number in its column.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Reduced Row Echelon Form}\label{RREF}
+For a system of two linear  equations, the goal of Gaussian elimination is to convert the part of the augmented matrix left of the dividing line into the matrix
+ $$I=    \begin{pmatrix}
+      1             &0  \\
+      0             &1
+    \end{pmatrix}\, ,$$ 
+called the \emph{Identity Matrix}\index{Identity matrix!$2\times2$}, since this would give the simple statement of a solution $x=a,y=b$. The same goes for  larger systems of equations
+for which the identity matrix~$I$ has 1's along its \hyperlink{diagonal}{diagonal} and all off-diagonal entries vanish:
+\begin{center}
+\shabox{$I=\left(\begin{array}{ccccc}1&0&\cdots&0\\0&1&&0\\ \vdots&&\ddots&\vdots\\0&0&\cdots&1\end{array}\right)$}
+\end{center}
+
+%\reading{2}{2} %a 3x3 example with one solution>
+\Reading{SystemsOfLinearEquations}{2}
+
+
+\vspace{1mm}
+\noindent
+For many systems, it is not possible to reach the identity in the augmented matrix via Gaussian elimination. In any case, a certain version of the matrix that has the maximum number of components eliminated is said to be the Row Reduced Echelon Form (RREF). 
+
+\begin{example}\label{redundant} (Redundant equations)
+ \begin{eqnarray*}
+   \left.
+\begin{array}{ccccr}
+	 x& + & y & = & 2 \\[1mm]
+	2x& + &2y & = &  4
+     \end{array}
+   \right\} 
+   \Leftrightarrow
+\begin{amatrix}{2}
+1 &1 &2 \\[1mm] 2 &2 & 4
+\end{amatrix}
+\sim
+\begin{amatrix}{2}
+1 &1 &2 \\[1mm] 0 &0 & 0
+\end{amatrix}
+%\sim
+%\begin{amatrix}{2}
+%1 &0 &2 \\ 0 &1 & 3
+%\end{amatrix}
+\Leftrightarrow
+\left\{
+\begin{array}{ccccr}
+	x &+& y & = & 2 \\[1mm]
+	 0& +& 0 & = &  0
+     \end{array}
+   \right.
+\end{eqnarray*}  
+This example demonstrates if one equation is a multiple of the other the identity matrix can not be a reached. This is because the first step in elimination will make the second row a row of zeros. Notice that solutions still exists $(1,1)$ is a solution. The last augmented matrix here is in RREF; no more than two components  can be eliminated.
+\end{example}
+
+\begin{example} (Inconsistent equations)
+ \begin{eqnarray*}
+   \left.
+\begin{array}{ccccr}
+	x &+ & y & = & 2 \\[1mm]
+	2x &+ &2y & = &  5
+     \end{array}
+   \right\} 
+   \Leftrightarrow
+\begin{amatrix}{2}
+1 &1 &2 \\[1mm] 2 &2 & 5
+\end{amatrix}
+\sim
+\begin{amatrix}{2}
+1 &1 &2 \\[1mm] 0 &0 & 1
+\end{amatrix}
+%\sim
+%\begin{amatrix}{2}
+%1 &0 &2 \\ 0 &1 & 3
+%\end{amatrix}
+\Leftrightarrow
+\left\{
+\begin{array}{ccccr}
+	x &+& y & = & 2 \\[1mm]
+	 0 &+& 0 & = &  1
+     \end{array}
+   \right.
+\end{eqnarray*}  
+This system of equation has a solution if there exists two numbers $x$, and $y$ such that $0+0=1$. That is a tricky way of saying there are no solutions. The last form of the augmented matrix here is the RREF.
+\end{example}
+
+
+\begin{example} (Silly order of equations)\\
+A robot might make this mistake:
+ \begin{eqnarray*}
+   \left.
+\begin{array}{ccccr}
+	0x &+&  y & = & -2 \\[1mm]
+	x& +& y & = &  7
+     \end{array}
+   \right\} 
+   \Leftrightarrow 
+\begin{amatrix}{2}
+0 &1 & -2\\[1mm] 1 &1 & 7
+\end{amatrix}
+\sim \, \cdots\, ,
+\end{eqnarray*}  
+and then give up because the the upper left slot can not function as a pivot since the~0 that lives there can not be used to eliminate the zero below it. Of course, the right thing to do is to change the order of the equations before starting
+ \begin{eqnarray*}
+   \left.
+\begin{array}{ccccr}
+	 x &+ &y & = &  7
+	\\[1mm]
+	0x &+ & \ y & = & -2 
+	     \end{array}
+   \right\} 
+   \Leftrightarrow
+\begin{amatrix}{2}
+1 &1 & 7\\[1mm] 0 &1 & -2
+\end{amatrix}
+\sim 
+\begin{amatrix}{2}
+1 &0 & 9\\[1mm] 0 &1 & -2
+\end{amatrix}
+\Leftrightarrow
+\left\{
+\begin{array}{ccccr}
+	x &+& 0 & = & 9\phantom{\, .} \\[1mm]
+	 0 &+& y & = & -2\, .
+     \end{array} 
+   \right.
+\end{eqnarray*}  
+The third augmented matrix above  is the RREF of the first and second. That is to say, you can swap rows on your way to RREF.
+\end{example}
+
+
+
+For larger systems of equations redundancy and inconsistency are the obstructions to obtaining the identity matrix, and hence to a simple statement of a solution in the form $x=a,y=b,\ldots$ . 
+What can we do to maximally simplify a system of equations in general?
+We need to perform operations that simplify our system {\it without changing its solutions}.
+Because, exchanging the order of equations, multiplying one equation by a {\it non-zero} constant or adding equations does not 
+change the system's solutions, we are lead to three operations:
+\begin{itemize}
+\item (Row Swap) Exchange any two rows.
+\item (Scalar Multiplication) Multiply any row by a non-zero constant.
+\item (Row Addition) Add 
+%a multiple of 
+%%% Any row op can be built out of these three... and with the comment out wording there is some redundancy
+one row to another row.
+\end{itemize}
+These are called \emph{Elementary Row Operations}\index{EROs}, or EROs for short, and are studied in detail in section~\ref{EROS}. 
+Suppose now we have a general augmented matrix for which the first entry in the first row does not vanish. 
+Then, using just the three EROs, we could\footnote{This is a ``brute force" algorithm;  there will often be more efficient ways to get to RREF.} then perform the following.\\
+
+\newpage
+\begin{center}
+{\bf {\Large Algorithm For Obtaining RREF:}}
+\end{center}
+\begin{itemize}
+\item Make the leftmost nonzero entry in the top row 1 by multiplication.  
+\item Then use that 1 as a pivot to eliminate everything below it. 
+\item Then go to the next row and make the leftmost nonzero entry 1. 
+\item Use that 1 as a pivot to eliminate everything below {\it and above it}! 
+\item Go to the next row and make the leftmost nonzero entry 1... {\it etc}
+\end{itemize}
+In the case that the first entry of the first row is zero, we may first interchange the first row with another row whose first entry is non-vanishing  and then perform the above algorithm. If the entire first column vanishes, we may still apply the algorithm on the remaining columns.
+
+Here is a video (with special effects!) of a hand performing the algorithm by hand. When it is done, you should try doing what it does.
+\videoscriptlink{gaussian_elimination_Beginner_Elimination.mp4}{Beginner Elimination}{script_gaussian_elimination_more}
+
+\noindent
+This algorithm and its variations is known as Gaussian elimination. The endpoint of the algorithm is  an augmented matrix of the form \label{Reduced row echelon form} 
+$$\left(
+\begin{array}{cccccccc|c}
+1       	& * & 0		& * & 0		& \cdots& 0	&*	& b^1 \\[.5mm] 
+0	        & 0 & 1		& * & 0		& \cdots& 0	&*	& b^2 \\[.5mm]
+0		& 0& 0		& 0 & 1		& \cdots& 0	&*	& b^3 \\[.5mm]  
+\vdots  	& \vdots& \vdots	&   & \vdots &	& 	& 
+\vdots			& \vdots \\[2mm]  
+0		& 0&	0		&  0& 0			&  \cdots   & 1		&*	& b^k \\[.5mm]  
+0		& 0 & 0		& 0 & 0		& \cdots& 0 	&0	& b^{k+1} \\[.5mm] 
+\vdots  	& \vdots & \vdots	&  \vdots & \vdots	& 	& \vdots	&\vdots	& \vdots \\[.5mm]  
+0		&  0 & 0		& 0 & 0		& \cdots& 0		 & 0& b^r \\ 
+\end{array}\!\right).$$
+This is called 
+\emph{Reduced Row Echelon Form}\index{Reduced row echelon form} (RREF).
+The asterisks denote the possibility of arbitrary numbers ({\it e.g.}, the second 1 in the top line of example~\ref{redundant}).
+
+Learning to perform this algorithm by hand is the first step to learning linear algebra; it will be the primary means of computation for this course. You need to learn it well. So start practicing as soon as you can, and practice often. 
+
+
+\newpage
+\begin{center}
+\Large{{\bf The following properties define RREF:}}
+\end{center}
+\begin{enumerate}
+\item  In every row  the left most non-zero entry is  $1$ (and is called a pivot).
+\item The pivot of any given row is always to the right of the pivot of the row above it.
+\item The pivot is the only non-zero entry in its column.
+\end{enumerate}
+%Here are some examples:
+\begin{example}\label{augrref} (Augmented matrix in RREF)
+$$
+\begin{amatrix}{3} 
+1 & 0 & 7 & 0 \\ 
+0 & 1 & 3 & 0 \\
+0 & 0 & 0 & 1 \\
+0 & 0 & 0 & 0 \\
+\end{amatrix}
+$$
+\end{example}
+
+\begin{example} (Augmented matrix NOT in RREF)
+$$
+\begin{amatrix}{3} 
+1 & 0 & 3 & 0 \\ 
+0 & 0 & 2 & 0 \\
+0 & 1 & 0 & 1 \\
+0 & 0 & 0 & 1 \\
+\end{amatrix}
+$$
+Actually, this NON-example breaks all three of the rules!
+\end{example}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+The reason we need the asterisks in the general form of RREF is that
+not every column need have a pivot, as demonstrated in examples~\ref{redundant} and~\ref{augrref}. 
+Here is an example where multiple columns have no pivot:
+
+\begin{example} (Consecutive  columns with no pivot in RREF)
+ \begin{eqnarray*}
+   \left.
+\begin{array}{cccccccccr}
+	 x & + & y &+ & z& + & 0w & = & 2 \\
+	2x& +& 2y& +&2z&+&2w & = &  4
+     \end{array}
+   \right\} 
+   &\!\Leftrightarrow\!&
+\begin{amatrix}{4}
+1 &1 &1 & 0 &2 \\ 
+2 &2 &2 & 1 & 4
+\end{amatrix}
+\sim
+\begin{amatrix}{4}
+1 &1 &1 & 0 &2 \\ 
+0 &0 &0 & 1 & 0
+\end{amatrix}\\[2mm]
+&\!\Leftrightarrow\!&
+\left\{
+\begin{array}{rrrrrr}
+	x \ +\  y\  + \  z&&& = & 2 \phantom{\, .}\\
+	&& w & = &  0\, .
+     \end{array}
+   \right.
+\end{eqnarray*}  
+Note that there was no hope of reaching the identity matrix, because of the shape of the augmented matrix we started with. 
+\end{example}
+
+With some practice, elimination can go  quickly. Here is an expert showing you some tricks. If you can't follow him now then come back when you have some more experience and watch again. You are going to need to get really good at this!
+
+\videoscriptlink{gaussian_elimination_Advanced_Elimination.mp4}{Advanced Elimination}{script_gaussian_elimination_more}
+
+It is important that you are able to convert RREF back into a system of equations. The first thing you might notice is that
+if any of the numbers 
+$b^{k+1},\dots, b^r$ in~\ref{Reduced row echelon form}~are non-zero then the system of equations is inconsistent and has no solutions. 
+Our next task is to extract all possible solutions from an RREF  augmented matrix.
+
+\subsection{Solution Sets and RREF}
+%While RREF is not always pretty, it is certainly useful. 
+%Our goal  is to solve systems of linear equations. 
+RREF is a maximally simplified version of the original system of equations in the following sense: 
+\begin{itemize}
+\item As many coefficients of the variables as possible are $0$. 
+\item As many coefficients  of the variables as possible are $1$.
+\end{itemize}
+It is easier to read off solutions from the maximally simplified equations than from the original equations, even when there are infinitely many solutions.
+
+\begin{example}{(Standard approach  from a system of equations to the solution set)}
+ \begin{eqnarray*}
+\left.
+\begin{array}{ccccccccr}
+	x & +&y  && & +& 5w &   =& 1 \\
+	 &&y & &   &+& 2 w & = &6 \\
+	&&&& z&+&         4w & = &8
+\end{array}
+ \right\}
+ \Leftrightarrow
+ \begin{amatrix}{4} 
+1 & 1 & 0 & 5 & 1 \\ 
+0 & 1 & 0 & 2 & 6 \\
+0 & 0 & 1 & 4 & 8 
+\end{amatrix}
+\sim
+ \begin{amatrix}{4} 
+1 & 0 & 0 & 3 & -5 \\ 
+0 & 1 & 0 & 2 & 6 \\
+0 & 0 & 1 & 4 & 8 
+\end{amatrix}
+\\[4mm]
+%
+\Leftrightarrow
+\left\{
+\begin{array}{cccccccccr}
+	x &&& + &3w &  =& -5 \\[.5mm]
+	&   y && +& 2 w & = &6 \\[.5mm]
+        && z&+ &        4w & = &8
+     \end{array}
+     \right\}
+\Leftrightarrow
+\left\{
+\begin{array}{lcrccr}
+	x & =& -5& -&3w \\[.5mm]
+	 y  & =& 6 &-&2w\\[.5mm]
+	 z & = &8&-&4w \\[.5mm]
+	w & =&&&w          
+     \end{array}
+     \right\}
+ \\[4mm]
+\Leftrightarrow
+\colvec{x\\[.5mm]y\\[.5mm]z\\[.5mm]w} = \colvec{-5\\[.5mm]6\\[.5mm]8\\[.5mm]0} + w\colvec{-3\\[.5mm]-2\\[.5mm]-4\\[.5mm]1}\, .
+\end{eqnarray*}
+%This brings up the issue of what constitutes a solution to a system of equations; the last thing written above was a vector equation... and if it sounds wrong to say  ``an equation is a solution to an equation" you are in good company.  
+%There are infinitely many solutions to the , one for each value of $w$. 
+%For example
+%$$ \colvec{-5\\[.5mm]6\\[.5mm]8\\[.5mm]0} 
+%+ 
+%\left( -.75\right)^{\pi-1}\colvec{-3\\[.5mm]-2\\[.5mm]-4\\[.5mm]1}\, 
+%$$
+%is one of the solutions. Notice that this solution is not an equation; it is an ordered set of numbers that, if substituted  for the variables in the equations, yields true statements. This might be annoying to check because of the annoying number $(-.75)^{\pi-1}$ we chose to replace $w$. We just wanted to show you that ANY number can go there. You probably want a way to check a solution which is not annoying. A good check is to see if the system is solved by the expression with $w$ replaced by $0$. Indeed
+%\begin{eqnarray*}
+% \colvec{-5\\[.5mm]6\\[.5mm]8\\[.5mm]0} {\text ~is~a ~solution ~to \qquad}
+%\begin{array}{ccccccccr}
+%	x & +&y  && & +& 5w &   =& 1 \\
+%	 &&y & &   &+& 2 w & = &6 \\
+%	&&&& z&+&         4w & = &8
+%\end{array}
+%\\ 
+%{\text  ~because \qquad}
+%\begin{array}{ccccccccr}
+%	-5 & +&6  && & +& 5(0) &   =& 1 \\
+%	 &&6 & &   &+& 2 (0) & = &6 \\
+%	&&&& 8&+&         4(0) & = &8
+%\end{array}.
+%\end{eqnarray*}
+%Given that there are many solutions, what ought one report when asked to solve a system of equations? The standard thing to report is {\it the solution set}\index{solution set}\index{Solution set}; 
+%There is a solution for each value of $w$. Better said 
+%\begin{eqnarray*}
+%{\text the ~solution~ set~ to \qquad}
+%\begin{array}{ccccccccr}
+%	x & +&y  && & +& 5w &   =& 1 \\
+%	 &&y & &   &+& 2 w & = &6 \\
+%	&&&& z&+&         4w & = &8
+%\end{array}
+%is \qquad\left\{    \colvec{-5\\[.5mm]6\\[.5mm]8\\[.5mm]0} 
+%+ 
+%\alpha \colvec{-3\\[.5mm]-2\\[.5mm]-4\\[.5mm]1} : \alpha \in \mathbb{R} \right\}
+%\end{eqnarray*}
+There is one solution for each value of $w$, so the solution set is 
+$$
+\left\{    \colvec{-5\\[.5mm]6\\[.5mm]8\\[.5mm]0} 
++ 
+\alpha \colvec{-3\\[.5mm]-2\\[.5mm]-4\\[.5mm]1} : \alpha \in \mathbb{R} \right\}.
+$$
+\end{example}
+Here is a verbal description of the preceeding example of the \hypertarget{standard approach}{{\it standard approach}}. We say that $x,y$, and $z$ are {\it pivot variables}\index{Pivot variables} because they appeared with a  pivot coefficient in RREF. 
+Since $w$ never appears with a pivot  coefficient, 
+ it is not a pivot variable. %We call it a free variable. 
+%One way to reveal the solutions to this system of equations is to 
+In the second line we put all the pivot variables on one side 
+and all the {\it non-pivot variables}\index{Non-pivot variables} on the other side and added the trivial equation $w=w$ to obtain a system that allowed us to easily read off solutions.
+
+\begin{center}
+{\Large{\bf The Standard Approach To Solution Sets}}
+\end{center}
+\begin{enumerate}
+\item Write the augmented matrix.
+\item Perform EROs to reach RREF.
+\item Express the pivot variables in terms of the non-pivot variables. 
+\end{enumerate}
+There are always exactly enough non-pivot variables to index your solutions. 
+In any approach, the variables which are not expressed in terms of the other variables are called  {\it free variables}\index{free variables}. The standard approach is to use the non-pivot variables as free variables.
+
+%vid for this?! 
+Non-standard approach: solve for $w$ in terms of $z$ and substitute into the other equations. You now have an expression for each component in terms of $z$. But why pick $z$ instead of $y$ or $x$? (or $x+y$?) The standard approach not only feels natural, 
+but is {\it canonical}, meaning that everyone will get the same RREF and hence choose the same variables to be free.
+However, it is important to remember that so long as their {\it set} of solutions is the same, any two choices of free variables is fine.
+(You might think of this as the difference between using Google Maps$^{\sf TM}$ or Mapquest$^{\sf TM}$; although their maps may look different, 
+the place 
+$\langle$home {\it sic}$\rangle$ 
+they are describing is the same!)
+
+
+When you see an RREF augmented matrix with two columns that have no pivot, you know there will be two free variables. 
+
+\begin{example}{(Standard approach, multiple free variables)}
+
+ \begin{eqnarray*}
+ \begin{amatrix}{4} 
+1 & 0 & 7 & 0 & 4 \\ 
+0 & 1 & 3 & 4 & 1 \\ 
+0 & 0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 & 0 \\ 
+\end{amatrix}
+\Leftrightarrow
+\left\{
+\begin{array}{lcr}
+	x \phantom{+y}    + 7z  \phantom{+w} & = 4 \\
+	\phantom {x+}   y + 3z  {+4w} & = 1 \\
+	%\phantom{x+y+z+}          w & = 2
+     \end{array}
+     \right\}
+%
+\\
+\Leftrightarrow 
+\left\{
+\begin{array}{rlcrccrr}
+	x & = \ 4&\! -\!&7z& \\
+	 y  & = \ 1& \!-\!&3z&\!-\!&4w\\
+	 z   & = &&z\\
+	w & =&&&&w          
+     \end{array}
+     \right\}
+     \Leftrightarrow
+\colvec{x\\y\\z\\w} = \colvec{4\\1\\0\\0} + z\colvec{-7\\-3\\1\\0} + w\colvec{0\\-4\\0\\1}
+\end{eqnarray*}
+%There are infinitely many solutions; one for each pair of numbers $z,w$. 
+so the solution set is 
+$$  \left\{  \colvec{4\\1\\0\\0} + z\colvec{-7\\-3\\1\\0} + w\colvec{0\\-4\\0\\1} : z,w\in \mathbb{R} \right\}. $$
+\end{example}
+
+%the youtube version
+%\begin{center}
+%\href{http://www.youtube.com/watch?v=87iKQG6PJvM}{\raisebox{-.4cm}{\includegraphics[scale=.075]{take1.jpg}}}\hspace{1cm}\scalebox{1.2}{From RREF to a Solution Set}
+%\end{center}
+
+
+\begin{center}
+\Videoscriptlink{solution_set.mp4}{From RREF to a Solution Set}
+{}
+\end{center}
+
+You can imagine having three, four, or fifty-six non-pivot columns and the same number of free variables indexing your solutions set. 
+In general a solution set to a system of equations with $n$ free variables will be of the form 
+\begin{center}
+\shabox{
+$
+\{ x^P +\mu_1 x^H _1 + \mu_2 x^H _2 + \cdots + \mu_nx^H _n : \mu_1, \dots, \mu_n \in \mathbb{R} \} .$
+}
+\end{center}
+
+The parts of these solutions play special roles in the associated matrix equation. This will come up again and again long after we complete this discussion of basic calculation methods, so we will use the general language of linear algebra to give names to these parts now. \\
+
+\noindent {\bf Definition:} A {\bf homogeneous solution} to a linear equation $Lx=v$, with $L$ and $v$ known is a vector $x^H $ such  that $Lx^H =0$ where $0$ is the zero vector. \\
+
+\shabox{
+If you have a particular solution $x^P $ to a linear equation and add a sum of multiples of homogeneous solutions to it you obtain another particular solution. }\\
+%The equation $Lx=0$ is called the  homogeneous equation associated to $.
+
+
+
+\begin{center}
+\Videoscriptlink{particular_homogeneous.mp4}{\hspace{-8mm}Particular and Homogeneous Solutions\hspace{-8mm}}{}
+%youtube version
+%\href{http://www.youtube.com/watch?v=6a_sT06Kti4}{\raisebox{-.4cm}{\includegraphics[scale=.075]{take1.jpg}}}\hspace{1cm}\scalebox{1.2}{Particular and Homogeneous Solutions}
+\end{center}
+
+
+
+Check now that the parts of the solutions with free variables as coefficients from the previous examples are homogeneous solutions, and that by adding a homogeneous solution to a particular solution one obtains a solution to the matrix equation. This will come up over and over again. As an example without matrices, consider the differential equation $\frac{d^2}{dx^2} f=3$. A particular solution is $\frac32x^2$ while $x$ and $1$ are homogeneous solutions. The solution set is $\{ \frac32 x^2+ax +c1 ~:~a,b\in\mathbb{R} \}$. You can imagine similar differential equations with more homogeneous solutions. \\
+
+
+You need to become very adept at reading off solutions sets of linear systems from the RREF
+of their augmented matrix; it is a basic skill for linear algebra, and we will continue using it up to the last page of the book! 
+
+
+
+
+
+\Videoscriptlink{elementary_row_operations_worked_examples.mp4}{\hspace{-8mm}Worked examples of Gaussian elimination\hspace{-8mm}}{scripts_elementary_row_operations_worked_examples}
+
+
+%This example emphasizes different aspects.
+%\begin{example}
+%$$
+%\begin{amatrix}{5} 
+%1 & 1 & 0 & 1 & 0 & 1\\ 
+%0 & 0 & 1 & 2 & 0 & 2\\ 
+%0 & 0 & 0 & 0 & 1 & 3\\ 
+%0 & 0 & 0 & 0 & 0 & 0
+%\end{amatrix}\, .
+%$$
+%Here we were not told the names of the variables, so lets just call them $x_1,x_2,x_3,x_4,x_5$.
+%(There are always as many of these as there are columns in the matrix before the vertical line; the number of rows,
+%on the other hand is the number of linear equations.)
+%
+%To begin with we immediately notice that there are no pivots in the second and fourth columns so, as per the standard approach, we will be all variables in terms of $x_2$ and $x_4$. 
+%Next we see from the second last row that $x_5=3$. The second row says 
+%$x_3=2-2x_4=2-2 x_2$.
+%The top row then gives $x_1=1-x_2-x_4=1-x_1-x_2$. Again we can write this solution as a vector
+%$$
+%\colvec{1\\0\\2\\0\\3}+x_1\colvec{-1\\1\\0\\0\\0}+x_2\colvec{-1\\0\\-2\\1\\0}\, .
+%$$
+%Observe, that since no variables were given at the beginning, we can use any symbols instead of $x_1$ and $x_2$. For example lower case greek letter lambda:
+%$$
+%\colvec{1\\0\\2\\0\\3}+\lambda_1\colvec{-1\\1\\0\\0\\0}+\lambda_2\colvec{-1\\0\\-2\\1\\0}\, .
+%$$
+%As a challenge, look carefully at this solution and make sure you can see how every part of it comes from
+%the original augmented matrix without every having to reintroduce variables and equations.
+%\end{example}
+%
+%
+
+
+
+
+%\begin{theorem}
+%Every augmented matrix is row-equivalent to a \emph{unique} augmented matrix in reduced row echelon form.
+%\end{theorem}
+%
+%\noindent
+%In \Lecture~\ref{elemRowOpsPath}, we will see why this is true.
+
+%\section*{Uniqueness of RREF}
+%
+%\begin{theorem}\label{GJEunique} Gauss-Jordan Elimination produces a unique augmented matrix in RREF.
+%\end{theorem}
+%
+%\begin{proof}
+%Suppose Alice and Bob compute the RREF for a linear system but get different results, $A$ and $B$.  Working from the left, discard all columns except for the pivots and the first column in which $A$ and $B$ differ.  By \hyperref[colremove]{Review Problem~\ref{colremove}}, removing columns does not affect row equivalence.  Call the new, smaller, matrices $\hat{A}$ and $\hat{B}$.  The new matrices should look this: $$\hat{A}=\begin{amatrix}{1}
+%I_N & a\\
+%0 & 0
+%\end{amatrix} \mbox{ and } \hat{B}=\begin{amatrix}{1}
+%I_N & b\\
+%0 & 0
+%\end{amatrix}\, ,$$ where $I_N$ is an $N\times N$ identity matrix and $a$ and $b$ are vectors.
+%
+%Now if $\hat{A}$ and $\hat{B}$ have the same solution, then we must have $a=b$.  But this is a contradiction!  Then $A=B$.
+%\end{proof}
+%
+%\videoscriptlink{elementary_row_operations_proof.mp4}{Explanation of the proof}{scripts_elementary_row_operations_proof}
+
+
+%\References{
+%Hefferon, Chapter One, Section 1
+%\\
+%Beezer, Chapter SLE, Section RREF
+%\\
+%Wikipedia, \href{http://en.wikipedia.org/wiki/Row_echelon_form}{Row Echelon Form}}
+
+%\newpage
+
+\section{Review Problems}
+
+{\bf Webwork:} 
+\begin{tabular}{|c|c|}
+\hline
+Reading problems &
+\hwrref{SystemsOfLinearEquations}{1}, \hwrref{SystemsOfLinearEquations}{2}\\
+Augmented matrix &  \hwref{SystemsOfLinearEquations}{6}\\
+$2\times2$ systems &  \hwref{SystemsOfLinearEquations}{7},
+\hwref{SystemsOfLinearEquations}{8},
+\hwref{SystemsOfLinearEquations}{9},
+\hwref{SystemsOfLinearEquations}{10},
+\hwref{SystemsOfLinearEquations}{11},
+\hwref{SystemsOfLinearEquations}{12}\\
+$3\times2$ systems & 
+\hwref{SystemsOfLinearEquations}{13},
+\hwref{SystemsOfLinearEquations}{14}
+\\
+$3\times3$ systems & 
+\hwref{SystemsOfLinearEquations}{15},
+\hwref{SystemsOfLinearEquations}{16},
+\hwref{SystemsOfLinearEquations}{17}
+\\
+\hline
+\end{tabular}
+
+\input{\gaussElimPath/problems}
+
+
+
+%\chapter{\elemRowOpsTitle}
+%FOR THE BOOK
+\section{\elemRowOpsTitle}
+
+\label{EROS}
+%\hypertarget{Elementary Row Operations} %what is this? 
+
+Elementary row operations are  systems of linear equations relating the old and new rows in Gaussian elimination: 
+
+
+\begin{example}\label{Rsystem} (\hypertarget{Keeping track of EROs with equations between rows}{Keeping track of EROs with equations between rows})\\
+We refer to the new $k$th row as $R'_k$ and the old $k$th row as $R_k$.
+\begin{equation*}
+\begin{array}{ccc|r}
+\begin{amatrix}{3} 
+0 & 1 & 1 & 7 \\ 
+2 & 0 & 0& 4 \\
+0& 0 & 1 & 4 \\
+\end{amatrix} 
+& \stackrel{R_1'=0R_1+\phantom{1}R_2+0R_3}{\stackrel{R_2'=\phantom{1}R_1+0R_2+0R_3}{ \stackrel{R_3'= 0R_1+0R_2+\phantom{1}R_3}{\stackrel{}{\sim}}}}&
+\begin{amatrix}{3} 
+2 & 0 & 0 & 4 \\
+0 & 1 & 1& 7 \\
+0 & 0 & 1 & 4 \\ 
+\end{amatrix}
+&\colvec{R_1'\\R_2'\\R_3'}=\begin{pmatrix}0&1&0\\1&0&0\\0&0&1\end{pmatrix}\colvec{R_1\\R_2\\R_3}
+\\[.8cm]
+& \stackrel{R_1'=\frac12 R_1+0R_2+0R_3}{\stackrel{R_2'=0R_1+\phantom{1}R_2+0R_3}{ \stackrel{R_3'= 0R_1+0R_2+\phantom{1}R_3}{\stackrel{}{\sim}}} }&
+\begin{amatrix}{3} 
+1 & 0 & 0 & 2 \\
+0 & 1 & 1& 7 \\
+0 & 0 & 1 & 4 \\ 
+\end{amatrix}
+&\colvec{R_1'\\R_2'\\R_3'}=\begin{pmatrix}\frac12&0&0\\0&1&0\\0&0&1\end{pmatrix}\colvec{R_1\\R_2\\R_3}
+\\[.8cm]
+& \stackrel{R_1'= \phantom{1}R_1+0R_2+0R_3}{\stackrel{R_2'=0R_1+\phantom{1}R_2-\phantom{1}R_3}{ \stackrel{R_3'=0R_1+0R_2+\phantom{1} R_3}{\stackrel{}{\sim}}} }&
+\begin{amatrix}{3} 
+1 & 0 & 0 & 2 \\
+0 & 1 & 0& 3 \\
+0 & 0 & 1 & 4 \\ 
+\end{amatrix}
+&\colvec{R_1'\\R_2'\\R_3'}=\begin{pmatrix}1&0&0\\0&1&\!\!-1\\0&0&1\end{pmatrix}\colvec{R_1\\R_2\\R_3}\\[3mm]\phantom{x} &&&
+\end{array}
+\end{equation*}
+On the right, we have listed the relations between  old and new rows in matrix notation.
+\Reading{SystemsOfLinearEquations}{3}
+\end{example}
+
+%\videoscriptlink{elementary_row_operations_example.mp4}{Example}{script_elementary_row_operations_example}
+
+%\begin{center}\href{\webworkurl ReadingHomework3/1/}{Reading homework: problem 3.1}\end{center}
+%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{EROs and  Matrices}
+Interestingly, the matrix 
+that describes the relationship between old and new rows 
+performs the corresponding ERO on the augmented matrix.
+\begin{example} (Performing EROs with Matrices)
+\begin{eqnarray*}
+\begin{pmatrix}
+0 & 1 & 0  \\ 
+1 & 0 & 0 \\
+0& 0 & 1  
+\end{pmatrix} 
+\begin{amatrix}{3} 
+0 & 1 & 1 & 7 \\ 
+2 & 0 & 0& 4 \\
+0& 0 & 1 & 4 
+\end{amatrix} 
+&=&
+\begin{amatrix}{3} 
+2 & 0 & 0 & 4 \\
+0 & 1 & 1& 7 \\
+0 & 0 & 1 & 4 \\ 
+\end{amatrix}
+\\[3mm] &&\qquad\quad \rotatebox{90}{$\sim$} \\[3mm]%second line
+\begin{pmatrix}
+\frac12 & 0 & 0  \\ 
+0 & 1 & 0 \\
+0& 0 & 1  \\
+\end{pmatrix}
+\begin{amatrix}{3} 
+2 & 0 & 0 & 4 \\
+0 & 1 & 1& 7 \\
+0 & 0 & 1 & 4 \\ 
+\end{amatrix}
+&=&
+\begin{amatrix}{3} 
+1 & 0 & 0 & 2 \\
+0 & 1 & 1& 7 \\
+0 & 0 & 1 & 4 \\ 
+\end{amatrix}
+\\[3mm] &&\qquad\quad \rotatebox{90}{$\sim$} \\[3mm]%third line
+\begin{pmatrix}
+1&0&0\\
+0&1&\!\!\!-1\\
+0&0&1
+\end{pmatrix}
+\begin{amatrix}{3} 
+1 & 0 & 0 & 2 \\
+0 & 1 & 1& 7 \\
+0 & 0 & 1 & 4 \\ 
+\end{amatrix} 
+&=&
+\begin{amatrix}{3} 
+1 & 0 & 0 & 2 \\
+0 & 1 & 0& 3 \\
+0 & 0 & 1 & 4 \\ 
+\end{amatrix}
+\end{eqnarray*}
+Here we have multiplied the augmented matrix with the matrices that acted on rows listed on the right  of example~\ref{Rsystem}. 
+\end{example}
+
+Realizing EROs as matrices allows us to give a concrete notion of \hyperlink{ch1divide}{``dividing by a matrix''}; we can now perform manipulations on both sides of an equation in a familiar way:
+
+\begin{example} (Undoing $A$ in $Ax=b$ slowly, for $A=6=3\cdot2$)
+\begin{equation*}\begin{array}{crcr}
+&6x&=&\phantom{ 3^{-1}} 12 \\[2mm]
+\Leftrightarrow\ &3^{-1}6x&=&3^{-1}12 \\[2mm]
+\Leftrightarrow\ & 2x&=&\phantom{3^{-1}~}4  \\[2mm]
+\Leftrightarrow\ & 2^{-1}2x&=&2^{-1}~4\\[2mm] %  \Leftrightarrow 
+\Leftrightarrow\ &  1x&=&\phantom{3^{-1}~} 2
+\end{array}
+\end{equation*}
+\end{example}
+
+\noindent
+The matrices corresponding to EROs undo a matrix step by step.
+\begin{example} \label{slowly}(\hypertarget{Undoing}{Undoing} $A$ in $Ax=b$ slowly, for $A=M=...$)
+\begin{equation*}
+\begin{array}{crcr}
+& \begin{pmatrix}
+0 & 1 & 1  \\ 
+2 & 0 & 0 \\
+0& 0 & 1  \\
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y \\
+z 
+\end{pmatrix} 
+&=&
+\phantom{
+\begin{pmatrix}
+0 & 1 & 0  \\ 
+1 & 0 & 0 \\
+0& 0 & 1  \\
+\end{pmatrix} 
+}
+~
+\begin{pmatrix}
+ 7 \\ 
+4 \\
+4\\
+\end{pmatrix} 
+\\[7mm] %second line
+\Leftrightarrow\ &
+%
+\begin{pmatrix}
+0 & 1 & 0  \\ 
+1 & 0 & 0 \\
+0& 0 & 1  \\
+\end{pmatrix} 
+%
+\begin{pmatrix}
+0 & 1 & 1  \\ 
+2 & 0 & 0 \\
+0& 0 & 1  \\
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y \\
+z 
+\end{pmatrix} 
+&=&
+\begin{pmatrix}
+0 & 1 & 0  \\ 
+1 & 0 & 0 \\
+0& 0 & 1  \\
+\end{pmatrix} 
+~
+\begin{pmatrix}
+ 7 \\ 
+4 \\
+4\\
+\end{pmatrix} 
+\\[7mm]
+\Leftrightarrow\ & %third line
+\phantom{-}
+\begin{pmatrix}
+2 & 0 & 0 \\
+0 & 1 & 1  \\ 
+0& 0 & 1  \\
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y \\
+z 
+\end{pmatrix} 
+&=&
+\phantom{
+\begin{pmatrix}
+0 & 1 & 0  \\ 
+1 & 0 & 0 \\
+0& 0 & 1  \\
+\end{pmatrix} 
+}
+~
+\begin{pmatrix}
+4 \\
+7 \\ 
+4\\
+\end{pmatrix} 
+\\[7mm]
+\Leftrightarrow\ & %fourth line
+\begin{pmatrix}
+\frac12 & 0 & 0  \\ 
+0 & 1 & 0 \\
+0& 0 & 1  \\
+\end{pmatrix} 
+\begin{pmatrix}
+2 & 0 & 0 \\
+0 & 1 & 1  \\ 
+0& 0 & 1  \\
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y \\
+z 
+\end{pmatrix} 
+&=&
+%\phantom{
+\begin{pmatrix}
+\frac12 & 0 & 0  \\ 
+0 & 1 &  0\\
+0& 0 & 1  \\
+\end{pmatrix} 
+%}
+~
+\begin{pmatrix}
+4 \\
+7 \\ 
+4\\
+\end{pmatrix} 
+\\[7mm]
+\Leftrightarrow\ & %fifth line
+\phantom{
+\begin{pmatrix}
+\frac12 & 0 & 0  \\ 
+0 & 1 & 0 \\
+0& 0 & 1  \\
+\end{pmatrix} 
+}
+\begin{pmatrix}
+1 & 0 & 0 \\
+0 & 1 & 1  \\ 
+0& 0 & 1  \\
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y \\
+z 
+\end{pmatrix} 
+&=&
+\phantom{
+\begin{pmatrix}
+\frac12 & 0 & 0  \\ 
+0 & 1 &  0\\
+0& 0 & 1  \\
+\end{pmatrix} 
+}
+~
+\begin{pmatrix}
+2 \\
+7 \\ 
+4\\
+\end{pmatrix} 
+\\[7mm]
+\Leftrightarrow\ & %sixth line
+%\phantom{
+\begin{pmatrix}
+1 & 0 & 0  \\ 
+0 & 1 & \!\!\!-1 \\
+0& 0 & 1  \\
+\end{pmatrix} 
+%}
+\begin{pmatrix}
+1 & 0 & 0 \\
+0 & 1 & 1  \\ 
+0& 0 & 1  \\
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y \\
+z 
+\end{pmatrix} 
+&=&
+%\phantom{
+\begin{pmatrix}
+1 & 0 & 0  \\ 
+0 & 1 & \!\! \!-1\\
+0& 0  &  1  \\
+\end{pmatrix} 
+%}
+\! \!
+\begin{pmatrix}
+2 \\
+7 \\ 
+4\\
+\end{pmatrix} 
+\\[7mm]
+\Leftrightarrow\ &%%%%%%%%%%%%%%%%%%%%%%%7th line
+\phantom{
+\begin{pmatrix}
+1 & 0 & 0  \\ 
+0 & 1 & -1 \\
+0& 0 & 1  \\
+\end{pmatrix} 
+}
+\begin{pmatrix}
+1 & 0 & 0 \\
+0 & 1 & 0  \\ 
+0& 0 & 1  \\
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y \\
+z 
+\end{pmatrix} 
+&=&
+\phantom{
+\begin{pmatrix}
+1 & 0 & 0  \\ 
+0 & 1 &  -1\\
+0& 0  &  1  \\
+\end{pmatrix} 
+}
+\! 
+\begin{pmatrix}
+2 \\
+3 \\ 
+4\\
+\end{pmatrix} .
+\end{array}
+\end{equation*}
+\end{example}
+
+
+
+\noindent
+This is another way of thinking about Gaussian elimination which feels more like elementary algebra in the sense that you ``do something to both sides of an equation" until you have a solution. 
+
+
+%%%%%%%%%%%%%%%%%%
+
+\subsection{Recording EROs in $(\!\, M | I \,) $}\label{EROinverse}
+Just as we put together $3^{-1}2^{-1}=6^{-1}$ to get a single thing to apply to both sides of $6x=12$ to undo $6$, we should put together multiple EROs  to get a single thing that undoes our matrix. 
+To do this, augment by the identity matrix (not just a single column) and then perform Gaussian elimination. 
+There is no need to write the EROs as systems of equations or as matrices while doing this. 
+%That is, perform the EROs without the their corresponding matrices.
+
+\begin{example} \label{undo_a_matrix}(Collecting EROs that \hypertarget{undo a matrix}{undo a matrix})
+\begin{eqnarray*}
+\left(\begin{array}{ccc|ccc}
+0 & 1 & 1 &1 &0 &0\\ 
+2 & 0 & 0 &0&1&0\\
+0& 0 & 1   &0  &0 &1\\
+\end{array}  \right)
+&\!\!\sim\!\!&
+\left(\begin{array}{ccc|ccc}
+2 & 0 & 0 &0&1&0\\
+0 & 1 & 1 &1 &0 &0\\ 
+0& 0 & 1   &0  &0 &1\\
+\end{array}  \right)
+\\[2mm]
+&\!\!\sim\!\!&
+\left(\begin{array}{ccc|ccc}
+1 & 0 & 0 &0&\frac12&0\\
+0 & 1 & 1 &1 &0 &0\\ 
+0& 0 & 1   &0  &0 &1\\
+\end{array}  \right)
+\sim
+\left(\begin{array}{ccc|ccr}
+1 & 0 & 0 &0&\frac12&0\\
+0 & 1 & 0 &1 &0 &\!\!\!-1\\ 
+0& 0 & 1   &0  &0 &1\\
+\end{array}  \right)\, .
+\end{eqnarray*}
+\end{example}
+\noindent
+As we changed the left side from the matrix $M$ to the identity matrix, the right side changed from the identity matrix to the matrix which undoes $M$. 
+\begin{example} (Checking that \hypertarget{inversie}{one matrix undoes another})
+\begin{eqnarray*}
+\left(\begin{array}{rrr}
+0&\frac12&0\\
+1 &0 &\!\!\!-1\\ 
+0  &0 &1\\
+\end{array}  \right)
+\left(\begin{array}{ccc}
+0&1&1\\
+2 &0 &0\\ 
+0  &0 &1\\
+\end{array}  \right)
+=
+\left(\begin{array}{ccc}
+1  &0 &0\\
+0  &1 &0\\ 
+0  &0 &1\\
+\end{array}  \right) \, .
+\end{eqnarray*}
+If the matrices are composed in the opposite order, the result is the same.
+\begin{eqnarray*}
+\left(\begin{array}{ccc}
+0&1&1\\
+2 &0 &0\\ 
+0  &0 &1\\
+\end{array}  \right)
+\left(\begin{array}{ccr}
+0&\frac12&0\\
+1 &0 &\!\!\!-1\\ 
+0  &0 &1\\
+\end{array}  \right)
+=
+\left(\begin{array}{ccc}
+1  &0 &0\\
+0  &1 &0\\ 
+0  &0 &1\\
+\end{array}  \right) \, .
+\end{eqnarray*}
+\end{example}
+
+%\reading{3}{1}
+
+Whenever the product of two matrices $MN=I$, we say that  $N$ is the inverse\index{Inverse Matrix} of $M$ or $N=M^{-1}$. 
+Conversely $M$ is the inverse of $N$;~$M=N^{-1}$.\\
+
+
+
+In abstract generality, let $M$ be some matrix and, as always, let $I$ stand for the identity matrix. Imagine the process of performing elementary row operations to bring $M$ to the identity matrix: 
+\begin{equation*}
+(M | I) \sim ( E_1M| E_1)\sim (E_2E_1 M | E_2 E_1) \sim \cdots \sim (I | \cdots E_2E_1 )\, .
+\end{equation*}
+The ellipses ``$\cdots$'' stand for additional EROs. The result is a product of matrices that form a matrix which undoes $M$
+\begin{equation*}
+\cdots E_2 E_1 M =  I \, .
+\end{equation*}
+This is only true if the RREF of $M$ is the identity matrix.  \\
+
+\noindent {\bf Definition}: A matrix $M$ is {\bf invertible}\index{invertiblech3} if its RREF is an identity matrix.
+\begin{center}
+{\Large{\bf  How to find $M^{-1}$}}\\[5mm]
+ \shabox{$(M | I) \sim (I| M^{-1})$}
+\end{center}
+
+Much use is made of the fact that invertible matrices can be undone with EROs. 
+To begin with, since each  elementary row operation has an inverse, 
+$$
+M= E_1^{-1} E_2^{-1} \cdots\, ,
+$$
+while the inverse of $M$ is 
+\begin{equation*}
+M^{-1}=\cdots E_2 E_1 \, .
+\end{equation*}
+This is symbolically verified by
+\begin{equation*}
+M^{-1}M=\cdots E_2 E_1\, E_1^{-1} E_2^{-1} \cdots
+=\cdots E_2 \, E_2^{-1} \cdots = \cdots = I\, .
+\end{equation*}
+Thus, if $M$ is invertible, then  $M$  can be expressed as the product of EROs. (The same is true for its inverse.) This has the feel of the fundamental theorem of arithmetic (integers can be expressed as the product of primes) or the fundamental theorem of algebra (polynomials can be expressed as the product of [complex] first order polynomials); EROs are  building blocks of invertible matrices. 
+
+
+
+
+\subsection{The Three Elementary Matrices}
+
+%To use this in concrete examples, one uses the fact that i
+We now work toward concrete examples and applications. 
+It is surprisingly easy to translate between EROs and matrices that perform EROs.
+The matrices corresponding to these kinds are close in form to the identity matrix:
+\begin{itemize}
+\item Row Swap: Identity matrix with two rows swapped.
+\item Scalar Multiplication:  Identity matrix with one \hyperlink{diagmat}{diagonal entry} not 1.
+\item Row Sum: The identity matrix with one off-\hyperlink{diagmat}{diagonal entry} not 0.
+\end{itemize}
+
+
+\begin{example} (Correspondences between EROs and their matrices)
+\begin{itemize}
+\item The row swap matrix that swaps the 2nd and 4th row is the identity matrix with the 2nd and 4th row swapped: 
+$$
+\begin{pmatrix}
+1&0&0&0&0\\
+0&0&0&1&0\\
+0&0&1&0&0\\
+0&1&0&0&0\\
+0&0&0&0&1\\
+\end{pmatrix}\, .
+$$
+\item
+The scalar multiplication matrix that replaces the 3rd row with 7 times the 3rd row is the identity matrix with 7 in the 3rd row instead of 1:
+$$
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&7&0\\
+0&0&0&1\\
+\end{pmatrix}\, .
+$$
+
+\item The row sum matrix that replaces the 4th row with the 4th row plus 9 times the 2nd row is the identity matrix with a 9 in the  4th row, 2nd column:
+$$
+\begin{pmatrix}
+1&0&0&0&0&0&0\\
+0&1&0&0&0&0&0\\
+0&0&1&0&0&0&0\\
+0&9&0&1&0&0&0\\
+0&0&0&0&1&0&0\\
+0&0&0&0&0&1&0\\
+0&0&0&0&0&0&1\\
+\end{pmatrix}\, .
+$$
+\end{itemize}
+\end{example}
+
+We can write an explicit factorization of a matrix into EROs by keeping track of the EROs used in getting to RREF.
+
+\begin{example} (Express $M$ from  
+\hyperlink{undo a matrix}{Example~\ref{undo_a_matrix}} as a product of EROs)\\
+Note that in the previous example 
+one of each of the kinds of EROs is used, in the order just given.
+Elimination looked like 
+\begin{eqnarray*}
+M=
+\left(\begin{array}{ccc}
+0 & 1 & 1 \\ 
+2 & 0 & 0 \\\
+0& 0 & 1  
+\end{array}  \right)
+\stackrel{E_1}{\sim}
+\left(\begin{array}{ccc}
+2 & 0 & 0 \\
+0 & 1 & 1 \\ 
+0& 0 & 1  
+\end{array}  \right)
+\stackrel{E_2}{\sim}
+\left(\begin{array}{ccc}
+1 & 0 & 0 \\
+0 & 1 & 1 \\ 
+0& 0 & 1  
+\end{array}  \right)
+\stackrel{E_3}{\sim}
+\left(\begin{array}{ccc}
+1 & 0 & 0 \\
+0 & 1 & 0 \\ 
+0& 0 & 1  
+\end{array}  \right)
+=I\, ,
+\end{eqnarray*}
+where the EROs matrices are 
+\begin{eqnarray*}
+E_1
+= \left(\begin{array}{ccc}
+0  &1 &0\\
+1  &0 &0\\ 
+0  &0 &1\\
+\end{array}  \right)
+,~
+E_2
+= \left(\begin{array}{ccc}
+\frac12  &0 &0\\
+0  &1 &0\\ 
+0  &0 &1\\
+\end{array}  \right) , ~
+E_3
+= \left(\begin{array}{ccc}
+1  &0 &0\\
+0  &1 & -1\\ 
+0  &0 &1\\
+\end{array}  \right) \,.
+\end{eqnarray*}
+%Composing these gives (by matrix multiplication rules worked out in %\hyperref{}
+%\begin{eqnarray*}
+%E_3E_2E_1
+%&= &
+% \left(\begin{array}{ccc}
+%1  &0 &0\\
+%0  &1 & -1\\ 
+%0  &0 &1\\
+%\end{array}  \right)
+% \left(\begin{array}{ccc}
+%\frac12  &0 &0\\
+%0  &1 &0\\ 
+%0  &0 &1\\
+%\end{array}  \right)
+%\left(\begin{array}{ccc}
+%0  &1 &0\\
+%1  &0 &0\\ 
+%0  &0 &1\\
+%\end{array}  \right)
+%\\ %2nd line
+%&=& \left(\begin{array}{ccc}
+%1 &0 &0\\
+%0  &1 & -1\\ 
+%0  &0 &1\\
+%\end{array}  \right) 
+%\left(\begin{array}{ccc}
+%0  	&\frac12 	& 0\\ 
+%1  	&0	 	&0\\
+%0  	&0 		&1
+%\end{array}  \right) 
+%=%%%%%%%%%%%%%%%%
+%\left(\begin{array}{ccc}
+%0  	&\frac12 	& 0\\ 
+%1  	&0	 	&-1\\
+%0  	&0 		&1
+%\end{array}  \right) 
+% \, .
+%\end{eqnarray*}
+%We showed this was $M^{-1}$ \hyperlink{inversie}{earlier}. 
+The inverse of the ERO matrices (corresponding to the description of the reverse row maniplulations)
+\begin{eqnarray*}
+E_1^{-1}
+= \left(\begin{array}{ccc}
+0  &1 &0\\
+1  &0 &0\\ 
+0  &0 &1\\
+\end{array}  \right)
+,~
+E_2^{-1}
+= \left(\begin{array}{ccc}
+2  &0 &0\\
+0  &1 &0\\ 
+0  &0 &1\\
+\end{array}  \right) , ~
+E_3^{-1}
+= \left(\begin{array}{ccc}
+1  &0 &0\\
+0  &1 & 1\\ 
+0  &0 &1\\
+\end{array}  \right) \,.
+\end{eqnarray*}
+Multiplying these gives 
+\begin{eqnarray*}
+E_1^{-1}E_2^{-1}E_3^{-1}
+&=& 
+\left(\begin{array}{ccc}
+0  &1 &0\\
+1  &0 &0\\ 
+0  &0 &1\\
+\end{array}  \right)
+ \left(\begin{array}{ccc}
+2  &0 &0\\
+0  &1 &0\\ 
+0  &0 &1\\
+\end{array}  \right) 
+\left(\begin{array}{ccc}
+1  &0 &0\\
+0  &1 & 1\\ 
+0  &0 &1\\
+\end{array}  \right) 
+\\[2mm] %2nd line
+&=&
+\left(\begin{array}{ccc}
+0  &1 &0\\
+1  &0 &0\\ 
+0  &0 &1\\
+\end{array}  \right)
+ \left(\begin{array}{ccc}
+2  &0 &0\\
+0  &1 &1\\ 
+0  &0 &1\\
+\end{array}  \right) 
+= %%%%%%%
+\left(\begin{array}{ccc}
+ 0 &1 &1\\
+2  &0 &0\\ 
+0  &0 &1\\
+\end{array}  \right)  = M \, .
+\end{eqnarray*}
+\end{example}
+
+\subsection{$LU$, $LDU$, and $PLDU$ Factorizations}\label{LUtake1}
+The process of elimination can be stopped halfway to obtain decompositions frequently used in large computations in sciences and engineering. 
+The first half of the elimination process is to eliminate entries below the diagonal  
+leaving a matrix which is called {\it upper triangular}\index{Upper triangular matrix}. The elementary matrices which perform this part of the elimination are {\it lower triangular}\index{lower triangular}, as are their inverses. But putting together the upper triangular and lower triangular parts one obtains the so-called $LU$ factorization.
+
+
+\begin{example}\label{factorize} ($LU$ \hypertarget{elldeeeww}{ factorization})
+\begin{eqnarray*}
+M=
+\begin{pmatrix}
+2&0&-3&1\\
+0&1&2&2\\
+-4&0&9&2\\
+0&-1&1&-1\\
+\end{pmatrix}
+&\stackrel{E_1}{\sim}&
+\begin{pmatrix}
+2&0&-3&1\\
+0&1&2&2\\
+0&0&3&4\\
+0&-1&1&-1\\
+\end{pmatrix}
+\\[2mm]
+&\stackrel{E_2}{\sim}&
+~~\begin{pmatrix}
+2&0&-3&1\\
+0&1&2&2\\
+0&0&3&4\\
+0&0&3&1\\
+\end{pmatrix}
+~~\stackrel{E_3}{\sim}~
+\begin{pmatrix}
+2&0&-3&1\\
+0&1&2&2\\
+0&0&3&4\\
+0&0&0&-3\\
+\end{pmatrix}
+:=U\, ,
+\end{eqnarray*}
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+where the EROs and their inverses are 
+%%%%%%%%%%%%%%%
+\begin{eqnarray*}
+E_1=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+2&0&1&0\\
+0&0&0&1\\
+\end{pmatrix} \, ,~~~~
+E_2=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&1&0&1\\
+\end{pmatrix} \, ,~~
+E_3=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&0&-1&1\\
+\end{pmatrix} \, 
+\\[2mm] %%%%%%%%second line
+E_1^{-1}=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+-2&0&1&0\\
+0&0&0&1\\
+\end{pmatrix}  , \,
+E_2^{-1}=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&-1&0&1\\
+\end{pmatrix}  , \,
+E_3^{-1}=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&0&1&1\\
+\end{pmatrix} \, .
+\end{eqnarray*}
+Applying inverse elementary matrices to both sides of the equality  $U=E_3E_2E_1M$ gives 
+$M=E_1^{-1}E_2^{-1}E_3^{-1}U$ or 
+%\scalebox{.97}
+\begin{eqnarray*}
+ %oi vey
+\begin{pmatrix}
+2&0&\!\!-3&1\\
+0&1&2&2\\
+\!-4&0&9&2\\
+0&-1&1&\!\!-1\\
+\end{pmatrix}
+\!\!\!\!\!\!&=&\!\!\!\!\!\!
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+\!-2&0&1&0\\
+0&0&0&1\\
+\end{pmatrix} \!\!\!
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&\!\!\!-1&0&1\\
+\end{pmatrix}\!\!\!
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&0&1&1\\
+\end{pmatrix}\!\!\!
+\begin{pmatrix}
+2&0&\!\!\!-3&1\\
+0&1&2&2\\
+0&0&3&4\\
+0&0&0&\!\!-3\\
+\end{pmatrix}
+\\[2mm]
+&=&\!\!\!\!
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+\!-2&0&1&0\\
+0&0&0&1\\
+\end{pmatrix} 
+%%%%%%%%
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&\!\!-1&1&1\\
+\end{pmatrix}
+%%%%%%%%%%
+\begin{pmatrix}
+2&0&-3&1\\
+0&1&2&2\\
+0&0&3&4\\
+0&0&0&-3\\
+\end{pmatrix}
+\\[2mm]
+&=&\!\!\!\!
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+\!-2&0&1&0\\
+0&\!\!-1&1&1\\
+\end{pmatrix} 
+%
+\begin{pmatrix}
+2&0&\!\!-3&1\\
+0&1&2&2\\
+0&0&3&4\\
+0&0&0&\!\!-3\\
+\end{pmatrix} \, .
+\end{eqnarray*}
+%\end{scalebox}
+This is a lower triangular matrix times an upper triangular matrix. 
+\end{example}
+
+\newpage
+What if we stop at a different point in elimination? 
+We could multiply rows so that the entries in the diagonal are 1 next. Note that the EROs that do this are diagonal. This gives a slightly different factorization.
+\begin{example} \label{factorizes}($LDU$ factorization building from previous example)
+\begin{eqnarray*}
+M=
+\begin{pmatrix}
+2&0&-3&1\\
+0&1&2&2\\
+-4&0&9&2\\
+0&-1&1&-1\\
+\end{pmatrix}
+&\stackrel{E_3E_2E_1}{\sim}&
+\begin{pmatrix}
+2&0&-3&1\\
+0&1&2&2\\
+0&0&3&4\\
+0&0&0&-3\\
+\end{pmatrix}
+\stackrel{E_4}{\sim}
+\begin{pmatrix}
+1&0&-\frac{3}{2}&\frac{1}{2}\\
+0&1&2&2\\
+0&0&3&4\\
+0&0&0&-3\\
+\end{pmatrix}
+\\[2mm]
+&\stackrel{E_5}{\sim}&
+\begin{pmatrix}
+1&0&-\frac{3}{2}&\frac{1}{2}\\
+0&1&2&2\\
+0&0&1&\frac43\\
+0&0&0&-3\\
+\end{pmatrix}
+\stackrel{E_6}{\sim}
+\begin{pmatrix}
+1&0&-\frac{3}{2}&\frac{1}{2}\\
+0&1&2&2\\
+0&0&1&\frac43\\
+0&0&0&1\\
+\end{pmatrix}
+=:U
+\end{eqnarray*}
+The corresponding elementary matrices are
+\begin{equation*}
+\begin{aligned}
+%%%%%%%%the EROs
+E_4=
+\begin{pmatrix}
+\frac12&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&0&0&1\\
+\end{pmatrix} , \, ~~
+E_5=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&\frac13&0\\
+0&0&0&1\\
+\end{pmatrix} , \, ~~
+E_6=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&0&0&-\frac13\\
+\end{pmatrix} , \, 
+\\[3mm]
+%%%%%%%%the ERO inverses
+E_4^{-1}=
+\begin{pmatrix}
+2&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&0&0&1\\
+\end{pmatrix} , \, 
+E_5^{-1}=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&3&0\\
+0&0&0&1\\
+\end{pmatrix} , \, 
+E_6^{-1}=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+0&0&1&0\\
+0&0&0&-3\\
+\end{pmatrix} \, .
+\end{aligned}
+\end{equation*}
+The equation $U=E_6E_5E_4E_3E_2E_1 M$ can be rearranged as
+$$M=(E_1^{-1}E_2^{-1}E_3^{-1})(E_4^{-1}E_5^{-1}E_6^{-1})U.$$ 
+We calculated the product of the first three factors in the previous example; it was named $L$ there, and we will reuse that name here. The product of the next three factors is diagonal and we wil name it $D$. The last factor we named $U$ (the name means something different in this example than the last example.) The $LDU$ factorization of our matrix is
+\begin{eqnarray*}
+\begin{pmatrix}
+2&0&-3&1\\
+0&1&2&2\\
+-4&0&9&2\\
+0&-1&1&-1\\
+\end{pmatrix}
+=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+-2&0&1&0\\
+0&-1&1&1\\
+\end{pmatrix} 
+\begin{pmatrix}
+2&0&0&0\\
+0&1&0&0\\
+0&0&3&0\\
+0&0&0&-3\\
+\end{pmatrix} 
+\begin{pmatrix}
+1&0&\!\!-\frac{3}{2}&\frac{1}{2}\\
+0&1&2&2\\
+0&0&1&\frac43\\
+0&0&0&1\\
+\end{pmatrix}\, .
+\end{eqnarray*}
+\end{example}
+
+The $LDU$ factorization of a matrix is a factorization into blocks of EROs of a various types: $L$ is the product of the inverses of EROs which eliminate below the diagonal by row addition, $D$ the product of inverses of EROs which set the diagonal elements to 1 by row multiplication, and $U$ is the product of inverses of EROs which eliminate above the diagonal by row addition.
+
+\hypertarget{LDPU}{
+You} may notice that one of the three kinds of row operation is missing from this story. 
+Row exchange may  be necessary to obtain RREF. Indeed, 
+so far in this chapter we have been working under the tacit assumption that 
+$M$ can be brought to the identity by just row multiplication and row addition. 
+If row exchange is necessary, the resulting factorization is $LDPU$ where $P$ is the product of inverses of EROs that perform row exchange. 
+
+\begin{example} ($LDPU$ factorization, building from previous examples)
+\begin{eqnarray*}
+M=
+\begin{pmatrix}
+0&1&2&2\\
+2&0&-3&1\\
+-4&0&9&2\\
+0&-1&1&-1\\
+\end{pmatrix}
+\stackrel{P}{\sim}
+\begin{pmatrix}
+2&0&-3&1\\
+0&1&2&2\\
+-4&0&9&2\\
+0&-1&1&-1\\
+\end{pmatrix}
+\stackrel{E_6E_5E_4E_3E_2E_1}{\sim} L
+\end{eqnarray*}
+\begin{eqnarray*}
+P=
+\begin{pmatrix}
+0&1&0&0\\
+1&0&0&0\\
+0&0&1&0\\
+0&0&0&1\\
+\end{pmatrix}
+=P^{-1}
+\end{eqnarray*}
+\begin{eqnarray*}
+M=P(E_1^{-1}E_2^{-1}E_3^{-1})(E_4^{-1}E_5^{-1}E_6^{-1}) (E_7^{-1}) U=PLDU\\
+\end{eqnarray*}
+%%%%%%%last line!
+\begin{center}
+\scalebox{.91}{$
+\!\!\!\begin{pmatrix}
+0&1&2&2\\
+2&0&-3&1\\
+-4&0&9&2\\
+0&\!\!-1&1&\!\!-1\\
+\end{pmatrix}
+=
+\begin{pmatrix}
+1&0&0&0\\
+0&1&0&0\\
+-2&0&1&0\\
+0&\!\!-1&1&1\\
+\end{pmatrix} 
+\!\!\!
+\begin{pmatrix}
+2&0&0&0\\
+0&1&0&0\\
+0&0&3&0\\
+0&0&1&\!\!\!-3\\
+\end{pmatrix} 
+\!\!\!
+\begin{pmatrix}
+0&1&0&0\\
+1&0&0&0\\
+0&0&1&0\\
+0&0&0&1\\
+\end{pmatrix}
+\!\!\!
+\begin{pmatrix}
+1&0&\!\!-\frac{3}{2}&\frac{1}{2}\\
+0&1&2&2\\
+0&0&1&\frac43\\
+0&0&0&1\\
+\end{pmatrix}
+$}\end{center}
+
+\end{example}
+
+%\References{
+%Hefferon, Chapter One, Section 1.1 and 1.2
+%\\
+%Beezer, Chapter SLE, Section RREF
+%\\
+%Wikipedia, \href{http://en.wikipedia.org/wiki/Row_echelon_form}{Row Echelon Form}
+%\\
+%Wikipedia, \href{http://en.wikipedia.org/wiki/Elementary_matrix_transformations}{Elementary Matrix Operations}}
+
+
+\section{Review Problems}
+
+{\bf Webwork:} 
+\begin{tabular}{|l|l|}
+\hline
+Reading problems &
+\hwrref{SystemsOfLinearEquations}{3}\\
+Matrix notation &  \hwref{SystemsOfLinearEquations}{18}\\
+$LU$ &  \hwref{SystemsOfLinearEquations}{19}\\
+\hline
+\end{tabular}
+
+
+\input{\elemRowOpsPath/problems}
+
+%\input{\elemRowOpsPath/problems}
+
+
+
+
+%for book
+\section{\solutionSetsTitle}
+%for summer
+%\chapter{\solutionSetsTitle}
+
+
+Algebraic equations problems can have multiple solutions. For example $x(x-1)=0$ has  two solutions: $0$ and $1$. By contrast, equations of the form $Ax=b$ with $A$ a linear operator (with scalars the real numbers) have the following property:
+
+\vspace{3mm}
+\noindent
+If $A$ is a linear operator and $b$ is  known, then $Ax=b$ has either
+\begin{enumerate}
+\item One solution
+\item  No solutions
+\item Infinitely many solutions
+\end{enumerate}
+
+
+\subsection{The Geometry of Solution Sets: Hyperplanes}
+Consider the following algebra problems and their solutions.
+
+\begin{enumerate}
+\item $6x=12$ has one solution: $2$.
+\item[2a.] $0x=12$ has no solution.
+\item[2b.] $0x=0$ has infinitely many solutions; its solution set is $\mathbb{R}$.
+\end{enumerate}
+In each case the linear operator is a $1\times 1$ matrix. In the first case, the linear operator is invertible. 
+In the other two cases it is not. 
+In the first case, the solution set is a point on the number line, in  case 2b the solution set is the whole number line.
+
+Lets examine similar situations with larger matrices: $2\times 2$ matrices.
+\begin{enumerate}
+\item
+$\begin{pmatrix}
+6	&0 	\\
+0 	&2 	
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y 
+\end{pmatrix} 
+=
+\begin{pmatrix}
+12 \\ 
+6
+\end{pmatrix}$has  one solution: 
+$\begin{pmatrix}
+2 \\ 
+3
+\end{pmatrix}.$
+%\\linear operator is invertible
+
+\item[2a.] 
+$\begin{pmatrix}
+1	&3 	\\
+0 	&0 	
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y 
+\end{pmatrix} 
+=
+\begin{pmatrix}
+4 \\ 
+1 
+\end{pmatrix}$ has no solutions.
+%not in the range of the linear operator
+
+\item[2bi.]
+$\begin{pmatrix}
+1	&3 	\\
+0 	&0 	
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y 
+\end{pmatrix} 
+=
+\begin{pmatrix}
+4 \\ 
+0
+\end{pmatrix} $ has solution set 
+$\left \{ 
+\left(\begin{array}{c}
+4 \\ 
+0
+\end{array} \right)
++
+y\left(\begin{array}{c}
+-3 \\ 
+1
+\end{array} \right)
+: y\in \mathbb{R} \right\}.$
+
+\item[2bii.]
+$\begin{pmatrix}
+0	&0 	\\
+0 	&0 	
+\end{pmatrix} 
+\begin{pmatrix}
+ x \\ 
+y 
+\end{pmatrix} 
+=
+\begin{pmatrix}
+0 \\ 
+0
+\end{pmatrix} $
+has solution set 
+$\left \{ 
+\left(\begin{array}{c}
+x \\ 
+y
+\end{array} \right)
+: x, y\in \mathbb{R} \right\}.$
+\end{enumerate}
+Again, in the first case the linear operator is invertible while in the other cases it is not. When a $2\times 2$ matrix from a matrix equation is not invertible the solution set can be empty, a line in the plane, or the plane itself.
+
+
+For a system of equations with $r$ equations and $k$ veriables, one can have a number of different outcomes.  For example, consider the case of $r$ equations in three variables.  Each of these equations is the equation of a plane in three-dimensional space.  To find solutions to the system of equations, we look for the common intersection of the planes (if an intersection exists).  Here we have \hypertarget{FIVE}{five different possibilities}:
+
+\begin{enumerate}
+\item \textbf{Unique Solution.}  The planes have a unique point of intersection.
+
+\item[2a.] \textbf{No solutions.}  Some of the equations are contradictory, so no solutions exist.
+
+\item[2bi.] \textbf{Line.}  The planes intersect in a common line; any point on that line then gives a solution to the system of equations.
+
+\item[2bii.] \textbf{Plane.}  Perhaps you only had one equation to begin with, or else all of the equations coincide geometrically.  In this case, you have a plane of solutions, with two free parameters.
+
+\Videoscriptlink{solution_sets_for_systems_of_linear_equations_planes.mp4}{Planes}{solution_sets_for_systems_of_linear_equations_planes}
+
+\item[2biii.] \textbf{All of $\mathbb{R}^3$.}  If you start with no information, then any point in $\mathbb{R}^3$ is a solution.  There are three free parameters.
+\end{enumerate}
+
+In general, for systems of equations with $k$ unknowns, there are $k+2$ possible outcomes, corresponding to the possible numbers ({\it i.e.}, $0,1,2,\dots,k$) of free parameters in the solutions set, plus the possibility of no solutions.  These types of solution sets\index{Solution set} are hyperplanes\index{Hyperplane}, generalizations of planes that behave like planes in $\mathbb{R}^3$ in many ways.
+
+\Reading{SystemsOfLinearEquations}{4}
+%\begin{center}\href{\webworkurl ReadingHomework4/1/}{Reading homework: problem 4.1}\end{center}
+
+
+\Videoscriptlink{solution_sets_for_systems_of_linear_equations_overview.mp4}{Pictures and Explanation}{solution_sets_for_systems_of_linear_equations_overview}
+
+
+
+
+
+
+\subsection{\! Particular Solution \hspace{-.7mm}$+$\hspace{-.7mm} Homogeneous Solutions }
+
+Lets look at solution sets again, this time trying to get to their geometric shape.
+In the \hyperlink{standard approach}{standard approach}, variables corresponding to columns that do not contain a pivot (after going to reduced row echelon form) are \emph{free}.  It is the number of free variables that determines the geometry of the solution set. 
+%We called them non-pivot variables. 
+%They index elements of the solution set by acting as coefficients of vectors.
+%In this way the number of non-pivot columns determines (in part) the size of the solution set.  
+%We can denote them with dummy variables $\mu_1, \mu_2, \ldots$. 
+
+\begin{example}\label{npcd} (Non-pivot variables determine the gemometry of the solution set)
+$$\begin{pmatrix}
+1 &  0 & 1 & -1 \\ 
+ 0 & 1 & -1& 1  \\
+ 0 &0   & 0  & 0 \\
+\end{pmatrix}
+\colvec{x_1\\x_2\\x_3\\x_4} 
+=
+\colvec{1\\1\\0} 
+\Leftrightarrow
+\left\{
+\begin{array}{lcr}
+	1x_1 +0x_2+ 1x_3 - 1x_4 & = 1 \\
+	0x_1 +1x_2 - 1x_3 + 1x_4 & = 1 \\
+	0x_1 +0x_2 + 0x_3 + 0x_4 & = 0 
+\end{array}
+     \right.
+$$
+Following the standard approach, express the pivot variables in terms of the non-pivot variables and add ``empty equations". Here $x_3$ and $x_4$ are non-pivot variables.  
+\begin{eqnarray*}
+\left.
+\begin{array}{rcl}
+	x_1 & = &1 -x_3+x_4 \\
+	x_2 & = &1 +x_3-x_4 \\
+	x_3 & = &\phantom{1+~\,}x_3\\
+	x_4 & =&\phantom{1+x_3+~}x_4         
+\end{array}
+     \right\}
+     \Leftrightarrow
+\colvec{x_1\\x_2\\x_3\\x_4} 
+= \colvec{1\\1\\0\\0} + x_3\colvec{-1\\1\\1\\0} + x_4\colvec{1\\-1\\0\\1}
+\end{eqnarray*}
+The preferred way to write a solution set $S$ is with set notation\index{Solution set!set notation};  \[S = \left\{\colvec{x_1\\x_2\\x_3\\x_4} = \colvec{1\\1\\ 0\\0 } + \mu_1 \colvec{-1\\1\\1\\0 }  + \mu_2  \colvec{1\\-1\\ 0 \\1 } : \mu_1,\mu_2\in  {\mathbb R} \right\} .\]
+Notice that the first two components of the second two terms come from the non-pivot columns.
+Another way to write the solution set is
+\[S= \left\{  x^P  + \mu_1 x^H _1 + \mu_2 x^H _2   : \mu_1,\mu_2 \in  {\mathbb R}   \right\}\, , \]
+where 
+\[x^P = \colvec{1\\1\\0 \\0 }\, ,\quad x^H _1=\colvec{-1\\1\\1\\0 } \, ,\quad x^H _2= \colvec{1\\-1\\0 \\1 }\, .
+\]
+Here $x^P $ is a {\it particular solution} while $x^H _1$ and $x^H _2$ are called {\it homogeneous solutions}. The solution set forms a plane.
+\end{example}
+
+
+
+\subsection{Solutions and Linearity}
+%
+%\begin{definition}   A function $f$ is \emph{linear}\index{Linear!function} if 
+%for any vectors $X,Y$  in the domain of $f$, and any scalars $\alpha,\beta$ 
+%\[f(\alpha X + \beta Y) = \alpha f(X) + \beta f(Y) \,.\]
+%\end{definition}
+
+%
+%
+%\begin{example}
+%\hypertarget{solution_sets_for_systems_of_linear_equations_concrete_example}{Consider our example system above with} 
+%\[
+%M=    \begin{pmatrix}
+%      1  & 0  & 1 & -1  \\
+%       0  & 1 & -1 & 1  \\
+%        0 &0   & 0  & 0    \\
+%    \end{pmatrix} \, ,\quad
+%X= \colvec{x_1\\x_2\\x_3\\x_4} \mbox{ and } Y=\colvec{y_1\\y_2\\y^3 \\y^4 }\, ,
+%\]
+%and take for the function of vectors
+%$$
+%f(X)=MX\, .
+%$$
+%Now let us check the linearity property for $f$. 
+%The property needs to hold for {\it any} scalars $\alpha$ and $\beta$, so for simplicity
+%let us concentrate first on the case $\alpha=\beta=1$. This means that we need to
+%compare the following two calculations:
+%\begin{enumerate}
+%\item First add $X+Y$, then compute $f(X+Y)$.
+%\item First compute $f(X)$ and $f(Y)$, then compute the sum $f(X)+f(Y)$.
+%\end{enumerate}
+%The second computation is slightly easier:
+%$$
+%f(X) = MX 
+%    =\colvec{x_1+x_3-x_4\\x_2-x_3+x_4\\0}\mbox{ and }
+%f(Y) = MY   
+%    =\colvec{y_1+y_3-y_4\\y_2-y_3+y_4\\0}\, ,
+%$$
+%(using our result above). Adding these gives
+%$$
+%f(X)+f(Y)=\colvec{x_1+x_3-x_4+y_1+y_3-y_4\\[1mm]x_2-x_3+x_4+y_2-y_3+y_4\\[1mm]0}\, .
+%$$
+%Next we perform the first computation beginning with:
+%$$
+%X+Y=\colvec{x_1 + y_1\\x_2+y_2\\ x_3+y_3\\ x_4+y_4}\, ,
+%$$
+%from which we calculate
+%$$
+%f(X+Y)=\colvec{x_1+y_2+x_3+y_3-(x_4+y_4)\\[1mm] x_2+y_2-(x_3+y_3)+x_4+y_4\\[1mm]0}\, .
+%$$
+%Distributing the minus signs and remembering that the order of adding numbers like $x_1,x_2,\ldots$ 
+%does not matter, we see that the two computations give exactly the same answer.
+%
+%Of course, you should complain that we took a special choice of $\alpha$ and $\beta$.
+%Actually, to take care of this we only need to check that $f(\alpha X)=\alpha f(X)$.
+%It is your job to explain this in  \hyperref[linear]{Review Question~\ref*{linear}}
+%\end{example}
+%
+%\noindent
+%Later we will show that matrix multiplication is always linear.  Then we will know that:
+Motivated by example~\ref{npcd}, we say that the matrix equation $Mx=v$ has  solution set  $\{ x^P  + \mu_1 x^H _1 + \mu_2 x^H _2\,  |\,  \mu_1,\mu_2 \in {\mathbb R} \}$.
+\hyperlink{earlier}{Recall}  that matrices are linear operators.
+%\[M(\alpha X + \beta Y) = \alpha MX + \beta MY\]
+%
+%Then 
+%
+%the two equations 
+Thus 
+$$M( x^P  + \mu_1 x^H _1 + \mu_2 x^H _2)  = Mx^P  + \mu_1Mx^H _1 + \mu_2Mx^H _2 =v\, ,$$
+for \emph{any} $\mu_1, \mu_2 \in \mathbb{R}$. 
+Choosing $\mu_1=\mu_2=0$, we obtain 
+$$Mx^P =v\, .$$  
+This is why $x^P $ is an example of a  \emph{particular solution}\index{Particular solution!an example}.
+
+Setting $\mu_1=1, \mu_2=0$, and subtracting $Mx^P =v$ we obtain 
+$$Mx^H _1=0\, .$$ 
+Likewise, setting $\mu_1=0, \mu_2=1$, we obtain $$Mx^H _2=0\, .$$
+Here $x^H _1$ and $x^H _2$ are examples of what are called  \emph{homogeneous} solutions\index{Homogeneous solution!an example} to the system.
+They {\it do not} solve the original equation $Mx=v$, but instead its associated 
+{\it homogeneous  equation}\index{homogeneous equation} $M y =0$.
+
+We have just learnt a  fundamental lesson of linear algebra: the  solution set to $Ax=b$, where $A$ is a linear operator, consists of a particular solution plus homogeneous solutions.
+
+\begin{center}
+\shabox{ \{Solutions\} $=$ \{Particular solution $+$ Homogeneous solutions\} }
+\end{center}
+
+\begin{example}
+Consider the matrix equation of example~\ref{npcd}. It has  solution set
+\[S = \left\{\colvec{1\\1\\0 \\0 } + \mu_1 \colvec{-1\\1\\1\\0 } + \mu_2 \colvec{1\\-1\\ 0\\1 } \, :\,  \mu_1,\mu_2 \in \Re \right\} \, .\]
+Then $Mx^P =v$ says that 
+$\colvec{1\\1\\0 \\ 0}$ is a solution to the original matrix equation, which is certainly true, but this is not the only solution.\\
+
+$Mx^H _1=0$ says that $\colvec{-1\\1\\1\\ 0}$ is a solution to the homogeneous equation.
+
+\vspace{2mm}
+
+$Mx^H _2=0$ says that 
+$\colvec{1\\-1\\0 \\1}$ is a solution to the homogeneous equation.
+
+\vspace{2mm}
+
+\noindent
+Notice how adding any multiple of a homogeneous solution to the particular solution yields another particular solution.
+\end{example}
+
+
+\Reading{SystemsOfLinearEquations}{4}
+%\begin{center}\href{\webworkurl ReadingHomework4/1/}{Reading homework: problem 4.1}\end{center}
+%\reading{2}{5}
+
+
+%\begin{center}\href{\webworkurl ReadingHomework4/2/}{Reading homework: problem 4.2}\end{center}
+
+%\section*{References}
+%
+%Hefferon, Chapter One, Section I.2
+%\\
+%Beezer, Chapter SLE, Section TSS
+%\\
+%Wikipedia, \href{http://en.wikipedia.org/wiki/System_of_linear_equations}{Systems of Linear Equations}
+
+
+%\subsection{The size of solution sets vs size of homogeneous solution set}
+
+\section{Review Problems}
+
+{\bf Webwork:} 
+\begin{tabular}{|l|l|}
+\hline
+Reading problems &
+\hwrref{SystemsOfLinearEquations}{4},
+\hwrref{SystemsOfLinearEquations}{5}
+\\
+Solution sets&
+\hwref{SystemsOfLinearEquations}{20},
+\hwref{SystemsOfLinearEquations}{21},
+\hwref{SystemsOfLinearEquations}{22}\\
+Geometry of solutions&
+\hwref{SystemsOfLinearEquations}{23},
+\hwref{SystemsOfLinearEquations}{24},
+\hwref{SystemsOfLinearEquations}{25},
+\hwref{SystemsOfLinearEquations}{26}\\
+\hline
+\end{tabular}
+
+
+\input{\solutionSetsPath/problems}
+
+
+\newpage
+
+
