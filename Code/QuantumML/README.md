@@ -2,10 +2,10 @@
 
 
 ## ToDos
-- QPiA courses
+- QPiA certification courses
 - Udemy Course https://www.udemy.com/course/quantum-computers/learn/
-- Audit Coursera course https://www.coursera.org/specializations/quantum-computing-from-basics-to-the-cutting-edge
-- Reference papers, Letcure notes and books
+- Coursera course https://www.coursera.org/specializations/quantum-computing-from-basics-to-the-cutting-edge
+- Prep notes based on reference papers, Lecture notes and books
 - TensorFlow Quantum site tutorials https://www.tensorflow.org/quantum/overview
 - Fermatik category theory playlist and others https://www.youtube.com/c/Fematika/playlists
 - Sabine Physisists playlist https://www.youtube.com/playlist?list=PLwgQsqtH9H5djIfFhXE6We207beTgUnyL
