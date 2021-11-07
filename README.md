@@ -1,114 +1,12 @@
 # Teaching Data Science
 
-Repository for LaTeX course notes for Python, Machine Learning, Deep Learning, Natural Language Processing, etc. Core content is in the form for Beamer slides, which in turn can get compiled into presentation mode as well as two-column course notes mode.
+Repository for LaTeX course notes for Python, Machine Learning, Deep Learning, Natural Language Processing, etc. Core content is in the form for Beamer slides, which in turn can get compiled into presentation pdf as well as two-column course notes pdf.
 
-All tex sources and images have been open sourced as I have taken from others, learnt from others, although I have added some of mine, I need to give it back!! LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:6523000857385103360
+All tex sources and images have been open sourced as I have built them by referring to material from others, learnt from others, although I have added some of mine, I need to give it back!!
+
+LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:6523000857385103360
 
 Copyright (C) 2019 Yogesh H Kulkarni
-
-<!--
-## Rational
-- Global Recognition and getting opportunities and respect (Part II, 40+, chalk in hand)
-- For Giving back from classes to masses, dyan-eshwar. 
-- If any $: Donate to CoEP Alumni, Jagriti, Aai for causes (Experfy/INE already)
-- For better own understanding
--->
-<!-- 
-Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
-
-## Playbook (conduct lectures under TFUG Pune)
-Logistics:
-- Day/time: Saturdays Mornings, 9 to 10 am, else NO
-- Pre-Talk:
-    - Prep materials _seminar.tex and ipynb for 40 minutes talk and then QnA
-    - Create Google calendar event with Google Meet link
-    - Create Banner png from admin/template.ppt
-		- Create TFUG Pune Meetup event with Google Meet link and Banner png, good intro text
-    - Advertise the Meetup link: my LinkedIn, Company Teams, GDE WhatsApp groups
-    - Copy material pdf/ipynbs under github Talks/presentations folder
-		- No recording or YouTube streaming, content is open-sourced anyway
-- During Talk:
-<!-- 		- Simplify with Doodles (?, tablet)
-
-    - Take pictures or screenshots
-    - At the end of the talk, share links to my github page, yati.io, linkedin profile
-- Post-Talk:
-    - Fill GDE Advocu entry with picture taken
-    - Fill GDE New event survey link
-    - Share beamer pdf of the talk on meetup, post pictures there
-
-## Video Recordings
-- Using OBS: Open-source Free-ware
-	- Sources: Windows Capture
-	- Settings:
-		- Hot Keys: Alt + 10 to start recording, Alt + F11 to stop
-		- Output format : mkv, easier to mix, can be converted to mp4 by File->Remux
-		- Output gets stored in Videos folder
-- OpenShot to edit video, save to join
-- Handbrake to compress video
- -->
- 
-## Trainings/Talks
-
-### Seminar Topics (1-2 hours long)
-- Introduction to Artificial Intelligence (Non-technical)
-- Introduction to Artificial Intelligence and Machine Learning (Technical)
-
-- Introduction to Maths 4 AI: Calculus
-- Introduction to Maths 4 AI: Linear Algebra
-- Introduction to Maths 4 AI: Statistics
-
-- Introduction to Python (Technical)
-
-- Introduction to Data (Data Engineering, Tensorflow)
-- Introduction to Data Analytics (Data Processing with Pandas)
-
-- Introduction to Machine Learning (Technical)
-- Introduction to ANN (Artificial Neural Networks, Tensorflow)
-- Introduction to CNN (Convolutional Neural Networks, Tensorflow)
-- Introduction to RNN (Convolutional Neural Networks, Tensorflow)
-
-- Introduction to NLP (Natural Language Processing)
-- Introduction to Word Embedding (Word 2 Vec, Tensorflow)
-- Introduction to Deep NLP (Natural Language Processing with Neural Networks)
-- Introduction to Conversational AI (Chatbot)
-- Introduction to Text Mining (Topic Modeling, Custom NER)
-
-- Introduction to Explainable AI (Non-technical)
-- Decoding Gartner Hype Cycles for Emerging Technologies (Non-technical)
-- Deep Learning for Geometric Algorithms (Research)
-
-### Workshop Topics (2-5 days long if full-time)
-- Introduction to Python (Technical)
-- Introduction to Data Analytics (Data Processing with Pandas)
-
-- Introduction to Maths 4 AI
-
-- Introduction to Machine Learning (Technical)
-- Introduction to Deep Learning (Technical)
-
-- Introduction to NLP (Natural Language Processing)
-- Introduction to Deep NLP (Natural Language Processing with Neural Networks)
-
-- Introduction to Conversational AI (Chatbot)
-
-### Talks (An hour long)
-- Choose To Thinq: Mid-Career Transitions into ML-AI, with Yogesh Kulkarni https://www.youtube.com/watch?v=IQzWosVzkM4
-- ODSC 2019: Encoder-Decoder Neural Network for Computing Midcurve of Thin Polygon by Yogesh Kulkarni https://www.youtube.com/watch?v=ZY0nuykqgoE
-- AI Pillipinas: Introduction to RNN with TensorFlow https://www.youtube.com/watch?v=qFrdm_9fjJY
-
-### Online Courses (Paid)
-- Experfy: Introduction to Artificial Intelligence, Learn what exactly AI is, what are its different facets.
-https://www.experfy.com/training/courses/introduction-to-artificial-intelligence
-
-- Experfy: Unsupervised Learning: Dimensionality Reduction and Representation, Overcoming the Curse of Dimensionality
-https://www.experfy.com/training/courses/unsupervised-learning-dimensionality-reduction-and-representation
-
-- Experfy: Hands-on Project - Data Preparation, Modeling & Visualization
-https://www.experfy.com/training/courses/hands-on-project-data-preparation-modeling-visualization
-
-- INE: Introduction to Machine Learning 
-https://my.ine.com/DataScience/courses/2eaf6b98/introduction-to-machine-learning
 
 ## Steps for LaTex source files to pdfs
 
@@ -130,11 +28,6 @@ https://my.ine.com/DataScience/courses/2eaf6b98/introduction-to-machine-learning
 * LaTeX (tested with MikTex 2.9 on Windows 7, 64bit)
 * Need to install LaTeX packages, as and when you get such warning/suggestions.
 * Using TexWorks as IDE
-
-
-<!-- ## Data Science Course Series
-
-<img src="LaTeX/images/teaching_data_science_series.png"/> -->
 
 ### How to Run LaTeX:
 * Driver files for the courses are named with "Main_Workshop/Seminar_<course>_CheatSheet/Presentation.tex"
