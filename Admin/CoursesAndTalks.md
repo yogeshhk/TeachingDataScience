@@ -3,10 +3,18 @@
 तमसो मा ज्योतिर्गमय : From Dark (hidden in text data) to Light (insights)
 
 ## Rational
-- Global Recognition and getting opportunities and respect (Part II, 40+, chalk in hand)
-- For Giving back from classes to masses, dyan-eshwar. 
-- If any $: Donate [CoEP Alumni, Jagriti, Aai for causes]
-- For better own understanding
+- Being online gives unprecedented reach, scale and if not leveraged, missing a big potential (FOMO!!)
+- Can give global Recognition, easier getting future opportunities and respect (Part II, 40+, chalk in hand)
+- For Giving back, from classes to masses, neo dyan-eshwar. 
+- If any $: if in Job, Donate [CoEP Alumni, Jagriti, Aai for causes]
+- For better-own understanding, clarity
+- Can be an individual effort to start with a small team to expand
+- Create, not just Consume
+- Use cartoon-doodles for explanatory sketches (USP)
+- Pick niche topics (Rasa 3.0 to start), relevant later for consultancy
+- Build from home, for good passive income, sustainable forever
+- No external dependency, permission-less, infinite leverage, brand building, less risk
+- Platform: Udemy then Coursera, advt on linkedin or Rasa channel/community
 
 ## IKIGAI/Specific Knowledge^/Wow^^!!: 
 - World needs: huge sustainable-global need-demand for teaching
@@ -16,16 +24,6 @@
 
 ^Specific Knowledge: rare, un-trainable, only through apprenticeship 
 ^^Not looking for Success, but for Wonder
-
-
-## ToDos (Create, not just consume):
-- Upgrade Rasa tex with 3.0,using docs, vidoes, mds, notebooks
-- Add quizzs, exervices and more ML explanations
-- Learn OBS, make checklist, learn video recording-editing, setup studio
-- Use cartoon for explanatory sketches (USP)
-- Pick niche topics (Rasa 3.0 to start), later landing consultancy
-- Build from home for good passive income, sustainable forever
-- Platform: Udemy then Coursera, advt on linkedin or Rasa channel/community
 
 
 ## Talks Playbook
@@ -49,6 +47,18 @@ Logistics:
     - Share beamer pdf of the talk on meetup, post pictures there
 
 ## Courses Playbook
+- Establish the why of your project (how better than competition courses?)
+- Gather your current materials
+	- Notes, yours/others
+	- Current training materials
+	- Videos, Youtube links
+	- Ipynb Notebooks
+	- Images, digital artwork doodles/sketches
+- Distill your topic into an eLearning script, skeleton, topics with rough content/agenda
+- Define the visual look-and-feel of your project, just slides+voice over, with/without video
+- Assemble into one cohesive course, put it as unlisted youtube for storage + gdrive
+- Develop materials for your course
+- Audacity: Fantastic open-source, cross-platform recording and editing software
 - Using OBS: Open-source Free-ware
 	- Sources: Windows Capture
 	- Settings:
@@ -57,7 +67,6 @@ Logistics:
 		- Output gets stored in Videos folder
 - OpenShot to edit video, save to join
 - Handbrake to compress video
-
 
  
 ## Trainings/Talks
