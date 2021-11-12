@@ -47,6 +47,11 @@ Logistics:
     - Share beamer pdf of the talk on meetup, post pictures there
 
 ## Courses Playbook
+- Pick topic:
+	- a bit niche and not too broad, 
+	- theory or library or fast growing github repo ok. 
+	- from emerging tech (Gartner Hype Cycle). 
+	- Rasa 3.0 (ask on Slack) or Knowledge Graphs ok.
 - Establish the why of your project (how better than competition courses?)
 - Gather your current materials
 	- Notes, yours/others
