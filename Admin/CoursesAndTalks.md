@@ -1,7 +1,6 @@
 # Courses And Talks
 
-तमसो मा ज्योतिर्गमय : From Dark (hidden in text data) to Light (insights)
-
+<!-- 
 ## Rational
 - Being online gives unprecedented reach, scale and if not leveraged, missing a big potential (FOMO!!)
 - Can give global Recognition, easier getting future opportunities and respect (Part II, 40+, chalk in hand)
@@ -23,8 +22,9 @@
 - Paid for: good-simple explanations, passive service
 
 ^Specific Knowledge: rare, un-trainable, only through apprenticeship 
-^^Not looking for Success, but for Wonder
+^^Not looking for Success, but for Wonder 
 
+ -->
 
 ## Talks Playbook
 Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
@@ -51,7 +51,6 @@ Logistics:
 	- a bit niche and not too broad, 
 	- theory or library or fast growing github repo ok. 
 	- from emerging tech (Gartner Hype Cycle). 
-	- Rasa 3.0 (ask on Slack) or Knowledge Graphs ok.
 - Establish the why of your project (how better than competition courses?)
 - Gather your current materials
 	- Notes, yours/others
