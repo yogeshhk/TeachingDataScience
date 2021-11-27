@@ -1,5 +1,6 @@
 # Interview Prepration Resources
- By - Google recruiter
+
+By - Google recruiter
 
 [Coding Interview. ](https://www.youtube.com/watch?v=6ZZX9iIgFoo&amp;t=114s)
 
@@ -190,3 +191,30 @@ Google interviews focus very heavily on algorithms and data structures. You&#39;
  11.Practise Coding on TopCoder - Write clean, concise, well structured code efficiently, with good use of variables &amp; features. Always look to \*optimize\* your code!
  12.Go onto \*[pramp.com](http://pramp.com/) \&lt;[http://pramp.com/](http://pramp.com/)\&gt;\* and do a few mock interviews each week so you know how you are tracking.
  13. You can refer to  [http://interviewing.io/](http://interviewing.io/) as well - a web for anonymous mock interviews
+ 
+--------------------------------------------------------------------------------------
+
+Reference : [How to Prepare Yourself for an Interview with Google - MTU Guide](https://www.mtu.edu/career/students/networking/interviews/prepare.pdf)
+
+** Interview Tips **
+* It’s OK to question your interviewer.
+* When asked to provide a solution, first define and frame the problem as you see it.
+* If you don't understand - ask for help or clarification.
+* If you need to assume something - verbally check it’s a correct assumption!
+* Describe how you want to tackle solving each part of the question.
+* Always let your interviewer know what you are thinking as he/she will be as interested in your
+process of thought as your solution.
+Also, if you're stuck, they may provide hints if they know what you're doing.
+* Finally, listen - don't miss a hint if your interviewer is trying to assist you!
+
+** Domain Tips **
+- Algorithm Design / Analysis: big-O analysis, sorting and hashing, handling obscenely large amounts of data.
+- Sorting:  quicksort and merge sort
+- Hashtables: Dictionaries in Python
+- Trees: binary trees, n-ary trees, and trie-trees. BFS and DFS, and know the difference
+between inorder, postorder and preorder.
+- Graphs: Representation (objects and pointers, matrix, and adjacency list),  BFS DFS, Dijkstra, A*
+- Mathematics: Statistics, Probability
+- System Design: features sets, interfaces, class hierarchies, designing a system under certain
+constraints, simplicity and robustness, tradeoffs.
+- Open-Ended Discussion: biggest challenges faced, best/worst designs seen, performance analysis and optimization, testing, ideas for improving existing products.
