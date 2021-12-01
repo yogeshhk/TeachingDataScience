@@ -26,3 +26,5 @@
 ## Resources
 - [Pytorch3D](https://github.com/facebookresearch/pytorch3d)
 - ["Towards AI for 3D Content Creation" - Prof. Sanja Fidler, University of Toronto and NVIDIA](https://www.youtube.com/watch?v=lkkFcg9k9ho
+- [2D to 3D surface reconstruction from images and point clouds](https://www.youtube.com/playlist?list=PL3OV2Akk7XpDjlhJBDGav08bef_DvIdH2)
+- [CVSS 2019 - Computational Vision Summer School](https://www.youtube.com/playlist?list=PLeCNfJWZKqxsvidOlVLtWq9s7sIsX1QTC)
