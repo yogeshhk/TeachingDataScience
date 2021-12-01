@@ -24,6 +24,5 @@
 
 
 ## Resources
-- Pytorch3D: https://github.com/facebookresearch/pytorch3d
-- Machine/Deep Learning (like given a dataset, build ML/DL model and explain results, etc)
-	- TBD
+- [Pytorch3D](https://github.com/facebookresearch/pytorch3d)
+- ["Towards AI for 3D Content Creation" - Prof. Sanja Fidler, University of Toronto and NVIDIA](https://www.youtube.com/watch?v=lkkFcg9k9ho
