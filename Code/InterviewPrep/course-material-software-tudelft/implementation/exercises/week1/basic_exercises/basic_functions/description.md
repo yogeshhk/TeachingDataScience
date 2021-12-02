@@ -1,0 +1,2 @@
+In this assignment you are presented a couple of basic python exercises you have to implement. Make sure to read the 
+comments before each function to understand what it's supposed to do and if there are any further requirements.

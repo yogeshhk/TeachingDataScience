@@ -1,0 +1,68 @@
+\ProvidesPackage{pdfpcnotes}
+
+% Handling of kv parameters.
+% We have the following options, that all take time in the HH:MM format
+\RequirePackage{kvoptions}
+\SetupKeyvalOptions{
+  family=PDFPC,
+  prefix=PDFPC@
+}
+\DeclareStringOption{duration}
+\DeclareStringOption{starttime}
+\DeclareStringOption{endtime}
+\DeclareStringOption{lastminutes}
+
+\ProcessKeyvalOptions*
+
+% Small macro to make inserting options easier.
+\newcommand\PDFPC@option[2]{
+  \ifx#2\@empty\else
+    \immediate\write\pdfpcnotesfile{[#1]}%
+    \immediate\write\pdfpcnotesfile{#2}%
+  \fi
+}
+
+% create a new file handle
+\newwrite\pdfpcnotesfile
+
+% open file on \begin{document}
+\AtBeginDocument{%
+	\immediate\openout\pdfpcnotesfile\jobname.pdfpc\relax
+ \PDFPC@option{duration}{\PDFPC@duration}
+ \PDFPC@option{start_time}{\PDFPC@starttime}
+ \PDFPC@option{end_time}{\PDFPC@endtime}
+ \PDFPC@option{last_minutes}{\PDFPC@lastminutes}
+  \immediate\write\pdfpcnotesfile{[notes]}
+}
+% define a # http://tex.stackexchange.com/a/37757/10327
+\begingroup
+	\catcode`\#=12
+	\gdef\hashchar{#}%
+\endgroup
+
+
+\def\lastframenumber{0}
+
+% define command \pnote{} that works like note but
+% additionally writes notes to file in pdfpc readable format
+\newcommand{\pnote}[1]{%
+	% keep normal notes working
+	\note{#1}%
+
+	% if frame changed - write a new header
+	\ifdim\theframenumber pt>\lastframenumber pt
+		\let\lastframenumber\theframenumber
+		\begingroup
+			\let\#\hashchar
+			\immediate\write\pdfpcnotesfile{\#\#\# \theframenumber}%
+		\endgroup
+	\fi
+
+	% write note to file
+	\immediate\write\pdfpcnotesfile{\unexpanded{#1}}%
+}
+% close file on \begin{document}
+\AtEndDocument{%
+	\immediate\closeout\pdfpcnotesfile
+}
+

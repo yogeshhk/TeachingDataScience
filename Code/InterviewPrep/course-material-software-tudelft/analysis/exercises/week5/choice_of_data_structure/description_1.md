@@ -1,0 +1,3 @@
+Think about the browser you are currently using. It gives you the option to go back to the last page you visited or if you've done back go forward to the page you came from. 
+In order to do these task the browser needs to keep track of your history in some way that enables these quick transitions. 
+You are tired of the common known platforms and decided to implement one yourself. Which data structure would you use so that the user can go back and forth as efficiently as possible and why?

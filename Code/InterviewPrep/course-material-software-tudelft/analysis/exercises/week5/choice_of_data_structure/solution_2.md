@@ -1,0 +1,3 @@
+An example solution may look like this (Other answers are possible as well):
+Since we want to model the folder sub-folder relationship we need some sort of hierarchy. One efficient solution would be to use trees, as every folder could be contained in exactly one other folder, but have multiple sub-folders inside of it.
+Thus we can use an implementation of a tree that at every given time keeps track of the "parent" and all the "children" of a folder and can easily expand it with new ones.
