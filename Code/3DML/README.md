@@ -4,11 +4,23 @@
 - Big demand: AR/VR in many domains like manufacturing, health, architecture, media & entertainment.
 - Reality: Computer vision (2D) domain is well established but not 3D (many representations like, point cloud, mesh, implicit surface equations, voxels, primitives, etc)
 - Potential: Big push by Meta, Nvidia, Google, etc on Machine/Deep Learning on 3D data. Large number of research/commercial/individual opportunities. 
+- [Sample job profile at Facebook - Research Scientist, 3D Machine Learning (PhD)](https://www.linkedin.com/jobs/view/2817385473)
+- [Sample PhD position](https://polytechnicpositions.com/phd-positions-in-3d-machine-learning-3d-vision,i7150.html)
+
+## Topics
+- Differential rendering
+- 3D shape completion
+- 3D segmentation
+- Estimating depth from 2D
+- Eye-tracking ground-truth models.
+- 3D Computer Vision and Machine Learning.
+- 3D Semantic Scene Understanding
+
+Target Conferences such as NeurIPS, ICML, ICPR, CVPR, and journals such as JMLR, IEEE Trans., Neural Computation.
 
 ## Why me?
 - Over 2 decades of professional experience in 3D modeling software development along with Masters and Doctoral degrees.
 - Over half-a-decade of professional/teaching experience in Machine/Deep Learning.
-
 
 ## IKIGAI 
 - World needs: huge demand, unique combination of 3D+ML needed forever!!
