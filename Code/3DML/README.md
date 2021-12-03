@@ -18,6 +18,20 @@
 
 Target Conferences such as NeurIPS, ICML, ICPR, CVPR, and journals such as JMLR, IEEE Trans., Neural Computation.
 
+Libraries:
+- [Pytorch3D by Facebook](https://github.com/facebookresearch/pytorch3d)
+- [Kaolin by NVidia](https://github.com/NVIDIAGameWorks/kaolin)
+- [MeshCNN by Rana Hanocka](https://github.com/ranahanocka/MeshCNN)
+
+Courses:
+- [Lecture: 3D Scanning and Motion Capture](https://justusthies.github.io/posts/3D-Scanning-and-Motion-Capture-SS18/)
+- [CS231A: Computer Vision, From 3D Reconstruction to Recognition](https://web.stanford.edu/class/cs231a/)
+
+Researchers:
+- [Angela Dai](https://www.professoren.tum.de/en/dai-angela)
+- [Sanja Fidler](https://www.cs.utoronto.ca/~fidler/)
+- [Rana Hanocka](https://people.cs.uchicago.edu/~ranahanocka/)
+
 ## Why me?
 - Over 2 decades of professional experience in 3D modeling software development along with Masters and Doctoral degrees.
 - Over half-a-decade of professional/teaching experience in Machine/Deep Learning.
@@ -29,14 +43,18 @@ Target Conferences such as NeurIPS, ICML, ICPR, CVPR, and journals such as JMLR,
 - Paid for: FAANG, $$$, Own, global impact, conferences, global reach
 
 ## Specific Knowledge 
-	- rare, un-trainable, 
-	- only through apprenticeship/experience, 
-	- unique ability of domain expertise plus teaching/counseling, 
-	- be a reliable brand!! 
+- rare, un-trainable, 
+- only through apprenticeship/experience, 
+- unique ability of domain expertise plus teaching/counseling, 
+- be a reliable brand!! 
 
 
 ## Resources
-- [Pytorch3D](https://github.com/facebookresearch/pytorch3d)
-- ["Towards AI for 3D Content Creation" - Prof. Sanja Fidler, University of Toronto and NVIDIA](https://www.youtube.com/watch?v=lkkFcg9k9ho
+- Fundamental concepts [Artificial Intelligence for Geometry Processing (Rana Hanocka, Tel Aviv University)](https://www.youtube.com/watch?v=h8VRNYDrIAM)
+- Introductory [Learning 3D Reconstruction in Function Space](https://www.youtube.com/watch?v=kxKI8_Si2a0)
+- Implementation framework [Pytorch3D](https://github.com/facebookresearch/pytorch3d)
+- [Kaolin](https://github.com/NVIDIAGameWorks/kaolin): A Pytorch Library for Accelerating 3D Deep Learning Research
+- Amazing Scene generation ["Towards AI for 3D Content Creation" - Prof. Sanja Fidler, University of Toronto and NVIDIA](https://www.youtube.com/watch?v=lkkFcg9k9ho
 - [2D to 3D surface reconstruction from images and point clouds](https://www.youtube.com/playlist?list=PL3OV2Akk7XpDjlhJBDGav08bef_DvIdH2)
-- [CVSS 2019 - Computational Vision Summer School](https://www.youtube.com/playlist?list=PLeCNfJWZKqxsvidOlVLtWq9s7sIsX1QTC)
+- Deep research series [CVSS 2019 - Computational Vision Summer School](https://www.youtube.com/playlist?list=PLeCNfJWZKqxsvidOlVLtWq9s7sIsX1QTC)
+- Attention leveraged [TransformerFusion: Monocular RGB SceneReconstruction using Transformers](https://www.youtube.com/watch?v=LIpTKYfKSqw)
