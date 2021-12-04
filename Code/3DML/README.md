@@ -31,7 +31,10 @@ Researchers:
 - [Angela Dai](https://www.professoren.tum.de/en/dai-angela)
 - [Sanja Fidler](https://www.cs.utoronto.ca/~fidler/)
 - [Rana Hanocka](https://people.cs.uchicago.edu/~ranahanocka/)
+- [Andreas Geiger](http://www.cvlibs.net/)[Talks](http://www.cvlibs.net/talks.php)
 
+
+<!-- 
 ## Why me?
 - Over 2 decades of professional experience in 3D modeling software development along with Masters and Doctoral degrees.
 - Over half-a-decade of professional/teaching experience in Machine/Deep Learning.
@@ -48,7 +51,7 @@ Researchers:
 - unique ability of domain expertise plus teaching/counseling, 
 - be a reliable brand!! 
 
-
+ -->
 ## Resources
 - Fundamental concepts [Artificial Intelligence for Geometry Processing (Rana Hanocka, Tel Aviv University)](https://www.youtube.com/watch?v=h8VRNYDrIAM)
 - Introductory [Learning 3D Reconstruction in Function Space](https://www.youtube.com/watch?v=kxKI8_Si2a0)
