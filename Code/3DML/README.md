@@ -2,9 +2,10 @@
 
 *Activity Recognition & Reconstruction* (ARR) : Taking 2D images or video, finding skeleton, and constructing corresponding 3D mesh models
 
-## ToDos
+## ToDos (2022)
 - TFUG: Prep tutorial on Activity Recognition from images/videos using Pytorch
 - CVPR: Leverage Variational Auto Encoders and build another MidcurveNN method
+- Implement 3DPoselite, Yoga poses validation app, etc and demonstrate
 - NO Scene generation but "stick" to Skeleton generation as its close to Midcurve
 
 ## Rational
@@ -52,7 +53,14 @@ Researchers:
 - [Rana Hanocka](https://people.cs.uchicago.edu/~ranahanocka/)
 - [Andreas Geiger](http://www.cvlibs.net/)[Talks](http://www.cvlibs.net/talks.php)
 
-
+Projects:
+- TCS Research
+	- [3DPoseLite](https://openaccess.thecvf.com/content/WACV2021/html/Dani_3DPoseLite_A_Compact_3D_Pose_Estimation_Using_Node_Embeddings_WACV_2021_paper.html) [video](https://www.youtube.com/watch?v=aPlHyxF7I1k)
+- IIITH
+	- [Quo Vadis, Skeleton Action Recognition ?](http://cvit.iiit.ac.in/research/projects/cvit-projects/quo-vadis-skeleton-action-recognition) 
+	- [Zero Shot](http://cvit.iiit.ac.in/research/projects/cvit-projects/syntactically-guided-generative-embeddings-for-zero-shot-skeleton-action-recognition)
+- CVPR
+	- [SkeletonOnCVPR19](http://ubee.enseeiht.fr/skelneton/)
 <!-- 
 ## Why me?
 - Over 2 decades of professional experience in 3D modeling software development along with Masters and Doctoral degrees.
