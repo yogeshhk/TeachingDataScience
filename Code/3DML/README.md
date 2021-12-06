@@ -1,4 +1,11 @@
-# 3D Machine/Deep Learning
+# 3D Machine/Deep Learning for Augmented/Virtual Reality
+
+*Activity Recognition & Reconstruction* (ARR) : Taking 2D images or video, finding skeleton, and constructing corresponding 3D mesh models
+
+## ToDos
+- TFUG: Prep tutorial on Activity Recognition from images/videos using Pytorch
+- CVPR: Leverage Variational Auto Encoders and build another MidcurveNN method
+- NO Scene generation but "stick" to Skeleton generation as its close to Midcurve
 
 ## Rational
 - Big demand: AR/VR in many domains like manufacturing, health, architecture, media & entertainment.
@@ -7,7 +14,7 @@
 - [Sample job profile at Facebook - Research Scientist, 3D Machine Learning (PhD)](https://www.linkedin.com/jobs/view/2817385473)
 - [Sample PhD position](https://polytechnicpositions.com/phd-positions-in-3d-machine-learning-3d-vision,i7150.html)
 
-## Topics
+## General sub-topics under AR/VR
 - Differential rendering
 - 3D shape completion
 - 3D segmentation
@@ -15,6 +22,17 @@
 - Eye-tracking ground-truth models.
 - 3D Computer Vision and Machine Learning.
 - 3D Semantic Scene Understanding
+- *Pose Estimation/Activity Recognition*, Skeletonization | stick figures, image-to-skeleton, skeleton-to-3dMesh
+- People/Object classification/detection/reidentification
+- Single/multi-camera subject/object tracking and association
+- Human attributes (gender, age, etc.) pose estimation and gesture recognition
+- Activity classification/detection/recognition
+- Liveness detection/anti-spoofing
+= Feature extraction and matching; face detection/verification/recognition
+- Image and video synthesis, 3D modeling and reconstruction,
+- Image denoising and quality improvements
+- Head, Hand and Body Pose Tracking, 
+- SLAM (Simultaneous localization and mapping)
 
 Target Conferences such as NeurIPS, ICML, ICPR, CVPR, and journals such as JMLR, IEEE Trans., Neural Computation.
 
@@ -22,6 +40,7 @@ Libraries:
 - [Pytorch3D by Facebook](https://github.com/facebookresearch/pytorch3d)
 - [Kaolin by NVidia](https://github.com/NVIDIAGameWorks/kaolin)
 - [MeshCNN by Rana Hanocka](https://github.com/ranahanocka/MeshCNN)
+- [Open Pose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) Python code, C++ implementation and Unity Plugin. 
 
 Courses:
 - [Lecture: 3D Scanning and Motion Capture](https://justusthies.github.io/posts/3D-Scanning-and-Motion-Capture-SS18/)
@@ -59,5 +78,5 @@ Researchers:
 - [Kaolin](https://github.com/NVIDIAGameWorks/kaolin): A Pytorch Library for Accelerating 3D Deep Learning Research
 - Amazing Scene generation ["Towards AI for 3D Content Creation" - Prof. Sanja Fidler, University of Toronto and NVIDIA](https://www.youtube.com/watch?v=lkkFcg9k9ho
 - [2D to 3D surface reconstruction from images and point clouds](https://www.youtube.com/playlist?list=PL3OV2Akk7XpDjlhJBDGav08bef_DvIdH2)
-- Deep research series [CVSS 2019 - Computational Vision Summer School](https://www.youtube.com/playlist?list=PLeCNfJWZKqxsvidOlVLtWq9s7sIsX1QTC)
-- Attention leveraged [TransformerFusion: Monocular RGB SceneReconstruction using Transformers](https://www.youtube.com/watch?v=LIpTKYfKSqw)
+- Detailed research series [CVSS 2019 - Computational Vision Summer School](https://www.youtube.com/playlist?list=PLeCNfJWZKqxsvidOlVLtWq9s7sIsX1QTC)
+- Attention leverage [TransformerFusion: Monocular RGB SceneReconstruction using Transformers](https://www.youtube.com/watch?v=LIpTKYfKSqw)
