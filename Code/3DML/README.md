@@ -1,12 +1,15 @@
 # 3D Machine/Deep Learning for Augmented/Virtual Reality
 
-*Activity Recognition & Reconstruction* (ARR) : Taking 2D images or video, finding skeleton, and constructing corresponding 3D mesh models
+*Activity Recognition & Reconstruction* (ARR) : 
+- Recognition: 3D Skeleton extraction from images/videos ie 3D pose estimation
+- Reconstruction: Taking 3D skeletons, building next action predictions, and constructing corresponding 3D mesh models.
+
+NO Scene generation but "stick" to Skeleton generation as its close to Midcurve, within AR/VR domain.
+
 
 ## ToDos (2022)
 - TFUG: Prep tutorial on Activity Recognition from images/videos using Pytorch
-- CVPR: Leverage Variational Auto Encoders and build another MidcurveNN method
-- Implement 3DPoselite, Yoga poses validation app, etc and demonstrate
-- NO Scene generation but "stick" to Skeleton generation as its close to Midcurve
+- Implement 3DPoselite or likes, Yoga poses validation app, etc and demonstrate, CVPR Paper?
 
 ## Rational
 - Big demand: AR/VR in many domains like manufacturing, health, architecture, media & entertainment.
@@ -24,7 +27,7 @@
 - 3D Computer Vision and Machine Learning.
 - 3D Semantic Scene Understanding
 - *Pose Estimation/Activity Recognition*, Skeletonization | stick figures, image-to-skeleton, skeleton-to-3dMesh
-- People/Object classification/detection/reidentification
+- People/Object classification/detection/re-identification
 - Single/multi-camera subject/object tracking and association
 - Human attributes (gender, age, etc.) pose estimation and gesture recognition
 - Activity classification/detection/recognition
