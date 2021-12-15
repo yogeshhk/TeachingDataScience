@@ -8,7 +8,7 @@ LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:652300085738
 
 Copyright (C) 2019 Yogesh H Kulkarni
 
-## Steps for LaTex source files to pdfs
+## Steps for LaTeX source files to pdfs
 
 ### Code Arrangement
 *	LaTeX directory 
