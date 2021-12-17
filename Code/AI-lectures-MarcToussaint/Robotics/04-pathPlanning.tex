@@ -1,0 +1,1079 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\topic}{Path Planning}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Path finding examples}
+\slide{Path finding examples}{
+
+~
+
+\mov{\show[.3]{alphaPuzzle}\qquad}{10-RoboticsLecture/alphaPuzzle.mpg}
+
+~
+
+\hfill{Alpha-Puzzle, solved with James Kuffner's RRTs}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Path finding examples}{
+
+~
+
+\show[.7]{footsteps}
+
+~
+
+J. Kuffner, K. Nishiwaki, S. Kagami, M. Inaba, and H. Inoue. Footstep
+Planning Among Obstacles for Biped Robots. Proc. IEEE/RSJ
+Int. Conf. on Intelligent Robots and Systems (IROS), 2001.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Path finding examples}{
+
+~
+
+\show{climbing}
+
+~
+
+T. Bretl. Motion Planning of Multi-Limbed Robots Subject to
+Equilibrium Constraints: The Free-Climbing Robot
+Problem. International Journal of Robotics Research, 25(4):317-342,
+Apr 2006.  
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Path finding examples}{
+
+~
+
+\show[.4]{kinodynamic-planning}
+
+~
+
+S. M. LaValle and J. J. Kuffner. Randomized
+Kinodynamic Planning. International Journal of Robotics Research,
+20(5):378--400, May 2001.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Feedback control vs path finding vs trajectory optimization}
+\slide{Feedback control, path finding, trajectory optim.}{
+
+\show[.7]{planning}
+
+~
+
+\item Feedback Control: \quad E.g.,~ $q_{t\po} = q_t + J^\sharp (y^* - \phi(q_t))$
+
+\item Trajectory Optimization: \quad $\argmin_{q_{0:T}} f(q_{0:T})$
+
+\item Path Finding:~ Find some $q_{0:T}$ with only valid
+configurations
+
+%% \item word ``planning'' is ambigous
+
+%% -- ``motion planning'' in Robotics often refers to path finding
+
+%% -- ``planning'' in MDPs often means computing optimal policies
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Control, path finding, trajectory optimization}{
+
+%% \item Combining methods:%
+
+%% 1) Path Finding
+%% \anchor{90,-60}{\showh[.45]{planning}}
+
+%% 2) Trajectory Optimization (``smoothing'')
+
+%% 3) Feedback Control
+
+%% ~
+
+%% ~
+
+%% ~%\mypause
+
+%% \item Many problems can be solved with only feedback control (though not optimally)
+
+%% \item Many more problems can be solved \emph{locally} optimal with
+%%   only trajectory optimization
+
+%% \item Tricky problems need path finding: \emph{global} search for valid paths
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Outline}{
+
+\item \textbf{Really briefly:} Heuristics \& Discretization (slides from Howie CHoset's CMU lectures)
+\begin{items}
+\item Bugs algorithm
+
+\item Potentials to guide feedback control
+
+\item Dijkstra
+\end{items}
+
+~
+
+\item \textbf{Sample-based Path Finding}
+\begin{items}
+\item Probabilistic Roadmaps
+
+\item Rapidly Exploring Random Trees
+\end{items}
+
+~
+
+\item \textbf{Non-holonomic systems}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Background}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Bug algorithms}
+\slide{}{
+\hspace*{-5mm}\includegraphics[page=6,width=1.\columnwidth]{choset/02-bugs.pdf}
+}
+\slide{}{
+\hspace*{-5mm}\includegraphics[page=7,width=1.\columnwidth]{choset/02-bugs.pdf}
+}
+\slide{}{
+\hspace*{-5mm}\includegraphics[page=8,width=1.\columnwidth]{choset/02-bugs.pdf}
+}
+\slide{}{
+\hspace*{-5mm}\includegraphics[page=9,width=1.\columnwidth]{choset/02-bugs.pdf}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\includepdf[pages=-,pagecommand={\incpage}]{choset/03-boundaries.pdf}
+
+\slide{BUG algorithms -- conclusions}{
+
+\item Other variants: TangentBug, VisBug, RoverBug, WedgeBug, \dots
+
+\item only 2D! ~ (TangentBug has extension to 3D)
+
+\item Guaranteed convergence
+
+\item Still active research:
+
+K. Taylor and S.M. LaValle: \emph{
+I-Bug: An Intensity-Based Bug Algorithm}
+
+~
+
+~
+
+\item[$\To$] Useful for minimalistic, robust 2D goal reaching
+
+-- not useful for finding paths in joint space
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Potential fields}
+\slide{}{
+\hspace*{-5mm}\includegraphics[page=1,width=1.\columnwidth]{choset/04-potentials.pdf}
+}
+\slide{}{
+\hspace*{-5mm}\includegraphics[page=1,width=1.\columnwidth]{choset/05-potentials.pdf}
+}
+
+\slide{}{
+\hspace*{-5mm}\includegraphics[page=2,width=1.\columnwidth]{choset/05-potentials.pdf}
+}
+
+\slide{}{
+\hspace*{-5mm}\includegraphics[page=3,width=1.\columnwidth]{choset/05-potentials.pdf}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Potential fields -- conclusions}{
+
+\item Very simple, therefore popular
+
+\item In our framework: Combining a goal (endeffector) task variable,
+with a constraint (collision avoidance) task variable; then using
+inv.\ kinematics is \emph{exactly} the same as ``Potential Fields''
+
+~
+
+\item[$\To$] Does not solve locality problem of feedback control.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Dijkstra}
+%\includepdf[pages=-,pagecommand={\incpage}]{choset/06-waveFront.pdf}
+%includepdf[pages=1-8,pagecommand={\incpage}]{choset/07-waveFront.pdf}
+\slide{}{
+\hspace*{-5mm}\includegraphics[page=3,width=1.\columnwidth]{choset/07-waveFront.pdf}
+}\slide{}{
+\hspace*{-5mm}\includegraphics[page=2,width=1.\columnwidth]{choset/07-waveFront.pdf}
+}\slide{}{
+\hspace*{-5mm}\includegraphics[page=3,width=1.\columnwidth]{choset/07-waveFront.pdf}
+}\slide{}{
+\hspace*{-5mm}\includegraphics[page=4,width=1.\columnwidth]{choset/07-waveFront.pdf}
+}\slide{}{
+\hspace*{-5mm}\includegraphics[page=5,width=1.\columnwidth]{choset/07-waveFront.pdf}
+}\slide{}{
+\hspace*{-5mm}\includegraphics[page=6,width=1.\columnwidth]{choset/07-waveFront.pdf}
+}\slide{}{
+\hspace*{-5mm}\includegraphics[page=7,width=1.\columnwidth]{choset/07-waveFront.pdf}
+}\slide{}{
+\hspace*{-5mm}\includegraphics[page=8,width=1.\columnwidth]{choset/07-waveFront.pdf}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Dijkstra Algorithm}{
+
+\item Is efficient in \textbf{discrete domains}
+\begin{items}
+\item Given start and goal node in an arbitrary graph
+
+\item Incrementally label nodes with their distance-from-start
+\end{items}
+~
+
+\item Produces optimal (shortest) paths
+
+~
+
+\item Applying this to continuous domains requires discretization
+\begin{items}
+\item Grid-like discretization in high-dimensions is daunting! \emph{(curse of dimensionality)}
+
+\item What are other ways to ``discretize'' space more efficiently?
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Sample-based Path Finding}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Probabilistic Road Maps (PRMs)}
+\slide{Probabilistic Road Maps}{
+
+\show{prm-1}
+
+\hfill [Kavraki, Svetska, Latombe,Overmars, 95]
+
+~\mypause
+
+$q \in \RRR^n$ describes configuration
+
+$\qfree$ is the set of configurations without collision
+
+~
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Probabilistic Road Maps}{
+
+\show{prm-1}
+
+\hfill [Kavraki, Svetska, Latombe,Overmars, 95]
+
+Probabilistic Road Map
+
+\item generates a graph $G=(V,E)$ of configurations
+\begin{items}
+\item such that configurations along each edges are $\in\qfree$
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Probabilistic Road Maps}{
+
+\show{prm-2}
+
+~
+
+Given the graph, use (e.g.) Dijkstra to find path from
+$q_{\text{start}}$ to $q_{\text{goal}}$.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Probabilistic Road Maps -- generation}{
+
+\begin{algo}
+\Require number $n$ of samples, number $k$ number of nearest
+neighbors
+\Ensure PRM $G=(V,E)$
+\State initialize $V=\emptyset$, $E=\emptyset$
+\While{$|V|<n$} \Comment{find $n$ collision free points $q_i$}
+\State $q \gets$ {\color{red}random sample from $Q$}
+\State \textbf{if} $q \in \qfree$ \textbf{then} $V\gets V \cup \{q\}$
+\EndWhile
+\ForAll{$q\in V$} \Comment{check if near points can be connected}
+\State $N_q \gets k$ nearest neighbors of $q$ in $V$
+\ForAll{$q'\in N_q$}
+\State \textbf{if} {\color{red}path$(q,q') \in \qfree$} \textbf{then}  $E\gets E \cup \{(q,q')\}$
+\EndFor
+\EndFor
+\end{algo}
+
+~
+
+where path$(q,q')$ is a local planner ~ (easiest: straight line)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Planning/testing local connections}
+\slide{Local Planner}{
+
+\show{prm-testing}
+
+~
+
+tests collisions up to a specified resolution $\d$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Problem: Narrow Passages}{
+
+~
+
+\show{prm-passage}
+
+~
+
+The smaller the gap (clearance $\r$) the more unlikely to sample such
+points.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Probabilistic completeness of PRMs}
+\slide{PRM theory}{
+
+(for uniform sampling in $d$-dim space)
+
+\item Let $a,b \in \qfree$ and $\g$ a path in $\qfree$ connecting $a$
+and $b$.
+
+~
+
+Then the probability that $PRM$ found the path after $n$ samples is
+\begin{align*}
+P(\text{PRM-success}\| n)
+ &\ge 1 - \frac{2|\g|}{\r}~ e^{-\s \r^d n}
+\end{align*}
+
+$\s = \frac{|B_1|}{2^d |\qfree|}$
+
+$\r =$ clearance of $\g$ ~ (distance to obstacles)
+
+(roughly: the exponential term are ``volume ratios'')
+
+~
+
+\item This result is called \emph{probabilistic complete} (one can
+achieve any probability with high enough $n$)
+
+\item For a given success probability, $n$ needs to be exponential
+in $d$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Other PRM sampling strategies}
+\slide{Other PRM sampling strategies}{
+
+~
+
+\cen{
+\showh[.3]{prm-sampling1}
+\showh[.3]{prm-sampling2}
+\showh[.3]{prm-sampling3}
+}
+\hfill{\tiny illustration from O. Brock's lecture}
+
+~
+
+{\helvetica{8}{1.2}{m}{n}
+Gaussian: $q_1\sim \UU$; $q_2 \sim \NN(q_1,\s)$; if $q_1\in\qfree$
+and $q_2 \not \in \qfree$, add $q_1$ (or vice versa).
+
+Bridge: $q_1\sim \UU$; $q_2 \sim \NN(q_1,\s)$; $q_3 = (q_1+q_2)/2$; if
+$q_1,q_2 \not\in\qfree$ and $q_3 \in \qfree$, add $q_3$.
+}
+
+\mypause
+
+\item Sampling strategy can be made more intelligence: ``utility-based sampling''
+
+\item Connection sampling
+
+(once earlier sampling has produced connected components)
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Probabilistic Roadmaps -- conclusions}{
+
+\item Pros:
+\begin{items}
+\item Algorithmically very simple
+
+\item Highly explorative
+
+\item Allows probabilistic performance guarantees
+
+\item Good to answer many queries in an \emph{unchanged}
+   environment
+\end{items}
+
+~
+
+\item Cons:
+\begin{items}
+\item Precomputation of exhaustive roadmap takes a long time
+
+(but not necessary for ``Lazy PRMs'')
+\end{items}
+
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Rapidly Exploring Random Trees}{
+
+2 motivations:
+
+~
+
+\item Single Query path finding: Focus computational efforts on paths for specific $(q_{\text{start}},q_{\text{goal}})$
+
+~
+
+\item Use actually controllable DoFs to incrementally explore the
+search space: \emph{control-based} path finding.
+
+~
+
+(Ensures that RRTs can be extended to handling differential constraints.)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\center
+
+\only<1>{\show[.5]{rrt1}}
+\only<2>{\show[.5]{rrt2}}
+\only<3>{\show[.5]{rrt3}}
+\only<4>{\show[.5]{rrt4}}
+\only<5>{\show[.5]{rrt5}}
+\only<6>{\show[.5]{rrt6}}
+
+~
+
+\only<1>{$n=1$}
+\only<2>{$n=100$}
+\only<3>{$n=300$}
+\only<4>{$n=600$}
+\only<5>{$n=1000$}
+\only<6>{$n=2000$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Rapidly Exploring Random Trees (RRTs)}
+\slide{Rapidly Exploring Random Trees}{
+
+~
+
+Simplest RRT with straight line local planner and step size
+$\a$
+
+~
+
+\begin{algo}
+\Require $q_{\text{start}}$, number $n$ of nodes, stepsize $\a$
+\Ensure tree $T=(V,E)$
+\State initialize $V=\{q_{\text{start}}\}$, $E=\emptyset$ 
+\For{$i=0:n$}
+\State $q_\target\gets$ random sample from $Q$
+\State $q_\near\gets$ nearest neighbor of $q_\target$ in $V$
+\State $q_\new\gets q_\near + \frac{\a}{|q_\target-q_\near|}(q_\target-q_\near)$
+\State \textbf{if} $q_\new \in \qfree$ \textbf{then} $V\gets V \cup \{q_\new\}$,  $E\gets E \cup \{(q_\near,q_\new)\}$
+\EndFor
+\end{algo}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Goal-oriented RRT}
+\slide{Rapidly Exploring Random Trees}{
+
+~
+
+RRT growing directedly towards the goal
+
+~
+
+\begin{algo}
+\Require $q_{\text{start}}$, {\color{red}$q_{\text{goal}}$}, number $n$ of nodes, stepsize $\a$, {\color{red}$\b$}
+\Ensure tree $T=(V,E)$
+\State initialize $V=\{q_{\text{start}}\}$, $E=\emptyset$ 
+\For{$i=0:n$}
+\State {\color{red}\textbf{if} rand$(0,1)<\b$ \textbf{then} $q_\target\gets
+q_{\text{goal}}$}
+\State \textbf{else} $q_\target\gets$ random sample from $Q$
+\State $q_\near\gets$ nearest neighbor of $q_\target$ in $V$
+\State $q_\new\gets q_\near + \frac{\a}{|q_\target-q_\near|}(q_\target-q_\near)$
+\State \textbf{if} $q_\new \in \qfree$ \textbf{then} $V\gets V \cup \{q_\new\}$,  $E\gets E \cup \{(q_\near,q_\new)\}$
+\EndFor
+\end{algo}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\center
+
+\only<1>{\show[.5]{rrt1}}
+\only<2>{\show[.5]{rrt7}}
+\only<3>{\show[.5]{rrt8}}
+\only<4>{\show[.5]{rrt9}}
+\only<5>{\show[.5]{rrt10}}
+\only<6>{\show[.5]{rrt11}}
+
+~
+
+\only<1>{$n=1$}
+\only<2>{$n=100$}
+\only<3>{$n=200$}
+\only<4>{$n=300$}
+\only<5>{$n=400$}
+\only<6>{$n=500$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Bi-directional RRT}
+\slide{Bi-directional search}{
+
+\item grow two trees starting from $q_{\text{start}}$ and
+$q_{\text{goal}}$
+
+~
+
+\show[.4]{rrt12}
+
+~
+
+let one tree grow towards the other
+
+(e.g., ``choose $q_\new$ of $T_1$ as
+$q_\target$ of $T_2$'')
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Summary: RRTs}{
+
+\item Pros (shared with PRMs):
+\begin{items}
+\item Algorithmically very simple
+
+\item Highly explorative
+
+\item Allows probabilistic performance guarantees
+\end{items}
+
+~
+
+\item Pros (beyond PRMs):
+\begin{items}
+\item Focus computation on single query $(q_{\text{start}},
+   q_{\text{goal}})$ problem
+
+\item Trees from multiple queries can be merged to a roadmap
+
+\item Can be extended to differential constraints (nonholonomic systems)
+\end{items}
+
+~
+
+\item To keep in mind (shared with PRMs):
+\begin{items}
+\item The metric (for nearest neighbor selection) is sometimes critical
+
+\item The local planner may be non-trivial
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{References}{
+
+Steven M. LaValle: \emph{Planning
+Algorithms}, \url{http://planning.cs.uiuc.edu/}.
+
+~
+
+Choset et. al.: \emph{Principles of Motion Planning}, MIT Press.
+
+~
+
+Latombe's ``motion planning'' lecture,
+\url{http://robotics.stanford.edu/~latombe/cs326/2007/schedule.htm}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{RRT*}{
+
+Sertac Karaman \& Emilio Frazzoli: Incremental sampling-based
+algorithms for optimal motion planning, arXiv 1005.0416 (2010).
+
+~
+
+\only<1>{\show[1]{rrt-star}}
+\only<2>{\show[.5]{rrt-star2}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Non-holonomic systems}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Definition of non-holonomic}
+\slide{Non-holonomic systems}{
+
+\item We define a \textbf{nonholonomic system} as one with \textbf{differential constraints}:
+
+\eqbox{$\dim(u_t)<\dim(x_t)$}
+
+\cen{\emph{$\To$ Not all degrees of freedom are directly controllable}}
+
+~
+
+\item Dynamic systems are an example!
+
+~
+
+\item General definition of a differential constraint:
+
+For any given state $x$, let $U_x$ be the tangent space that is
+generated by controls:
+
+\cen{$U_x = \{ \dot x ~:~ \dot x = f(x,u),~ u \in U \}$}
+
+(non-holonomic $\iff \dim(U_x) < \dim(x)$)
+
+~
+
+The elements of $U_x$ are elements of $T_x$ subject to
+additional \emph{differential constraints}.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Car example}{
+
+\twocol{.5}{.4}{
+\includegraphics[width=.8\columnwidth]{car}
+}{
+
+$\dot x = v~ \cos \t$
+
+$\dot y = v~ \sin \t$
+
+$\dot \t = (v/L)~ \tan \varphi$
+
+$|\varphi| < \Phi$
+}
+
+~
+
+~
+
+\cen{\textbf{State} $q = \mat{c}{x \\ y \\ \t}$
+\qquad
+\textbf{Controls} $u = \mat{c}{v \\ \varphi}$}
+
+\cen{\textbf{Sytem equation} \qquad $\mat{c}{\dot x \\ \dot y \\ \dot \t}
+= \mat{c}{v~ \cos \t \\ v~ \sin \t \\ (v/L)~ \tan \varphi }$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Car example}{
+
+\item The car is a \emph{non-holonomic} system: not all DoFs are controlled, $\dim(u) < \dim(q)$
+
+We have the \emph{differential constraint} $\dot q$:
+\begin{align*}
+\dot x \sin\t - \dot y \cos \t = 0
+\end{align*}
+
+``A car cannot move directly lateral.''
+
+~
+
+\small
+
+\item Analogy to dynamic systems: Just like a car cannot instantly move
+sidewards, a dynamic system cannot instantly change its position $q$:
+the current change in position is \emph{constrained} by the current
+velocity $\dot q$.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Path finding for a non-holonomic system}
+\slide{Path finding for a non-holonomic system}{
+
+Could a car follow this trajectory?
+
+~
+
+\cen{\includegraphics[width=.8\columnwidth]{car1-holonomic}}
+
+This is generated with a PRM in the state space
+$q=(x,y,\t)$ \emph{ignoring the differntial constraint}.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Path finding with a non-holonomic system}{
+
+This is a solution we would like to have:
+
+~
+
+\cen{\includegraphics[width=.8\columnwidth]{car3-smoothed}}
+
+The path respects \textbf{differential constraints.}
+
+Each step in the path corresponds to setting certain controls.
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Control-based sampling}
+\slide{Control-based sampling to grow a tree}{
+
+~
+
+\item Control-based sampling: fulfils none of the nice exploration
+properties of RRTs, but fulfils the differential constraints:
+
+~
+
+1) Select a $q \in T$ from tree of current configurations
+
+~
+
+2) Pick control vector $u$ at random
+
+~
+
+3) Integrate equation of motion over short duration (picked at random or not)
+
+~
+
+4) If the motion is collision-free, add the endpoint to the tree
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Control-based sampling for the car}{
+
+~
+
+\twocol{.55}{.4}{
+\includegraphics[width=.9\columnwidth]{car-tree-exploration}
+}{
+
+1) Select a $q \in T$
+
+2) Pick $v$, $\p$, and $\tau$
+
+3) Integrate motion from $q$
+
+4) Add result if collision-free
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\center
+
+\includegraphics[width=.8\columnwidth]{car-parking1}
+
+{\small J. Barraquand and J.C. Latombe. Nonholonomic Multibody Robots:
+Controllability and Motion Planning in the Presence of
+Obstacles. Algorithmica, 10:121-155, 1993.}
+
+~
+
+car parking
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\center
+
+\includegraphics[width=.6\columnwidth]{car-parking2}
+
+~
+
+car parking
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\center
+
+\includegraphics[width=.8\columnwidth]{car-parkingLeftOnly}
+
+~
+
+parking with only left-steering
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\center
+
+\includegraphics[width=.8\columnwidth]{car-withTrailer}
+
+~
+
+with a trailer
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{RRTs with differential constraints}
+\slide{Better control-based exploration: RRTs revisited}{
+
+\item RRTs with differential constraints:
+
+\begin{algo}
+\Require $q_{\text{start}}$, number $k$ of nodes, {\color{red}time interval $\tau$}
+\Ensure tree $T=(V,E)$
+\State initialize $V=\{q_{\text{start}}\}$, $E=\emptyset$ 
+\For{$i=0:k$}
+\State $q_\target\gets$ random sample from $Q$
+\State $q_\near\gets$ {\color{red}nearest} neighbor of $q_\target$ in $V$
+\State {\color{red}use local planner to compute controls $u$ that
+steer $q_\near$ towards $q_\target$}
+\State {\color{red} $q_\new \gets q_\near + \int\nolimits_{t=0}^\tau
+\dot q(q,u) dt$}
+\State \textbf{if} $q_\new \in \qfree$ \textbf{then} $V\gets V \cup \{q_\new\}$,  $E\gets E \cup \{(q_\near,q_\new)\}$
+\EndFor
+\end{algo}
+
+~
+
+\item Crucial questions:
+
+\item How meassure \emph{near} in nonholonomic systems?
+
+\item How find controls $u$ to steer towards target?
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Configuration state metrics}
+\slide{Configuration state metrics}{
+
+{\small \hspace*{-5mm}Standard/Naive metrics:
+
+\item Comparing two 2D rotations/orientations $\t_1, \t_2 \in SO(2)$:
+
+~~ a) Euclidean metric between $e^{i\t_1}$ and $e^{i\t_2}$
+
+~~ b) $d(\t_1, \t_2) = \min\{|\t_1-\t_2|, 2\pi - |\t_1-\t_2|\}$
+
+\item Comparing two configurations $(x,y,\t)_{1,2}$ in $\RRR^2$:
+
+~~ Eucledian metric on $(x,y,e^{i\t})$
+
+\item Comparing two 3D rotations/orientations $r_1,r_2 \in SO(3)$:
+
+~~ Represent both orientations as unit-length quaternions
+$r_1,r_2 \in \RRR^4$:
+
+\cen{$d(r_1,d_2) = \min\{|r_1-r_2| , |r_1+r_2|\}$}
+
+~~ where $|\cdot|$ is the Euclidean metric.
+
+~~ (Recall that $r_1$ and $-r_1$ represent exactly the same rotation.)
+
+}
+
+~\mypause
+
+\item \textbf{Ideal metric:}
+
+Optimal cost-to-go between two states $x_1$ and $x_2$:
+
+\item Use optimal trajectory cost as metric
+
+\item This is as hard to compute as the original problem, of course!!
+
+$\to$ Approximate, e.g., by neglecting obstacles.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Side story: Dubins curves}
+\slide{Side story: Dubins curves}{
+
+\item Dubins car: constant velocity, and steer $\varphi \in
+   [-\Phi,\Phi]$
+
+~
+
+\item Neglecting obstacles, there are only \textbf{six} types of
+   trajectories that connect any configuration
+   $\in \RRR^2\times\SSS^1$:
+
+\cen{$\{ LRL, RLR, LSL, LSR, RSL, RSR \}$}
+
+~
+
+\item annotating durations of each phase:
+
+\cen{$\{L_\a R_\b L_\g,
+ , R_\a L_\b R_\g
+ , L_\a S_d L_\g
+ , L_\a S_d R_\g
+ , R_\a S_d L_\g
+ , R_\a S_d R_\g \}$}
+
+with $\a\in[0,2\pi), \b\in(\pi,2\pi), d\ge0$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Side story: Dubins curves}{\label{lastpage}
+
+\includegraphics[width=.8\columnwidth]{dubins-curves}
+
+~
+
+$\to$ By testing all six types of trajectories for $(q_1,q_2)$ we can
+define a Dubins metric for the RRT -- and use the Dubins curves as controls!
+
+~\mypause
+
+\item \textbf{Reeds-Shepp curves} are an extension for cars which can drive back.
+
+(includes 46 types of trajectories, good metric for use in RRTs for
+cars)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Summary}{
+
+%% \small
+%% \hspace*{-5mm} We discuss 3 examples for dynamic/non-holonomic systems:
+
+%% \item 1D point mass
+
+%% -- We learnt about PID and the corresponding damped/oscilatory
+%%    trajectories
+
+%% \item General robot dynamics $M(q)~ \ddot q + C(q,\dot q)~ \dot q +
+%%    G(q) = u$
+
+%% -- We learnt how to follow a reference trajectory $q_{0:T}$ (joint
+%%    space approach)
+
+%% -- We learnt about optimal operational space control and following a
+%%    task space trajectory $y_{0:T}$ (operational space control)
+
+%% \item A car
+
+%% -- We learnt about path finding under differential constraints
+
+%% $\to$ This generalizes also to path finding for dynamic robots
+%% (see LaValle's \emph{Planning Algorithms})
+
+%% ~\mypause
+
+%% \item We did not talk about trajectory \emph{optimization}. But the
+%% general principle is obvious from slide \pageref{pageObjFunc}:
+
+%% \cen{$f(u_{0:T}) = \sum_t \norm{u_t}_{H}^2 + \Phi_t(x_t)^\T \Phi_t(x_t)$}
+
+%% where $x_t$ depends on the controls $u_{0:t\1}$, and $\Phi_t(x_t)$ can
+%% be any task vector containing positional (as in the kinematic case) or
+%% velocity-type task error.
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Collision detection issue}{
+
+%% Sample-based path finding (both, PRMs and RRTs) heavily rely on
+%% collision checking!
+
+%% ~
+
+%% $\to$ hierarchical collision checking
+
+%% (Our simulator uses SWIFT++, other packages available,
+%% e.g., \url{http://gamma.cs.unc.edu/research/collision/packages.html})
+
+%% }
+
+\slidesfoot
+

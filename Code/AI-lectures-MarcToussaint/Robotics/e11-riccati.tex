@@ -1,0 +1,120 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\exnum}{11}
+
+\exercises
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Local linearization and Algebraic Riccati equation}
+
+Slide 08:02 describes the cart pole, which is similar to the
+Segway-type system of Exercise 6, but a little simpler. We'll solve
+the cart pole in this exercise.
+
+The state of the cart-pole is given by $x = (p,\dot p,
+\theta,\dot\theta)$, with $p\in\RRR$ the position of the cart,
+$\theta\in\RRR$ the pendulums angular deviation from the upright
+position and $\dot p,\dot \theta$ their respective temporal
+derivatives. The only control signal $u\in\RRR$ is the force applied on the
+cart. The analytic model of the cart pole is
+\begin{align}
+\ddot\theta
+ &= \frac{g\sin(\theta) + \cos(\theta)
+         \left[-c_1 u - c_2\dot{\theta}^2\sin(\theta)\right]}
+    {\frac{4}{3}l - c_2\cos^2(\theta)}\\
+\ddot p
+ &= c_1 u
+  + c_2 \left[\dot\theta^2\sin(\theta) - \ddot\theta\cos(\theta)\right]
+\end{align}
+with $g = 9.8ms^2$ the gravitational constant, $l = 1m$ the pendulum
+length and constants $c_1 = (M_p + M_c)^{-1}$ and $c_2 = l M_p(M_p +
+M_c)^{-1}$ where $M_p = M_c = 1kg$ are the pendulum and cart masses
+respectively.
+
+
+a) Derive the local linearization of these dynamics around
+$x^*=(0,0,0,0)$. The eventual dynamics should be in the form
+\begin{align*}
+\dot x = A x + B u
+\end{align*}
+Note that
+\begin{align*}
+A = \mat{cccc}{0 & 1 & 0 & 0 \\
+ \frac{\del\ddot p}{\del p} & \frac{\del\ddot p}{\del\dot p} &
+ \frac{\del\ddot p}{\del\t} & \frac{\del\ddot p}{\del\dot\t} \\
+ 0 & 0 & 0 & 1 \\
+ \frac{\del\ddot \t}{\del p} & \frac{\del\ddot \t}{\del\dot p} &
+ \frac{\del\ddot \t}{\del\t} & \frac{\del\ddot \t}{\del\dot\t} }
+\comma
+B = \mat{c}{0 \\
+\frac{\del\ddot p}{\del u} \\
+0 \\
+\frac{\del\ddot\t}{\del u}}
+\end{align*}
+where all partial derivatives are taken at the point $p=\dot
+p=\t=\dot\t=0$.
+
+The solution (to continue with the other parts) is
+\begin{align*}
+A = \mat{cccc}{0 & 1 & 0 & 0 \\
+  0 & 0 & -\frac{g}{\frac{4}{3} l - c_2} & 0 \\
+ 0 & 0 & 0 & 1 \\
+ 0 & 0 & \frac{g}{\frac{4}{3} l - c_2} & 0 }
+\comma
+B = \mat{c}{0 \\
+c_1+\frac{c_1 c_2}{\frac{4}{3} l - c_2} \\
+0 \\
+\frac{-c_1}{\frac{4}{3} l - c_2}}
+\end{align*}
+
+
+b) We assume a stationary infinite-horizon cost function of the form
+\begin{align*}
+J^\pi
+&= \int_0^\infty c(x(t),u(t))~ dt \\
+c(x,u)
+&= x^\T Q x + u^\T R u \\
+& Q = \diag(c, 0, 1, 0) \comma R = \Id ~.
+\end{align*}
+That is, we penalize position offset $c\norm{p}^2$ and pole angle
+offset $\norm{\t}^2$. Choose $c=\r=1$ to start with.
+
+Solve the Algebraic Riccati equation
+\begin{align*}
+0 = A^\T P + P^\T A - P B R^\1 B^\T P + Q
+\end{align*}
+by initializing $P=Q$ and iterating using the following iteration:
+\begin{align*}
+P_{k\po} = P_k + \e [A^\T P_k + P_k^\T A - P_k B R^\1 B^\T P_k + Q]
+\end{align*}
+Choose $\e=1/1000$ and iterate until convergence. Output the gains $K=
+-R^\1 B^\T P$. (Why should this iteration converge to the solution of
+the ARE?)
+
+c) Solve the same Algebraic Riccati equation by calling the @are@
+routine of the octave control package (or a similar method in Matlab).
+For Octave, install the Ubuntu packages @octave3.2@, @octave-control@,
+and @qtoctave@, perhaps use @pkg load control@ and @help are@ in
+octave to ensure everything is installed, use %
+@P=are(A,B*inverse(R)*B',Q)@ to solve the ARE. Output $K= -R^\1 B^\T P$
+and compare to b).
+
+(I found the solution $K=(1.0000, 3.8271, 48.3070,17.615)$.)
+
+d) Implement the optimal Linear Quadratic Regulator $u^*= -R^\1 B^\T P
+x$ on the cart pole simulator. In the Robotics code base, path
+@07-cartPole@ there is some code -- but the main.problem.cpp was
+outdated. Please use the one from the website or email.
+
+Simulate the optimal LQR and test it for various noise levels.
+
+
+
+\exerfoot
+
+
+
