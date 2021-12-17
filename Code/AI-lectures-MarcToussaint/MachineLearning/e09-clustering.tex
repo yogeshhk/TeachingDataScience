@@ -1,0 +1,208 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Machine Learning}
+\renewcommand{\exnum}{9}
+
+\exercises
+
+(DS BSc students may skip exercise 2, but still please read about Mixture of Gaussians and the explanations below.)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section*{Introduction}
+
+There is no lecture on Thursday. To still make progress, please follow this guide to learn some new material yourself. The subject is k-means clustering and Mixture of Gaussians.
+
+\paragraph{$k$-means clustering:} The method is fully described on slide 06:36 of the lecture. Again, I
+present the method as derived from an optimality principle. Most other
+references described $k$-means clustering just as a procedure. Also
+wikipedia \url{https://en.wikipedia.org/wiki/K-means_clustering} gives
+a more verbose explaination of this procedure. In my words, this is
+the procedure:
+\begin{items}
+\item We have data $D=\{x_i\}_{i=1}^n$, with $x_i\in\RRR^d$. We want to cluster the data in $K$ different clusters. $K$ is chosen ad-hoc.
+\item Each cluster is represented only by its mean (or center) $\mu_k\in\RRR^d$, for $k=1,..,K$.
+\item We initially assign each $\mu_k$ to a random data point, $\mu_k \gets x_i$ with $i \sim\UU\{1,..,n\}$
+\item The algorithm also maintains an assignment mapping $c: \{1,..,n\} \to \{1,..,K\}$, which assigns each data point $x_i$ to a cluster $k=c(i)$
+\item For given centers $\mu_k$, we update all assignments using
+$$\forall_i:~ c(i) \gets \argmin_{c(i)} \sum_j (x_j - \mu_{c(j)})^2 = \argmin_k (x_i-\mu_k)^2 ~,$$
+which means we assign $x_i$ to the cluster with the nearest center $\mu_k$.
+\item For given assignments $c(i)$, we update all centers using
+$$\forall_k:~ \mu_k \gets \argmin_{\mu_k} \sum_i (x_i-\mu_{c(i)})^2 =  \frac{1}{|c^\1(k)|} \sum_{i\in c^\1(k)} x_i ~,$$
+that is, we set the centers equal to the mean of the data points assigned to the cluster.
+\item The last two steps are iterated until the assignment does not vary.
+\end{items}
+
+Based on this, solve exercise 1.
+
+
+
+
+\paragraph{Mixture of Gaussians:} Mixture of Gaussians (MoG) are very similar to $k$-means clustering. Its objective (expected likelihood maximization) is based on a probabilistic data model, which we do not go into detail here. Slide 06:40 only gives the relevant equations. A much more complete derivation of MoG as instance of Expectation Maximization is found in \url{https://ipvs.informatik.uni-stuttgart.de/mlr/marc/teaching/15-MachineLearning/08-graphicalModels-Learning.pdf}. Bishop's book \url{https://www.microsoft.com/en-us/research/people/cmbishop/#!prml-book} also gives a very good introduction. But we only need the procedural understanding here:
+\begin{items}
+\item We have data $D=\{x_i\}_{i=1}^n$, with $x_i\in\RRR^d$. We want to cluster the data in $K$ different clusters. $K$ is chosen ad-hoc.
+\item Each cluster is represented by its mean (or center) $\mu_k\in\RRR^d$ and a covariance matrix $\S_k$. This covariance matrix describes an ellipsoidal shape of each cluster.
+\item We initially assign each $\mu_k$ to a random data point, $\mu_k \gets x_i$ with $i \sim\UU\{1,..,n\}$, and each covariance matrix to uniform (if the data is roughly uniform).
+\item The core difference to $k$-means: The algorithm also maintains a \emph{probabilistic} (or soft) assignment mapping $q_i(k) \in [0,1]$, such that $\sum_{k=1}^K q_i(k) = 1$. The number $q_i(k)$ is the probability of assigning data $x_i$ to cluster $k$ (or the probability that data $x_i$ originates from cluster $k$). So, each data index $i$ is mapped to a probability over $k$, rather than a specific $k$ as in $k$-means.
+\item For given cluster parameters $\mu_k$, $\S_k$, we update all the probabilistic assignments using
+\begin{align*}
+\forall_{i,k}:~ q_i(k) &\gets \NN(x_i \| \m_k, \S_k) = \frac{1}{\|2\pi \S_k\|^{1/2}}~ e^{-\half (x_i-\m_k)^\T~ \S_k^\1~ (x_i-\m_k)} \\
+\forall_{i,k}:~ q_i(k) &\gets \frac{1}{\sum_{k'} q_i(k')} q_i(k)
+\end{align*}
+where the second line normalizes the probabilistic assignments to ensure $\sum_{k=1}^K q_i(k) = 1$.
+\item For given probabilistic assignments $q_i(k)$, we update all cluster parameters using
+\begin{align*}
+\forall_k:~ \m_k &\gets \frac{1}{\textstyle\sum_i q_i(k)}~ \textstyle\sum_i q_i(k)~ x_i\\
+\forall_k:~ \S_k &\gets \frac{1}{\textstyle\sum_i q_i(k)}~ \textstyle\sum_i q_i(k)~ x_ix_i^\T - \m_k\m_k^\T ~,
+\end{align*}
+where $\m_k$ is the weighed mean of the data assigned to cluster $k$ (weighted with $q_i(k)$), and similarly for $\S_k$.
+\item In this description, I skipped another parameter, $\pi_k$, which is less important and we can discuss in class.
+\end{items}
+
+Based on this, solve exercise 2.
+
+Exercise 3 is extra, meaning, it's a great exercise, but beyond the default work scope.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Clustering the Yale face database (6 Points)}
+
+On the webpage find and download the Yale face database
+{\tiny\url{http://ipvs.informatik.uni-stuttgart.de/mlr/marc/teaching/data/yalefaces_cropBackground.tgz}}. The
+file contains gif images of 136 faces.
+
+We'll cluster the faces using $k$-means in $K=4$ clusters.
+
+a) Compute a $k$-means clustering starting with random initializations
+of the centers. Repeat $k$-means clustering 10 times. For each run,
+report on the clustering error $\min \sum_i (x_i - \mu_{c(i)})^2$ and
+pick the best clustering. Display the center faces $\mu_k$ and perhaps
+some samples for each cluster. (3 P)
+
+b) Repeat the above for various $K$ and plot the clustering
+error over $K$. (1 P)
+
+c) Repeat the above on the first 20 principal components of the
+data. Discussion in the tutorial: Is PCA the best way to reduce
+dimensionality as a precursor to $k$-means clustering? What would be
+the `ideal' way to reduce dimensionality as precursor to $k$-means
+clustering? (2 P)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Mixture of Gaussians (4 Points)}
+
+Download the data set @mixture.txt@ from the course webpage,
+containing $n=300$ 2-dimensional points. Load it in a data matrix
+$\vec X\in\RRR^{n\times 2}$.
+
+a) Implement the EM-algorithm for a Gaussian Mixture on this data
+set. Choose $K=3$. % and the prior $\pi_k=1/K$
+Initialize by
+choosing the three means $\m_k$ to be different randomly selected data
+points $x_i$ ($i$ random in $\{1,..,n\}$) and the covariances $\S_k
+= \Id$ (a more robust choice would be the covariance of the whole
+data). Iterate EM starting with the first E-step (computing probabilistic assignments) based on these
+initializations. Repeat with random restarts---how often does it
+converge to the optimum? (3 P)
+
+b) Do exactly the same, but this time initialize the posterior
+$q_i(k)$ randomly (i.e., assign each point to a random cluster: for each point
+$x_i$ select $k'={rand}(1:K)$ and set $q_i(k)=[k=k']$); then start EM with the
+first M-step. Is this better or worse than the previous way of
+initialization? (1 P)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Extra: Graph cut objective function \& spectral clustering}
+
+One of the central messages of the whole course is: To solve
+(learning) problems, first formulate an objective function
+that defines the problem, then derive algorithms to find/approximate
+the optimal solution. That should also hold for clustering.
+
+$k$-means finds centers $\mu_k$ and assignments $c: i \mapsto k$ to minimize
+$\min \sum_i (x_i - \mu_{c(i)})^2$.
+
+An alternative class of objective functions for clustering are graph
+cuts. Consider $n$ data points with similarities $w_{ij}$, forming a
+weighted graph. We denote by $W = (w_{ij})$ the symmetric weight matrix, and $D
+= \diag(d_1,..,d_n)$, with $d_i = \sum_j w_{ij}$, the degree matrix.  For
+simplicitly we consider only 2-cuts, that is, cutting the graph in two
+disjoint clusters, $C_1 \cup C_2 = \{1,..,n\}$, $C_1 \cap C_2
+= \emptyset$. The normalized cut objective is
+$$\text{RatioCut}(C_1,C_2) = \(1/|C_1|+1/|C_2|\)~ \sum_{i\in C_1,j\in C_2} w_{ij}$$
+
+a) Let $f_i = \begin{cases}
++\sqrt{|C_2|/|C_1|} & \text{for}~ i \in C_1 \\
+-\sqrt{|C_1|/|C_2|} & \text{for}~ i \in C_2 \\
+\end{cases}$
+be a kind of indicator function of the clustering. Prove that
+$$ f^\T (D-W) f = n~ \text{RatioCut}(C_1,C_2) $$
+
+b) Further prove that $\sum_i f_i=0$ and $\sum_i f_i^2
+= n$.
+
+Note (to be discussed in the tutorial in more detail): \emph{Spectral
+clustering} addresses
+%%  Therefore finding a clustering that minimizes
+%% $\text{RatioCut}(C_1,C_2)$ is equivalent to
+$$\min f^\T (D-W) f \st \sum_i f_i=0\comma \norm{f}_2=1$$
+by computing eigenvectors $f$ of the graph Laplacian $D-W$
+with smallest eigenvalues. This is a relaxation of the above problem
+that minimizes over continuous functions $f\in\RRR^n$ instead of
+discrete clusters $C_1,C_2$. The resulting eigen functions are
+``approximate indicator functions of clusters''. The algorithms uses
+$k$-means clustering in this coordinate system to explicitly decide on
+the clustering of data points.
+
+\ifnum\value{solutions}=1
+\begin{solution}
+Intuition about the Graph Laplacian: Let $f_i \in \RRR$ be the
+water level at node $i$. Consider the differential equation
+$$-\dot f = (D-W) f \comma -\dot f_i = (\sum_j w_{ij}) f_i - \sum_j
+w_{ij} f_j = \sum_j w_{ij} (f_i - f_j) ~.$$
+This says that $-\dot f = (D-W) f$ depends on the \emph{difference} of
+water levels at adjacent nodes; and the water flows from $j$ to $i$ 
+proportional to $w_{ij}$ and the difference $f_j-f_i$.
+
+What are \emph{stationary water levels} $f$. In a fully connected
+graph there is only one (modulo scaling): All $f_i=1$, all nodes have
+equal water, no differences, no change in levels, $\dot f=0$. This
+corresponds to the eigenvector with eigenvalue 0.
+
+Now consider the process $-\dot f = (D-W) f - \l f$. That is, water
+flows before across the graph, but additionally there is a constant
+refilling of each node \emph{proportional} to its water level. Further
+we require $\sum_i f_i =0$; that is, the total amount of water is
+zero, some $f_i$ are positive, others negative.  What are stationary
+water levels $f$ for this process? The strict answer is: Eigenvectors
+of $D-W$ -- and the above exercise showed how this relates to
+approximate indicator functions of clusters. In our water story: The
+water flow across the graph lets water from positive nodes flow to
+negative nodes. So the differences in water levels are evened out.
+The $\l$ terms counter-acts exactly this: nodes with positive water
+get more water, nodes with negative water loose water. In total, for
+certain $f$, $\dot f$ may be zero. \emph{If} $\dot f$ is indeed zero,
+then the stronger positive and negative nodes are coupled the larger
+$\l$ must be.
+
+a) As a shorthand, let $c^i_j=|C_i|/|C_j|$
+\begin{align}
+f^\T (D-W) f
+&= \sum_i f_i \sum_j w_{ij} (f_i - f_j) 
+ = \sum_i f_i \sum_{j\not\in C(i)} w_{ij} (f_i - f_j) \\
+&= \sum_{i\in C_1} \sqrt{c^2_1} \sum_{j\in C_2} w_{ij} \(\sqrt{c^2_1} + \sqrt{c^1_2}\)
+ + \sum_{i\in C_2} -\sqrt{c^1_2} \sum_{j\in C_1} w_{ij} \(-\sqrt{c^1_2} - \sqrt{c^2_1}\) \\
+&=  \(c^2_1 + 1\) \sum_{i\in C_1,j\in C_2} w_{ij} 
+ +  \(c^1_2 + 1\) \sum_{i\in C_2,j\in C_1} w_{ij} \\
+&=   (|C_2|+|C_1|)\(\frac{1}{|C_1|}+\frac{1}{|C_2|}\)~ \sum_{i\in C_2,j\in C_1} w_{ij}
+\end{align}
+\end{solution}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exerfoot
+        

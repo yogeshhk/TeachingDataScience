@@ -1,0 +1,297 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Machine Learning}
+\renewcommand{\exnum}{8}
+
+\exercises
+
+(DS BSc students should nominally achieve 8 Pts on this sheet.)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{PCA derived (6 Points)}
+
+For data $D=\{x_i\}_{i=1}^n$, $x_i\in\RRR^d$, we introduced PCA as a method that finds lower-dimensional representations $z_i\in\RRR^p$ of each data point such that $x_i \approx V z_i + \m$. PCA chooses $V,\m$ and $z_i$ to minimize the reproduction error
+$$ \sum_{i=1}^n \norm{x_i - (V z_i + \m)}^2 ~.$$
+
+We derive the solution here step by step.
+
+\begin{enumerate}
+\item Find the optimal latent representation $z_i$ of a data point $x_i$ as a function of $V$ and $\mu$. (1P)
+
+\item Find \emph{an} optimal offset $\mu$. (1P)
+
+(Hint: there is a whole subspace of solutions to this problem.  Verify that
+your solution is consistent with (i.e.  contains) $\mu = \frac{1}{n} \sum_i
+x_i$).
+
+\item Find optimal projection vectors $\{v_i\}_{i=1}^p$, which make up the
+projection matrix
+\begin{equation}
+  V = \begin{bmatrix}
+    | & & | \\
+    v_1 & \ldots & v_p \\
+    | & & |
+  \end{bmatrix}
+\end{equation} (2P)
+
+Guide:
+\begin{items}
+    
+  \item Given a projection $V$, any vector can be split in orthogonal
+    components which belong to the projected subspace and its complement (which
+    we call $W$).  $x = VV^\T x + WW^\T x$.
+    
+  \item For simplicity, let us work with the centered datapoints $\tilde x_i = x_i - \mu$.
+    
+  \item The optimal projection $V$ is the one which minimizes the discarded components $WW^\T \tilde x_i$.
+  \begin{equation}
+    \hat V = \argmin_V \sum_{i=1}^n \norm{WW^\T \tilde x_i}^2 = \sum_{i=1}^n \norm{\tilde x_i - VV^\T \tilde x_i}^2
+  \end{equation}
+  
+\item Don't try to solve computing gradients and setting them to zero.  Instead, use the fact that $VV^\T = \sum_{i=1}^p v_i v_i^\T$, and the singular value decomposition of $\sum_{i=1}^n \tilde x_i \tilde x_i^\T = \tilde X^\T \tilde X = E D E^T$.
+\end{items}
+
+\item In the above, is the orthonormality of $V$ an essential assumption? (1P)
+
+\item Prove that you can compute the $V$ also from the SVD of $X$ (instead of $X^\T X$). (1P)
+
+\end{enumerate}
+
+%% \exsection{PCA optimality principles}
+
+%% Proof what is given on slide 04:36.
+
+%% a) That is, for data $D = \{ x_i \}_{i=1}^n,~ x_i\in\RRR^d$
+%% and \emph{orthonormal} $V\in\RRR^{d\times p}$, first prove
+%% \begin{align}
+%% \hat \m,\hat z_{1:n}
+%% &=\argmin_{\m,z_{1:n}} \sum_{i=1}^n \norm{x_i - V z_i - \m}^2 
+%% \quad\To\quad
+%%  \hat\m = \< x_i \>  = \frac{1}{n} \sum_{i=1}^n x_i
+%% \comma
+%%  \hat z_i = V^\T(x_i-\m) ~.
+%% \end{align}
+
+%% b) Now, with $\tilde x_i = x_i-\hat\m$, prove
+%% \begin{align}
+%% \hat V
+%% &=\argmin_{V\in\RRR^{d\times p}} \sum_{i=1}^n \norm{\tilde x_i - V
+%% V^\T \tilde x_i}^2
+%% \quad\To\quad V = (v_1 ~ v_2 ~ \cdots ~ v_p) 
+%% \end{align}
+%% where the latter are the $p$ largest eigenvectors of $X^\T X$, and
+%% $X_{i\cdot} = \tilde x_i^\T$. Guide:
+%% \begin{items}
+%% \item The column vectors of $V$ provide a ``partial'' orthonormal
+%% coordinate system. You may introduce a matrix $W$ with remaining orthonormal
+%% column vecturs such that $W W^\T + V V^\T = \Id$ and therefore
+%% $\tilde x = W W^\T \tilde x + V V^\T$. (Intuition: this decomposes any x in
+%% a part that lies within the sub-vector space spanned by $V$, and a
+%% part orthogonal to this sub-vector space.)
+%% \item Now rewrite the objective as $\sum_{j=1}^{d-p} w_j X^\T X
+%% w_j$, where we sum over the column vectors $w_j$ of $W$, and included
+%% the summation over the data in $X^\T X$.
+%% \item Now prove that choosing $W$ to contain the smallest
+%% eigenvectors of $X^\T X$ minimizes the objective. (Intuition: the
+%% objective is the squared distance of $\tilde x$ to the sub-vector space
+%% spanned by $V$.)
+%% \end{items}
+
+%% c) In the above, is the orthonormality of $V$ an essential assumption?
+
+%% d) Proove that you can compute the $V$ also from the SVD of $X$
+%% (instead of $X^\T X$).
+
+
+\ifnum\value{solutions}=1
+\begin{solution}
+We use $V^\T V = I$ ($p$-dimensional).
+
+a) For $\argmin_{z_i} \norm{Vz_i + \mu - x_i}^2$ we want
+~ $ 2 V^\T (Vz_i + \m - x_i) = 0 ~\To~ z_i = V^\T (x_i - \mu)$.
+
+b) For $\argmin_\mu \sum_i \norm{Vz_i + \mu - x_i}^2$ we want ~
+$ 2 \sum_i (Vz_i + \m - x_i) = 0 ~\To~ \mu = \frac{1}{n} \sum_i (x_i
+- V z_i) = \<x\> - V \<z\>$
+
+Let us assume (``Ansatz'') that $\<z\> = (1/n) \sum_{i=1}^n z_i = 0$. Then $\mu
+= \<x\>$ and $z_i = V^\T (x_i - \<x\>)$. We can then verify that the
+assumption holds: $\<z\> = (1/n) \sum_i V^\T (x_i - \<x\>) = V^\T
+(\<x\> - \<x\>) = 0$. Therefore this Ansatz yields a solution that
+fulfills the optimality conditions. (We don't care for other solutions.)
+
+c) For brevity of notation, let's redefine $x_i \gets x_i - \mu$ (centered). We
+rewrite the objective 
+\begin{align}
+L
+&= \sum_i \norm{Vz_i + \mu - x_i}^2
+ = \sum_i \norm{V V^\T x_i - x_i}^2
+ = \sum_i x_i^\T V V^\T V V^\T x_i - 2 x_i^\T V V^\T x_i + c\\
+&= - \sum_i x_i^\T V V^\T x_i + c
+ = \sum_i \tr\[ (V^\T x_i)(V^\T x_i)^\T \] + c
+ = - \tr \[ V^\T \sum_i (x_i x_i^\T) V \] + c
+ = - \tr \[ V^\T S V \] + c
+\end{align}
+where constant $c=\sum_i x_i^\T x_i = \tr(X^\T X)$ and $S =  \sum x_i x_i^\T$ is the data covariance matrix. Now we
+represent $S = \sum_{i=1}^d \s_i u_i u_i^\T$ in its singular value
+decomposition, and $V = \sum_{i=1}^p v_i v_i^\T$ as sum of rank one
+matrices of $p$ orthonomal vectors. Then
+\begin{align}
+\tr (V^\T S V)
+ &= \sum_{j=1}^p \sum_{i=1}^d \s_i (u_i^\T v_j)^2 ~.
+\end{align}
+This shows that one can choose vectors $v_j$ to ``pick out'' eigen
+values $\s_i$ by aligning with vectors $u_i$. For instance, choosing
+$v_j$ to align with the $p$ largest $u_i$ yields $\tr (V^\T S V) = \sum_{j=1}^p
+\s_j$. It is ``obvious'' that this is the maximal $\tr (V^\T S V)$,
+as any other choice will pick linear combinations of $\s_i$ with lower
+values. [A bit more formal: $\sum_{j=1}^p \sum_{i=1}^d \s_i (u_i^\T
+v_j)^2 = \sum_{j=1}^p \sum_{i=1}^d \s_i (U^\T V)_{ij}^2$. The
+Frobenius norm $\norm{U^\T V}^2 = p$. Let $z_i = \sum_j (U^\T
+V)_{ij}^2$ with norm $\norm{z}^2 = p$ and each element $|z_i|\le
+1$. Then $\sum_{i=1}^d \s_i z_i$ is maximized by $z_i=1$ for the $p$
+largest $\s_i$.] [To me the last arguments seems all a bit overly
+complicated. Intuitively, and by the understanding of SVD, everything
+seems obvious. Is there an easier proof? Would just taking the
+derivative, with lagrange terms, lead to an easier proof? (Bishop also
+sneeks around a general proof. I didn't check other books.)]
+
+d) Essential, no. But also other, non-orthonormal projections onto
+$p$-dimensions can not achive a loss smaller than $L=\tr(X^\T X) - \sum_{j=1}^p \s_j$.
+
+e) Given the SVD $X = U \bar S V^\T$, the SVD of $S = X^\T X = V \bar S^2 V^\T$
+has the same $V$.
+
+\end{solution}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{PCA and reconstruction on the Yale face database (5 Points)}
+
+On the webpage find and download the Yale face database
+{\tiny\url{http://ipvs.informatik.uni-stuttgart.de/mlr/marc/teaching/data/yalefaces.tgz}}.
+(Optionally use @yalefaces_cropBackground.tgz@, which is slightly cleaned
+version of the same dataset). The file contains gif images of 165 faces.
+
+\begin{enumerate}
+\item Write a routine to load all images into a big data matrix $X \in
+\RRR^{165\times 77760}$, where each row contains a gray image.
+
+In Octave, images can easily be read using
+@I=imread("subject01.gif");@ and @imagesc(I);@. You can loop over
+files using @files=dir(".");@ and @files(:).name@. Python tips:
+\begin{code}
+\begin{verbatim}
+import matplotlib.pyplot as plt
+import scipy as sp
+plt.imshow(plt.imread(file_name))
+u, s, vt = sp.sparse.linalg.svds(X, k=neigenvalues)
+\end{verbatim}
+\end{code}
+
+\item Compute the mean face $\mu = \frac{1}{n} \sum_i x_i$ and center the whole
+data matrix, $\tilde X = X - \one_n \mu^\T$.
+
+\item Compute the singular value decomposition $\tilde X = U D V^\T$ for the
+centered data matrix.
+% \footnote{This is alternative to what was discussed in the
+% lecture: In the lecture we computed the SVD of $X^\T X = (U D V^\T)^\T
+% (U D V^\T) = V D^2 V^\T$, as $U$ is orthonormal and $U^\T U
+% = \Id$. Decomposing the covariance matric $X^\T X$ is a bit more
+% intuitive, decomposing $X$ directly is more efficient and amounts to
+% the same $V$.}
+
+In Octave/Matlab, use @[U, S, V] = svd(X, "econ")@, where the @"econ"@ ensures
+you don't run out of memory.
+
+In python, use 
+\begin{code}
+\begin{verbatim}
+import scipy.sparse.linalg as sla 
+u, s, vt = sla.svds(X, k=num_eigenvalues)
+\end{verbatim}
+\end{code}
+
+\item Find the p-dimensional representations $Z = \tilde X V_p$, where $V_p \in
+\RRR^{77760\times p}$ contains only the first $p$ columns of $V$ (Depending on
+which language / library you use, verify that the eigenvectors are returned in
+eigenvalue-descending order, otherwise you'll have to find the correct
+eigenvectors manually). Assume $p=60$. The rows of $Z$ represent each face as a
+$p$-dimensional vector, instead of a 77760-dimensional image.
+
+\item Reconstruct all faces by computing $X' = \one_n \mu^\T + \vec Z V_p^\T$ and
+display them; Do they look ok? Report the reconstruction error $\sum_{i=1}^n
+\norm{x_i - x'_i}^2$.
+
+Repeat for various PCA-dimensions $p=5, 10, 15, 20\ldots$.
+
+%% BONUS) How is the value of $p$ related to the variance / information which is
+%% lost through the low-dim projection?
+
+\end{enumerate}
+
+\ifnum\value{solutions}=1
+\begin{solution}
+\begin{verbatim}
+clear;
+W = 160
+H = 243
+files = dir('yalefaces');
+files=files(3:end); % remove . & ..
+nFiles = size(files,1);
+
+%% load data
+X = zeros(nFiles,H*W);
+for i=1:nFiles
+ I = imread(['yalefaces/',files(i).name]);
+ X(i,:) = I(:);
+end
+
+%% compute mean face
+mean_face = mean(X,1);
+Xc = X - repmat(mean_face,nFiles,1);
+
+%% compute SVD
+[U S V] = svd(Xc,'econ');
+P = round(linspace(1,size(X,1),10));
+K = [];
+for i=1:length(P)
+ p=P(i);
+ Z = Xc*V(:,1:p);
+ 
+ %% reconstruction
+ Xr = repmat(mean_face,nFiles,1) + Z*V(:,1:p)';
+ 
+ K = [K,reshape(Xr(3,:),H,W)];
+ 
+ %% compute error
+ error(i) = norm(X-Xr);
+end
+
+%% plotting
+figure(1);clf;
+colormap(gray)
+imagesc(reshape(mean_face,H,W))
+title('mean face');
+figure(2);clf;
+plot(P,error,'.-');
+title('reconstruction error');
+figure(3);clf;
+colormap(gray)
+imagesc(K)
+axis equal;axis tight;
+title('reconstructions for different p values');
+figure(4);clf;
+colormap(gray)
+imagesc([reshape(V(:,1),H,W),reshape(V(:,2),H,W),reshape(V(:,3),H,W)]);
+title('eigen faces');
+axis equal;axis tight;
+\end{verbatim}
+\end{solution}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exerfoot

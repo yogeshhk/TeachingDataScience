@@ -1,0 +1,158 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Machine Learning}
+\renewcommand{\exnum}{3}
+
+\exercises
+
+(BSc Data Science students may skip b) parts.)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Hinge-loss gradients (5 Points)}
+
+The function $[z]_+ = \max(0,z)$ is called hinge. In ML, a hinge
+penalizes errors (when $z>0$) linearly, but raises no costs at all if
+$z<0$.
+
+Assume we have a single data point $(x,y^*)$ with class label
+$y^*\in\{1,..,M\}$, and the discriminative function $f(y,x)$. We
+penalize the discriminative function with the \emph{one-vs-all} hinge
+loss
+$$L^\text{hinge}(f) =  \sum_{y\not=y^*} [1 - (f(y^*,x)-f(y,x))]_+$$
+
+a) What is the gradient $\frac{\del L^\text{hinge}(f)}{\del f(y,x)}$
+of the loss w.r.t.\ the discriminative values. For simplicity,
+distinguish the cases of taking the derivative w.r.t.\ $f(y^*,x)$ and
+w.r.t.\ $f(y,x)$ for $y\not= y^*$. (3 P)
+
+\ifnum\value{solutions}=1
+\begin{solution}
+	If we reduce the problem to $L(f) = [1 - (f(y^*, x) - f(y,x))]_+$ we have two general cases:
+	
+	(i) $1 - (f(y^*, x) - f(y,x)) \leq 0$:
+	
+	\begin{align*}
+		\frac{\partial L(f)}{\partial f(y,x)} &= 0
+	\end{align*}
+
+	(ii) $1 - (f(y^*, x) - f(y,x)) > 0$:
+	
+	\begin{align*}
+		\frac{\partial L(f)}{\partial f(y,x)} &= 1, \\
+		\frac{\partial L(f)}{\partial f(y^*,x)} &= -1
+	\end{align*}
+
+	From this follows in general for $L(f) = \sum_{y \neq y^*} [1 - (f(y^*, x) - f(y,x))]_+$
+	(using the indicator function):
+	
+	\begin{align*}
+		\frac{\partial L(f)}{\partial f(y,x)} &= [1 - (f(y^*, x) - f(y,x)) > 0], \\
+		\frac{\partial L(f)}{\partial f(y^*,x)} &= -\sum_{y \neq y^*} [1 - (f(y^*, x) - f(y,x)) > 0]
+	\end{align*}
+\end{solution}
+\fi
+
+b) Now assume the parameteric model $f(y,x) = \phi(x)^\T \b_y$, where
+for every $y$ we have different parameters $\b_y\in\RRR^d$. And we
+have a full data set $D=\{(x_i,y_i)\}_{i=1}^n$ with class labels
+$y_i\in\{1,..,M\}$ and loss
+$$L^\text{hinge}(f) =  \sum_{i=1}^n \sum_{y\not=y_i} [1 - (f(y_i,x_i)-f(y,x_i))]_+$$
+What is the gradient $\frac{\del L^\text{hinge}(f)}{\del \b_y}$? (2 P)
+
+\ifnum\value{solutions}=1
+\begin{solution}
+	If we fix the index $i$, we can reduce the problem to
+	$L(f) = \sum_{y \neq y_i} [1 - (f(y_i, x_i) - f(y,x_i))]_+$ which has two general cases:
+	
+	(i) $y \neq y_i$:
+	
+	\begin{align*}
+		\frac{\partial L(f)}{\partial \beta_y} &= [1 - (f(y_i, x_i) - f(y,x_i)) > 0] \cdot \phi(x_i)^\T
+	\end{align*}
+	
+	(ii) $y = y_i$:
+	
+	\begin{align*}
+		\frac{\partial L(f)}{\partial \beta_y} &= - \left(\sum_{y \neq y^*} [1 - (f(y^*, x) - f(y,x)) > 0]\right) \cdot \phi(x_i)^\T
+	\end{align*}
+	
+	From this follows in general for all data points (if we fix $\beta_{y_j}$):
+	
+	\begin{align*}
+		\frac{\partial L(f)}{\partial \beta_{y_j}} &= \sum_{i=1}^{n} [y_i \neq y_j] \cdot [1 - (f(y_i, x_i) - f(y,x_i)) > 0] \cdot \phi(x_i)^\T - [y_i = y_j] \cdot \left(\sum_{y \neq y^*} [1 - (f(y^*, x) - f(y,x)) > 0]\right) \cdot \phi(x_i)^\T
+	\end{align*}
+\end{solution}
+\fi
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Log-likelihood gradient and Hessian (5 Points)}
+
+Consider a binary classification problem with data
+$D=\{(x_i,y_i)\}_{i=1}^n$, $x_i \in \RRR^d$ and $y_i \in \{0,1\}$. We
+define
+\begin{align}
+f(x) &= \phi(x)^\T \b \\
+p(x) &= \s(f(x)) \comma \s(z) = 1/(1+e^{-z}) \\
+L^\text{nll}(\b) &= - \sum_{i=1}^n \[ y_i \log p(x_i) + (1-y_i) \log [1-p(x_i)]\]
+\end{align}
+where $\b\in\RRR^d$ is a vector. (NOTE: the $p(x)$ we defined here is
+a short-hand for $p(y=1 | x)$ on slide 03:9.)
+
+a) Compute the derivative $\frac{\del}{\del \b} L(\b)$. Tip: use the fact 
+$\frac{\del}{\del z}\s(z) = \s(z)(1-\s(z))$. (3 P)
+
+b) Compute the 2nd derivative $\frac{\del^2}{\del \b^2} L(\b)$. (2 P)
+
+\ifnum\value{solutions}=1
+\begin{solution}
+	Let $p_i \equiv p(x_i)$. We have $\frac{\del}{\del \b} p_i = p_i (1-p_i) x_i^\T$
+	\begin{align}
+		L(\b)
+		&= - \sum_{i=1}^n \[ y_i \log p_i + (1-y_i) \log
+		[1-p_i]\] \\
+		\textrm{a) } \frac{\del}{\del \b} L(\b)
+		&= - \sum_{i=1}^n \[ y_i \frac{p_i (1-p_i)}{p_i} x_i^\T +
+		(1-y_i) \frac{-p_i (1-p_i)}{1-p_i} x_i^\T \] \\
+		&= - \sum_{i=1}^n \[ y_i (1-p_i) - (1-y_i) p_i \]~ x_i^\T \\
+		&= \sum_{i=1}^n \[ p_i - y_i \]~ x_i^\T  = (p-y)^\T X \\
+		\textrm{b) } \frac{\del^2}{\del \b^2} L(\b)
+		&= \frac{\del}{\del\b} \sum_{i=1}^n x_i \[p_i - y_i\] \\
+		&= \sum_{i=1}^n x_i p_i (1-p_i) x_i^\T = X^\T W X \comma
+		W = \diag(p\circ(1-p))
+	\end{align}
+	
+\end{solution}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \exsection{Max-likelihood estimator (5 Points)}
+
+%% Consider data $D=\{(y_i)\}_{i=1}^n$ that consists only of labels
+%% $y_i \in \{1,..,M\}$. You want to find a probability distribution
+%% $p\in\RRR^M$ with $\sum_{k=1}^M p_k = 1$ that maximizes the data
+%% likelihood. The solution is really simple and intuitive: the optimal
+%% probabilities are
+%% $$p_k = \frac{1}{n}\sum_{i=1}^n [y_i=k]$$
+%% where $[expr]$ equals 1 if $expr=true$ and 0 otherwise. So the sum
+%% just counts the occurances of $y_i=k$, which is then normalized.
+%% Derive this from first principles:
+
+%% a) Understand (=be able to explain every step) that under i.i.d.\ assumptions (1 P)
+%% $$P(D|p) = \prod_{i=1}^n P(y_i|p) =  \prod_{i=1}^n p_{y_i}$$
+%% and
+%% $$\log P(D|p) = \sum_{i=1}^n \log p_{y_i}
+%% = \sum_{i=1}^n \sum_{k=1}^M [y_i=k] \log p_k
+%% = \sum_{k=1}^M n_k \log p_k \comma n_k := \sum_{i=1}^n [y_i=k]$$
+
+%% b) Provide the derivative of
+%% $$\log P(D|p) + \l \(1-\sum_{k=1}^M p_k\)$$
+%% w.r.t.\ $p$ and $\l$. (2 P)
+
+%% c) Set both derivatives equal to zero to derive the optimal parameter $p^*$. (2 P)
+
+
+\exerfoot

@@ -1,0 +1,122 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Machine Learning}
+\renewcommand{\exnum}{12}
+
+\exercises
+
+All exercises are voluntary, for you to collect extra points.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Autoencoder (7 Points)}
+
+On the webpage find and download the Yale face database
+{\tiny\url{http://ipvs.informatik.uni-stuttgart.de/mlr/marc/teaching/data/yalefaces_cropBackground.tgz}}. The
+file contains gif images of 136 faces.
+
+We want to compare two methods (Autoencoder vs PCA) to reduce the dimensionality
+of this dataset. This means that we want to create and train a neural network to
+find a lower-dimensional representation of our data. Recall the slides and exercises
+about dimensionality reduction, neural networks and especially Autoencoders
+(slide 06:10).
+
+a) Create a neural network using tensorflow (or any other framework, e.g., keras) which
+takes the images as input, creates a lower-dimensional representation with dimensionality
+$p=60$ in the hidden layer (i.e., a layer with $60$ neurons) and outputs the reconstructed
+images. The loss function should compare the original image with the reconstructed
+one. After having trained the network, reconstruct all faces and display some examples.
+Report the reconstruction error $\sum_{i=1}^n \norm{x_i - x'_i}^2$. (5P)
+
+b) Use PCA to reduce the dimensionality of the dataset to $p=60$ as well (e.g. use your
+code from exercise e08:02). Reconstruct all faces using PCA and display some examples.
+Report the reconstruction error $\sum_{i=1}^n \norm{x_i - x'_i}^2$. Compare the
+reconstructions and the error from PCA with the results from the Autoencoder. Which
+one works better? (2P)
+
+Extra) Repeat for various dimensions $p=5, 10, 15, 20\ldots$
+
+
+\exsection{Special cases of CRFs (3 Points)}
+
+Slide 03:31 summarizes the core equations for CRFs.
+
+a) Confirm the given equations for $\na_\b Z(x,\b)$ and $\he[\b]
+Z(x,\b)$ (i.e., derive them from the definition of $Z(x,\b)$). (1P)
+
+b) Binary logistic regression is clearly a special case of
+CRFs. Sanity check that the gradient and Hessian given on slide 03:20
+can alternatively be derived from the general expressions for $\na_\b L(\b)$ and
+$\he[\b] L(\b)$ on slide 03:31. (The same is true for the multi-class case.) (1P)
+
+c) Proof that ordinary ridge regression is a special case of CRFs if
+you choose the discriminative function $f(x,y) = - y^2 + 2 y \phi(x)^\T \b$. (1P)
+
+\ifnum\value{solutions}=1
+\begin{solution}
+	In all of the following, $f=f(x,y;\b)$ and $Z=Z(x;\b)$.
+	
+	a)
+	\begin{align}
+		\na Z
+		&= \na \log \sum_y e^f
+		= \frac{1}{e^Z}~ \sum_y e^f \na f
+		= \sum_y p(y|x)~ \na f \\
+		\he Z
+		&= \na \[ \sum_y p(y|x)~ \na f^\T \] \\
+		\na p(y|x)
+		&= \na e^{f-Z} = e^{f-Z}~ [\na f - \na Z] = p(y|x)~ [\na f - \na Z] \\
+		\he Z
+		&= \sum_y p(y|x)~ [\na f - \na Z]~  \na f^\T \\
+		&= \sum_y p(y|x)~ \na f~  \na f^\T  - \na Z [\sum_y p(y|x)~ \na f^\T]\\
+		&= \sum_y p(y|x)~ \na f~  \na f^\T  - \na Z \na Z^\T
+	\end{align}
+	b)
+	\begin{align}
+		y & \in\{0,1\}\\
+		f(x,y)
+		&= \phi(x,y)^\T \b = [y=1] \phi(x)^\T \b = y \phi(x)^\T \b \\
+		\na Z
+		&= \sum_y p(y|x)~ [y=1]~ \phi(x) = p(x)~ \phi(x) \\
+		\na L
+		&= \sum_i \na Z(x_i) - \na f(x_i,y_i) \\
+		&= \sum_i p(x_i) \phi(x) - y_i \phi(x_i) \\
+		&= \sum_i (p_i - y_i) \phi(x_i) = X^\T (\vec p-\vec y) \\
+		\he Z
+		&= \sum_y p(y|x)~ [y=1]~ \phi(x) \phi(x)^\T - [p(x)~ \phi(x)]~
+		[p(x)~ \phi(x)]^\T\\
+		&= [p(x) - p(x)^2] \phi(x) \phi(x)^\T \\
+		\he L
+		&= \sum_i \he Z(x_i)
+		= \sum_i \phi(x_i) [p_i - p_i^2] \phi(x_i)^\T
+		= X^\T W X
+	\end{align}
+	c) Let me define $f(x,y) = -\half y^2 + y \phi(x)^\T \b$ instead. We have
+	\begin{align}
+		p(y | x)
+		&= e^{f(x,y) - Z(x,\b)}
+		= e^{ -\half  y^2 + y \phi(x)^\T \b - Z(x,\b)} \\
+		&= e^{- \half (y - \phi(x)^\T \b)^2 + \half (\phi(x)^\T \b)^2 - Z(x,\b)} \\
+		&=  (2\pi)^{1/2}~ \NN(y \| \phi(x)^\T \b, 1)~ e^{\half (\phi(x)^\T \b)^2 - Z(x,\b)} \\
+		&= \NN(y \| \phi(x)^\T \b, 1) \comma Z(x,\b) \defeq \half (\phi(x)^\T \b)^2 - \half \log( 2\pi )
+	\end{align}
+	where $\NN(y|m,1) = \frac{1}{\sqrt{2\pi}} e^{-\half(y-m)^2}$. Note
+	that we \emph{have} to define $Z(x,y)$ as above, because, by
+	definition, $Z(x,y)$ needs to be the normalization factor (partition
+	function). So, the conditional probability $p(y | x) = \NN(y
+	\| \phi(x)^\T \b, 1)$ is just the unit-variance Gaussian around the
+	linear prediction $\phi(x)^\T \b$. Next, the loss:
+	\begin{align}
+		L(\b)
+		&= - \sum_i \log p(y_i | x_i)
+		= - \sum_i \half \log(2\pi) - \half (y_i - \phi(x_i)^\T \b)^2 ~.
+	\end{align}
+	and that's nothing but the squared error. (The factor $\half$ changes
+	the effect of regularization a bit; let's neglect this; or I shouldn't
+	have redefined $f(x,y)$...) So, as we have the same objective, the
+	optimal $\b$ will be exactly the same as for ridge regression.
+\end{solution}
+\fi
+
+
+\exerfoot
