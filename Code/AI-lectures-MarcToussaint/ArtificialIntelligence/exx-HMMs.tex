@@ -1,0 +1,149 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Artificial Intelligence}
+\renewcommand{\coursepicture}{course_ai}
+\renewcommand{\coursedate}{Winter 2019}
+\renewcommand{\exnum}{9}
+
+\exercises
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Dieses Blatt enthält Präsenzübungen, die am 26.01. in der
+Übungsgruppe besprochen werden und auch zur Klausurvorbereitung
+dienen. Sie sind nicht abzugeben. Studenten werden zufällig gebeten,
+sich an den Aufgaben zu versuchen.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\exsection{Präsenzaufgabe: ~ Hidden Markov Modelle}
+
+Sie stehen bei Nacht auf einer Br"ucke "uber der B14 in Stuttgart und
+m"ochten z"ahlen, wieviele LKW, Busse und Kleintransporter in Richtung
+Bad Canstatt fahren. Da Sie mehrere Spuren gleichzeitig beobachten und
+es dunkel ist machen Sie folgende Fehler bei der Beobachtung des Verkehrs:
+\begin{itemize}
+\item Einen LKW erkennen Sie in 30\% der F"alle als Bus, in 10\% der
+  F"alle als Kleintransporter.
+\item Einen Bus erkennen Sie in 40\% der F"alle als LKW, in 10\% der
+  F"alle als Kleintransporter.
+\item Einen Kleintransporter erkennen Sie in je 10\% der F"alle als
+ Bus bzw. LKW.
+\end{itemize}
+Zudem nehmen Sie folgendes an:
+\begin{itemize}
+\item Auf einen Bus folgt zu 10\% ein Bus und zu 30\% ein LKW,
+  ansonsten ein Kleintransporter.
+\item Auf einen LKW folgt zu 60\% ein Kleintransporter und zu 30\% ein
+  Bus, ansonsten ein weiterer LKW.
+\item Auf einen Kleintransporter folgt zu 80\% ein Kleintransporter
+  und zu je 10\% ein Bus bzw. ein LKW.
+\end{itemize}
+Sie wissen sicher, dass das erste beobachtete Fahrzeug tatsächlich ein
+Kleintransporter ist.
+
+a) Formulieren Sie das HMM dieses Szenarios. D.h., geben Sie explizit
+$P(X_1)$, $P(X_{t\po}|X_t)$ und $P(Y_t|X_t)$ an.
+
+b) Prädiktion: Was ist die Marginal-Verteilung $P(X_3)$ über das
+3. Fahrzeug.
+
+c) Filtern: Sie machten die Beobachtungen $Y_{1:3}=(K, B,
+B)$. Was ist die Wahrscheinlichkeit $P(X_3|Y_{1:3})$ des 3. Fahrzeugs
+gegeben diese Beobachtungen?
+
+d) Glätten: Was ist die Wahrscheinlichkeit $P(X_2|Y_{1:3})$ des 2. Fahrzeugs,
+gegeben die 3 Beobachtungen?
+
+e) Viterbi (wahrscheinlichste Folge): Was ist die wahrscheinlichste
+Folge $\argmax_{X_{1:3}} P(X_{1:3}|Y_{1:3})$ an Fahrzeugen, gegeben
+  die 3 Beobachtungen?
+
+\begin{solution}
+a) Wir schreiben Wahrscheinlichkeitstabellen als ``Vektor'' und
+``Matrix'', wobei der Zeilenindex (wie bei Matrizen) das \emph{erste}
+Argument indiziert. Alle Indizes entsprechen der Reihenfolge L (LKW),
+B (Bus), K (Kleintransporter).
+\begin{align}
+P(X_1) = \vec p = \mat{c}{ 0 \\ 0 \\ 1} \comma
+P(X_{t\po}|X_t) = \vec T = \mat{ccc}{
+.1 & .3 & .1 \\
+.3 & .1 & .1 \\
+.6 & .6 & .8 }\comma
+P(Y_t|X_t) = \mat{ccc}{
+.6 & .4 & .1 \\
+.3 & .5 & .1 \\
+.1 & .1 & .8 }
+\end{align}
+
+b)
+\begin{align}
+P(X_3)
+&= \sum_{X_1,X_2} P(X_1,X_2,X_3)
+ = \sum_{X_1,X_2} P(X_3|X_2)~ P(X_2|X_1)~ P(X_1) = \vec T^2 \vec p
+\end{align}
+
+c) Dies ist die ``Vorwärts-Nachricht'' $\a_3(X_3)$ multipliziert mit der
+Beobachtungs-Nachricht $\r_3(X_3)$. Wir notieren mit $\cdot$ 
+das element-weise Produkt:
+\begin{align}
+P(X_3|Y_{1:3})
+&\propto \r_3 \cdot \a_3
+= \r_3 \cdot \vec T (\r_2 \cdot \a_2)
+= \r_3 \cdot \vec T (\r_2 \cdot \vec T(\r_1 \cdot \a_1))\\
+&\quad \a_1 = \vec p = \mat{c}{ 0 \\ 0 \\ 1} \comma
+\r_1 = \mat{c}{ .1 \\ .1 \\ .8} \comma
+\r_2 = \r_3 = \mat{c}{ .4 \\ .5 \\ .1}
+\end{align}
+Beachte: Das obige Message-Passing ist äquivalent zum
+expliziten Ausmarginalisieren:
+\begin{align}
+P(X_3|Y_{1:3})
+\propto \sum_{X_1, X_2} P(X_{1:3},Y_{1:3})
+= P(Y=B|X_3)~ \sum_{X_2} P(X_3|X_2)~ P(Y=B|X_2)~ \sum_{X_1} P(X_2|X_1)~ P(Y=K|X_1)~ P(X_1)
+\end{align}
+
+
+d) \begin{align}
+P(X_2|Y_{1:3})
+&\propto \b_2 \cdot \r_2 \cdot \a_2
+= [\vec T^\T (\b_3 \cdot \r_3)] \cdot \r_2 \cdot [\vec
+T(\r_1 \cdot \a_1)] \comma \b_3(X_3) := P(\emptyset | X_3) \equiv \mat{c}{1\\1\\1}
+\end{align}
+Bemerkung: Auch dies ist äquivalent zum Marginalisieren $\sum_{X_1, X_3}
+P(X_{1:3},Y_{1:3})$.
+
+e) [Nicht Klausur-relevant.] Wir berechnen zunächst
+Viterbi-Vorwärtsnachrichten $\hat\a_t$ indem wir die Summation (implizit in den
+obigen Matrixmultiplikationen) durch Maximierung ersetzen. Zur
+Vereinfachung schreiben wir $A\cdot x$ für ein ``element-weises
+Produkt'' von Matrix $A$ mit Vektor $x$ (genauer, Tensorprodukt).
+\begin{align}
+\hat a_2
+&= \max\{ \vec T\cdot (\r_1 \cdot \vec p) \} 
+ = \max\{ \vec T\cdot \mat{c}{.0 \\ .0 \\ .8 } \} 
+ = .8~ \max\{ \mat{ccc}{
+0 & 0 & .1 \\
+0 & 0 & .1 \\
+0 & 0 & .8 } \} = .8~ \mat{c}{ .1 \\ .1 \\ .8 } \\
+\hat a_3
+&= \max\{ \vec T\cdot (\r_2 \cdot \hat\a_2) \} 
+ = .8~ \max\{ \vec T\cdot \mat{c}{.04 \\ .05 \\ .08 } \} 
+ = .8~ \max\{ \mat{ccc}{
+.004 & .015 & .008 \\
+.012 & .005 & .008 \\
+.024 & .030 & .064 } \} = .8~ \mat{c}{ .015 \\ .012 \\ .064 } \\
+\hat a_3 \cdot \r_3
+&= .8~ \mat{c}{ .006 \\ .006 \\ .0064 }
+\end{align}
+Damit ist die wahrscheinlichste Belegung von $X_3$ Kleinbus. Man
+könnte auf gleiche Weise Viterbi-Rückwärtsnachrichten berechnen und
+somit für alle Variablen die wahrscheinlichste Belegung
+finden. Effizienter ist das sogenannte Viterbi-Decoding: Verfolgt
+man zurück, durch welche $\max$-Entscheidungen die Zahl $.0064$
+zustande kam, so erkennt man als wahrscheinlichstes $X_{1,2,3}^*=$
+(Kleinbus, Kleinbus, Kleinbus).
+
+
+\end{solution}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\exerfoot

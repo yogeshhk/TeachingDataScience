@@ -1,0 +1,988 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Artificial Intelligence}
+\renewcommand{\coursepicture}{course_ai}
+\renewcommand{\coursedate}{Winter 2019}
+\renewcommand{\topic}{Propositional Logic**}
+\renewcommand{\keywords}{}
+
+\slides[(slides based on Stuart Russell's AI course)]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\story{
+
+Most students will have learnt about propositional logic their first
+classes. It represents the simplest and most basic kind of logic.
+The main motivation to teach it really is as a precursor of
+first-order logic (FOL), which is covered in the next lecture. The intro of
+the next lecture motivates FOL in detail. The main point is that in
+recent years there were important developments that unified FOL
+methods with probabilistic reasoning and learning methods, which
+really allows to tackle novel problems.
+
+In this lecture we go quickly over the syntax and semantics of
+propositional logic. Then we cover the basic methods for logic
+inference: fwd \& bwd chaining, as well as resolution.
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Syntax \& Semantics}{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Outline}{
+
+\item Example: Knowledge-based agents \& Wumpus world
+
+
+\item Logic in general---models and entailment
+
+\item Propositional (Boolean) logic
+
+\item Equivalence, validity, satisfiability
+
+\item Inference rules and theorem proving\\
+ -- forward chaining\\
+ -- backward chaining\\
+ -- resolution
+
+%\item Model checking
+%
+%\item Propositional knowledge-based agents
+%
+%\item Boolean circuit agents
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Knowledge base: Definition}
+\slide{Knowledge bases}{
+
+~
+
+\show[.6]{markov}
+
+~
+
+\item An agent maintains a knowledge base
+
+%% \show[0.8]
+%% \show{russell/kbs.pdf}
+
+~
+
+\defn{Knowledge base} = \defn{set of sentences} of a \emph{formal} language
+
+%% ~
+
+%% \defn{Declarative} approach to building an agent (or other system):\\
+%%    \defprog{Tell} it what it needs to know
+
+%% Then it can \defprog{Ask} itself what to do---answers should follow from the KB
+
+%% Agents can be viewed at the \defn{knowledge level}\\
+%%    i.e., \emph{what they know}, regardless of how implemented
+
+%% Or at the \defn{implementation level}\\
+%%    i.e., data structures in KB and algorithms that manipulate them
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{A simple knowledge-based agent}{
+
+%% \input{russell/logical-agent-algorithm}
+
+%% The agent must be able to:\\ \quad
+%% Represent states, actions, etc.\\ \quad
+%% Incorporate new percepts\\ \quad
+%% Update internal representations of the world\\ \quad
+%% Deduce hidden properties of the world\\ \quad
+%% Deduce appropriate actions
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Wumpus World example}
+\slide{Wumpus World description}{
+
+\hspace*{-5mm}\begin{tabular}{lr}
+\hbox{\begin{minipage}[b]{0.6\columnwidth}
+\emph{Performance measure} \\ \quad
+  gold +1000, death -1000\\ \quad
+  -1 per step, -10 for using the arrow
+
+\emph{Environment}\\ \quad
+Squares adjacent to wumpus are smelly\\ \quad
+Squares adjacent to pit are breezy\\ \quad
+Glitter iff gold is in the same square\\ \quad
+Shooting kills wumpus if you are facing it\\ \quad
+The wumpus kills you if in the same square\\ \quad
+Shooting uses up the only arrow\\ \quad
+Grabbing picks up gold if in same square\\ \quad
+Releasing drops the gold in same square
+\end{minipage}}
+&
+\showh[0.34]{russell/wumpus-world.pdf}
+\end{tabular}
+
+\emph{Actuators} Left turn, Right turn,\\
+    Forward, Grab, Release, Shoot, Climb
+
+\emph{Sensors} Breeze, Glitter, Stench, Bump, Scream
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Wumpus world characterization}{
+
+%% \emph{Observable} 
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Wumpus world characterization}{
+
+%% \emph{Observable} No---only \emph{local} perception
+
+%% \emph{Deterministic} 
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Wumpus world characterization}{
+
+%% \emph{Observable} No---only \emph{local} perception
+
+%% \emph{Deterministic} Yes---outcomes exactly specified
+
+%% %% \emph{Episodic} 
+
+%% %% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %% \slide{Wumpus world characterization}{
+
+%% %% \emph{Observable} No---only \emph{local} perception
+
+%% %% \emph{Deterministic} Yes---outcomes exactly specified
+
+%% %% \emph{Episodic} No---sequential at the level of actions
+
+%% %% \emph{Static}  
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Wumpus world characterization}{
+
+%% \emph{Observable} No---only \emph{local} perception
+
+%% \emph{Deterministic} Yes---outcomes exactly specified
+
+%% %\emph{Episodic} No---sequential at the level of actions
+
+%% \emph{Static}  Yes---Wumpus and Pits do not move
+
+%% \emph{Discrete} 
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Wumpus world characterization}{
+
+%% \emph{Observable} No---only \emph{local} perception
+
+%% \emph{Deterministic} Yes---outcomes exactly specified
+
+%% %\emph{Episodic} No---sequential at the level of actions
+
+%% \emph{Static}  Yes---Wumpus and Pits do not move
+
+%% \emph{Discrete} Yes
+
+%% \emph{Single-agent} 
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Wumpus world characterization}{
+
+%% \emph{Observable} No---only \emph{local} perception
+
+%% \emph{Deterministic} Yes---outcomes exactly specified
+
+%% %\emph{Episodic} No---sequential at the level of actions
+
+%% \emph{Static}  Yes---Wumpus and Pits do not move
+
+%% \emph{Discrete} Yes
+
+%% \emph{Single-agent} Yes---Wumpus is essentially a natural feature
+
+
+
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Exploring a wumpus world}{
+
+\vspace*{0.4in}
+
+\only<1>{\show[0.5]{russell/wumpus-seq0c}}
+\only<2>{\show[0.5]{russell/wumpus-seq1c}}
+\only<3>{\show[0.5]{russell/wumpus-seq2c}}
+\only<4>{\show[0.5]{russell/wumpus-seq3c}}
+\only<5>{\show[0.5]{russell/wumpus-seq4c}}
+\only<6>{\show[0.5]{russell/wumpus-seq5c}}
+\only<7>{\show[0.5]{russell/wumpus-seq6c}}
+\only<8>{\show[0.5]{russell/wumpus-seq7c}}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Other tight spots}{
+
+\twocol[.05]{.4}{.5}{
+\show{russell/wumpus-bb.pdf}
+}{
+Breeze in (1,2) and (2,1)\\ \quad
+$\implies$ no safe actions
+
+Assuming pits uniformly distributed,\\
+(2,2) has pit w/ prob 0.86, vs.~0.31
+}
+
+~
+
+~
+
+\twocol[.15]{.3}{.5}{
+\show{russell/wumpus-s.pdf}
+}{
+Smell in (1,1) $\implies$ cannot move
+
+Can use a strategy of \defn{coercion}:\\ \quad
+  shoot straight ahead\\ \quad
+  wumpus was there $\implies$ dead $\implies$ safe\\ \quad
+  wumpus wasn't there $\implies$ safe
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Logic: Definition, Syntax, Semantics}
+\slide{Logic in general}{
+
+\item A \defn{Logic} is a formal languages for representing information
+   such that conclusions can be drawn
+
+\item The \defn{Syntax} defines the sentences in the language
+
+\item The \defn{Semantics} defines the ``meaning'' of sentences;
+   i.e., define \defn{truth} of a sentence in a world
+
+~
+
+E.g., the language of arithmetic
+
+$x+2 \geq y$ is a sentence; $x2+y>{}$ is not a sentence
+
+$x+2 \geq y$ is true iff the number $x+2$ is no less
+than the number $y$
+
+$x+2 \geq y$ is true in a world where $x = 7,\ y = 1$\\
+$x+2 \geq y$ is false in a world where $x = 0,\ y = 6$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Notions in general logic}{
+
+\item A \defn{logic} is a language, elements $\a$ are \defn{sentences}
+
+\item A \defn{model} $m$ is a world/state description that allows us to evaluate $\a(m)\in\{\textsf{true},\textsf{false}\}$
+uniquely for any sentence $\a$
+
+We define $M(\a)=\{m:\a(m)=\textsf{true}\}$ as the models for
+which $\a$ holds
+
+\item \defn{Entailment} $\a \models \b$:~ $M(\a) \subseteq M(\b)$,
+~{\color{gray}``$\forall_m:~ \a(m) \implies \b(m)$''} ~ {(Folgerung)}
+
+\item \defn{Equivalence}
+$\alpha\equiv\beta$:~ iff ($\alpha\models\beta$ and
+$\beta\models\alpha$)
+
+\item A \defn{KB} is a set (=conjunction) of sentences
+
+\item An \defn{inference} procedure $i$ can infer $\a$ from KB: $KB\vdash_i\alpha$
+
+\item \defn{soundness} of $i$:~ $KB\vdash_i\alpha$ implies $KB\models\alpha$ ~ {(Korrektheit)}
+
+\item \defn{completeness} of $i$:~ $KB\models\alpha$ implies $KB\vdash_i\alpha$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Propositional logic: Syntax}
+\slide{Propositional logic: Syntax}{
+
+\begin{tabular}{lcl}
+$\langle$ sentence$\rangle$ & $\to$ & $\langle$ atomic sentence$\rangle$ $\mid$ $\langle$ complex sentence$\rangle$ \\
+$\langle$ atomic sentence$\rangle$
+ & $\to$ & true $\mid$ false $\mid$ $P$ $\mid$ $Q$ $\mid$ $R$ $\mid$ \dots \\
+$\langle$ complex sentence$\rangle$
+ & $\to$ & $\lnot$ $\langle$ sentence$\rangle$ \\
+&& $\mid$ ($\langle$ sentence$\rangle$ $\land$ $\langle$ sentence$\rangle$) \\
+&& $\mid$ ($\langle$ sentence$\rangle$ $\lor$ $\langle$ sentence$\rangle$) \\
+&& $\mid$ ($\langle$ sentence$\rangle$ $\implies$ $\langle$ sentence$\rangle$) \\
+&& $\mid$ ($\langle$ sentence$\rangle$ $\iff$ $\langle$ sentence$\rangle$) \\
+\end{tabular}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Propositional logic: Semantics}
+\slide{Propositional logic: Semantics}{
+
+\item Each model specifies true/false for each proposition symbol
+
+\begin{tabular}{lccc}
+E.g. & $P_{1,2}$ & $P_{2,2}$ & $P_{3,1}$\\
+     & $\textsf{true}$   &  $\textsf{true}$ &  $\textsf{false}$
+\end{tabular}
+
+(With these symbols, 8 possible models, can be enumerated automatically.)
+
+\item Rules for evaluating truth with respect to a model $m$:
+
+{\small \begin{tabular}{rcclcl}
+$\lnot S$          & is true iff & $S$ & is false & & \\
+$S_1 \land S_2$    & is true iff & $S_1$ & is true \emph{and} & $S_2$ & is true\\
+$S_1 \lor S_2$     & is true iff & $S_1$ & is true \emph{or} & $S_2$ & is true\\
+$S_1 \implies S_2$ & is true iff& $S_1$ & is false \emph{or} & $S_2$ & is true\\
+\qquad i.e.,  & is false iff& $S_1$ & is true \emph{and} & $S_2$ & is false\\
+$S_1 \iff S_2$ & is true iff& $S_1\implies S_2$ & is true \emph{and} & $S_2\implies S_1$ & is true
+\end{tabular}}
+
+\item Simple recursive process evaluates an arbitrary sentence, e.g.,\\
+$\lnot P_{1,2}\land (P_{2,2}\lor P_{3,1})$ = {$\textsf{true}\land (\textsf{false} \lor \textsf{true}) = \textsf{true}\land
+\textsf{true}  = \textsf{true}$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Notions in propositional logic -- summary}{
+
+\small
+
+\item \defn{conjunction}: $\a \land \b$, \defn{disjunction}: $\a \lor \b$, \defn{negation}: $\neg\a$
+
+\item \defn{implication}: {$\alpha\implies \beta
+~\equiv~ \lnot \alpha \lor \beta$}
+
+\item \defn{biconditional}: $\alpha\iff \beta ~\equiv~ (\alpha\implies \beta)\land (\beta\implies \alpha)$
+
+Note: $\models$ and $\equiv$ are statements about sentences in a logic;
+$\implies$ and $\iff$ are symbols in the grammar of propositional logic
+
+\item $\a$ \defn{valid}: true for \emph{any} model
+(allgemeing{\"u}ltig). E.g., $\textsf{true}$;~ $A \lor \lnot A$;~ $A \implies A$;~ 
+      $(A \land (A \implies B)) \implies B$
+
+Note: $KB \models \alpha$ ~iff~ [$(KB \implies \alpha)$ is
+valid]
+
+\item $\a$ \defn{unsatisfiable}: true for \emph{no} model. E.g.,
+$A\land \lnot A$;
+
+Note: $KB \models \alpha$ ~iff~ [$(KB \land \lnot \alpha)$ is unsatisfiable]
+
+\item \defn{literal}: $A$ or $\neg A$, \defn{clause}: disj.\ of literals, \defn{CNF}: conj.\ of clauses
+
+\item \defn{Horn clause}: symbol $\mid$ (conjunction of symbols $\implies$ symbol), \defn{Horn form}: conjunction of Horn clauses
+
+\defn{Modus Ponens} rule: complete for Horn KBs
+$\frac{\alpha_1,\ldots,\alpha_n,\qquad \alpha_1\land \cdots \land \alpha_n\implies \beta}{\beta}$
+
+\defn{Resolution} rule: complete for propositional logic in CNF,
+let ``$\ell_i = \neg m_j$'':
+
+{\cen{$\frac {\ell_1 \lor \cdots\lor \ell_k,\qquad m_1 \lor \cdots\lor m_n}
+        {\ell_1 \lor \cdots\lor \ell_{i-1}\lor \ell_{i+1}\lor\cdots\lor \ell_k
+        \lor m_1 \lor \cdots \lor m_{j-1}\lor m_{j+1}\lor\cdots\lor m_n}
+$}}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Logical equivalence}
+\slide{Logical equivalence}{
+
+\item Two sentences are \defn{logically equivalent} iff true in same models:\\ \quad
+$\alpha\equiv\beta$ if and only if $\alpha\models\beta$ 
+and $\beta\models\alpha$
+
+\small
+
+\begin{align*}
+(\alpha\land \beta) &\quad\equiv\quad (\beta\land \alpha) \quad\mbox{commutativity of }\land\\
+(\alpha\lor \beta) &\quad\equiv\quad (\beta\lor \alpha) \quad\mbox{commutativity of }\lor\\
+((\alpha\land \beta)\land \gamma) &\quad\equiv\quad (\alpha\land (\beta\land \gamma))  \quad\mbox{associativity of }\land\\
+((\alpha\lor \beta)\lor \gamma) &\quad\equiv\quad (\alpha\lor (\beta\lor \gamma))  \quad\mbox{associativity of }\lor\\
+\lnot(\lnot \alpha) &\quad\equiv\quad \alpha \quad\mbox{double-negation elimination}\\
+(\alpha\implies \beta) &\quad\equiv\quad (\lnot \beta \implies \lnot \alpha) \quad\mbox{contraposition}\\
+(\alpha\implies \beta) &\quad\equiv\quad (\lnot \alpha \lor \beta) \quad\mbox{implication elimination}\\
+(\alpha\iff \beta) &\quad\equiv\quad ((\alpha\implies \beta)\land (\beta\implies \alpha)) \quad\mbox{biconditional elimination}\\
+\lnot(\alpha\land \beta) &\quad\equiv\quad (\lnot \alpha \lor \lnot \beta) \quad\mbox{De Morgan}\\
+\lnot(\alpha\lor \beta) &\quad\equiv\quad (\lnot \alpha \land \lnot \beta) \quad\mbox{De Morgan}\\
+(\alpha\land (\beta\lor \gamma)) &\quad\equiv\quad ((\alpha\land \beta)\lor (\alpha\land \gamma))\quad\mbox{distributivity of }\land\mbox{ over }\lor\\
+(\alpha\lor (\beta\land \gamma)) &\quad\equiv\quad ((\alpha\lor \beta)\land (\alpha\lor \gamma)) \quad\mbox{distributivity of }\lor\mbox{ over }\land
+\end{align*}
+
+
+%\hspace*{-10mm}\input{\file{tables}{logical-equivalence-table}}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \key{Entailment}
+%% \slide{Entailment}{
+
+%% \defn{Entailment} means that one thing \emph{follows from} another:
+%% {$$KB \models \alpha$$}
+
+%% \item Knowledge base $KB$ entails sentence $\alpha$
+%%   if and only if $\alpha$ is true in all worlds where $KB$
+%%   is true
+
+%% ~
+
+%% E.g., the KB containing ``the Giants won'' and ``the Reds won''
+%% entails ``The Giants won or the Reds won''
+
+%% E.g., $x+y = 4$ entails  $4 = x+y$
+
+%% \item Entailment is a relationship between sentences (i.e., \emph{syntax})
+%% that is based on \emph{semantics}
+
+%% %Note: brains process \emph{syntax} (of some sort)
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \key{Model}
+%% \slide{Models}{
+
+%% Given a logical sentence, when is its truth uniquely
+%% defined in a world?
+
+%% Logicians typically think in terms of \defn{models}, which are
+%% formally structured worlds\\ (e.g.,\ full abstract description of a
+%% world, configuration of all variables, world state)\\ with respect to
+%% which truth can uniquely be evaluated
+
+%% We say $m$ \emph{is a model of} a sentence $\alpha$
+%% if $\alpha$ is true in $m$
+
+%% $M(\alpha)$ is the set of all models of $\alpha$
+
+%% Then $KB \models \alpha$ if and only if $M(KB) \subseteq M(\alpha)$
+
+%% \twocol{.6}{.4}{
+%% E.g. $KB$ = Giants won and Reds won\\
+%%      $\alpha$ = Giants won
+%% }{
+%% \show{russell/model-inclusion.pdf}
+%% }
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: Entailment in the wumpus world}{
+
+\twocol{.6}{.4}{
+Situation after detecting nothing in [1,1],\\
+moving right, breeze in [2,1]
+
+~
+
+Consider possible models for ?s\\
+assuming only pits 
+
+~
+
+3 Boolean choices $\implies$ 8 possible models
+}{
+\show{russell/wumpus-seq1c-alt.pdf}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Wumpus models}{
+
+\show[0.7]{russell/wumpus-models1.pdf}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Wumpus models}{
+
+\show[0.7]{russell/wumpus-models2.pdf}
+
+$KB$ = wumpus-world rules + observations
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Wumpus models}{
+
+\show[0.7]{russell/wumpus-models3.pdf}
+
+$KB$ = wumpus-world rules + observations
+
+$\alpha_1$ = ``[1,2] is safe'', $KB \models \alpha_1$, proved by \defn{model checking}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Wumpus models}{
+
+%% \show[0.7]
+%% \show{russell/wumpus-models2.pdf}
+
+%% $KB$ = wumpus-world rules + observations
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Wumpus models}{
+
+\show[0.7]{russell/wumpus-models4.pdf}
+
+$KB$ = wumpus-world rules + observations
+
+$\alpha_2$ = ``[2,2] is safe'', $KB  \not\models \alpha_2$
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Propositional logic: Syntax}{
+
+%% Propositional logic is the simplest logic---illustrates basic ideas
+
+%% The proposition symbols $P_1$, $P_2$ etc are sentences
+
+%% If $S$ is a sentence, $\lnot S$ is a sentence (\defn{negation})
+
+%% If $S_1$ and $S_2$ are sentences, $S_1 \land S_2$ is a sentence (\defn{conjunction})
+ 
+%% If $S_1$ and $S_2$ are sentences, $S_1 \lor S_2$ is a sentence (\defn{disjunction})
+
+%% If $S_1$ and $S_2$ are sentences, $S_1 \implies S_2$ is a sentence (\defn{implication})
+
+%% If $S_1$ and $S_2$ are sentences, $S_1 \iff S_2$ is a sentence (\defn{biconditional})
+
+
+
+%% }
+
+%% \slide{Truth tables for connectives}{
+
+%% \cen{\input{\file{tables}{truth-tables-table}}}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Wumpus world sentences}{
+
+%% Let $P_{i,j}$ be true if there is a pit in $[i,j]$.\\
+%% Let $B_{i,j}$ be true if there is a breeze in $[i,j]$.
+%% {\begin{eqnarray*}
+%%  \lnot P_{1,1}\\
+%%  \lnot B_{1,1}\\
+%%  B_{2,1}
+%% \end{eqnarray*}}
+%% ``Pits cause breezes in adjacent squares''
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Wumpus world sentences}{
+
+%% Let $P_{i,j}$ be true if there is a pit in $[i,j]$.\\
+%% Let $B_{i,j}$ be true if there is a breeze in $[i,j]$.
+%% {\begin{eqnarray*}
+%%  \lnot P_{1,1}\\
+%%  \lnot B_{1,1}\\
+%%  B_{2,1}
+%% \end{eqnarray*}}
+%% ``Pits cause breezes in adjacent squares''
+%% {\begin{eqnarray*}
+%%  B_{1,1} &\iff& (P_{1,2} \lor P_{2,1})\\
+%%  B_{2,1} &\iff& (P_{1,1} \lor P_{2,2}\lor P_{3,1})
+%% \end{eqnarray*}}
+%% ``A square is breezy \emph{if and only if} there is an adjacent pit''
+
+%% }
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Inference Methods}{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Inference}
+\slide{Inference}{
+
+\item Inference in the general sense means: Given some pieces of information
+(prior, observed variabes, knowledge base) what is the implication (the implied
+information, the posterior) on other things (non-observed variables, sentence)
+
+~
+
+\item $KB\vdash_i\alpha$ = sentence $\alpha$ can be derived from $KB$ by procedure $i$
+
+Consequences of $KB$ are a haystack; $\alpha$ is a needle.\\
+Entailment = needle in haystack; inference = finding it
+
+\item \defn{Soundness}: $i$ is sound if\\
+whenever $KB\vdash_i\alpha$, it is also true that $KB\models\alpha$
+
+\defn{Completeness}: $i$ is complete if\\
+whenever $KB\models\alpha$, it is also true that $KB\vdash_i\alpha$
+
+~
+
+{\tiny
+Preview: we will define a logic (first-order logic) which is
+expressive enough to say almost anything of interest, and for which
+there exists a sound and complete inference procedure. That is, the procedure will answer any question whose answer follows
+from what is known by the $KB$.
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Inference by enumeration}{
+
+%\cen{\small\input{russell/wumpus-model-table}}
+
+Enumerate rows (different assignments to symbols),\\
+if {KB} is true in row, check that $\alpha$ is too
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Inference by enumeration}{
+
+Depth-first enumeration of all models is sound and complete 
+
+%\input{russell/tt-entails-algorithm}
+
+$O(2^n)$ for $n$ symbols%; problem is \emph{co-NP-complete}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Proof methods}{
+
+\item Proof methods divide into (roughly) two kinds:
+
+\item {Application of inference rules}\\ \quad
+    -- Legitimate (sound) generation of new sentences from old\\ \quad
+    -- \defn{Proof} = a sequence of inference rule applications\\
+       Can use inference rules as operators in a standard search alg.\\ \quad
+    -- Typically require translation of sentences into a \defn{normal form}
+
+\item {Model checking}\\ \quad
+    truth table enumeration (always exponential in $n$)\\ \quad
+    improved backtracking, e.g., Davis--Putnam--Logemann--Loveland
+    (see book)\\ \quad
+    heuristic search in model space (sound but incomplete)\\
+       e.g., min-conflicts-like hill-climbing algorithms
+
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Horn Form}
+\key{Modus Ponens}
+\slide{Forward and backward chaining}{
+
+\item Applicable when KB is in Horn Form
+
+\item \defn{Horn Form} (restricted)\\
+    KB = \emph{conjunction} of \emph{Horn clauses}\\ \quad
+    Horn clause = \\
+    -- proposition symbol;  or\\
+    -- (conjunction of symbols) $\implies$ symbol\\ \quad
+    E.g., $C \land (B \implies A) \land (C \land D \implies B)$
+
+~
+
+\item \defn{Modus Ponens} (for Horn Form): complete for Horn KBs
+{$$\frac{\alpha_1,\ldots,\alpha_n,\qquad \alpha_1\land \cdots \land \alpha_n\implies \beta}{\beta} 
+$$}
+Can be used with \defn{forward chaining} or \defn{backward chaining}.\\
+
+\item These algorithms are very natural and run in \emph{linear} time
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Forward chaining}
+\slide{Forward chaining}{
+
+\item Represent a KB as a graph
+
+\item Fire any rule whose premises are satisfied in the $KB$,\\
+   add its conclusion to the $KB$, until query is found
+
+\twocol{0.48}{.48}{
+%\input{russell/fc-example-table}
+}{
+\showh[0.5]{russell/pl-horn-example.pdf}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Forward chaining example}{
+
+\only<1>{\show[0.35]{russell/fc-horn-example01c.pdf}}
+\only<2>{\show[0.35]{russell/fc-horn-example02c.pdf}}
+\only<3>{\show[0.35]{russell/fc-horn-example03c.pdf}}
+\only<4>{\show[0.35]{russell/fc-horn-example04c.pdf}}
+\only<5>{\show[0.35]{russell/fc-horn-example05c.pdf}}
+\only<6>{\show[0.35]{russell/fc-horn-example06c.pdf}}
+\only<7>{\show[0.35]{russell/fc-horn-example07c.pdf}}
+\only<8>{\show[0.35]{russell/fc-horn-example08c.pdf}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Forward chaining algorithm}{
+
+%\input{russell/pl-fc-algorithm}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Completeness of Forward Chaining}
+\slide{Proof of completeness}{
+
+FC derives every atomic sentence that is entailed by $KB$
+
+1. FC reaches a \defn{fixed point} where no new atomic sentences are derived
+
+2. Consider the final state as a model $m$, assigning true/false to symbols
+
+3. Every clause in the original $KB$ is true in $m$\\ \quad
+   \emph{Proof}:  Suppose a clause $a_1\land\ldots\land a_k\implies b$ is false in $m$\\ \quad
+   Then $a_1\land\ldots\land a_k$ is true in $m$ and $b$ is false in $m$\\ \quad
+   Therefore the algorithm has not reached a fixed point!
+
+4. Hence $m$ is a model of $KB$
+
+5. If $KB\models q$, $q$ is true in \emph{every} model of $KB$, including $m$
+
+\emph{General idea}: construct any model of $KB$ by sound inference, check $\alpha$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Backward Chaining}
+\slide{Backward chaining}{
+
+\item Idea: work backwards from the query $q$:\\ \quad
+   to prove $q$ by BC,\\
+      check if $q$ is known already, or\\
+      prove by BC all premises of some rule concluding $q$
+
+\item Avoid loops: check if new subgoal is already on the goal stack
+
+\item Avoid repeated work: check if new subgoal \\ \quad
+  1) has already been proved true, or\\ \quad
+  2) has already failed
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Backward chaining example}{
+
+\only<1>{\show[0.35]{russell/bc-horn-example01c.pdf}}
+\only<2>{\show[0.35]{russell/bc-horn-example02c.pdf}}
+\only<3>{\show[0.35]{russell/bc-horn-example03c.pdf}}
+\only<4>{\show[0.35]{russell/bc-horn-example04c.pdf}}
+\only<5>{\show[0.35]{russell/bc-horn-example05c.pdf}}
+\only<6>{\show[0.35]{russell/bc-horn-example06c.pdf}}
+\only<7>{\show[0.35]{russell/bc-horn-example07c.pdf}}
+\only<8>{\show[0.35]{russell/bc-horn-example08c.pdf}}
+\only<9>{\show[0.35]{russell/bc-horn-example09c.pdf}}
+\only<10>{\show[0.35]{russell/bc-horn-example10c.pdf}}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Forward vs.~backward chaining}{
+
+FC is \defn{data-driven}, cf. automatic, unconscious processing,\\
+e.g., object recognition, routine decisions
+
+May do lots of work that is irrelevant to the goal
+
+BC is \defn{goal-driven}, appropriate for problem-solving,\\
+e.g., Where are my keys? How do I get into a PhD program?
+
+Complexity of BC can be \emph{much less} than linear in size of KB
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Conjunctive Normal Form}
+\key{Resolution}
+\slide{Resolution}{
+
+\item \defn{Conjunctive Normal Form} (CNF---universal)\\
+    \emph{conjunction} of $\underbrace{\mbox{\emph{disjunctions} of \emph{literals}}}$\\
+    \phantom{\emph{conjunction} of \emph{disjuncti}}\emph{clauses}\\
+    E.g., $(A \lor \lnot B) \land (B \lor \lnot C \lor \lnot D)$
+
+\item \defn{Resolution} inference rule (for CNF): complete for propositional logic
+
+{\cen{$\frac {\ell_1 \lor \cdots\lor \ell_k,\qquad m_1 \lor \cdots\lor m_n}
+        {\ell_1 \lor \cdots\lor \ell_{i-1}\lor \ell_{i+1}\lor\cdots\lor \ell_k
+        \lor m_1 \lor \cdots \lor m_{j-1}\lor m_{j+1}\lor\cdots\lor m_n}
+$}}
+where $\ell_i$ and $m_j$ are complementary literals.
+
+\item E.g.,\qquad \twocol{.4}{.4}{
+{$$
+   \frac{P_{1,3} \lor P_{2,2},\qquad\lnot P_{2,2}}
+       {P_{1,3}}
+$$}
+}{
+\showh[.4]{russell/wumpus-seq5c.pdf}
+}
+
+~
+
+\item Resolution is sound and complete for propositional logic
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Conversion to CNF}
+\slide{Conversion to CNF}{
+
+$B_{1,1} \iff (P_{1,2} \lor P_{2,1})$
+
+1.  Eliminate $\iff$, replacing $\alpha\iff \beta$ with {$(\alpha\implies
+\beta)\land (\beta\implies \alpha)$}.
+{$$
+   (B_{1,1} \implies (P_{1,2} \lor P_{2,1})) \land 
+   ((P_{1,2} \lor P_{2,1})\implies B_{1,1})
+$$}
+2. Eliminate $\implies$, replacing $\alpha\implies \beta$ with {$\lnot
+\alpha\lor \beta$}.
+{$$
+   (\lnot B_{1,1} \lor P_{1,2} \lor P_{2,1}) \land 
+   (\lnot(P_{1,2} \lor P_{2,1})\lor B_{1,1})
+$$}
+3. Move $\lnot$ inwards using de Morgan's rules and double-negation:
+{$$
+   (\lnot B_{1,1} \lor P_{1,2} \lor P_{2,1}) \land 
+   ((\lnot P_{1,2} \land \lnot P_{2,1})\lor B_{1,1})
+$$}
+4. Apply distributivity law (${\lor}$ over ${\land}$) and flatten:
+{$$
+   (\lnot B_{1,1} \lor P_{1,2} \lor P_{2,1}) \land 
+   (\lnot P_{1,2} \lor B_{1,1}) \land (\lnot P_{2,1} \lor B_{1,1})
+$$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Resolution algorithm}{
+
+Proof by contradiction, i.e., show $KB\land\lnot\alpha$ unsatisfiable
+
+%\input{russell/pl-resolution-algorithm}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Resolution example}{
+
+$KB = (B_{1,1} \iff (P_{1,2} \lor P_{2,1})) \land \lnot B_{1,1}$
+\qquad$\alpha = \lnot P_{1,2}$
+
+\vspace*{0.5in}
+
+\show[1.0]{russell/wumpus-resolution.pdf}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Summary}{\label{lastpage}
+
+Logical agents apply \defn{inference} to a \defn{knowledge base}\\ \quad
+to derive new information and make decisions
+
+Basic concepts of logic:\\ \quad
+-- \defn{syntax}: formal structure of \defn{sentences}\\ \quad
+-- \defn{semantics}: \defn{truth} of sentences wrt \defn{models}\\ \quad
+-- \defn{entailment}: necessary truth of one sentence given another\\ \quad
+-- \defn{inference}: deriving sentences from other sentences\\ \quad
+-- \defn{soundness}: derivations produce only entailed sentences\\ \quad
+-- \defn{completeness}: derivations can produce all entailed sentences
+
+Wumpus world requires the ability to represent partial
+and negated information, reason by cases, etc.
+
+Forward, backward chaining are linear-time, complete for Horn clauses\\
+Resolution is complete for propositional logic
+
+Propositional logic lacks expressive power
+
+
+}
+
+
+\slidesfoot
