@@ -7,11 +7,11 @@
 ## Potential
 - Relatively new and upcoming domain
 - Widely applicable: Social Networks, logistics, molecular biology, mesh graphics, etc.
-- Active research in Big companies, with scale in FinTech, Genomics, FAANG, traffic, etc
+- Active research in Big companies, with scale in FAANG
 - Usable in MidcurveNN, skeletons, Meshes, applicable in point-clouds for AR/VR,
 - IKIGAI, Specific Knowledge, unique for Consultations
 - Work experience, with scale, in NLP, Graph pre-training, Knowledge Graph generation, etc
-- Aim for publications/repos in MidcurveNN as well as Contracts KG
+- Aim for publications in MidcurveNN as well as Contracts KG
 
 
 ## Libraries
