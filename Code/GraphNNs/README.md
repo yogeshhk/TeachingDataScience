@@ -1,7 +1,9 @@
 # Graph Neural Networks (GNNs)
 
 ## Introduction
-<TBD>
+Graphs, though omnipresent, had shied away from being in Machine Learning domain, in the past.
+
+The reason is, they are different. They are unstructured. Unlike popular tabular (fixed rows and columns) and images (fixed length, width, and channels) data, graphs have variable number of nodes and edges, making them unsuitable as an input to Machine Learning (ML) algorithms. ML needs fixed-dimensioned-vectorized-features. Now, various approaches are getting devised to embed/vectorize graphs as well.
 
 
 ## Potential
