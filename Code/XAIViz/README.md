@@ -41,7 +41,6 @@ Structuring Math explanations - by Grant Sanderson, https://www.youtube.com/watc
 	- Slow/Fast? Don't follow others as is
 - Definitions not at the beginning
 
-
 	
 ## References
 - Papers:
@@ -49,4 +48,34 @@ Structuring Math explanations - by Grant Sanderson, https://www.youtube.com/watc
   - https://distill.pub/
 - Groups:
   - https://research.google/teams/brain/pair/
-  - http://vis.cse.ust.hk/groups/xai-vis/
+  - [Explainable AI + VIS](http://vis.cse.ust.hk/groups/xai-vis/)
+- Conferences:
+	- [Visualization for AI Explainability](https://visxai.io/)
+- Libraries
+	- Explainer Dashboard [Link](https://www.linkedin.com/posts/greg-coquillo_datascience-machinelearning-artificialintelligence-activity-6878763723788566528-dqsE)
+
+		Quickly build Explainable AI Dashboards that show the inner workings of so-called "blackbox" machine learning models!
+
+		Do GDPR policies apply to you? Then this package might be useful. Remember, not all models need to be explained. For example, as a user I don’t have to know why models that power autonomous vehicles work the way they work. I just need to know the vehicles are safe to use.
+
+		But when Explainable AI is needed, please note it goes beyond explaining importance of features. X-AI empowers non-data scientists such as managers and executives to be able to inspect and explain model behaviors while removing dependency on data scientists.
+
+		The Explainer Dashboard provides:
+		- Interactive plots of model performance
+		- Feature contributions to individual predictions
+		- Feature importance
+		- Interactive SHAP values
+		- Goodness of fit plots for regression models
+		- ROC AUC plots, Confusion Matrix for classifiers
+		- Visualization of individual trees for Random Forest and XGBoost
+		- ”What-If” analysis
+		- Partial dependence plots
+
+		You can do so much more with this package such as exploring directly from your notebook, building custom dashboards and combining into a single ExplainerHub.
+
+		Dashboards can be exported to static html directly from a running dashboard, or programmatically as an artifact as part of an automated CI/CD deployment process.
+
+		Hope you find this very useful and increase X-AI launch speed for your use cases!
+
+		Thank you Oege Dijk for this awesome package.
+
