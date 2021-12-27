@@ -46,6 +46,7 @@ Structuring Math explanations - by Grant Sanderson, https://www.youtube.com/watc
 - Papers:
   - https://visxai.io/
   - https://distill.pub/
+	- https://explained.ai/
 - Groups:
   - https://research.google/teams/brain/pair/
   - [Explainable AI + VIS](http://vis.cse.ust.hk/groups/xai-vis/)
