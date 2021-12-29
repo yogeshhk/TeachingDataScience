@@ -24,5 +24,3 @@ The reason is, they are different. They are unstructured. Unlike popular tabular
 - Pyorch Geometric https://github.com/rusty1s/pytorch_geometric Deep learning on graphs and other irregular structures. By Facebook. 13.4k stars, 214 contributors, all Python.
 - Graph4NLP (video)[https://www.youtube.com/watch?v=7PiuwUBnwD0&t=586s], (presentation)[https://drive.google.com/file/d/1_7cPySt9Pzfd6MaqNihD4FkKI0qzf-s4/view]
 
-## Resources
-- [Graph Neural Networks Youtube Playlist](https://www.youtube.com/playlist?list=PLV8yxwGOxvvoNkzPfCx2i8an--Tkt7O8Z)
