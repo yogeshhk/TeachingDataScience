@@ -1,3 +1,0 @@
-Because you are all so curious about computer science, you decided that there is no better way to learn all the details than to implement your own operating system.
-While doing so you came across the important decision of how to store the hard drive directories. You know that you want to let the user have folders and sub-folders but you need to keep track of the order.
-What is an appropriate data structure to use to keep everything organised and why?
