@@ -52,7 +52,7 @@ Copyright (C) 2019 Yogesh H Kulkarni
  -->
 
 ## Disclaimer:
-* Author (yogeshkulkarni@yahoo.com) gives no guarantee of the correctness of the content. Notes have been built using lots of publicly available material. 
+* Author (firstnamelastname at yahoo dot com) gives no guarantee of the correctness of the content. Notes have been built using lots of publicly available material. 
 * Although care has been taken to cite the original sources as much as possible, but there could be some missing ones. Do point them and I will update wherever possible. 
 * Lots of improvements are still to be made. So, don’t depend on it at all, fully. 
 * Do send in your suggestions/comments/corrections/Pull-requests.
