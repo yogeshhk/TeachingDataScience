@@ -1,4 +1,4 @@
-# Teaching : Courses And Talks
+# Presentations
 
 <!-- 
 ## Rational
@@ -71,11 +71,6 @@ Logistics:
  
 ## Trainings/Talks
 
-Suggested Learning Path:
-
-<img src="../LaTeX/images/teaching_data_science_series.png"/>
-
-
 ### Seminar Topics (1-2 hours long)
 - Introduction to Artificial Intelligence (Non-technical)
 - Introduction to Artificial Intelligence and Machine Learning (Technical)
@@ -103,6 +98,10 @@ Suggested Learning Path:
 - Introduction to Explainable AI (Non-technical)
 - Decoding Gartner Hype Cycles for Emerging Technologies (Non-technical)
 - Deep Learning for Geometric Algorithms (Research)
+
+### Suggested Data Science Learning Path, Courses:
+
+<img src="../LaTeX/images/teaching_data_science_series.png"/>
 
 ### Workshop Topics (2-5 days long if full-time)
 - Introduction to Python (Technical)
