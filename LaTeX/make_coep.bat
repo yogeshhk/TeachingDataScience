@@ -1,2 +1,2 @@
 @echo off
-for /r %%i in (Main_CoEP*.tex) do texify -cp %%i
+for /r %%i in (Main_*CoEP*.tex) do texify -cp %%i
