@@ -6,9 +6,9 @@ All tex sources and images have been open sourced as I have built them by referr
 
 LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:6523000857385103360
 
-Mission: To spread knowledge of Data Science related subjects to a wider audience, 
-Vision: Let many participate in the industry which is aiming for "From Automation, To Autonomy!!"
-Values: Giving back, paying it forward!!
+- **Mission**: To spread knowledge of Data Science related subjects to a wider audience.
+- **Vision**: Let many participate in the industry which is aiming for "From Automation, To Autonomy!!"
+- **Values**: Giving back, paying it forward!!
 
 Intent is "आपणासी जे जे ठावे| ते ते दुसऱ्यासी सांगावे| शहाणे करून सोडावे| सकळ जन." and while doing so, a care has to be taken is "अभ्यासे प्रगट व्हावे। नाहीतरी झाकोनि असावे। प्रगट होऊनि नासावे। हे बरे नव्हे।। - समर्थ रामदास स्वामीं"
 
