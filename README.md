@@ -10,7 +10,7 @@ LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:652300085738
 - **Vision**: Let many participate in the industry which is aiming for "From Automation, To Autonomy!!"
 - **Values**: Giving back, paying it forward!!
 
-Intent is "आपणासी जे जे ठावे| ते ते दुसऱ्यासी सांगावे| शहाणे करून सोडावे| सकळ जन." and while doing so, a care has to be taken is "अभ्यासे प्रगट व्हावे। नाहीतरी झाकोनि असावे। प्रगट होऊनि नासावे। हे बरे नव्हे।। - समर्थ रामदास स्वामीं"
+Intent is "आपणासी जे जे ठावे| ते ते दुसऱ्यासी सांगावे| शहाणे करून सोडावे| सकळ जन. - समर्थ रामदास स्वामीं 
 
 Copyright (C) 2019 Yogesh H Kulkarni
 
