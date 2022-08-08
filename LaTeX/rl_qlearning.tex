@@ -9,7 +9,7 @@
 \begin{frame}[fragile]\frametitle{A Taxonomy of RL Algorithms}
 
 \begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{rl110}
+\includegraphics[width=\linewidth,keepaspectratio]{rl100}
 \end{center}
 
 {\tiny (Ref: Spinning Up - Open AI)}
@@ -57,6 +57,57 @@ Another critical branching point in an RL algorithm is the question of what to l
 
 {\tiny (Ref: Spinning Up - Open AI)}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Goal}
+
+The goal in RL is to learn a policy which maximizes expected return. The optimal policy $\pi^*$ is:
+%
+\begin{equation*}
+\pi^* = \arg \max_{\pi} E_{\tau \sim \pi}[R(\tau)],
+\end{equation*}
+%
+where by $\tau \sim \pi$, we mean
+%
+\begin{equation*}
+s_0 \sim \mu(\cdot), \;\;\;\;\; a_t \sim \pi(\cdot|s_t), \;\;\;\;\; s_{t+1} \sim P(\cdot | s_t, a_t).
+\end{equation*}
+
+
+There are two main approaches for solving this problem:
+\begin{itemize}
+\item policy optimization
+\item and Q-learning.
+\end{itemize}
+
+
+{\tiny (Ref: Intro to RL - Joshua Achiam)}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Q-Learning}
+
+\begin{itemize}
+\item Core idea: learn $Q^*$ and use it to get the optimal actions
+\item Way to do it:
+\begin{itemize}
+\item Collect experience in the environment using a policy which trades off between acting randomly and acting according to current $Q_{\theta}$
+\item Interleave data collection with updates to $Q_{\theta}$ to minimize Bellman error:
+%
+\begin{equation*}
+\min_{\theta} \sum_{(s,a,s',r)\in D} \left(Q_{\theta}(s,a) - \left(r + \gamma \max_{a'} Q_{\theta}(s',a') \right) \right)^2
+\end{equation*}
+...sort of! This actually won't work!
+\end{itemize}
+
+\end{itemize}
+{\tiny (Ref: Intro to RL - Joshua Achiam)}
+
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{What to Learn in Model-Free RL}
@@ -162,9 +213,15 @@ $P(\tau|\theta) = \rho_0 (s_0) \prod_{t=0}^{T} P(s_{t+1}|s_t, a_t) \pi_{\theta}(
 Terms used
 \begin{itemize}
 \item   Gradients of Environment Functions. The environment has no dependence on $\theta$, so gradients of $\rho_0(s_0), P(s_{t+1}|s_t, a_t)$, and $R(\tau)$ are zero.
-\item  Grad-Log-Prob of a Trajectory. The gradient of the log-prob of a trajectory is thus $\nabla_{\theta} \log P(\tau | \theta) &= \cancel{\nabla_{\theta} \log \rho_0 (s_0)} + \sum_{t=0}^{T} \bigg( \cancel{\nabla_{\theta} \log P(s_{t+1}|s_t, a_t)}  + \nabla_{\theta} \log \pi_{\theta}(a_t |s_t)\bigg) \\
-&= \sum_{t=0}^{T} \nabla_{\theta} \log \pi_{\theta}(a_t |s_t)$.
+\item  Grad-Log-Prob of a Trajectory. The gradient of the log-prob of a trajectory is thus
+
 \end{itemize}
+
+% \begin{align*}
+% \nabla_{\theta} \log P(\tau | \theta) &= \cancel{\nabla_{\theta} \log \rho_0 (s_0)} + \sum_{t=0}^{T} \bigg( \cancel{\nabla_{\theta} \log P(s_{t+1}|s_t, a_t)}  + \nabla_{\theta} \log \pi_{\theta}(a_t |s_t)\bigg) \\
+% &= \sum_{t=0}^{T} \nabla_{\theta} \log \pi_{\theta}(a_t |s_t)
+% \end{align*}
+
 
 {\tiny (Ref: Spinning Up - Open AI)}
 \end{frame}
@@ -173,12 +230,12 @@ Terms used
 \begin{frame}[fragile]\frametitle{Putting it all together}
 
 \begin{align*}
-\nabla_{\theta} J(\pi_{\theta}) &= \nabla_{\theta} \underE{\tau \sim \pi_{\theta}}{R(\tau)} & \\
+\nabla_{\theta} J(\pi_{\theta}) &= \nabla_{\theta} E_{\tau \sim \pi_{\theta}}[R(\tau)] & \\
 &= \nabla_{\theta} \int_{\tau} P(\tau|\theta) R(\tau) & \text{Expand expectation} \\
 &= \int_{\tau} \nabla_{\theta} P(\tau|\theta) R(\tau) & \text{Bring gradient under integral} \\
 &= \int_{\tau} P(\tau|\theta) \nabla_{\theta} \log P(\tau|\theta) R(\tau) & \text{Log-derivative trick} \\
-&= \underE{\tau \sim \pi_{\theta}}{\nabla_{\theta} \log P(\tau|\theta) R(\tau)} & \text{Return to expectation form} \\
-\therefore \nabla_{\theta} J(\pi_{\theta}) &= \underE{\tau \sim \pi_{\theta}}{\sum_{t=0}^{T} \nabla_{\theta} \log \pi_{\theta}(a_t |s_t) R(\tau)} & \text{Expression for grad-log-prob}
+&= E_{\tau \sim \pi_{\theta}}{\nabla_{\theta} \log P(\tau|\theta) R(\tau)} & \text{Return to expectation form} \\
+\therefore \nabla_{\theta} J(\pi_{\theta}) &= E_{\tau \sim \pi_{\theta}}{\sum_{t=0}^{T} \nabla_{\theta} \log \pi_{\theta}(a_t |s_t) R(\tau)} & \text{Expression for grad-log-prob}
 \end{align*}
 
 This is an expectation, which means that we can estimate it with a sample mean.
