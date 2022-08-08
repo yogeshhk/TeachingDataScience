@@ -215,14 +215,99 @@ Policy, as the agent’s behavior function  , tells us which action to take in s
 state s to action a and can be either 
 
 \begin{itemize}
-\item Deterministic: $\pi(s)=a$
+\item Deterministic: $\pi(s)=a$, also denoted as $\mu(s_t)=a_t$
 \item Stochastic: $\pi (a|s) = P_{\pi}[A=a|S=a]$
 \end{itemize}
 
 {\tiny (Ref: A (Long) Peek into Reinforcement Learning - Lilian Weng)}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Deep RL Policy}
+
+Deep RL, 
+\begin{itemize}
+
+\item Has parameterized policies: policies whose outputs are computable functions that depend on a set of parameters (eg the weights and biases of a neural network) which we can adjust to change the behavior via some optimization algorithm.
+\item Weights are denoted by $\theta$ or $\phi$, so equations become: $a_t=\mu_\theta(_t)$ or for stochastic $a_t \sim \pi_\theta(.|s_t)$
+\end{itemize}
+
+{\tiny (Ref: Spinning Up - Open AI)}
+
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Deterministic Policy}
+
+\begin{lstlisting}
+pi_net = nn.Sequential(
+              nn.Linear(obs_dim, 64),
+              nn.Tanh(),
+              nn.Linear(64, 64),
+              nn.Tanh(),
+              nn.Linear(64, act_dim)
+            )
+						
+obs_tensor = torch.as_tensor(obs, dtype=torch.float32)
+actions = pi_net(obs_tensor)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Stochastic  Policy}
+
+Stochastic policies in deep RL: 
+\begin{itemize}
+\item categorical policies (discrete action spaces) 
+\item diagonal Gaussian policies (continuous action spaces).
+\end{itemize}
+
+Two key computations:
+\begin{itemize}
+\item sampling actions from the policy,
+\item and computing log likelihoods of particular actions, $\log \pi_{\theta}(a|s)$.
+\end{itemize}
+
+{\tiny (Ref: Spinning Up - Open AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Trajectories}
+
+\begin{itemize}
+\item cA trajectory $\tau$ is a sequence of states and actions in the world, $\tau = (s_0, a_0, s_1, a_1, ...).$
+\item The very first state of the world, $s_0$, is randomly sampled from the start-state distribution, sometimes denoted by $\rho_0$:
+$s_0 \sim \rho_0(\cdot)$.
+\item State transitions (what happens to the world between the state at time $t$, $s_t$, and the state at $t+1$, $s_{t+1}$, are governed by the natural laws of the environment, and depend on only the most recent action, $a_t$. They can be either:
+\begin{itemize}
+\item deterministic: $s_{t+1} = f(s_t, a_t)$
+\item stochastic: $s_{t+1} \sim P(\cdot|s_t, a_t)$
+\end{itemize}
+\item Actions come from an agent according to its policy.
+\item Trajectories are also frequently called episodes or rollouts.
+\end{itemize}
+
+{\tiny (Ref: Spinning Up - Open AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The RL Problem}
+
+For stochastic transitions and policy:
+
+\begin{itemize}
+\item probability of a $T$ -step trajectory is $P(\tau|\pi) = \rho_0 (s_0) \prod_{t=0}^{T-1} P(s_{t+1} | s_t, a_t) \pi(a_t | s_t).$
+\item The expected return (for whichever measure), denoted by $J(\pi)$, is then: $J(\pi) = \int_{\tau} P(\tau|\pi) R(\tau) = E_{\tau\sim \pi}[R(\tau)]$.
+\item The central optimization problem in RL can then be expressed by $\pi^* = \arg \max_{\pi} J(\pi),$
+\item with $\pi^*$ being the optimal policy.
+\end{itemize}
+
+{\tiny (Ref: Spinning Up - Open AI)}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Value Function}
@@ -241,12 +326,38 @@ compute return.
 \item We don’t need to worry about the infinite loops in the state transition graph.
 \end{itemize}
 
-
-
 {\tiny (Ref: A (Long) Peek into Reinforcement Learning - Lilian Weng)}
-
-
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Main functions}
+
+\begin{itemize}
+\item The On-Policy Value Function, $V^{\pi}(s)$, which gives the expected return if you start in state s and always act according to policy $\pi$:$V^{\pi}(s) = E_{\tau \sim \pi}[R(\tau)\left| s_0 = s\right]$.
+\item The On-Policy Action-Value Function, $Q^{\pi}(s,a)$, which gives the expected return if you start in state $s$, take an arbitrary action $a$ (which may not have come from the policy), and then forever after act according to policy $\pi$: $Q^{\pi}(s,a) = E_{\tau \sim \pi}[R(\tau)\left| s_0 = s, a_0 = a\right]$.
+\item The Optimal Value Function, $V^*(s)$, which gives the expected return if you start in state $s$ and always act according to the optimal policy in the environment:
+$V^*(s) = \max_{\pi} E_{\tau \sim \pi}[R(\tau)\left| s_0 = s\right]$.
+\item The Optimal Action-Value Function, $Q^*(s,a)$, which gives the expected return if you start in state $s$, take an arbitrary action $a$, and then forever after act according to the optimal policy in the environment: $Q^*(s,a) = \max_{\pi} E_{\tau \sim \pi}[R(\tau)\left| s_0 = s, a_0 = a\right]$.
+\end{itemize}
+
+{\tiny (Ref: Spinning Up - Open AI)}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Main functions}
+
+There are two key connections between the value function and the action-value function that come up pretty often:
+
+\begin{itemize}
+\item $V^{\pi}(s) = E_{a\sim \pi}[Q^{\pi}(s,a)]$,
+\item $V^*(s) = \max_a Q^* (s,a).$
+\end{itemize}
+
+{\tiny (Ref: Spinning Up - Open AI)}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Components}
