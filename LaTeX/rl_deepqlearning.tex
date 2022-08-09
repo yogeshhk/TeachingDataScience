@@ -76,6 +76,159 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{From Q-Learning to Deep Q-Learning}
+
+\begin{itemize}
+\item The problem is that Q-Learning is a tabular method. Aka, a problem in which the state and actions spaces are small enough to approximate value functions to be represented as arrays and tables. And this is not scalable. FrozenLake, we had 14 states. Taxi-v3, we had 500 states.
+\item For large state spaces creating and updating a Q-table for that environment would not be efficient. In this case, the best idea is to approximate the Q-values instead of a Q-table using a parametrized Q-function $Q_{\theta}(s,a)$. Neural network will approximate, given a state, the different Q-values for each possible action at that state. And that's exactly what Deep Q-Learning does.
+\end{itemize}
+
+
+{\tiny (Ref: Chapter 3 of the Deep Reinforcement Learning Class with Hugging Face)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Deep Q-Network (DQN)}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{rl106}
+\end{center}
+
+\begin{itemize}
+\item As input, we take a stack of 4 frames passed through the network as a state and output a vector of Q-values for each possible action at that state. Then, like with Q-Learning, we just need to use our epsilon-greedy policy to select which action to take.
+
+\item When the Neural Network is initialized, the Q-value estimation is terrible. But during training, our Deep Q-Network agent will associate a situation with appropriate action and learn to play the game well.
+\end{itemize}
+
+{\tiny (Ref: Chapter 3 of the Deep Reinforcement Learning Class with Hugging Face)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Deep Q-Learning Algorithm)}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{rl107}
+\end{center}
+
+In Deep Q-Learning, we create a Loss function between our Q-value prediction and the Q-target and use Gradient Descent to update the weights of our Deep Q-Network to approximate our Q-values better.
+
+{\tiny (Ref: Chapter 3 of the Deep Reinforcement Learning Class with Hugging Face)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Deep Q-Learning Algorithm)}
+
+Two phases
+
+\begin{itemize}
+\item Sampling: we perform actions and store the observed experiences tuples in a replay memory.
+\item Training: Select the small batch of tuple randomly and learn from it using a gradient descent update step.
+\end{itemize}
+
+But, this is not the only change compared with Q-Learning. Deep Q-Learning training might suffer from instability, mainly because of combining a non-linear Q-value function (Neural Network) and bootstrapping (when we update targets with existing estimates and not an actual complete return).
+
+{\tiny (Ref: Chapter 3 of the Deep Reinforcement Learning Class with Hugging Face)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Deep Q-Learning Algorithm)}
+
+To help us stabilize the training, we implement three different solutions:
+
+
+\begin{itemize}
+\item Experience Replay, to make more efficient use of experiences.
+\item Fixed Q-Target to stabilize the training.
+\item Double Deep Q-Learning, to handle the problem of the overestimation of Q-values.
+\end{itemize}
+
+{\tiny (Ref: Chapter 3 of the Deep Reinforcement Learning Class with Hugging Face)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Experience Replay to make more efficient use of experiences}
+
+Why do we create a replay memory?
+
+Experience Replay in Deep Q-Learning has two functions:
+
+
+\begin{itemize}
+\item Make more efficient use of the experiences during the training
+\item Experience replay helps us make more efficient use of the experiences during the training. Usually, in online reinforcement learning, we interact in the environment, get experiences (state, action, reward, and next state), learn from them (update the neural network) and discard them.
+\item But with experience replay, we create a replay buffer that saves experience samples that we can reuse during the training.
+\item This allows us to learn from individual experiences multiple times.
+\item Avoid forgetting previous experiences and reduce the correlation between experiences
+\end{itemize}
+
+
+{\tiny (Ref: Chapter 3 of the Deep Reinforcement Learning Class with Hugging Face)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Experience Replay to make more efficient use of experiences}
+
+
+\begin{itemize}
+\item The solution is to create a Replay Buffer that stores experience tuples while interacting with the environment and then sample a small batch of tuples. This prevents the network from only learning about what it has immediately done.
+\item Experience replay also has other benefits. By randomly sampling the experiences, we remove correlation in the observation sequences and avoid action values from oscillating or diverging catastrophically.
+\end{itemize}
+
+
+{\tiny (Ref: Chapter 3 of the Deep Reinforcement Learning Class with Hugging Face)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Fixed Q-Target to stabilize the training}
+
+
+\begin{itemize}
+\item When we want to calculate the TD error (aka the loss), we calculate the difference between the TD target (Q-Target) and the current Q-value (estimation of Q).
+\item But we don’t have any idea of the real TD target. We need to estimate it. Using the Bellman equation, we saw that the TD target is just the reward of taking that action at that state plus the discounted highest Q value for the next state.
+\item However, the problem is that we are using the same parameters (weights) for estimating the TD target and the Q value. Consequently, there is a significant correlation between the TD target and the parameters we are changing.
+\item Therefore, it means that at every step of training, our Q values shift but also the target value shifts. So, we’re getting closer to our target, but the target is also moving. It’s like chasing a moving target! This led to a significant oscillation in training
+\end{itemize}
+
+
+{\tiny (Ref: Chapter 3 of the Deep Reinforcement Learning Class with Hugging Face)}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Double DQN}
+
+
+\begin{itemize}
+\item Double DQNs, or Double Learning, were introduced by Hado van Hasselt. This method handles the problem of the overestimation of Q-values.
+\item To understand this problem, remember how we calculate the TD Target:
+\item We face a simple problem by calculating the TD target: how are we sure that the best action for the next state is the action with the highest Q-value?
+\item We know that the accuracy of Q values depends on what action we tried and what neighboring states we explored.
+\item Consequently, we don’t have enough information about the best action to take at the beginning of the training. Therefore, taking the maximum Q value (which is noisy) as the best action to take can lead to false positives. If non-optimal actions are regularly given a higher Q value than the optimal best action, the learning will be complicated.
+\item The solution is: when we compute the Q target, we use two networks to decouple the action selection from the target Q value generation. 
+\item Use our DQN network to select the best action to take for the next state (the action with the highest Q value).
+\item Use our Target network to calculate the target Q value of taking that action at the next state.
+\end{itemize}
+
+Therefore, Double DQN helps us reduce the overestimation of q values and, as a consequence, helps us train faster and have more stable learning.
+
+{\tiny (Ref: Chapter 3 of the Deep Reinforcement Learning Class with Hugging Face)}
+
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Deep RL Algorithms}
 
 There are many different kinds of RL algorithms! This is a non-exhaustive taxonomy (with specific algorithms in blue):
