@@ -9,8 +9,19 @@ LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:652300085738
 - **Mission**: To spread knowledge of Data Science related subjects to a wider audience.
 - **Vision**: Let many participate in the industry which is aiming for "From Automation, To Autonomy!!"
 - **Values**: Giving back, paying it forward!!
+- **Goal**: "From Automation to Autonomy"!!
 
-Intent is "आपणासी जे जे ठावे| ते ते दुसऱ्यासी सांगावे| शहाणे करून सोडावे| सकळ जन. - समर्थ रामदास स्वामीं 
+Intent is:
+"आपणासी जे जे ठावे| ते ते दुसऱ्यासी सांगावे| 
+शहाणे करून सोडावे| सकळ जन. 
+- समर्थ रामदास स्वामीं, 
+
+but care has to be taken:
+"अभ्यासे प्रगट व्हावे। 
+नाहीतरी झाकोनि असावे। 
+प्रगट होऊनि नासावे। 
+हे बरे नव्हे।। 
+- समर्थ रामदास स्वामीं"
 
 Copyright (C) 2019 Yogesh H Kulkarni
 
