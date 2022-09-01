@@ -22,16 +22,16 @@
 
  -->
 
-## TFUG Talks Playbook
-Avenues: @TFUG Pune, Colleges/Confs, GDE speakers opportunities
+## Talks Playbook
+Avenues: Meetups, Colleges/Confs
 Logistics:
 - Day/time: Saturdays Mornings, 9 to 10 am, else NO
-- Pre-Talk (somewhat TFUG specific), but can be adopted elsewhere):
+- Pre-Talk:
     - Prep materials `_seminar.tex` and `ipynb` for 40 minutes talk and then QnA
     - Create Google calendar event with Google Meet link
-    - Create Banner png from `Talks/TFUG_Banner_Template.ppt`
-		- Create TFUG Pune Meetup event with Google Meet link and Banner png, good intro text
-    - Advertise the Meetup link: my LinkedIn, Company Teams, GDE WhatsApp groups
+    - Create Banner png 
+		- Create Meetup event with Google Meet link and Banner png, good intro text
+    - Advertise the Meetup link: my LinkedIn, Company Teams, WhatsApp groups
     - Copy material `Talks` folder, github sync
 		- No recording or YouTube streaming, content is open-sourced anyway
 - During Talk: [Simplify with Doodles (?, tablet)]

@@ -11,7 +11,7 @@ LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:652300085738
 - **Values**: Giving back, paying it forward!!
 - **Goal**: "From Automation to Autonomy"!!
 
-Intent is:
+<!-- Intent is:
 "आपणासी जे जे ठावे| ते ते दुसऱ्यासी सांगावे| 
 शहाणे करून सोडावे| सकळ जन. 
 - समर्थ रामदास स्वामीं, 
@@ -22,7 +22,7 @@ but care has to be taken:
 प्रगट होऊनि नासावे। 
 हे बरे नव्हे।। 
 - समर्थ रामदास स्वामीं"
-
+ -->
 Copyright (C) 2019 Yogesh H Kulkarni
 
 ## Steps for LaTeX source files to pdfs
