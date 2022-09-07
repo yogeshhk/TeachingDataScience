@@ -11,18 +11,6 @@ LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:652300085738
 - **Values**: Giving back, paying it forward!!
 - **Goal**: "From Automation to Autonomy"!!
 
-<!-- Intent is:
-"आपणासी जे जे ठावे| ते ते दुसऱ्यासी सांगावे| 
-शहाणे करून सोडावे| सकळ जन. 
-- समर्थ रामदास स्वामीं, 
-
-but care has to be taken:
-"अभ्यासे प्रगट व्हावे। 
-नाहीतरी झाकोनि असावे। 
-प्रगट होऊनि नासावे। 
-हे बरे नव्हे।। 
-- समर्थ रामदास स्वामीं"
- -->
 Copyright (C) 2019 Yogesh H Kulkarni
 
 ## Steps for LaTeX source files to pdfs
@@ -52,21 +40,6 @@ Copyright (C) 2019 Yogesh H Kulkarni
 * Run make bat for the course you need. Inside, its just a texify command, so you can modify it as per your OS.
 * You can compile individual "Main_Workshop/Seminar_<course>_CheatSheet/Presentation.tex" also using your LaTeX system.
 * Instead of these given driver files, you can have your own main files and include just the *content.tex files.
-
-<!-- ## Notes
-
-<!-- ## Good resources for learning
-*	Machine Learning
-    * ML Victor Levrenko https://www.youtube.com/user/victorlavrenko/playlists
-    * Statistics ML https://www.youtube.com/user/BCFoltz/playlists 
-*	Deep Learning
-    * Deep Learning by Google https://in.udacity.com/course/deep-learning--ud730
-    * Deep Learning Book lectures https://www.youtube.com/channel/UCF9O8Vj-FEbRDA5DcDGz-Pg/playlists
-
-*	General
-    * Open Data Science Masters http://datasciencemasters.org/
-    * GeekForGeeks https://www.youtube.com/watch?v=v4cd1O4zkGw
- -->
 
 ## Disclaimer:
 * Author (firstnamelastname at yahoo dot com) gives no guarantee of the correctness of the content. Notes have been built using lots of publicly available material. 
