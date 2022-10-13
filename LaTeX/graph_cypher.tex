@@ -197,6 +197,46 @@ Retrieve nodes with relationships
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+Write and execute a query to return all Movie titles in the graph that have a title that begins with "Life is". There may be titles that do not adhere to capitalization as such so you must ensure that all titles will match. That is, it will retrieve any case of the string, such as "Life is", "LIFE IS", "life is", "Life Is".
+
+{\tiny (Ref: Intermediate Cypher - neo4j)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+\begin{lstlisting}
+MATCH (m:Movie)
+WHERE toLower(m.title) STARTS WITH "life is"
+RETURN m.title
+\end{lstlisting}	
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+Write and execute a query to return the name of the person, their role, and the movie title where the role played by the actors or director had a value that included 'dog' (case-insensitive)? That is, the role could contain "Dog", "dog", or even "DOG".
+
+{\tiny (Ref: Intermediate Cypher - neo4j)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+\begin{lstlisting}
+MATCH (p:Person)-[r]->(m:Movie)
+WHERE toLower(r.role) CONTAINS "dog"
+RETURN p.name, r.role, m.title
+\end{lstlisting}	
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Aggregates}
 
 \begin{itemize}
@@ -585,6 +625,103 @@ Partial sub-graph match
 
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Example Data Model : Movies}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{neo4j89}
+\end{center}	
+
+{\tiny (Ref: ``Intermediate Cypher - Graph Academy neo4j)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Examples}
+
+Find all Tom Hanks movies from 2013
+
+\begin{lstlisting}
+MATCH (p:Person-[:ACTED_IN]->(m:Movie)
+WHERE p.name = "Tom Hanks"
+AND m.year = 2013
+RETURN m.title
+\end{lstlisting}	
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Examples}
+
+Find all folks born before 1922 and still alive
+
+\begin{lstlisting}
+MATCH (p:Person)
+WHERE p.died IS NULL
+AND p.born.year <= 1922
+RETURN p.name, p.born, p.died
+\end{lstlisting}	
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Examples}
+
+Find all folks born after 1960 and are Actors and Directors both
+
+\begin{lstlisting}
+MATCH (p:Person)
+WHERE p.born.year > 1960
+AND p:Actor
+AND p:Director
+RETURN p.name, p.born, labels(p)
+\end{lstlisting}	
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+Write a query to return all Movie nodes in the graph that do not have a tmdbId property.
+
+
+{\tiny (Ref: ``Intermediate Cypher - Graph Academy neo4j)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+
+\begin{lstlisting}
+MATCH (m:Movie)
+WHERE m.tmdbId IS NULL
+RETURN count(m)
+\end{lstlisting}	
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+Write and execute a query to return people who both acted in and directed a movie released in the German language.
+
+{\tiny (Ref: ``Intermediate Cypher - Graph Academy neo4j)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+\begin{lstlisting}
+MATCH (p:Director)-[:DIRECTED]->(m:Movie)<-[:ACTED_IN]-(p)
+WHERE "German" IN m.languages
+RETURN count(DISTINCT p.name)
+\end{lstlisting}	
+
+
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
@@ -739,6 +876,54 @@ ORDER BY m.released DESC
 \end{lstlisting}
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multiple MATCH}
+
+\begin{itemize}
+\item First MATCH gets a subset of ACTED relations tuples; checks years
+\item Within them, finds Person with DIRECTED
+\item Generally, first sample has performance as single pattern is better.
+\item OPTIONAL MATCH if no match is found it will use nulls for missing parts of the pattern. .
+\end{itemize}
+
+\begin{lstlisting}
+MATCH (a:Person)-[:ACTED_IN]->(m:Movie)
+WHERE m.year > 2000
+MATCH (m)-[:DIRECTED]->(d:Person)
+RETURN a.name, m.title, d.name
+
+MATCH (a:Person)-[:ACTED_IN]->(m:Movie), (m)-[:DIRECTED]->(d:Person)
+WHERE m.year > 2000
+RETURN a.name, m.title, d.name
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Performance}
+
+\begin{itemize}
+\item There could be multiple ways to get the answer
+\item Difference is the performance, which depends on how much of graph traversal is needed
+\item \lstinline|exists| is checked for all movies Tom Hanks has acted in. ie. 38 (find it using PROFILE)
+\item Next example below is a better query as it has only 2 rows in between.
+\item But sometimes there may not be a choice but to use `exists`, such as find movies where Tom Hanks has acted but not directed.
+\end{itemize}
+
+\begin{lstlisting}
+MATCH (p:Person)-[:ACTED_IN]->(m:Movie)
+WHERE p.name = "Tom Hanks"
+AND exists {(p)-[:DIRECTED]->(m)}
+RETURN p.name, labels(p), m.title
+
+MATCH (p:Person)-[:ACTED_IN]->(m:Movie)<-[DIRECTED]-(p)
+WHERE p.name = "Tom Hanks"
+RETURN m.title
+\end{lstlisting}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Explain Profile}
