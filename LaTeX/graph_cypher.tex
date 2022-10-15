@@ -241,7 +241,9 @@ RETURN p.name, r.role, m.title
 
 \begin{itemize}
 \item No need to specify grouping key. There is no group-by statement. Other Aggregates are SUM, STDDEV, etc.
-\item Useful when you want to count the number of occurrences of a particular query result. It's possible to specify the occurrences of an alias count(n) and the graph engine calculates the number of occurrences of n. If we want to calculates the number of rows retrieved, including those with null values the count argument need to be a *. Last one is the count() without argument and this will implicit group by based upon the aggregation.
+\item count(n) calculates the number of non-null occurrences of n. 
+\item count(*) calculates the number of rows retrieved, including those with null values 
+\item count() will implicit group by based upon the aggregation.
 \end{itemize}
 
 {\tiny (Ref: Learning Neo4j - Wabri Github)}
@@ -405,19 +407,217 @@ RETURN collect(m.title) AS `movies for Tom Cruise`
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Additional processing using WITH}
+\begin{frame}[fragile]\frametitle{Exercise }
+
+Write a query to return the number of movies a person directed.
+
+What is the highest number of movies a director directed in our graph?
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+\begin{lstlisting}
+MATCH (d:Director)-[:DIRECTED]-(m)
+RETURN d.name AS Director,
+count(*) AS numMovies
+ORDER BY numMovies DESC LIMIT 5
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise }
+
+Write and execute a query to return the list of actors for each movie. Order and limit the results so that the movie with the largest cast is returned.
+
+What movie had the largest list of actors? (Enter a case-sensitive string for the movie title.)
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+\begin{lstlisting}
+MATCH (a:Actor)-[:ACTED_IN]->(m:Movie)
+RETURN m.title AS movie,
+collect(a.name) AS cast,
+size(collect(a.name)) AS num
+ORDER BY num DESC LIMIT 1
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{List comprehension}
+
+Create a list by evaluating an expression that tests for list inclusion.
+
+\begin{lstlisting}
+MATCH (m:Movie)
+RETURN m.title as movie,
+[x IN m.countries WHERE x = 'USA' OR x = 'Germany']
+AS country LIMIT 500
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pattern comprehension}
 
 \begin{itemize}
-\item During the execution of a MATCH clause, is possible to specify some intermediate calculations or values that will be used for further processing of the query, or for limiting the number of results before further processing is done. With the WITH clause it's possible to perform intermediate processing of data flow operations.
-\item This example return the actors name only if they acted on 2 or 3 movies, with a reference of the numbers of the films and a list of that.
-\item Be careful with this clause because in the WITH body are specify some variables from the previous part of the query that need to be part of the next section of the query, all the aliases for the next part are the only one defined in the body.
+\item To create lists without changing the cardinality of the query. It behaves like an OPTIONAL MATCH combined with collect().
+\item Specify the list with the square braces to include the pattern followed by the pipe character to then specify what value will be placed in the list from the pattern.
+
+\lstinline{[<pattern> | value]}
+\item This query returns the movies released in 2015. Each row contains the title of the movie, the list of director names, and the list of actor names.
 \end{itemize}
 
 \begin{lstlisting}
+MATCH (m:Movie)
+WHERE m.year = 2015
+RETURN m.title,
+[(dir:Person)-[:DIRECTED]->(m) | dir.name] AS directors,
+[(actor:Person)-[:ACTED_IN]->(m) | actor.name] AS actors
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pattern comprehension}
+
+Using pattern comprehension to create a list where we specify a filter for the pattern.
+
+\begin{lstlisting}
+MATCH (a:Person {name: 'Tom Hanks'})
+RETURN [(a)-->(b:Movie)
+WHERE b.title CONTAINS "Toy" | b.title + ": " + b.year]
+AS movies
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Working with maps}
+
+\begin{itemize}
+\item A Cypher map is list of key/value pairs where each element of the list is of the format 'key': value. 
+\item A node or relationship can have a property that is a map.
+\item or example, a map of months and the number of days per month could be: \lstinline|{Jan: 31, Feb: 28, Mar: 31, Apr: 30 , May: 31, Jun: 30 , Jul: 31, Aug: 31, Sep: 30, Oct: 31, Nov: 30, Dec: 31}|
+\item Using this map, we can return the value for one of its elements. Here we use the key, 'Feb' to access its value.
+
+\item you can return a list of keys of a map as follows:
+\end{itemize}
+
+\begin{lstlisting}
+RETURN {Jan: 31, Feb: 28, Mar: 31, Apr: 30 ,
+May: 31, Jun: 30 , Jul: 31, Aug: 31, Sep: 30,
+Oct: 31, Nov: 30, Dec: 31}['Feb'] AS daysInFeb
+
+RETURN keys({Jan: 31, Feb: 28, Mar: 31, Apr: 30 ,
+May: 31, Jun: 30 ,Jul: 31, Aug: 31, Sep: 30,
+Oct: 31, Nov: 30, Dec: 31}) AS months
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Working with dates and times}
+
+Create some date node
+
+\begin{lstlisting}
+MERGE (x:Test {id: 1})
+SET
+x.date = date(),
+x.datetime = datetime(),
+x.timestamp = timestamp(),
+x.date1 = date('2022-04-08'),
+x.date2 = date('2022-09-20'),
+x.datetime1 = datetime('2022-02-02T15:25:33'),
+x.datetime2 = datetime('2022-02-02T22:06:12')
+RETURN x
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Working with dates and times}
+
+\begin{itemize}
+\item Write a query to retrieve this Test node and calculate the number of days between date1 and date2.
+\item Write a query to retrieve this Test node and calculate the number of minutes between datetime1 and datetime2.
+\end{itemize}
+
+\begin{lstlisting}
+// calculate the duration
+MATCH (x:Test)
+RETURN duration.inDays(x.date1,x.date2).days
+
+// calculate the duration in minutes
+MATCH (x:Test)
+RETURN duration.between(x.datetime1,x.datetime2).minutes
+\end{lstlisting}
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Additional processing using WITH}
+
+\begin{itemize}
+\item WITH defines or re-defines scope of the variable
+\item With the WITH clause it's possible to perform intermediate processing of data flow operations.
+\item The WITH clause removes variables from scope for the RETURN clause so you must add them back to the scope.
+\item This example return the actors name only if they acted on 2 or 3 movies, with a reference of the numbers of the films and a list of that.
+\item Using WITH as you are scoping processing, step by step, its called Pipelining.
+\end{itemize}
+
+\begin{lstlisting}
+WITH 'toy story' as mt, and 'Tom Hanks' AS actorName
+MATCH (a:Person)-[:ACTED_IN]->(m:Movie)
+WHERE p.name = actorName AND toLower(m.title) CONTAINS mt
+RETURN m.title AS movies
+
 MATCH (a:Person)-[:ACTED_IN]->(m:Movie)
 WITH a, count(a) AS numMovies, collect(m.title) AS movies
 WHERE numMovies > 1 AND numMovies < 4
 RETURN a.name, numMovies, movies
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Additional processing using WITH}
+
+Adding a WITH clause that customizes the data returned for each Movie node to include:
+\begin{itemize}
+\item title
+\item imdbRating
+\item List of actor names
+\item List of Genre names
+\end{itemize}
+
+\begin{lstlisting}
+MATCH (n:Movie)
+WHERE n.imdbRating IS NOT NULL AND n.poster IS NOT NULL
+WITH n {
+  .title,
+  .imdbRating,
+  actors: [ (n)<-[:ACTED_IN]-(p) | p { tmdbId:p.imdbId, .name } ],
+  genres: [ (n)-[:IN_GENRE]->(g) | g {.name}]
+}
+ORDER BY n.imdbRating DESC
+LIMIT 4
+RETURN collect(n)
 \end{lstlisting}
 
 \end{frame}
@@ -500,6 +700,27 @@ RETURN m.released, collect(DISTINCT m.title) AS movies ORDER BY m.released DESC
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+Write and execute a query to return the movie titles where they are ordered from the highest to the lowest imdbRating value. In your query, only return movies that have a value for the imdbRating property.
+
+
+{\tiny (Ref: Intermediate Cypher - neo4j)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+\begin{lstlisting}
+MATCH (m:Movie)
+WHERE m.imdbRating IS NOT NULL
+RETURN m.title as title, m.imdbRating as rating
+ORDER BY m.imdbRating DESC
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Limiting the number of results}
 
 Although you can filter queries to reduce the number of results returned, you may also want to limit the number of results. This is useful if you have very large result sets and you only need to see the beginning or end of a set of ordered results. LIMIT is the right choice to do something like this.
@@ -514,6 +735,28 @@ LIMIT 10
 
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Switch/Case Statement}
+
+Returning results conditionally
+
+\begin{lstlisting}
+MATCH (m:Movie)<-[:ACTED_IN]-(p:Person)
+WHERE p.name = 'Henry Fonda'
+RETURN m.title AS movie,
+CASE
+WHEN m.year < 1940 THEN 'oldies'
+WHEN 1940 <= m.year < 1950 THEN 'forties'
+WHEN 1950 <= m.year < 1960 THEN 'fifties'
+WHEN 1960 <= m.year < 1970 THEN 'sixties'
+WHEN 1970 <= m.year < 1980 THEN 'seventies'
+WHEN 1980 <= m.year < 1990 THEN 'eighties'
+WHEN 1990 <= m.year < 2000 THEN 'nineties'
+ELSE  'two-thousands'
+END
+AS timeFrame
+\end{lstlisting}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{List}
@@ -575,6 +818,98 @@ RETURN actor.name, age AS `age today`
 ORDER BY actor.born DESC
 \end{lstlisting}
 
+\end{frame}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Anchors}
+
+\begin{itemize}
+\item Anchor node is the one from which fewest number of nodes need to be traversed
+\item Persons are anchor nodes as there are 19047 persons but 28863 movies
+\item In case there is filter, which reduces the search space, becomes anchor
+\end{itemize}
+
+\begin{lstlisting}
+PROFILE MATCH (p:Person)-[:ACTED_IN]->(m)
+RETURN p.name, m.title LIMIT 10
+
+PROFILE MATCH (p:Person)-[:ACTED_IN]->(m)
+WHERE p.name = 'Eminem"
+RETURN p.name, m.title LIMIT 10
+\end{lstlisting}
+
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multiple Anchors}
+There can be multiple answers where WHERE clauses are specified. Profile diagram shows them as index
+
+\begin{lstlisting}
+PROFILE MATCH (p1:Person)-[:ACTED_IN]->(m1), (p2:Person)-[:ACTED_IN]->(m2)
+WHERE p1.name = 'Tom Hanks" AND p2.name = "Meg Ryan" AND m1 = m2
+RETURN m.title
+
+\end{lstlisting}
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{neo4j90}
+\end{center}	  
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Traversal}
+
+\begin{itemize}
+\item \lstinline|shortestPath()| finds that between two nodes
+\item \lstinline|-[*]-| means regardless of relationship type
+\item If you specify relationship types, typically path becomes longer
+\end{itemize}
+
+
+\begin{lstlisting}
+MATCH p = shortestPath((p1:Person)-[*]-(p2:Person))
+WHERE p1.name = "Eminem" AND p2.name = "Charlton Heston"
+RETURN p
+
+\end{lstlisting}
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{neo4j91}
+\end{center}	  
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Limiting Hops}
+
+Between 1 to 6 hops
+
+
+\begin{lstlisting}
+MATCH (p:Person)-[:ACTED_IN*1..6]-(others:Person)
+WHERE p.name = 'Tom Hanks'
+RETURN  others.name
+\end{lstlisting}
+
+ 
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Limiting Hops}
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{neo4j92}
+\end{center}	  
 \end{frame}
 
 
@@ -1105,5 +1440,34 @@ Two main things to notice:
 To import a larger amount of data (more than 10k rows), it is recommended to prefix the load csv clause with a PERIODIC COMMIT hint. This allow the database to regularly commit the import transactions to avoid memory churn for large transaction-states.
 
 {\tiny (Ref: Learning Neo4j - Wabri Github)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sub-queries}
+
+\begin{itemize}
+\item Query results are stored in (virtual) memory set. That limits how big a query can get.
+\item CALL is used to call a subprocess that will return result of a sub-query
+\item A variable can also be passed to a sub-query. Each m from first MATCH goes one by one through CALL
+\end{itemize}
+
+
+\begin{lstlisting}
+CALL {
+	MATCH (m:Movie) WHERE m.year = 2000
+	RETURN m ORDER BY m.imdbRating DESC LIMIT 10
+}
+MATCH (:User)-[r:RATED]->(m)
+RETURN m.title, avg(r.rating)
+------------
+MATCH (m:Movie)
+CALL {
+	WITH m
+	MATCH (m)<-[r:RATED]-(u:User) WHERE r.rating = 5
+	RETURN count(u) AS numReviews
+}
+RETURN m.title, numReviews ORDER BY numReviews DESC
+\end{lstlisting}
 
 \end{frame}
