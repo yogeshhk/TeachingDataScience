@@ -251,3 +251,323 @@ CALL gds.graph.project(
 \end{lstlisting}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cypher Projections}
+
+There are 2 primary types of projections in GDS, native projections and cypher projections.
+
+\begin{itemize}
+\item While the native projection is scalable and fast, its filtering and aggregation capabilities aren’t as flexible as Cypher. \item The Cypher projection, as its name implies, uses Cypher to define the projection pattern, and as such, enables more flexibility.
+\item Cypher projections are intended to be used in exploratory analysis and developmental phases where additional flexibility and/or customization is needed.
+\item Cypher Projections have a diminished focus on performance relative to native projections and as a result won’t perform as quickly or as well on larger graphs.
+\item A Cypher projection takes three mandatory arguments: graphName, nodeQuery, and relationshipQuery. 
+\end{itemize}
+
+\begin{lstlisting}
+CALL gds.graph.project.cypher(
+  'proj-cypher',
+  'MATCH (a:Actor) RETURN id(a) AS id, labels(a) AS labels',
+  'MATCH (a1:Actor)-[:ACTED_IN]->(m:Movie)<-[:ACTED_IN]-(a2)
+   WHERE m.year >= 1990 AND m.revenue >= 1000000
+   RETURN id(a1) AS source , id(a2) AS target, count(*) AS actedWithCount, "ACTED_WITH" AS type'
+);
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Applying Algorithms}
+
+\begin{itemize}
+\item Apply degree centrality , except we will weight the degree centrality by actedWithCount property and also directly stream the top 10 results back. 
+\item This counts how many times the actor has acted with other actors in recent, high grossing movies.
+\item The graph is not set up to answer this question well with a direct native projection. However, we can use a cypher projection to filter to the appropriate nodes and perform an aggregation to create an ACTED\_WITH relationship that has a actedWithCount property going directly between actor nodes.
+\end{itemize}
+
+\begin{lstlisting}
+CALL gds.degree.stream('proj-cypher',{relationshipWeightProperty: 'actedWithCount'})
+YIELD nodeId, score
+RETURN gds.util.asNode(nodeId).name AS name, score
+ORDER BY score DESC LIMIT 10
+
+name						score
+Robert De Niro 	123.0
+Bruce Willis 		120.0
+:
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Usages}
+
+Some things which are prevented in Native Projection are possible in Cypher Projection.
+ 
+\begin{itemize}
+\item Complex Filtering: Using node and/or relationship property conditions or other more complex MATCH/WHERE conditions to filter the graph, rather than just node label and relationship types.
+\item Aggregating Multi-Hop Paths with Weights: The relationship projection required aggregating the \lstinline|(Actor)-[ACTED_IN]-(Movie)-[ACTED_IN]-(Actor)| pattern to a \lstinline|(Actor)-[ACTED_WITH {actedWithCount}]-(Actor)| pattern where the actedWithCount is a relationship weight property. This type of projection, where we need to transform multi-hop paths into an aggregated relationship that connects the source and target node, is a commonly occurring pattern in graph analytics.
+\end{itemize}
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Execution Modes}
+
+GDS algorithms are classified into:
+
+
+\begin{itemize}
+\item Production-quality: Indicates that the algorithm has been tested in regard to stability and scalability. \lstinline|gds.<algorithm>|
+\item Beta: Indicates that the algorithm is a candidate for the production-quality tier. \lstinline|gds.beta.<algorithm>|
+\item Alpha: Indicates that the algorithm is experimental and might be changed or removed at any time. \lstinline|gds.alpha.<algorithm>|
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Execution Modes}
+
+\begin{itemize}
+\item GDS algorithms have following Execution modes and they determine how the results of the algorithm are handled.
+	\begin{itemize}
+	\item stream: Returns the result of the algorithm as a stream of records.
+	\item stats: Returns a single record of summary statistics, but does not write to the Neo4j database or modify any data.
+	\item mutate: Writes the results of the algorithm to the in-memory graph projection and returns a single record of summary statistics.
+	\item write: Writes the results of the algorithm back the Neo4j database and returns a single record of summary statistics.
+	\end{itemize}
+\item Only production tier algorithms guarantee the existence of all execution modes.
+\item GDS offers an estimation procedure which allows you to estimate the memory needed for using an algorithm on your data BEFORE actually executing it. Just append \lstinline|.estimate| to the command
+\end{itemize}
+
+
+Overall syntax:
+
+\begin{lstlisting}
+CALL gds[.<tier>].<algorithm>.<execution-mode>[.<estimate>](
+	graphName: STRING,
+	configuration: MAP
+)
+\end{lstlisting}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Centrality Algorithms}
+
+ Centrality algorithms are used to determine the importance of distinct nodes in a graph. Applications are:
+ 
+\begin{itemize}
+\item Recommendations: Identify and recommend the most influential or popular items in your content or product offering catalog
+\item Supply chain analytics: find the most critical node in your supply chain, whether it be a supplier in a network, a raw material that is part of a manufactured product, or a port in a route
+\item Fraud \& Anomaly Detection: Find users with many shared identifiers or who otherwise act as a bridge between many communities
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Degree Centrality}
+
+
+\begin{itemize}
+\item counts the number of relationships a node has.
+\item specifically calculate out-degree centrality which is the count of outgoing relationships from a node.
+\item Below is an example of using degree centrality to count the number of movies each actor has acted in. 
+\item Then stream the degree centrality.First create the graph projection.
+\item The top three actors should be "Robert De Niro", "Bruce Willis", and "Nicolas Cage."
+\end{itemize}
+
+\begin{lstlisting}
+CALL gds.graph.project('proj', ['Actor','Movie'], 'ACTED_IN');
+
+//get top 5 most prolific actors (those in the most movies)
+//using degree centrality which counts number of `ACTED_IN` relationships
+CALL gds.degree.stream('proj')
+YIELD nodeId, score
+RETURN gds.util.asNode(nodeId).name AS actorName, score AS numberOfMoviesActedIn
+ORDER BY numberOfMoviesActedIn DESCENDING, actorName LIMIT 5
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{PageRank}
+
+
+\begin{itemize}
+\item  for measuring the influence of nodes in a directed graph, particularly where the relationships imply some form of flow of movement such as in payment networks, supply chain and logistics, communications, routing, and graphs of website and links.
+\item estimates the importance of a node by counting the number of incoming relationships from neighboring nodes weighted by the importance as well as out-degree centrality of those neighbors
+\item The underlying assumption is that more important nodes are likely to have proportionately more incoming relationships from other important nodes.
+\item First, create the graph projection. We can use a Cypher projection in this case to obtain a graph where we have \lstinline|(Person)-[:DIRECTED_ACTOR]→(Person)|. this graph can be traversed to understand the influence across directors and actors.
+\item Next stream PageRank to find the top 5 most influential people in director-actor network.
+\end{itemize}
+
+\begin{lstlisting}
+//drop last graph projection
+CALL gds.graph.drop('proj', false);
+
+//create Cypher projection for network of people directing actors
+//filter to recent high grossing movies
+CALL gds.graph.project.cypher(
+  'proj',
+  'MATCH (a:Person) RETURN id(a) AS id, labels(a) AS labels',
+  'MATCH (a1:Person)-[:DIRECTED]->(m:Movie)<-[:ACTED_IN]-(a2)
+   WHERE m.year >= 1990 AND m.revenue >= 10000000
+   RETURN id(a1) AS source , id(a2) AS target, count(*) AS actedWithCount,
+    "DIRECTED_ACTOR" AS type'
+);
+
+CALL gds.pageRank.stream('proj')
+YIELD nodeId, score
+RETURN gds.util.asNode(nodeId).name AS personName, score AS influence
+ORDER BY influence DESCENDING, personName LIMIT 5
+
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Other Centrality Algorithms}
+
+ 
+\begin{itemize}
+\item Betweenness Centrality: Measures the extent to which a node stands between the other nodes in a graph. It is often used to find nodes that serve as a bridge from one part of a graph to another.
+\item Eigenvector Centrality: Measures the transitive influence of nodes. Similar to PageRank, but works only on the largest eigenvector of the adjacency matrix so does not converge in the same way and tends to more strongly favor high degree nodes. It can be more appropriate in certain use cases, particularly those with undirected relationships.
+\item Article Rank: A variant of PageRank which assumes that relationships originating from low-degree nodes have a higher influence than relationships from high-degree nodes.
+\end{itemize}
+
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Path Finding Algorithms}
+
+ To find the shortest path between two or more nodes or evaluate the availability and quality of paths. Applications:
+ 
+\begin{itemize}
+\item  Supply chain analytics: Identifying the fastest path between an origin and a destination or between a raw material and a finished product
+\item  Customer Journey: Analyzing the events that make up a customer’s experience. In healthcare for example, this can be the experience of an in-patient from admission to discharge.
+\end{itemize}
+
+A common, industry standard, path finding algorithm is Dijkstra. It computes the shortest path between a source and a target node, e.g. shortest path between the actors "Kevin Bacon" and "Denzel Washington". This should give you a 4 hop path between Kevin Bacon and Denzel Washington.
+
+\begin{lstlisting}
+CALL gds.graph.project('proj',
+    ['Person','Movie'],
+    {
+        ACTED_IN:{orientation:'UNDIRECTED'},
+        DIRECTED:{orientation:'UNDIRECTED'}
+    }
+);
+
+MATCH (a:Actor)
+WHERE a.name IN ['Kevin Bacon', 'Denzel Washington']
+WITH collect(id(a)) AS nodeIds
+CALL gds.shortestPath.dijkstra.stream('proj', {sourceNode:nodeIds[0], TargetNode:nodeIds[1]})
+YIELD sourceNode, targetNode, path
+RETURN gds.util.asNode(sourceNode).name AS sourceNodeName,
+    gds.util.asNode(targetNode).name AS targetNodeName,
+    nodes(path) as path;
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Other Path Finding Algorithms}
+
+ Shortest path between two nodes:
+\begin{itemize}
+\item A* Shortest Path: An extension of Dijkstra that uses a heuristic function to speed up computation.
+\item Yen’s Algorithm Shortest Path: An extension of Dijkstra that allows you to find multiple, the top k, shortest paths.
+\end{itemize}
+
+Shortest path between a source node and multiple other target nodes:
+
+\begin{itemize}
+\item Dijkstra Single-Source Shortest Path: Dijkstra implementation for shortest path between one source and multiple targets.
+\item Delta-Stepping Single-Source Shortest Path: Parallelized shortest path computation. Computes faster than Dijkstra single-source shortest Path but uses more memory.
+\end{itemize}
+
+General path search between a source node and multiple other target nodes:
+\begin{itemize}
+
+\item Breadth First Search: Searches paths in order of increasing distance from the source node on each iteration.
+\item Depth First Search: Searches as far as possible along a single multi-hop path on each iteration.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Community Detection Algorithms}
+
+ 
+\begin{itemize}
+\item aa
+\end{itemize}
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Node Embeddings}
+
+ 
+\begin{itemize}
+\item aa
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Similarity Algorithms}
+
+ 
+\begin{itemize}
+\item aa
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning Overview}
+
+ 
+\begin{itemize}
+\item aa
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Classification}
+
+ 
+\begin{itemize}
+\item aa
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction}
+
+ 
+\begin{itemize}
+\item aa
+\end{itemize}
+
+
+\end{frame}
