@@ -402,7 +402,7 @@ ORDER BY numberOfMoviesActedIn DESCENDING, actorName LIMIT 5
 \item  for measuring the influence of nodes in a directed graph, particularly where the relationships imply some form of flow of movement such as in payment networks, supply chain and logistics, communications, routing, and graphs of website and links.
 \item estimates the importance of a node by counting the number of incoming relationships from neighboring nodes weighted by the importance as well as out-degree centrality of those neighbors
 \item The underlying assumption is that more important nodes are likely to have proportionately more incoming relationships from other important nodes.
-\item First, create the graph projection. We can use a Cypher projection in this case to obtain a graph where we have \lstinline|(Person)-[:DIRECTED_ACTOR]→(Person)|. this graph can be traversed to understand the influence across directors and actors.
+\item First, create the graph projection. We can use a Cypher projection in this case to obtain a graph where we have \lstinline|(Person)-[:DIRECTED_ACTOR]->(Person)|. this graph can be traversed to understand the influence across directors and actors.
 \item Next stream PageRank to find the top 5 most influential people in director-actor network.
 \end{itemize}
 
@@ -509,22 +509,105 @@ General path search between a source node and multiple other target nodes:
 \begin{frame}[fragile]\frametitle{Community Detection Algorithms}
 
  
-\begin{itemize}
-\item aa
+ \begin{itemize}
+\item to evaluate how groups of nodes may be clustered or partitioned in the graph
+\item distinguishing and assigning ids to these node groups for downstream analytics, visualization, or other processing.
+\item Applications:
+	\begin{itemize}
+	\item Fraud detection: Finding fraud rings by identifying accounts that have frequent suspicious transactions and/or share identifiers between one another.
+	\item Customer 360: Disambiguating multiple records and interactions into a single customer profile so an organization has an aggregated source of truth for each customer.
+	\item Market segmentation: dividing a target market into approachable subgroups based on priorities, behaviors, interests, and other criteria.
+	\end{itemize}
 \end{itemize}
+
 
 
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Louvain Community Detection}
+
+ 
+ \begin{itemize}
+\item maximizes a modularity score for each community with a hierarchical clustering approach that recursively merges communities together. 
+\item means evaluating how much more densely connected the nodes within a community are, compared to how connected they would be in a random network.
+\item Being a stochastic algorithm, the community assignments may change a bit when re-run. When the graph does not have a naturally well-defined community structure the changes between runs can become more significant. \lstinline|seedProperty| is used to  assign initial community ids and help with consistency between runs. 
+\item Create graph and run algorithm, then we can verify the communityId node properties in the projection with a stream operation.
+\end{itemize}
+
+\begin{lstlisting}
+CALL gds.graph.project('proj', ['Movie', 'Person'], {
+    ACTED_IN:{orientation:'UNDIRECTED'},
+    DIRECTED:{orientation:'UNDIRECTED'}
+});
+
+CALL gds.louvain.mutate('proj', {mutateProperty:'communityId'})
+
+CALL gds.graph.streamNodeProperty('proj','communityId', ['Person'])
+YIELD nodeId, propertyValue
+WITH gds.util.asNode(nodeId) AS n, propertyValue AS communityId
+WHERE n:Person
+RETURN n.name, communityId LIMIT 10
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Other Community Detection}
+
+ 
+ \begin{itemize}
+\item Label Propagation: Similar intent as Louvain. Fast algorithm that parallelizes well. Great for large graphs.
+\item Weakly Connected Components (WCC): Partitions the graph into sets of connected nodes such that
+\item Every node is reachable from any other node in the same set
+\item No path exists between nodes from different sets
+\item Triangle Count: Counts the number of triangles for each node. Can be used to detect the cohesiveness of communities and stability of the graph.
+\item Local Clustering Coefficient: Computes the local clustering coefficient for each node in the graph which is an indicator for how the node clusters with its neighbors.
+\end{itemize}
+
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Node Embeddings}
 
- 
 \begin{itemize}
-\item aa
+\item to compute low-dimensional vector representations of nodes such that similarity between vectors (eg. dot product) approximates similarity between nodes in the original graph
+\item Node embedding vectors don’t offer insights by themselves, they are created to enable Machine/Deep Learning
+\item Applications
+	\begin{itemize}
+	\item Exploratory Data Analysis (EDA) such as visualizing the embeddings in a TSNE plot to better understand the graph structure and potential clusters of nodes
+	\item Similarity Measurements: Node embedding allows you to scale similarity inferences in large graphs using K Nearest Neighbor (KNN) or other techniques.
+	\item Features for Machine Learning: Node embedding vectors naturally plug in as features for a variety of machine learning problems. 
+	\end{itemize}
+\item GDS, apart from FastRP, has also implemented Node2Vec, which computes a vector representation of a node based on random walks in the graph, and GraphSage, which is an inductive modeling approach for computing node embeddings using node properties and graph structure.	
 \end{itemize}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Node Embedding: FastRP}
+
+\begin{itemize}
+\item Fast Random Projection, or FastRP leverages probabilistic sampling techniques to generate sparse representations of the graph allowing for extremely fast calculation of embedding vectors that are comparative in quality to those produced with traditional random walk and neural net techniques such as Node2vec and GraphSage. 
+\item Parameters
+	\begin{itemize}
+	\item embeddingDimension: length of the embedding vectors
+	\item IterationWeights: This controls two aspects: the number of iterations for intermediate embeddings, and their relative impact on the final node embedding.
+	\end{itemize}
+\end{itemize}
+
+\begin{lstlisting}
+CALL gds.graph.project('proj', ['Movie', 'Person'], {
+    ACTED_IN:{orientation:'UNDIRECTED'},
+    DIRECTED:{orientation:'UNDIRECTED'}
+});
+
+CALL gds.fastRP.stream('proj',  {embeddingDimension:64, randomSeed:7474})
+YIELD nodeId, embedding
+WITH gds.util.asNode(nodeId) AS n, embedding
+WHERE n:Person
+RETURN id(n), n.name, embedding LIMIT 10
+\end{lstlisting}
 
 \end{frame}
 
@@ -533,10 +616,41 @@ General path search between a source node and multiple other target nodes:
 
  
 \begin{itemize}
-\item aa
+\item to infer similarity between pairs of nodes. 
+\item run over the graph projection in bulk
+\item When similar node pairs are identified according to the user specified metric and threshold, a relationship with a similarity score property is drawn between the pair.
+\item Applications
+	\begin{itemize}
+	\item Fraud detection: finding potential fraud user accounts by analyzing how similar a set of new user accounts is to flagged accounts
+	\item Recommendation Systems: In an online retail store, identifying items that pair to the one currently being viewed by a user to inform impressions and increase rate of purchase
+	\item Entity Resolution: Identify nodes that are similar to one another based on activity or identifying information in the graph
+	\end{itemize}
+\item Algorithms 
+	\begin{itemize}
+	\item Node Similarity: Determines similarity between nodes based on the relative proportion of shared neighboring nodes in the graph. 
+	\item K-Nearest Neighbor (KNN): Determines similarity based off node properties. The GDS KNN implementation can scale well for global inference over large graphs when tuned appropriately
+	\end{itemize}	
 \end{itemize}
 
+\begin{lstlisting}
+CALL gds.graph.project('proj', ['Movie', 'Person'], {
+    ACTED_IN:{orientation:'UNDIRECTED'},
+    DIRECTED:{orientation:'UNDIRECTED'}
+});
 
+CALL gds.fastRP.mutate('proj',  {
+    embeddingDimension:64,
+    randomSeed:7474,
+    mutateProperty:'embedding'
+})
+
+CALL gds.knn.stream('proj', {nodeLabels:['Person'], nodeProperties:['embedding'], topK:1})
+YIELD  node1, node2, similarity
+RETURN gds.util.asNode(node1).name AS actorName1,
+    gds.util.asNode(node2).name AS actorName2,
+    similarity
+LIMIT 10
+\end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
