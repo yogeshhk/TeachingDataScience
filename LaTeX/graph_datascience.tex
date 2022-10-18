@@ -658,30 +658,391 @@ LIMIT 10
 
  
 \begin{itemize}
-\item aa
+\item managed pipelines for end-to-end ML workflows. Data selection, feature engineering, data splitting, hyperparameter configuration, and training steps 
+\item There are currently two supported types of ML pipelines:
+	\begin{itemize}
+	\item Node Classification Pipelines: Supervised binary and multi-class classification for nodes
+	\item Link Prediction Pipelines: Supervised prediction for whether a relationship or "link" should exist between pairs of nodes
+	\end{itemize}
+\item Both pipelines have \lstinline|train| and \lstinline|predict| procedures.
 \end{itemize}
-
 
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Machine Learning: Classification}
 
+Steps 1-6, the training steps, will be executed automatically by the pipeline. You will just be responsible for providing configuration and hyperparameters for them. 
  
-\begin{itemize}
-\item aa
-\end{itemize}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{neo4j100}
+\end{center}	
 
 
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction}
+\begin{frame}[fragile]\frametitle{Machine Learning: Classification: Problem}
 
- 
 \begin{itemize}
-\item aa
+\item Problem: to predict which movies in the graph are comedies which we will define as any movie that has a Genre of "Comedy".
+\item Genre is currently represented by its own node in the graph. For this problem we need it represented as a property of the Movie node. 
+\item For demonstration purposes we will assign a cls property which is 1 if the movie is a comedy and 0 otherwise.
 \end{itemize}
 
+\begin{lstlisting}
+MATCH(m:Movie)-[:IN_GENRE]->(g)
+WITH m , collect(g.name) AS genres
+SET m.cls = toInteger('Comedy' IN genres)
+RETURN count(m), m.cls;
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Classification: Preprocessing}
+
+\begin{itemize}
+\item The Movie node also has some missing property values for runtime and imdbRating, which could carry predictive signal for this problem.
+\item We can either impute them or skip them. Lets skip.
+\item While we do this we will filter the movies to only consider those released on or after 2010 as this type of data may drift overtime making data further in the past less relevant.
+\end{itemize}
+
+\begin{lstlisting}
+MATCH(m:Movie)
+WHERE m.year >= 2010
+    AND m.runtime IS NOT NULL
+    AND m.imdbRating IS NOT NULL
+SET m:TrainMovie
+RETURN count(m)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Classification: Projection}
+
+\begin{itemize}
+\item Now we can project a graph using the TrainMovie node label. 
+\item We will project mirroring natural and reverse relationships then use collapsePath to provide a monopartite projection which will make the graph easier to handle inside the pipeline for a quick demonstration.
+\end{itemize}
+
+\begin{lstlisting}
+CALL gds.graph.project('proj',
+    {
+        Actor:{},
+        TrainMovie:{ properties: ['cls', 'imdbRating', 'runtime']}
+    },
+    {
+        ACTED_IN:{},
+        HAD_ACTOR:{type:'ACTED_IN', orientation:'REVERSE'}
+    }
+);
+
+CALL gds.alpha.collapsePath.mutate('proj',
+  {
+    relationshipTypes: ['HAD_ACTOR', 'ACTED_IN'],
+    allowSelfLoops: false,
+    mutateRelationshipType: 'SHARES_ACTOR_WITH'
+  }
+) YIELD relationshipsWritten;
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Classification: Configure the Pipeline}
+
+\begin{itemize}
+\item Create the Pipeline
+\item Add Node Properties, generate FastRP embeddings
+\item Select Node Properties as Features
+\item Configure Node Splits
+\item Add Model Candidates
+\end{itemize}
+
+\begin{lstlisting}
+CALL gds.beta.pipeline.nodeClassification.create('pipe')
+
+CALL gds.beta.pipeline.nodeClassification.addNodeProperty('pipe', 'fastRP', {
+  embeddingDimension: 32,
+  randomSeed: 7474,
+  mutateProperty:'embedding'
+})
+YIELD name, nodePropertySteps;
+
+// add degree centrality which will measure the number of other movies that share actors.
+CALL gds.beta.pipeline.nodeClassification.addNodeProperty('pipe', 'degree', {
+  mutateProperty:'degree'
+})
+YIELD name, nodePropertySteps;
+
+// scale the runtime property
+CALL gds.beta.pipeline.nodeClassification.addNodeProperty('pipe', 'alpha.scaleProperties', {
+  nodeProperties: ['runtime'],
+    scaler: 'Log',
+  mutateProperty:'logRuntime'
+})
+YIELD name, nodePropertySteps;
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Classification: Configure the Pipeline}
+
+\begin{lstlisting}
+// configure the subset of node properties that we want to use as features for the model
+CALL gds.beta.pipeline.nodeClassification.selectFeatures(
+    'pipe',
+    ['imdbRating', 'logRuntime', 'embedding', 'degree'])
+YIELD name, featureProperties;
+
+// configure the data splitting
+CALL gds.beta.pipeline.nodeClassification.configureSplit('pipe', {
+ testFraction: 0.2,
+  validationFolds: 5
+})
+YIELD splitConfig;
+
+// creating model candidates with different parameters
+CALL gds.beta.pipeline.nodeClassification.addLogisticRegression('pipe', {penalty: 0.0})
+YIELD parameterSpace;
+
+CALL gds.beta.pipeline.nodeClassification.addLogisticRegression('pipe', {penalty: 0.1})
+YIELD parameterSpace;
+
+CALL gds.beta.pipeline.nodeClassification.addLogisticRegression('pipe', {penalty: 1.0})
+YIELD parameterSpace;
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Classification: Train the Pipeline}
+
+\begin{itemize}
+\item Apply node and relationship filters
+\item Execute the above pipeline configuration steps
+\item Train with cross-validation for all the candidate models
+\item Select the best candidate according to the metric parameter. We will use ACCURACY for ease of interpretation
+\item Retrain the winning model on the entire training set and perform a final evaluation on the test set according to the metric
+\item Register the winning model in the model catalog
+
+\end{itemize}
+
+
+\begin{lstlisting}
+CALL gds.beta.pipeline.nodeClassification.train('proj', {
+  pipeline: 'pipe',
+  nodeLabels: ['TrainMovie'],
+  modelName: 'nc-pipeline-model',
+  targetProperty: 'cls',
+  randomSeed: 7474,
+  metrics: ['ACCURACY']
+}) YIELD modelInfo
+RETURN
+  modelInfo.bestParameters AS winningModel,
+  modelInfo.metrics.ACCURACY.train.avg AS avgTrainScore,
+  modelInfo.metrics.ACCURACY.outerTrain AS outerTrainScore,
+  modelInfo.metrics.ACCURACY.test AS testScore;
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Classification: Predict with the Pipeline}
+
+\begin{lstlisting}
+CALL gds.beta.pipeline.nodeClassification.predict.write(
+  graphName: String,
+  configuration: Map
+)
+YIELD
+  preProcessingMillis: Integer,
+  computeMillis: Integer,
+  postProcessingMillis: Integer,
+  writeMillis: Integer,
+  nodePropertiesWritten: Integer,
+  configuration: Map
+\end{lstlisting}
+	
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction}
+
+A binary classifier where the target is a 0-1 indicator, 0 for no link, 1 for a link.
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{neo4j100}
+\end{center}	
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction: Problem}
+
+\begin{itemize}
+\item Problem: Predicting Actor Relationships with Link Prediction.
+\item Domain:  a quick example, we will manufacture a social network out of the graph. We will filter down to just big high grossing movies then create ACTED\_WITH relationships between actors that were in the same movies together
+\end{itemize}
+
+\begin{lstlisting}
+//set a node label based on recent release and revenue conditions
+MATCH (m:Movie)
+WHERE m.year >= 1990 AND m.revenue >= 1000000
+SET m:RecentBigMovie;
+
+//native projection with reverse relationships
+CALL gds.graph.project('proj',
+  ['Actor','RecentBigMovie'],
+  {
+  	ACTED_IN:{type:'ACTED_IN'},
+    HAS_ACTOR:{type:'ACTED_IN', orientation: 'REVERSE'}
+  }
+);
+
+//collapse path utility for relationship aggregation - no weight property
+CALL gds.alpha.collapsePath.mutate('proj',{
+    relationshipTypes: ['ACTED_IN', 'HAS_ACTOR'],
+    allowSelfLoops: false,
+    mutateRelationshipType: 'ACTED_WITH'
+});
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction: Problem}
+
+\begin{itemize}
+\item This gives us a graph projection with just Actor nodes and ACTED\_WITH relationships, like a 'co-acting' social network. 
+\item When we use link prediction in this context, we will be training a model to predict which actors are most likely to be in the same movies together given other ACTED\_WITH relationships already present in the graph. 
+\end{itemize}
+
+\begin{lstlisting}
+//write relationships back to graph
+CALL gds.graph.writeRelationship('proj', 'ACTED_WITH');
+
+//drop duplicates
+MATCH (a1:Actor)-[s:ACTED_WITH]->(a2)
+WHERE id(a1) < id(a2)
+DELETE s;
+
+//clean up extra labels
+MATCH (m:RecentBigMovie) REMOVE m:RecentBigMovie;
+
+//project the graph
+CALL gds.graph.drop('proj');
+CALL gds.graph.project('proj', 'Actor', {ACTED_WITH:{orientation: 'UNDIRECTED'}});
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction: Configure the Pipeline}
+
+\begin{itemize}
+\item Create the Pipeline
+\item Add Node Properties
+\item Add Link Features
+\item Configure Relationship Splits
+\item Add Model Candidates
+\end{itemize}
+
+\begin{lstlisting}
+CALL gds.beta.pipeline.linkPrediction.create('pipe');
+
+CALL gds.beta.pipeline.linkPrediction.addNodeProperty('pipe', 'fastRP', {
+    mutateProperty: 'embedding',
+    embeddingDimension: 128,
+    randomSeed: 7474
+}) YIELD nodePropertySteps;
+
+CALL gds.beta.pipeline.linkPrediction.addNodeProperty('pipe', 'degree', {
+    mutateProperty: 'degree'
+}) YIELD nodePropertySteps;
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction: Configure the Pipeline}
+
+\begin{lstlisting}
+// configures a symmetric function that takes the properties from the node pair and computes features for the link prediction model. 
+CALL gds.beta.pipeline.linkPrediction.addFeature('pipe', 'l2', {
+  nodeProperties: ['embedding']
+}) YIELD featureSteps;
+
+CALL gds.beta.pipeline.linkPrediction.addFeature('pipe', 'cosine', {
+  nodeProperties: ['embedding']
+}) YIELD featureSteps;
+
+CALL gds.beta.pipeline.linkPrediction.addFeature('pipe', 'hadamard', {
+  nodeProperties: ['degree']
+}) YIELD featureSteps;
+
+// configure the relationship splitting which sets the train/test/feature set proportions, the negative sampling ratio, and the number of validations folds used in cross-validation. 
+CALL gds.beta.pipeline.linkPrediction.configureSplit('pipe', {
+    testFraction: 0.2,
+    trainFraction: 0.5,
+    negativeSamplingRatio: 2.0
+}) YIELD splitConfig;
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction: Configure the Pipeline}
+
+\begin{lstlisting}
+// creating model candidates. 
+CALL gds.beta.pipeline.linkPrediction.addLogisticRegression('pipe', {
+    penalty: 0.001,
+    patience: 2
+}) YIELD parameterSpace;
+
+CALL gds.beta.pipeline.linkPrediction.addLogisticRegression('pipe', {
+    penalty: 1.0,
+    patience: 2
+}) YIELD parameterSpace;
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction: Train the Pipeline}
+
+\begin{lstlisting}
+CALL gds.beta.pipeline.linkPrediction.train('proj', {
+    pipeline: 'pipe',
+    modelName: 'lp-pipeline-model',
+    randomSeed: 7474 //usually a good idea to set a random seed for reproducibility.
+}) YIELD modelInfo
+RETURN
+modelInfo.bestParameters AS winningModel,
+modelInfo.metrics.AUCPR.train.avg AS avgTrainScore,
+modelInfo.metrics.AUCPR.outerTrain AS outerTrainScore,
+modelInfo.metrics.AUCPR.test AS testScore
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction: Prediction with the Model}
+
+\begin{lstlisting}
+CALL gds.beta.pipeline.linkPrediction.predict.stream('proj', {
+  modelName: 'lp-pipeline-model',
+  sampleRate:0.1,
+  topK:1,
+  randomSeed: 7474,
+  concurrency: 1
+})
+ YIELD node1, node2, probability
+ RETURN gds.util.asNode(node1).name AS actor1, gds.util.asNode(node2).name AS actor2, probability
+ ORDER BY probability DESC, actor1
+\end{lstlisting}
+
+This operation supports a mutate execution mode to save the predicted links in the graph projection.
 
 \end{frame}
