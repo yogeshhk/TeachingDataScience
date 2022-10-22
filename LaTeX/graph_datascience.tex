@@ -98,15 +98,6 @@
 \item Say, run degree centrality on Actor nodes. 
 \item \lstinline|CALL gds.degree.mutate('my-graph-projection', {mutateProperty:'numberOfMoviesActedIn'})|
 \item This will count the number of movies each actor was in and store it on a node property called numberOfMoviesActedIn inside the projection (it will not be written back to the database yet).
-\item The graph catalog has two methods for export:
-\begin{itemize}
-\item gds.graph.export to export a graph into a new database - effectively copying the projection into a separate Neo4j database
-\item 
-gds.beta.graph.export.csv to export a graph to csv files
-\end{itemize}
-
-\item  To write the property back to the database we could use the writeNodeProperties operation: \lstinline|CALL gds.graph.writeNodeProperties('my-graph-projection',['numberOfMoviesActedIn'], ['Actor'])|
-\item To take the results from our algorithm calculations and stream them into another process:
 \end{itemize}
 
 \begin{lstlisting}
@@ -119,6 +110,25 @@ ORDER BY numberOfMoviesActedIn DESCENDING, actorName LIMIT 10|
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Running Algorithms}
+
+\begin{itemize}
+\item The graph catalog has two methods for export:
+\begin{itemize}
+\item gds.graph.export to export a graph into a new database - effectively copying the projection into a separate Neo4j database
+\item 
+gds.beta.graph.export.csv to export a graph to csv files
+\end{itemize}
+
+\item  To write the property back to the database we could use the writeNodeProperties operation: \lstinline|CALL gds.graph.writeNodeProperties('my-graph-projection',['numberOfMoviesActedIn'], ['Actor'])|
+\item To take the results from our algorithm calculations and stream them into another process:
+\end{itemize}
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Projects}
 
 There are 2 primary types of projections in GDS, native projections and cypher projections.
@@ -126,6 +136,20 @@ There are 2 primary types of projections in GDS, native projections and cypher p
 \begin{itemize}
 \item Native projections are optimized for efficiency and performance to support graph data science at scale.
 \item Cypher projections are optimized for flexibility and customization to support exploratory analysis, experimentation, and smaller graph projections.
+\item If you attempt to create a new graph projection with a name that already exists, you will receive an error. To continue you will first have to run the gds.graph.drop() procedure to drop the existing graph projection.
+\item '*' can be used to include all nodes and/or relationships in the database.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Projects}
+
+There are 2 primary types of projections in GDS, native projections and cypher projections.
+
+\begin{itemize}
+
 \item  When you call \lstinline|gds.graph.project()| you are using a native projection. 
 \item Native projections provide the best performance by reading from the Neo4j store files directly
 \item Additional features:
@@ -140,16 +164,13 @@ There are 2 primary types of projections in GDS, native projections and cypher p
 
 	\item aggregating parallel relationships
 	\end{itemize}
-\item If you attempt to create a new graph projection with a name that already exists, you will receive an error. To continue you will first have to run the gds.graph.drop() procedure to drop the existing graph projection.
-\item '*' can be used to include all nodes and/or relationships in the database.
 \end{itemize}
 
 \end{frame}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Including Node and Relationship Properties}
-
-There are 2 primary types of projections in GDS, native projections and cypher projections.
 
 \begin{itemize}
 \item Node and relationship properties may be useful to consider in graph analytics. 
@@ -208,6 +229,17 @@ CALL gds.graph.project(
 
 {\tiny (Ref: Introduction to Neo4j Graph Data Science - neo4j)}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parallel Relationship Aggregation}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{neo4j98}
+\end{center}	
+
+{\tiny (Ref: Introduction to Neo4j Graph Data Science - neo4j)}
+
 \begin{lstlisting}
 CALL gds.graph.project(
   'user-proj',
@@ -227,8 +259,6 @@ We can create a property with the count of the relationships as well - like so:
 \begin{center}
 \includegraphics[width=0.8\linewidth,keepaspectratio]{neo4j99}
 \end{center}	
-
-{\tiny (Ref: Introduction to Neo4j Graph Data Science - neo4j)}
 
 \begin{lstlisting}
 CALL gds.graph.project(
@@ -254,14 +284,18 @@ CALL gds.graph.project(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Cypher Projections}
 
-There are 2 primary types of projections in GDS, native projections and cypher projections.
-
 \begin{itemize}
 \item While the native projection is scalable and fast, its filtering and aggregation capabilities aren’t as flexible as Cypher. \item The Cypher projection, as its name implies, uses Cypher to define the projection pattern, and as such, enables more flexibility.
 \item Cypher projections are intended to be used in exploratory analysis and developmental phases where additional flexibility and/or customization is needed.
 \item Cypher Projections have a diminished focus on performance relative to native projections and as a result won’t perform as quickly or as well on larger graphs.
 \item A Cypher projection takes three mandatory arguments: graphName, nodeQuery, and relationshipQuery. 
 \end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cypher Projections}
 
 \begin{lstlisting}
 CALL gds.graph.project.cypher(
@@ -406,6 +440,13 @@ ORDER BY numberOfMoviesActedIn DESCENDING, actorName LIMIT 5
 \item Next stream PageRank to find the top 5 most influential people in director-actor network.
 \end{itemize}
 
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{PageRank}
+
+
 \begin{lstlisting}
 //drop last graph projection
 CALL gds.graph.drop('proj', false);
@@ -429,7 +470,6 @@ ORDER BY influence DESCENDING, personName LIMIT 5
 \end{lstlisting}
 
 \end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Other Centrality Algorithms}
@@ -457,6 +497,12 @@ ORDER BY influence DESCENDING, personName LIMIT 5
 \end{itemize}
 
 A common, industry standard, path finding algorithm is Dijkstra. It computes the shortest path between a source and a target node, e.g. shortest path between the actors "Kevin Bacon" and "Denzel Washington". This should give you a 4 hop path between Kevin Bacon and Denzel Washington.
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Path Finding Algorithms}
 
 \begin{lstlisting}
 CALL gds.graph.project('proj',
@@ -534,6 +580,12 @@ General path search between a source node and multiple other target nodes:
 \item Being a stochastic algorithm, the community assignments may change a bit when re-run. When the graph does not have a naturally well-defined community structure the changes between runs can become more significant. \lstinline|seedProperty| is used to  assign initial community ids and help with consistency between runs. 
 \item Create graph and run algorithm, then we can verify the communityId node properties in the projection with a stream operation.
 \end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Louvain Community Detection}
 
 \begin{lstlisting}
 CALL gds.graph.project('proj', ['Movie', 'Person'], {
@@ -632,6 +684,11 @@ RETURN id(n), n.name, embedding LIMIT 10
 	\end{itemize}	
 \end{itemize}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Similarity Algorithms}
+
 \begin{lstlisting}
 CALL gds.graph.project('proj', ['Movie', 'Person'], {
     ACTED_IN:{orientation:'UNDIRECTED'},
@@ -652,7 +709,6 @@ RETURN gds.util.asNode(node1).name AS actorName1,
 LIMIT 10
 \end{lstlisting}
 \end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Machine Learning Overview}
 
@@ -758,6 +814,13 @@ CALL gds.alpha.collapsePath.mutate('proj',
 \item Add Model Candidates
 \end{itemize}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Classification: Configure the Pipeline}
+
+
+
 \begin{lstlisting}
 CALL gds.beta.pipeline.nodeClassification.create('pipe')
 
@@ -783,12 +846,11 @@ CALL gds.beta.pipeline.nodeClassification.addNodeProperty('pipe', 'alpha.scalePr
 YIELD name, nodePropertySteps;
 \end{lstlisting}
 \end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Machine Learning: Classification: Configure the Pipeline}
 
 \begin{lstlisting}
-// configure the subset of node properties that we want to use as features for the model
+// configure the subset of node properties to use as features for the model
 CALL gds.beta.pipeline.nodeClassification.selectFeatures(
     'pipe',
     ['imdbRating', 'logRuntime', 'embedding', 'degree'])
@@ -804,10 +866,8 @@ YIELD splitConfig;
 // creating model candidates with different parameters
 CALL gds.beta.pipeline.nodeClassification.addLogisticRegression('pipe', {penalty: 0.0})
 YIELD parameterSpace;
-
 CALL gds.beta.pipeline.nodeClassification.addLogisticRegression('pipe', {penalty: 0.1})
 YIELD parameterSpace;
-
 CALL gds.beta.pipeline.nodeClassification.addLogisticRegression('pipe', {penalty: 1.0})
 YIELD parameterSpace;
 \end{lstlisting}
@@ -826,6 +886,13 @@ YIELD parameterSpace;
 \item Register the winning model in the model catalog
 
 \end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Classification: Train the Pipeline}
+
 
 
 \begin{lstlisting}
@@ -885,6 +952,14 @@ A binary classifier where the target is a 0-1 indicator, 0 for no link, 1 for a 
 \item Domain:  a quick example, we will manufacture a social network out of the graph. We will filter down to just big high grossing movies then create ACTED\_WITH relationships between actors that were in the same movies together
 \end{itemize}
 
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction: Problem}
+
+
+
 \begin{lstlisting}
 //set a node label based on recent release and revenue conditions
 MATCH (m:Movie)
@@ -909,7 +984,6 @@ CALL gds.alpha.collapsePath.mutate('proj',{
 \end{lstlisting}
 
 \end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction: Problem}
 
@@ -1029,6 +1103,8 @@ modelInfo.metrics.AUCPR.test AS testScore
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Machine Learning: Link Prediction: Prediction with the Model}
+This operation supports a mutate execution mode to save the predicted links in the graph projection.
+
 
 \begin{lstlisting}
 CALL gds.beta.pipeline.linkPrediction.predict.stream('proj', {
@@ -1043,6 +1119,5 @@ CALL gds.beta.pipeline.linkPrediction.predict.stream('proj', {
  ORDER BY probability DESC, actor1
 \end{lstlisting}
 
-This operation supports a mutate execution mode to save the predicted links in the graph projection.
 
 \end{frame}
