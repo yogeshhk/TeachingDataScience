@@ -1,0 +1,154 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Applications}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Sentence Transformers}
+
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Introduction}
+
+\begin{itemize}
+\item  a Python framework for state-of-the-art sentence, text and image embeddings
+\item use this framework to compute sentence / text embeddings for more than 100 languages
+\item  embeddings can then be compared e.g. with cosine-similarity to find sentences with a similar meaning, semantic textual similar, semantic search, or paraphrase mining.
+\item Installation \lstinline|pip install -U sentence-transformers|
+\end{itemize}
+
+Usage:
+
+\begin{lstlisting}
+from sentence_transformers import SentenceTransformer
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+#Our sentences we like to encode
+sentences = ['This framework generates embeddings for each input sentence',
+    'Sentences are passed as a list of string.',
+    'The quick brown fox jumps over the lazy dog.']
+
+#Sentences are encoded by calling model.encode()
+embeddings = model.encode(sentences)
+
+#Print the embeddings
+for sentence, embedding in zip(sentences, embeddings):
+    print("Sentence:", sentence)
+    print("Embedding:", embedding)
+    print("")
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sentence Embedding}
+
+\begin{itemize}
+\item to embed sentences into a vector space
+\item a must for using text in any machine learning algorithm
+\end{itemize}
+
+
+\begin{lstlisting}
+from sentence_transformers import SentenceTransformer,util
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+sentences = ['This framework generates embeddings for each input sentence',
+    'Sentences are passed as a list of string.']
+
+embeddings = model.encode(sentences)
+
+for sentence, embedding in zip(sentences, embeddings):
+    print("Sentence:", sentence)
+    print("Embedding:", embedding)
+    print("")
+
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sentence Similarity}
+
+\begin{itemize}
+\item to compute the similarity between two sentences.
+\item more semantic the embedding, similarity becomes semantic
+\end{itemize}
+
+
+\begin{lstlisting}
+from sentence_transformers import SentenceTransformer,util
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+emb1 = model.encode("I am eating Apple")
+emb2 = model.encode("I like fruits")
+cos_sim = util.cos_sim(emb1, emb2)
+print("Cosine-Similarity:", cos_sim)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Semantic Search}
+
+\begin{itemize}
+\item Query-Response model
+\item for tasks such as question answering, where you must find documents containing answers to a given question
+\end{itemize}
+
+
+\begin{lstlisting}
+from sentence_transformers import SentenceTransformer, util
+model = SentenceTransformer('clips/mfaq')
+
+question = "How many models can I host on HuggingFace?"
+answer_1 = "All plans come with unlimited private models and datasets."
+answer_2 = "AutoNLP is an automatic way to train and deploy state-of-the-art NLP models, seamlessly integrated with the Hugging Face ecosystem."
+answer_3 = "Based on how much training data and model variants are created, we send you a compute cost and payment link - as low as $10 per job."
+
+query_embedding = model.encode(question)
+corpus_embeddings = model.encode([answer_1, answer_2, answer_3])
+
+print(util.semantic_search(query_embedding, corpus_embeddings))
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Clustering}
+
+Grouping similar content
+
+
+\begin{lstlisting}
+from sklearn.cluster import KMeans
+import numpy as np
+embedder = SentenceTransformer('all-MiniLM-L6-v2')
+corpus = ['A man is eating food.','A man is eating a piece of bread.', 'Horse is eating grass.','A man is eating pasta.' ...]
+corpus_embeddings = embedder.encode(corpus)
+# Normalize the embeddings to unit length
+corpus_embeddings = corpus_embeddings /  np.linalg.norm(corpus_embeddings, axis=1, keepdims=True)
+# source: https://stackoverflow.com/questions/55619176/how-to-cluster-similar-sentences-using-bert
+clustering_model = KMeans(n_clusters=4)
+clustering_model.fit(corpus_embeddings)
+cluster_assignment = clustering_model.labels_
+print(cluster_assignment)
+clustered_sentences = {}
+for sentence_id, cluster_id in enumerate(cluster_assignment):
+    if cluster_id not in clustered_sentences:
+        clustered_sentences[cluster_id] = []
+    clustered_sentences[cluster_id].append(corpus[sentence_id])
+print(clustered_sentences)
+\end{lstlisting}
+
+\end{frame}
+
+
