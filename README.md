@@ -19,9 +19,10 @@ Copyright (C) 2019 Yogesh H Kulkarni
 *	LaTeX directory 
 	* Has tex sources along with necessary images
 	*	Naming: subject_maintopic_subtopic.tex eg maths_linearalgebra_matrices.tex
-	*	Main_Workshop/Seminar_Presentation/CourseMaterial.tex are the driver files
-	*	They intern contain common content files, which have included actual source files
-	*	Make bat files compile the appropriate sources
+	*	Main_[|Seminar|Workshop|Course]_[Presentation/CheatSheet].tex are the driver files
+	* Seminar is of about 1 hour, Workshop is about 1 day and Course is of 1 week/semester
+	*	They in-turn contain common content files, which include the actual source files
+	*	Make specific bat files compile the appropriate sources
 *	Code directory 
 	*	Has running python or ipython notebook files with necessary images and data
 	*	Naming should be such that corresponding latex file can be associated
