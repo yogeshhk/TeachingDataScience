@@ -1,1237 +1,619 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
   \begin{center}
-    {\Large LSTM with Pytorch for Predicting Stock Price}
+    {\Large LSTM with Pytorch}
     
   \end{center}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Predicting Google Stock Price}
+\begin{frame}[fragile] \frametitle{Long Short Term Memory (LSTM)}
+
+
 \begin{itemize}
-\item Dataset: Google Stock prices, 2012 to 2016.
-\item LSTM to cpature upward or downward trend, predict Jan 2017 trend.
-\item Better than traditional ARIMA model
+\item  One of the main problems of classical RNNs is so-called vanishing gradients problem. 
+\item  Because RNNs are trained end-to-end in one back-propagation pass, it is having hard times propagating error to the first layers of the network, and thus the network cannot learn relationships between distant tokens. 
+\item  One of the ways to avoid this problem is to introduce explicit state management by using so called gates. 
+\item  There are two most known architectures of this kind: Long Short Term Memory (LSTM) and Gated Relay Unit (GRU).
 \end{itemize}
-(Ref: Deep Learning A-Z - Kirill Eremenko https://www.udemy.com/deeplearning/learn/v4/t/lecture/8374794)
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Predicting Google Stock Price}
-Input
-\begin{center}
-\includegraphics[width=0.7\linewidth,keepaspectratio]{lstm44}
-\end{center}
-Test set has same columns (there is no target column missing, as such) in Time serries analysis. We are predicting next value. Test set has Jan 2017 values to compare predictions with.
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Imports of libs and data}
-
-\begin{lstlisting}
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-
-dataset_train = pd.read_csv("Google_Stock_Price_Train.csv")
-training_set = dataset_train.iloc[:,1:2].values
-\end{lstlisting}
-Creating numpy array (by .values) of a single column ``Open'' prices.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Feature Scaling}
-\begin{itemize}
-\item Standardization: $\frac{x - \mu}{\sigma}$
-\item Normalization: $\frac{x - min}{max - min}$
-\end{itemize}
-Using normalization using scikit learns min max scalar class
-\begin{lstlisting}
-from sklearn.preprocessing import MinMaxScaler
-
-sc = MinMaxScaler(feature_range=(0,1))
-training_set_scaled = sc.fit_transform(training_set)
-\end{lstlisting}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Time Steps}
-Super critical to introduce right time steps.
-\begin{itemize}
-\item Say 60, means, LSTM will look at 60 previous values and the current one, to predict the next value.
-\item Just 1 timestep is not good as it leads to over fitting.
-\item 20 was not good to catupre the trends. 
-\item Its like 60 days moving average graph, ie last 2 months.
-\item Will define two variables x\_train and y\_train. For each time t:
-\item x\_train will have 60 previous values before the current day.
-\item y\_train will have the value of the next day.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Time Steps}
-\begin{itemize}
-\item As we need previous 60 values, we need to start for loop after that.
-\item Ends at the last value,training\_set\_scaled.shape[0], ie 1258
-\item x\_train has previous (for i = 60, x\_train has 60-60 ie 0 to 60 values and column is just 0th.
-\item y\_train has i + 1 th value, but as index starts with 0, it is i
-\item Both are lists, make them numpy arrays to be usable later.
-\end{itemize}
-
-\begin{lstlisting}
-x_train = []
-y_train = []
-for i in range(60,training_set_scaled.shape[0]):
-    x_train.append(training_set_scaled[i-60: i,0])
-    y_train.append(training_set_scaled[i,0])
-x_train, y_train = np.array(x_train), np.array(y_train)    
-\end{lstlisting}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Predictors}
-\begin{itemize}
-\item ``Open'' price is just one predictor we have for now.
-\item Need to add  dimension using reshape function, to x\_train
-\item Thats one sheet for this feature.
-\item Any additional dimension will add new sheets in the 3rd dimension.
-\item RNN expects 3d shape:number of obersvations or batch size (1258), time steps (60), predictors (1)
-\end{itemize}
-
-\begin{lstlisting}
-x_train = np.reshape(x_train,(x_train.shape[0],x_train.shape[1],1))
-\end{lstlisting}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Model}
-\begin{itemize}
-\item Building NN architecture as usual
-\item LSTM layer are arguments:
-\begin{itemize}
-\item number of units: number of neurons/nodes in each LSTM layer. 50 is good. Just 2 or3 wont capture well.
-\item return sequence: True if you want to get last value. When you are building last LSTM layer, then its False
-\item input shape:  time steps (60), predictors (1), first argument x\_train.shape[0] is taken automatically
-\end{itemize}
-\item Including dropout to avoid overfitting.
-\end{itemize}
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Input units vs Time Steps}
-Time steps specify number of inputs in past. Then whats number of input units in the LSTM layer?
-\begin{center}
-\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm45}
-\end{center}
-Each blue box is an LSTM layer, composed of multiple cells/units, each of which accepts a vector input x\_t. Each unit cell will take an input of size/units 50. The output size is always 1, similar to neural network nodes (like sigmoidal units) that combine and then activate.
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Code from Scratch}
-\begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{lstm46}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Layers}
-
-\begin{lstlisting}
-from tf.keras.models import Sequential
-from tf.keras.layers import Dense
-from tf.keras.layers import LSTM
-from tf.keras.layers import Dropout
-
-regressor = Sequential()
-regressor.add(LSTM(units=50, return_sequences = True, input_shape = (x_train.shape[1],1)))
-regressor.add(Dropout(0.2))
-regressor.add(LSTM(units=50, return_sequences = True))
-regressor.add(Dropout(0.2))
-regressor.add(LSTM(units=50, return_sequences = True))
-regressor.add(Dropout(0.2))
-regressor.add(LSTM(units=50, return_sequences = False))
-regressor.add(Dropout(0.2))
-\end{lstlisting}
-2nd layer onwards, no need to specify input\_shape. You may keep/change the number of units. Last LSTM has return sequenes to False.
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Output Layer and compiling, fitting}
-Adding fully connected layer ie Dense layer.
-Output is the stock prediction, which is dimension 1, so outout layer's dim is 1.
-\begin{lstlisting}
-regressor.add(Dense(units=1))
-
-regressor.compile(optimizer="adam",loss = "mean_squared_error")
-
-regressor.fit(x_train,y_train,epochs=100,batch_size = 32)
-\end{lstlisting}
-For compilation one can use ``RMSProp'' as optimizer seems suitable for RNN, but Adam is also ok.
-Epochs can be decided by experimenting. 100 looks better.Instead of updating weights for each new input, we set batch size = 32, so wts update after 32 epochs.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Prediction}
-Import test csv file.
-Jan 2017 prices. Upward trend and a big spike.
 
 \begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{lstm47}
+\includegraphics[width=0.4\linewidth,keepaspectratio]{pyt55}
 \end{center}
-As shown in Test file, we need to predict the upward trend. We won't get the spike predicted but just the trend.
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Prediction}
-
-With following code we are going to predict Jan 2017 stock prices. Each day in Jan, will need 60 previous prices ready. So we will need both Training ad Testing set to prepare this data, to be used for prediction. One idea could be to concatenate training\_set and the testing set. But the problem is that the training set is scaled by particuler Scaler obj, but the testing set is not. Mismatch. Need to work with original dataset merged, then starting with Jan, and its backward 60 timesteps. We are not changing actual test values.
-\begin{lstlisting}
-dataset_total = pd.concat((dataset_train['Open'],dataset_test['Open']),axis = 0)
-inputs = dataset_total[len(dataset_total) - len(dataset_test) - 60: ].values # Jan first day, Jan 3rd, 60 days before, till end
-\end{lstlisting}
-Reshape with -1,1 is used to get values in single column. So, previous (80,) shape changed to (80,1).
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Prediction}
-\begin{itemize}
-\item Scaling normalization with original sc obj. 
-\item Dont recreate as same ratio is needed in prediction.
-\item Prep x test. y test is not needed.
-\item Only 20 precitions to be made, so range ends at $60+20=80$. 
-\item Make it 3d as before. 
-\item Need to inverse scaling on predcition to get the actual stock prices.
-\end{itemize}
-\begin{lstlisting}
-inputs = sc.transform(inputs)
-x_test = []
-
-for i in range(60,80):
-    x_test.append(inputs[i-60: i,0])
-x_test = np.array(x_test)
-x_test = np.reshape(x_test,(x_test.shape[0],x_test.shape[1],1))
-predicted_stock_price = regressor.predict(x_test)
-predicted_stock_price = sc.inverse_transform(predicted_stock_price)
-\end{lstlisting}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Visualize}
-\begin{lstlisting}
-plt.plot(real_stock_price,color = 'red',label="Real Google Stock Price")
-plt.plot(predicted_stock_price,color = 'blue',label="Predicted Google Stock Price")
-plt.title("Google Stock Price Prediction")
-plt.xlabel("Time")
-plt.ylabel("Stock Price")
-plt.legend()
-plt.show()
-\end{lstlisting}
-\begin{center}
-\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm48}
-\end{center}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Comments}
-\begin{center}
-\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm48}
-\end{center}
-\begin{itemize}
-\item Model lags behind as it does not capture (spike) non linear change well.
-\item It acts like smooth average curve (60 days moving average)
-\item Trend looks fine. Even the last downward one.
-\end{itemize}
-\end{frame}
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-  \begin{center}
-    {\Large LSTM with TensorFlow for Predicting Household Power Consumption}
-    
-  \end{center}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Household Power Consumption Prediction}
-\begin{itemize}
-\item Dataset:  https://archive.ics.uci.edu/ml/datasets/Individual+household
+\begin{frame}[fragile] \frametitle{Long Short Term Memory (LSTM)}
 
-+electric+power+consumption\#
-\item The task here will be to be able to predict values for a timeseries : the history of 2 million minutes of a household's power consumption. 
-\item We are going to use a multi-layered LSTM recurrent neural network to predict the last value of a sequence of values. 
-\item Put another way, given 49 timesteps of consumption, what will be the 50th value?
-\end{itemize}
-(Ref: Victor Schmidt https://github.com/Vict0rSch)
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Imports}
-
-\begin{lstlisting}
-import matplotlib.pyplot as plt
-import numpy as np
-import time
-import csv
-from tf.keras.models import Sequential
-from tf.keras.layers.core import Dense, Activation, Dropout
-from tf.keras.layers.recurrent import LSTM
-np.random.seed(1234)
-\end{lstlisting}
-Last thing is that for reproductibility, a seed is used in numpy's random.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Loading Data}
 
 \begin{itemize}
-\item The initial file contains lots of different pieces of data. 
-\item We will here focus on a single value : a house's Global\_active\_power history, minute by minute for almost 4 years. 
-\item This means roughly 2 million points. 
-\item Some values are missing, this is why we try to load the values as floats into the list and if the value is not a number ( missing values are marked with a ?)  we simply ignore them.
-\item If we do not want to load the entire dataset, there is a condition to stop loading the data when a certain ratio is reached. For now its FULL, ie 1.0
-\end{itemize}
-\end{frame}
+\item LSTM Network is organized in a manner similar to RNN, but there are two states that are being passed from layer to layer: actual state $c$, and hidden vector $h$. \item At each unit, hidden vector $h_i$ is concatenated with input $x_i$, and they control what happens to the state $c$ via gates. 
+\item Each gate is a neural network with sigmoid activation (output in the range $[0,1]$), which can be thought of as bitwise mask when multiplied by the state vector. There are the following gates (from left to right on the picture above):
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Loading Data}
-
-\begin{lstlisting}
-def data_power_consumption(path_to_dataset='household_power_consumption.txt', sequence_length=50, ratio=1.0):
-    max_values = ratio * 2049280
-    with open(path_to_dataset) as f:
-        data = csv.reader(f, delimiter=";")
-        power = []
-        nb_of_values = 0
-        for line in data:
-            try:
-                power.append(float(line[2]))
-                nb_of_values += 1
-            except ValueError:
-                pass
-            # 2049280.0 is the total number of valid values, i.e. ratio = 1.0
-            if nb_of_values / 2049280.0 >= ratio:
-                break
-\end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Loading Data}
 \begin{itemize}
-\item Once all the datapoints are loaded as one large timeseries, we have to split it into examples. 
-\item Again, one example is made of a sequence of 50 values. Using the first 49, we are going to try and predict the 50th.
-\item Moreover, we'll do this for every minute given the 49 previous ones so we use a sliding buffer of size 50.
+\item forget gate: takes hidden vector and determines, which components of the vector $c$ we need to forget, and which to pass through. 
+\item input gate: takes some information from the input and hidden vector, and inserts it into state.
+\item output gate: transforms state via some linear layer with $\tanh$ activation, then selects some of its components using hidden vector $h_i$ to produce new state $c_{i+1}$.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Loading Data}
-
-\begin{lstlisting}
-def data_power_consumption(path_to_dataset='household_power_consumption.txt', sequence_length=50, ratio=1.0):
-	:
-	:
-    result = []
-    for index in range(len(power) - sequence_length):
-        result.append(power[index: index + sequence_length])
-    result = np.array(result) # shape (2049230, 50)	
-    
-    result_mean = result.mean()
-    result -= result_mean
-    print "Shift : ", result_mean
-    print "Data  : ", result.shape    
-\end{lstlisting}
-Simply center the data to have a 0 mean.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Split Train Test Data}
-\begin{itemize}
-\item Here we select 10\% of the data as test and 90\% to train. 
-\item We also select the last value of each example to be the target, the rest being the sequence of inputs.
 \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Split Train Test Data}
-
-\begin{lstlisting}
-def data_power_consumption(path_to_dataset='household_power_consumption.txt', sequence_length=50, ratio=1.0):
-	:
-	:
-    row = int(round(0.9 * result.shape[0]))
-    train = result[:row, :]
-    np.random.shuffle(train)
-    X_train = train[:, :-1]
-    y_train = train[:, -1]
-    X_test = result[row:, :-1]
-    y_test = result[row:, -1]
-\end{lstlisting}
-\end{frame}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Split Train Test Data}
-\begin{itemize}
-\item We shuffle the training examples so that we train in no particular order and the distribution is uniform (for the batch calculation of the loss) 
-\item but not the test set so that we can visualize our predictions with real signals.
-\item we reshape the inputs to have dimensions (\#examples, \#values in sequences, dim. of each value). 
-\item Here each value is 1-dimensional, they are only one measure (of power consumption at time t). 
-\item However if we were to predict speed vectors they could be 3 dimensional for instance.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Split Train Test Data}
-
-\begin{lstlisting}
-def data_power_consumption(path_to_dataset='household_power_consumption.txt', sequence_length=50, ratio=1.0):
-	:
-	:
-    X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
-    X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
-    
-    return [X_train, y_train, X_test, y_test]
-\end{lstlisting}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Building the model}
-\begin{itemize}
-\item So here we are going to build our Sequential model. 
-\item This means we're going to stack layers in this object.
-\item Also, layers is the list containing the sizes of each layer.
-\item We are therefore going to have a network with 1-dimensional input, two hidden layers of sizes 50 and 100 and eventually a 1-dimensional output layer.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Building the model}
-\begin{lstlisting}
-def build_model():
-
-    model = Sequential()
-    layers = [1, 50, 100, 1]
-\end{lstlisting}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Building the model}
-\begin{itemize}
-\item After the model is initialized, we create a first layer, in this case an LSTM layer. 
-\item Here we use the default parameters so it behaves as a standard recurrent layer. 
-\item Since our input is of 1 dimension, we declare that it should expect an input\_dim of 1. 
-\item Then we say we want layers[1] units in this layer. We also add 20\% Dropout in this layer.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Building the model}
-\begin{lstlisting}
-    model.add(LSTM(
-            layers[1],
-            input_shape=(None, 1),
-            return_sequences=True))
-    model.add(Dropout(0.2))
-\end{lstlisting}    
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Building the model}
-Second layer is even simpler to create, we just say how many units we want (layers[2]) and Keras takes care of the rest.
-\begin{lstlisting}
-    model.add(LSTM(
-            layers[2],
-            return_sequences=False))
-    model.add(Dropout(0.2))
-\end{lstlisting}    
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Building the model}
-The last layer we use is a Dense layer ( = feedforward). Since we are doing a regression, its activation is linear.
-\begin{lstlisting}
-    model.add(Dense(
-            layers[3]))
-    model.add(Activation("linear"))
-\end{lstlisting}    
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Compile the model}
-Lastly, we compile the model using a Mean Square Error (again, it's standard for regression) and the RMSprop optimizer.
-\begin{lstlisting}
-    start = time.time()
-    model.compile(loss="mse", optimizer="rmsprop")
-    print "Compilation Time : ", time.time() - start
-    return model
-\end{lstlisting}    
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Return Sequence}
-\begin{center}
-\includegraphics[width=0.7\linewidth,keepaspectratio]{rnnkr1}
-\end{center}
-\begin{itemize}
-\item The difference between $return\_sequence=True$ and $return\_sequence=False$ is that 
-\item In the first case the network behaves as in the 5th illustration (second many to many) and
-\item In the latter it behaves as the 3rd, many to one.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Return Sequence}
-\begin{center}
-\includegraphics[width=0.7\linewidth,keepaspectratio]{rnnkr1}
-\end{center}
-\begin{itemize}
-\item In our case, the first LSTM layer returns sequences because we want it to transfer its information both to the next layer (upwards in the chart) and 
-\item to itself for the next timestep (arrow to the right).
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Return Sequence}
-\begin{center}
-\includegraphics[width=0.7\linewidth,keepaspectratio]{rnnkr1}
-\end{center}
-\begin{itemize}
-\item However for the second one, we just expect its last sequence prediction to be compared to the target. 
-\item This means for inputs (0 to sequence\_length - 2) the prediction is only passed to the layer itself for the next timestep and not as an input to the next ( = output) layer.
-\item However the (sequence\_length - 1)th input is passed forward to the Dense layer for the loss computation against the target.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Return Sequence}
-More explanation, with an example, where sequence\_length=3.
-\begin{itemize}
-\item In this case the aim would be to predict the 4th value and compute the loss against the real 4th value, the target.
-\item The first example value is fed to the network from the input
-\begin{itemize}
-\item The first hidden layer's activation is computed and passed both to the second hidden layer and to itself
-\item The second hidden layer takes as input the first hidden layer's activation, computes its own activation and passes it only to itself
-\end{itemize}
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Return Sequence}
-\begin{itemize}
-\item The second example of the same sequence is fed from the input
-\begin{itemize}
-\item The first hidden layer takes as input both this value and its own previous prediction from the first timestep. The computed activation is fed again both to the second layer and to the first hidden layer itself
-\item The second layer behaves likewise: it takes its previous prediction and the first hidden layer's output as inputs and outputs an activation. This activation, once again, is fed to the second hidden layer for the next timestep
-\end{itemize}
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Return Sequence}
-\begin{itemize}
-\item The last value of the sequence is input into the network
-\begin{itemize}
-\item The first hidden layer behaves as before (2.a)
-\item The second layer also behaves as before (2.b) except that this time, its activation is also passed to the last, Dense layer.
-\item The Dense layer computes its activation from the second hidden layer's activation. This activation is the prediction our network does for the 4th timestep.
-\end{itemize}
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Return Sequence}
-To conclude
-\begin{itemize}
-\item The fact that return\_sequence=True for the first layer means that its output is always fed to the second layer. As a whole regarding time, all its activations can be seen as the sequence of prediction this first layer has made from the input sequence.
-\item On the other hand, return\_sequence=False for the second layer because its output is only fed to the next layer at the end of the sequence. As a whole regarding time, it does not output a prediction for the sequence but one only prediction-vector (of size layer[2]) for the whole input sequence. 
-\item The linear Dense layer is used to aggregate all the information from this prediction-vector into one single value, the predicted 4th timestep of the sequence.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{To go further}
-\begin{itemize}
-\item Had we stacked three recurrent hidden layers, we'd have set return\_sequence=True to the second hidden layer and return\_sequence=False to the last. 
-\item In other words, return\_sequence=False is used as an interface from recurrent to feedforward layers (dense or convolutionnal).
-
-\item Also, if the output had a $dimension > 1$, we'd only change the size of the Dense layer.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Running the model}
-\begin{lstlisting}
-def run_network(model=None, data=None):
-    epochs = 1
-    ratio = 0.5
-    path_to_dataset = 'household_power_consumption.txt'
-    
-    if data is None:
-        print 'Loading data... '
-        X_train, y_train, X_test, y_test = data_power_consumption(
-                path_to_dataset, sequence_length, ratio)
-    else:
-        X_train, y_train, X_test, y_test = data
-    
-    print '\nData Loaded. Compiling...\n'
-    
-    if model is None:
-        model = build_model()
-\end{lstlisting}   
-To be as modular as possible we start with checking whether or not data and model values were provided. 
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Running the model}
-\begin{lstlisting}
-def run_network(model=None, data=None):
-	:
-	:
-	try:
-        model.fit(
-            X_train, y_train,
-            batch_size=512, nb_epoch=epochs, validation_split=0.05)
-        predicted = model.predict(X_test)
-        predicted = np.reshape(predicted, (predicted.size,))
-    except KeyboardInterrupt:
-        print 'Training duration (s) : ', time.time() - global_start_time
-        return model, y_test, 0
-\end{lstlisting}           
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{More about Predictions}
-\begin{itemize}
-\item By construction X\_test is an array with 49 columns (timesteps). The list [ X\_test[i][0] ] is the entire signal (minus the last 49 values) from which it was built since we've used a 1-timestep sliding buffer.
-\item X\_test[0] is the first sequence, that is to say the first 49 values of the original signal.
-\end{itemize}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{More about Predictions}
-\begin{itemize}
-\item predict(X\_test[0]) is therefore the prediction for the 50th value and its associated target is y\_test[0]. 
-\item Moreover, by construction, y\_test[0] = X\_test[1][48] = X\_test[2][47] = \ldots
-\item Then predict(X\_test[1]) is the prediction of the 51th value, associated with y\_test[1] as a target.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{More about Predictions}
-\begin{itemize}
-\item Therefore predict(X\_test) is the predicted signal, one step ahead, and y\_test is its target.
-\item predict(X\_test) is a list of lists (in fact a 2-dimensional numpy array) with one value, therefore we reshape it so that it simply is a list of values (1-dimensional numpy array).
-\end{itemize}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Running the model}
-Lastly we plot the result of the prediction for the first 100 timesteps and return model, y\_test and the predicted values.
-\begin{lstlisting}
-def run_network(model=None, data=None):
-	:
-	:
-    try:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(y_test[:100, 0])
-        plt.plot(predicted[:100, 0])
-        plt.show()
-    except Exception as e:
-        print str(e)
-    print 'Training duration (s) : ', time.time() - global_start_time
-    return model, y_test, predicted
-    
-if __name__ == '__main__':
-run_network()
-\end{lstlisting}           
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-  \begin{center}
-    {\Large LSTM with Keras}
-    
-(Ref: Time Series Forecasting with the Long Short-Term Memory Network in Python - Jason Brownlee)
-  \end{center}
-\end{frame}
+\begin{frame}[fragile] \frametitle{Long Short Term Memory (LSTM)}
 
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Dataset}
 \begin{itemize}
-\item Shampoo Sales: https://datamarket.com/data/set/22r0/sales-of-shampoo-over-a-three-year-period
-\item The monthly number of sales of shampoo over a 3-year period.
-\item Note that you may need to delete the footer information added by DataMarket.
+
+\item Components of the state $c$ can be thought of as some flags that can be switched on and off. 
+\item For example, when we encounter a name $Alice$ in the sequence, we may want to assume that it refers to female character, and raise the flag in the state that we have female noun in the sentence. 
+\item When we further encounter phrases $and$ $Tom$, we will raise the flag that we have plural noun. 
+\item Thus by manipulating state we can supposedly keep track of grammatical properties of sentence parts.
+
 \end{itemize}
-\begin{lstlisting}
-# load and plot dataset
-from pandas import read_csv
-from pandas import datetime
-from matplotlib import pyplot
-# load dataset
-def parser(x):
-	return datetime.strptime('190'+x, '%Y-%m')
-series = read_csv('shampoo-sales.csv', header=0, parse_dates=[0], index_col=0, squeeze=True, date_parser=parser)
-\end{lstlisting}   
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Dataset}
-Print first few rows
-\begin{lstlisting}
-# summarize first few rows
-print(series.head())
 
-#Month
-1901-01-01 266.0
-1901-02-01 145.9
-1901-03-01 183.1
-1901-04-01 119.3
-1901-05-01 180.3
-Name: Sales, dtype: float64
-\end{lstlisting}   
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Dataset}
-Plot 
-\begin{lstlisting}
-series.plot()
-pyplot.show()
-\end{lstlisting}   
-\begin{center}
-\includegraphics[width=0.5\linewidth,keepaspectratio]{rnnkr2}
-\end{center}
-A line plot of the series is then created showing a clear increasing trend.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{frame}[fragile] \frametitle{Dataset}
-%\begin{itemize}
-%\item We will split the Shampoo Sales dataset into two parts: a training and a test set.
-%\item The first two years of data will be taken for the training dataset and the remaining one year of data will be used for the test set.
-%\item Models will be developed using the training dataset and will make predictions on the test dataset.
-%\end{itemize}
-%\begin{lstlisting}
-%# split data into train and test
-%X = series.values
-%train, test = X[0:-12], X[-12:]
-%\end{lstlisting}   
-%\end{frame}
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%\begin{frame}[fragile] \frametitle{Model}
-%%\begin{itemize}
-%%\item A rolling forecast scenario will be used, also called walk-forward model validation.
-%%\item For evaluation: Each time step of the test dataset will be walked one at a time. 
-%%\item A model will be used to make a forecast for the time step, then the actual expected value from the test set will be taken and made available to the model for the forecast on the next time step.
-%%\item This mimics a real-world scenario where new Shampoo Sales observations would be available each month and used in the forecasting of the following month.
-%%\end{itemize}
-%%\begin{lstlisting}
-%%# split data into train and test
-%%X = series.values
-%%train, test = X[0:-12], X[-12:]
-%%\end{lstlisting}   
-%%\end{frame}
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%\begin{frame}[fragile] \frametitle{Model}
-%%\begin{itemize}
-%%\item Finally, all forecasts on the test dataset will be collected and an error score calculated to summarize the skill of the model. 
-%%\item The root mean squared error (RMSE) will be used as it punishes large errors and results in a score that is in the same units as the forecast data, namely monthly shampoo sales.
-%%\end{itemize}
-%%\begin{lstlisting}
-%%from sklearn.metrics import mean_squared_error
-%%rmse = sqrt(mean_squared_error(test, predictions))
-%%print('RMSE: %.3f' % rmse)
-%%\end{lstlisting}   
-%%\end{frame}
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%\begin{frame}[fragile] \frametitle{Persistence Model Forecast}
-%%\begin{itemize}
-%%\item A good baseline forecast for a time series with a linear increasing trend is a persistence forecast.
-%%\item The persistence forecast is where the observation from the prior time step (t-1) is used to predict the observation at the current time step (t).
-%%\item We can implement this by taking the last observation from the training data and history accumulated by walk-forward validation and using that to predict the current time step.
-%%\end{itemize}
-%%\begin{lstlisting}
-%%# make prediction
-%%yhat = history[-1]
-%%\end{lstlisting}   
-%%We will accumulate all predictions in an array so that they can be directly compared to the test dataset.
-%%\end{frame}
-%%
+\begin{frame}[fragile] \frametitle{Long Short Term Memory (LSTM)}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Data Preparation}
-Before we can fit an LSTM model to the dataset, we must transform the data.
-\begin{itemize}
-\item Transform the time series into a supervised learning problem
-\item Transform the time series data so that it is stationary.
-\item Transform the observations to have a specific scale.
-\end{itemize}
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform the time series into a supervised learning problem}
 \begin{itemize}
-\item The LSTM model in Keras assumes that your data is divided into input (X) and output (y) components.
-\item For a time series problem, we can achieve this by using the observation from the last time step (t-1) as the input and the observation at the current time step (t) as the output.
-\item We can achieve this using the shift() function in Pandas that will push all values in a series down by a specified number places. 
-\item We require a shift of 1 place, which will become the input variables. 
-\item The time series as it stands will be the output variables.
-\item Basically, two seqeunces, one input and one output
-\end{itemize}
-\end{frame}
+\item While internal structure of LSTM cell may look complex, PyTorch hides this implementation inside LSTMCell class, and provides LSTM object to represent the whole LSTM layer. 
+\item Thus, implementation of LSTM classifier will be pretty similar to the simple RNN which we have seen above:
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform the time series into a supervised learning problem}
-\begin{itemize}
-\item We can then concatenate these two series together to create a DataFrame ready for supervised learning. 
-\item Due to shift the input serie's first element will come below output series' 2nd element.
-\item So Outputs 2nd elements input will be Inputs 2nd element (which was actually the first element), thus Outputs $t$ has inputs $t-1$
-\item So, the first position in the input series will be blank, or NaN. 
-\item We will replace these NaN values with 0 values, which the LSTM model will have to learn as ``the start of the series'' or `'I have no data here,'' as a month with zero sales on this dataset has not been observed.
 \end{itemize}
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform the time series into a supervised learning problem}
-\begin{itemize}
-\item The code below defines a helper function to do this called timeseries\_to\_supervised(). 
-\item It takes a NumPy array of the raw time series data and a lag or number of shifted series to create and use as inputs.
-\end{itemize}
 \begin{lstlisting}
-# frame a sequence as a supervised learning problem
-def timeseries_to_supervised(data, lag=1):
-	df = DataFrame(data)
-	columns = [df.shift(i) for i in range(1, lag+1)]
-	columns.append(df)
-	df = concat(columns, axis=1)
-	df.fillna(0, inplace=True)
-	return df
-\end{lstlisting}   
-We can test this function with our loaded Shampoo Sales dataset and convert it into a supervised learning problem.
+class LSTMClassifier(torch.nn.Module):
+    def __init__(self, vocab_size, embed_dim, hidden_dim, num_class):
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.embedding = torch.nn.Embedding(vocab_size, embed_dim)
+        self.embedding.weight.data = torch.randn_like(self.embedding.weight.data)-0.5
+        self.rnn = torch.nn.LSTM(embed_dim,hidden_dim,batch_first=True)
+        self.fc = torch.nn.Linear(hidden_dim, num_class)
+
+    def forward(self, x):
+        batch_size = x.size(0)
+        x = self.embedding(x)
+        x,(h,c) = self.rnn(x)
+        return self.fc(h[-1])
+\end{lstlisting}
+
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform the time series into a supervised learning problem}
-We can test this function with our loaded Shampoo Sales dataset and convert it into a supervised learning problem.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Training LSTM}
+
+Now let's train our network. 
+
+\begin{itemize}
+\item Note that training LSTM is also quite slow, and you may not seem much raise in accuracy in the beginning of training. 
+\item Also, you may need to play with lr learning rate parameter to find the learning rate that results in reasonable training speed, and yet does not cause
+
+\end{itemize}
+
 \begin{lstlisting}
-# transform to supervised learning
-X = series.values
-supervised = timeseries_to_supervised(X, 1)
-print(supervised.head())
+net = LSTMClassifier(vocab_size,64,32,len(classes)).to(device)
+train_epoch(net,train_loader, lr=0.001)
 
-            0           0
-0    0.000000  266.000000
-1  266.000000  145.899994
-2  145.899994  183.100006
-3  183.100006  119.300003
-4  119.300003  180.300003
-\end{lstlisting}   
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform Time Series to Stationary}
-\begin{itemize}
-\item The Shampoo Sales dataset is not stationary.
-\item It  is dependent on the time. Specifically, there is an increasing trend in the data.
-\item Stationary data is easier to model and will very likely result in more skillful forecasts.
-\item The trend can be removed from the observations, then added back to forecasts later to return the prediction to the original scale and calculate a comparable error score.
-\item A standard way to remove a trend is by differencing the data. 
-\end{itemize}
+>>>
+3200: acc=0.259375
+6400: acc=0.25859375
+:
+115200: acc=0.7677777777777778
+118400: acc=0.7711233108108108
+(0.03487814127604167, 0.7728)
+\end{lstlisting}
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform Time Series to Stationary}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Packed sequences}
+
 \begin{itemize}
-\item That is the observation from the previous time step (t-1) is subtracted from the current observation (t). 
-\item This removes the trend and we are left with a difference series, or the changes to the observations from one time step to the next.
-\item We can achieve this automatically using the diff() function in pandas.
-\item Alternatively, we can get finer grained control and write our own function to do this, which is preferred for its flexibility in this case.
+\item  To produce packed sequence, we can use \lstinline|torch.nn.utils.rnn.pack_padded_sequence| function. 
+\item All recurrent layers, including RNN, LSTM and GRU, support packed sequences as input, and produce packed output, which can be decoded using \lstinline|torch.nn.utils.rnn.pad_packed_sequence|.
+\item To be able to produce packed sequence, we need to pass length vector to the network, and thus we need a different function to prepare minibatches:
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform Time Series to Stationary}
-\begin{itemize}
-\item Below is a function called difference() that calculates a differenced series. 
-\item Note that the first observation in the series is skipped as there is no prior observation with which to calculate a differenced value.
-\end{itemize}
 \begin{lstlisting}
-# create a differenced series
-def difference(dataset, interval=1):
-	diff = list()
-	for i in range(interval, len(dataset)):
-		value = dataset[i] - dataset[i - interval]
-		diff.append(value)
-	return Series(diff)
-\end{lstlisting}   
+def pad_length(b):
+    v = [encode(x[1]) for x in b] # build vectorized sequence
+    # compute max length of a sequence in this minibatch and length sequence
+    len_seq = list(map(len,v))
+    l = max(len_seq)
+    return ( # tuple - labels, padded features, length sequence
+        torch.LongTensor([t[0]-1 for t in b]),
+        torch.stack([torch.nn.functional.pad(torch.tensor(t),(0,l-len(t)),
+				mode='constant',value=0) for t in v]),
+        torch.tensor(len_seq)
+    )
+
+train_loader_len = torch.utils.data.DataLoader(train_dataset, batch_size=16, collate_fn=pad_length, shuffle=True)
+\end{lstlisting}
+
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform Time Series to Stationary}
-We also need to invert this process in order to take forecasts made on the differenced series back into their original scale.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Packed sequences}
+
+\begin{itemize}
+\item  Actual network would be very similar to LSTMClassifier above, but forward pass will receive both padded minibatch and the vector of sequence lengths. 
+\item After computing the embedding, we compute packed sequence, pass it to LSTM layer, and then unpack the result back.
+\end{itemize}
+
+Note:
+\begin{itemize}
+\item   We actually do not use unpacked result $x$, because we use output from the hidden layers in the following computations. 
+\item Thus, we can remove the unpacking altogether from this code. 
+\item The reason we place it here is for you to be able to modify this code easily, in case you should need to use network output in further computations.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Packed sequences}
+
+
+
 \begin{lstlisting}
-# invert differenced value
-def inverse_difference(history, yhat, interval=1):
-	return yhat + history[-interval]
-\end{lstlisting}   
+class LSTMPackClassifier(torch.nn.Module):
+    def __init__(self, vocab_size, embed_dim, hidden_dim, num_class):
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.embedding = torch.nn.Embedding(vocab_size, embed_dim)
+        self.embedding.weight.data = torch.randn_like(self.embedding.weight.data)-0.5
+        self.rnn = torch.nn.LSTM(embed_dim,hidden_dim,batch_first=True)
+        self.fc = torch.nn.Linear(hidden_dim, num_class)
+
+    def forward(self, x, lengths):
+        batch_size = x.size(0)
+        x = self.embedding(x)
+        pad_x = torch.nn.utils.rnn.pack_padded_sequence(x,lengths,batch_first=True,enforce_sorted=False)
+        pad_x,(h,c) = self.rnn(pad_x)
+        x, _ = torch.nn.utils.rnn.pad_packed_sequence(pad_x,batch_first=True)
+        return self.fc(h[-1])
+\end{lstlisting}
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform Time Series to Stationary}
-We can test out these functions by differencing the whole series, then returning it to the original scale, as follows:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM Classifier Training}
+
+Note: You may have noticed the \lstinline|parameter use_pack_sequence| that we pass to the training function. Currently, \lstinline|pack_padded_sequence| function requires length sequence tensor to be on CPU device, and thus training function needs to avoid moving the length sequence data to GPU when training
+
 \begin{lstlisting}
-# transform to be stationary
-differenced = difference(series, 1)
-print(differenced.head())
-# invert transform
-inverted = list()
-for i in range(len(differenced)):
-	value = inverse_difference(series, differenced[i], len(series)-i)
-	inverted.append(value)
-inverted = Series(inverted)
-print(inverted.head())
-\end{lstlisting}   
-Note that the first observation in the original dataset was removed from the inverted difference data. 
+net = LSTMPackClassifier(vocab_size,64,32,len(classes)).to(device)
+train_epoch_emb(net,train_loader_len, lr=0.001,use_pack_sequence=True)
+
+>>>
+3200: acc=0.285625
+6400: acc=0.33359375
+:
+115200: acc=0.8104600694444445
+118400: acc=0.8128293918918919
+(0.029785829671223958, 0.8138166666666666)
+\end{lstlisting}
+
+
+
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform Time Series to Scale}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Bidirectional and multilayer RNNs}
+
 \begin{itemize}
-\item Like other neural networks, LSTMs expect data to be within the scale of the activation function used by the network.
-\item The default activation function for LSTMs is the hyperbolic tangent (tanh), which outputs values between -1 and 1. 
-\item This is the preferred range for the time series data.
-\item We can transform the dataset to the range [-1, 1] using the MinMaxScaler class. 
+\item In many practical cases we have random access to the input sequence, it might make sense to run recurrent computation in both directions. Such networks are call bidirectional RNNs, and they can be created by passing \lstinline|bidirectional=True| parameter to RNN/LSTM/GRU constructor.
+\item When dealing with bidirectional network, we would need two hidden state vectors, one for each direction. 
+\item PyTorch encodes those vectors as one vector of twice larger size, which is quite convenient, because you would normally pass the resulting hidden state to fully-connected linear layer, and you would just need to take this increase in size into account when creating the layer.
 \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform Time Series to Scale}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Bidirectional and multilayer RNNs}
+
 \begin{itemize}
-\item Like other scikit-learn transform classes, it requires data provided in a matrix format with rows and columns. 
-\item Therefore, we must reshape our NumPy arrays before transforming.
+\item Recurrent network, one-directional or bidirectional, captures certain patterns within a sequence, and can store them into state vector or pass into output. 
+\item As with convolutional networks, we can build another recurrent layer on top of the first one to capture higher level patterns, build from low-level patterns extracted by the first layer. 
+\item This leads us to the notion of multi-layer RNN, which consists of two or more recurrent networks, where output of the previous layer is passed to the next layer as input.
 \end{itemize}
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{pyt56}
+\end{center}
+
+{\tiny Picture from https://towardsdatascience.com/from-a-lstm-cell-to-a-multilayer-lstm-network-with-pytorch-2899eb5696f3}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Summary}
+
+\begin{itemize}
+\item PyTorch makes constructing such networks an easy task, because you just need to pass \lstinline|num_layers| parameter to RNN/LSTM/GRU constructor to build several layers of recurrence automatically. 
+\item This would also mean that the size of hidden/state vector would increase proportionally, and you would need to take this into account when handling the output of recurrent layers.
+\end{itemize}
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Packed sequences}
+
+\begin{itemize}
+\item In our example, we had to pad all sequences in the minibatch with zero vectors. 
+\item While it results in some memory waste, with RNNs it is more critical that additional RNN cells are created for the padded input items, which take part in training, yet do not carry any important input information. 
+\item It would be much better to train RNN only to the actual sequence size.
+\item To do that, a special format of padded sequence storage is introduced in PyTorch. 
+\end{itemize}
+
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Packed sequences}
+
+\begin{itemize}
+\item Suppose we have input padded minibatch which looks like this:
+
+\item Here 0 represents padded values, and the actual length vector of input sequences is $[5,3,1]$ (Read length vertically!!).
+
+\item In order to effectively train RNN with padded sequence, we want to begin training first group of RNN cells with large minibatch ($[1,6,9]$), but then end processing of third sequence, and continue training with shorted minibatches ($[2,7]$, $[3,8]$), and so on. 
+\item Thus, packed sequence is represented as one vector - in our case $[1,6,9,2,7,3,8,4,5]$, and length vector ($[5,3,1]$), from which we can easily reconstruct the original padded minibatch.
+\end{itemize}
+
 \begin{lstlisting}
-# transform scale
-X = series.values
-X = X.reshape(len(X), 1)
-scaler = MinMaxScaler(feature_range=(-1, 1))
-scaler = scaler.fit(X)
-scaled_X = scaler.transform(X)
-\end{lstlisting}   
+[[1,2,3,4,5],
+ [6,7,8,0,0],
+ [9,0,0,0,0]]
+\end{lstlisting}
+
+
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform Time Series to Scale}
-Again, we must invert the scale on forecasts to return the values back to the original scale so that the results can be interpreted and a comparable error score can be calculated.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Generative networks}
+
+\begin{itemize}
+\item RNNs provide a mechanism for language modeling, i.e. they can learn word ordering and provide predictions for next word in a sequence.
+\item This allows us to use RNNs for generative tasks, such as ordinary text generation, machine translation, and even image captioning.
+\item Each RNN unit produces next next hidden state as an output. 
+\item However, we can also add another output to each recurrent unit, which would allow us to output a sequence (which is equal in length to the original sequence). \item Moreover, we can use RNN units that do not accept an input at each step, and just take some initial state vector, and then produce a sequence of outputs.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{pyt57}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Generative networks}
+
+\begin{itemize}
+\item One-to-one is a traditional neural network with one input and one output
+\item One-to-many is a generative architecture that accepts one input value, and generates a sequence of output values. For example, if we want to train image captioning network that would produce a textual description of a picture, we can a picture as input, pass it through CNN to obtain hidden state, and then have recurrent chain generate caption word-by-word
+\item Many-to-one corresponds to RNN architectures we described in the previous unit, such as text classification
+\item Many-to-many, or sequence-to-sequence corresponds to tasks such as machine translation, where we have first RNN collect all information from the input sequence into the hidden state, and another RNN chain unrolls this state into the output sequence.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Character Level Language Modeling}
+
+During training, we need to take some text corpus, and split it into letter sequences.
+
 \begin{lstlisting}
-# invert transform
-inverted_X = scaler.inverse_transform(scaled_X)
-\end{lstlisting}   
+from torchnlp import *
+train_dataset,test_dataset,classes,vocab = load_dataset()
+
+def char_tokenizer(words):
+    return list(words) #[word for word in words]
+
+counter = collections.Counter()
+for (label, line) in train_dataset:
+    counter.update(char_tokenizer(line))
+vocab = torchtext.vocab.Vocab(counter)
+
+vocab_size = len(vocab)
+print(f"Vocabulary size = {vocab_size}")
+print(f"Encoding of 'a' is {vocab.stoi['a']}")
+print(f"Character with code 13 is {vocab.itos[13]}")
+
+>>>
+Vocabulary size = 84
+Encoding of 'a' is 4
+Character with code 13 is h
+\end{lstlisting}
+
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Transform Time Series to Scale}
-Putting all of this together, the example below transforms the scale of the Shampoo Sales data.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Character Level Language Modeling}
+
+Let's see the example of how we can encode the text from our dataset:
 \begin{lstlisting}
-# transform scale
-X = series.values
-X = X.reshape(len(X), 1)
-scaler = MinMaxScaler(feature_range=(-1, 1))
-scaler = scaler.fit(X)
-scaled_X = scaler.transform(X)
-scaled_series = Series(scaled_X[:, 0])
-print(scaled_series.head())
-# invert transform
-inverted_X = scaler.inverse_transform(scaled_X)
-inverted_series = Series(inverted_X[:, 0])
-print(inverted_series.head())
-\end{lstlisting}   
+def enc(x):
+    return torch.LongTensor(encode(x,voc=vocab,tokenizer=char_tokenizer))
+
+enc(train_dataset[0][1])
+
+>>>
+tensor([43,  4, 11, 11,  2, 26,  5, 23,  2, 38,  3,  4, 10,  9,  2, 31, 11,  4,
+        :
+         3,  3,  7,  8, 18,  2, 18, 10,  3,  3,  8,  2,  4, 18,  4,  7,  8, 23])
+\end{lstlisting}
+
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Model Development}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Training a generative RNN}
+
 \begin{itemize}
-\item By default, an LSTM layer in Keras maintains state between data within one batch. 
-\item A batch of data is a fixed-sized number of rows from the training dataset that defines how many patterns to process before updating the weights of the network. 
-\item State in the LSTM layer between batches is cleared by default, therefore we must make the LSTM stateful. 
-\item This gives us fine-grained control over when state of the LSTM layer is cleared, by calling the reset\_states() function.
+\item On each step, we will take a sequence of characters of length nchars, and ask the network to generate next output character for each input character:
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{pyt58}
+\end{center}
+
+\item Depending on the actual scenario, we may also want to include some special characters, such as end-of-sequence \lstinline|<eos>|. 
+\item Each training example will consist of nchars inputs and nchars outputs (which are input sequence shifted one symbol to the left). 
+\item Minibatch will consist of several such sequences.
 \end{itemize}
+
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Model Development}
-The LSTM layer expects input to be in a matrix with the dimensions: [samples, time steps, features].
-\begin{itemize}
-\item 
-    Samples: These are independent observations from the domain, typically rows of data.
-\item Time steps: These are separate time steps of a given variable for a given observation.
-\item  Features: These are separate measures observed at the time of observation.
-\end{itemize}
-\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Mini batches}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Model Development}
 \begin{itemize}
-\item 
-    We will keep it simple and frame the problem as each time step in the original sequence is one separate sample, with one timestep and one feature.
-    \item Given that the training dataset is defined as X inputs and y outputs, it must be reshaped into the Samples/TimeSteps/Features format, for example:
+\item The way we will generate minibatches is to take each news text of length l, and generate all possible input-output combinations from it (there will be l-nchars such combinations). 
+\item They will form one minibatch, and size of minibatches would be different at each training step.
 \end{itemize}
+
 \begin{lstlisting}
-X, y = train[:, 0:-1], train[:, -1]
-X = X.reshape(X.shape[0], 1, X.shape[1])
-\end{lstlisting}   
+nchars = 100
+
+def get_batch(s,nchars=nchars):
+    ins = torch.zeros(len(s)-nchars,nchars,dtype=torch.long,device=device)
+    outs = torch.zeros(len(s)-nchars,nchars,dtype=torch.long,device=device)
+    for i in range(len(s)-nchars):
+        ins[i] = enc(s[i:i+nchars])
+        outs[i] = enc(s[i+1:i+nchars+1])
+    return ins,outs
+
+get_batch(train_dataset[0][1])
+
+>>>
+(tensor([[43,  4, 11,  ..., 18, 61, 22],...
+         [15,  5,  3,  ...,  4,  7,  8]], device='cuda:0'),
+ tensor([[ 4, 11, 11,  ..., 61, 22,  4], ...
+         [ 5,  3, 10,  ...,  7,  8, 23]], device='cuda:0'))
+\end{lstlisting}
+
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Model Development}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Generator Network}
+
 \begin{itemize}
-\item The shape of the input data must be specified in the LSTM layer using the ``batch\_input\_shape'' argument as a tuple that specifies the expected number of observations to read each batch, the number of time steps, and the number of features.
-\item The batch size is often much smaller than the total number of samples. It, along with the number of epochs, defines how quickly the network learns the data (how often the weights are updated).
-\item 
-The final import parameter in defining the LSTM layer is the number of neurons, also called the number of memory units or blocks. This is a reasonably simple problem and a number between 1 and 5 should be sufficient.
+\item Because the network takes characters as input, and vocabulary size is pretty small, we do not need embedding layer, one-hot-encoded input can directly go to LSTM cell. 
+\item However, because we pass character numbers as input, we need to one-hot-encode them before passing to LSTM. 
+\item This is done by calling \lstinline|one_hot| function during forward pass. Output encoder would be a linear layer that will convert hidden state into one-hot-encoded output.
 \end{itemize}
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Model Development}
-\begin{itemize}
-\item The line below creates a single LSTM hidden layer that also specifies the expectations of the input layer via the ``batch\_input\_shape'' argument.
 \begin{lstlisting}
-layer = LSTM(neurons, batch_input_shape=(batch_size, X.shape[1], X.shape[2]), stateful=True)
-\end{lstlisting}   
-\item The network requires a single neuron in the output layer with a linear activation to predict the number of shampoo sales at the next time step.
+class LSTMGenerator(torch.nn.Module):
+    def __init__(self, vocab_size, hidden_dim):
+        super().__init__()
+        self.rnn = torch.nn.LSTM(vocab_size,hidden_dim,batch_first=True)
+        self.fc = torch.nn.Linear(hidden_dim, vocab_size)
+
+    def forward(self, x, s=None):
+        x = torch.nn.functional.one_hot(x,vocab_size).to(torch.float32)
+        x,s = self.rnn(x,s)
+        return self.fc(x),s
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Generator Network}
+
+\begin{itemize}
+\item During training, we want to be able to sample generated text. 
+\item To do that, we will define generate function that will produce output string of length size, starting from the initial string start.
+\end{itemize}
+
+The way it works is the following. 
+
+\begin{itemize}
+\item First, we will pass the whole start string through the network, and take output state s and next predicted character out. 
+\item Since out is one-hot encoded, we take argmax to get the index of the character nc in the vocabulary, and use itos to figure out the actual character and append it to the resulting list of characters chars. 
+\item This process of generating one character is repeated size times to generate required number of characters.
 \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Model Development}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Generator Network}
+
 \begin{itemize}
-\item In compiling the network, we must specify a loss function and optimization algorithm. We will use ``mean\_squared\_error'' as the loss function as it closely matches RMSE that we will are interested in, and the efficient ADAM optimization algorithm.
-\item Using the Sequential Keras API to define the network, the below snippet creates and compiles the network.
+\item Now let's do the training! Training loop is almost the same as in all our previous examples, but instead of accuracy we print sampled generated text every 1000 epochs.
+\item Special attention needs to be paid to the way we compute loss. 
+\item We need to compute loss given one-hot-encoded output out, and expected text \lstinline|text_out|, which is the list of character indices. 
+\item Luckily, the \lstinline|cross_entropy| function expects unnormalized network output as first argument, and class number as the second, which is exactly what we have. 
+\item It also performs automatic averaging over minibatch size.
+\item We also limit the training by \lstinline|samples_to_train samples|, in order not to wait for too long.
 \end{itemize}
+
+
 \begin{lstlisting}
-model = Sequential()
-model.add(LSTM(neurons, batch_input_shape=(batch_size, X.shape[1], X.shape[2]), stateful=True))
-model.add(Dense(1))
-model.compile(loss='mean_squared_error', optimizer='adam')
-\end{lstlisting} 
-\end{frame}
+def generate(net,size=100,start='today '):
+        chars = list(start)
+        out, s = net(enc(chars).view(1,-1).to(device))
+        for i in range(size):
+            nc = torch.argmax(out[0][-1])
+            chars.append(vocab.itos[nc])
+            out, s = net(nc.view(1,-1),s)
+        return ''.join(chars)
+\end{lstlisting}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Model Development}
-\begin{itemize}
-\item Once compiled, it can be fit to the training data. Because the network is stateful, we must control when the internal state is reset. Therefore, we must manually manage the training process one epoch at a time across the desired number of epochs.
 
-\item By default, the samples within an epoch are shuffled prior to being exposed to the network. Again, this is undesirable for the LSTM because we want the network to build up state as it learns across the sequence of observations. We can disable the shuffling of samples by setting ``shuffle'' to ``False``.
 
-\item Also by default, the network reports a lot of debug information about the learning progress and skill of the model at the end of each epoch. We can disable this by setting the ``verbose'' argument to the level of ``0``.
-
-\item We can then reset the internal state at the end of the training epoch, ready for the next training iteration.
-\end{itemize}
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Model Development}
-Below is a loop that manually fits the network to the training data.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Generator Network}
 \begin{lstlisting}
-for i in range(nb_epoch):
-	model.fit(X, y, epochs=1, batch_size=batch_size, verbose=0, shuffle=False)
-	model.reset_states()
-\end{lstlisting} 
+net = LSTMGenerator(vocab_size,64).to(device)
+
+samples_to_train = 10000
+optimizer = torch.optim.Adam(net.parameters(),0.01)
+loss_fn = torch.nn.CrossEntropyLoss()
+net.train()
+for i,x in enumerate(train_dataset):
+    # x[0] is class label, x[1] is text
+    if len(x[1])-nchars<10:
+        continue
+    samples_to_train-=1
+    if not samples_to_train: break
+    text_in, text_out = get_batch(x[1])
+    optimizer.zero_grad()
+    out,s = net(text_in)
+    loss = torch.nn.functional.cross_entropy(out.view(-1,vocab_size),text_out.flatten()) #cross_entropy(out,labels)
+    loss.backward()
+    optimizer.step()
+    if i%1000==0:
+        print(f"Current loss = {loss.item()}")
+        print(generate(net))
+\end{lstlisting}
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Model Development}
- fit\_lstm() that trains and returns an LSTM model.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Generator Network}
+
+This example already generates some pretty good text but it can be further improved in several ways:
+
+\begin{itemize}
+\item Better minibatch generation.
+\item Multilayer LSTM.
+\item GRU units
+\end{itemize}
+
+
 \begin{lstlisting}
-def fit_lstm(train, batch_size, nb_epoch, neurons):
-	X, y = train[:, 0:-1], train[:, -1]
-	X = X.reshape(X.shape[0], 1, X.shape[1])
-	model = Sequential()
-	model.add(LSTM(neurons, batch_input_shape=(batch_size, X.shape[1], X.shape[2]), stateful=True))
-	model.add(Dense(1))
-	model.compile(loss='mean_squared_error', optimizer='adam')
-	for i in range(nb_epoch):
-		model.fit(X, y, epochs=1, batch_size=batch_size, verbose=0, shuffle=False)
-		model.reset_states()
-	return model
-\end{lstlisting} 
-The batch\_size must be set to 1. This is because it must be a factor of the size of the training and test datasets.
+Current loss = 4.442246913909912
+today ggrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrgrg
+Current loss = 2.1178359985351562
+today and a could a the to the to the to the to the to the to the to the to the to the to the to the to th
+:
+Current loss = 1.5444810390472412
+today and the counters to the first the counters to the first the counters to the first the counters to th
+\end{lstlisting}
+
+
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Forecast}
-\begin{itemize}
-\item We can decide to fit the model once on all of the training data, then predict each new time step one at a time from the test data (we'll call this the fixed approach), or 
-\item We can re-fit the model or update the model each time step of the test data as new observations from the test data are made available (we'll call this the dynamic approach).
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Forecast}
-\begin{itemize}
-\item To make a forecast, we can call the predict() function on the model. This requires a 3D NumPy array input as an argument. In this case, it will be an array of one value, the observation at the previous time step.
-\item The predict() function returns an array of predictions, one for each input row provided. Because we are providing a single input, the output will be a 2D NumPy array with one value.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Forecast}
-\begin{itemize}
-\item Given a fit model, a batch-size used when fitting the model (e.g. 1), and a row from the test data, the function will separate out the input data from the test row, reshape it, and return the prediction as a single floating point value.
-\end{itemize}
-\begin{lstlisting}
-def forecast(model, batch_size, row):
-	X = row[0:-1]
-	X = X.reshape(1, 1, len(X))
-	yhat = model.predict(X, batch_size=batch_size)
-	return yhat[0,0]
-\end{lstlisting} 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Forecast}
-\begin{itemize}
-\item During training, the internal state is reset after each epoch. While forecasting, we will not want to reset the internal state between forecasts. In fact, we would like the model to build up state as we forecast each time step in the test dataset.
-\item 
-This raises the question as to what would be a good initial state for the network prior to forecasting the test dataset.
-\item 
-In this tutorial, we will seed the state by making a prediction on all samples in the training dataset. In theory, the internal state should be set up ready to forecast the next time step.
-\end{itemize}
-\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Attention mechanisms}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Summary}
 \begin{itemize}
-\item Load the dataset from CSV file.
-\item     Transform the dataset to make it suitable for the LSTM model, including:
-\begin{itemize}
-\item         Transforming the data to a supervised learning problem.
-\item         Transforming the data to be stationary.
-\item         Transforming the data so that it has the scale -1 to 1.
-\end{itemize}
-\item     Fitting a stateful LSTM network model to the training data.
-\item     Evaluating the static LSTM model on the test data.
-\item     Report the performance of the forecasts.
+\item One major drawback of recurrent networks is that all words in a sequence have the same impact on the result. 
+\item This causes sub-optimal performance with standard LSTM encoder-decoder models for sequence to sequence tasks, such as Named Entity Recognition and Machine Translation. 
+\item In reality specific words in the input sequence often have more impact on sequential outputs than others.
+\item Attention Mechanisms provide a means of weighting the contextual impact of each input vector on each output prediction of the RNN. 
+\item The way it is implemented is by creating shortcuts between intermediate states of the input RNN, and output RNN. 
+\item In this manner, when generating output symbol $y_t$, we will take into account all input hidden states $h_i$, with different weight coefficients $\alpha_{t,i}$. 
 
 \end{itemize}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Attention mechanisms}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{LSTM Summary}
-Some things to note about the example:
+\begin{center}
+\includegraphics[width=0.9\linewidth,keepaspectratio]{pyt59}
+\end{center}
+
+{\tiny The encoder-decoder model with additive attention mechanism in Bahdanau et al., 2015}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Attention mechanisms}
+
+Attention matrix $\{\alpha_{i,j}\}$ would represent the degree which certain input words play in generation of a given word in the output sequence. Below is the example of such a matrix:
+
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{pyt60}
+\end{center}
+
+{\tiny The encoder-decoder model with additive attention mechanism in Bahdanau et al., 2015}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{To Transformers}
+
+
 \begin{itemize}
-\item The scaling and inverse scaling behaviors have been moved to the functions scale() and invert\_scale() for brevity.
-\item     The test data is scaled using the fit of the scaler on the training data, as is required to ensure the min/max values of the test data do not influence the model.
-\item     The order of data transforms was adjusted for convenience to first make the data stationary, then a supervised learning problem, then scaled.
-\item     Differencing was performed on the entire dataset prior to splitting into train and test sets for convenience. We could just as easily collect observations during the walk-forward validation and difference them as we go. I decided against it for readability.
-
+\item Adding attention greatly increases the number of model parameters which led to scaling issues with RNNs. 
+\item A key constraint of scaling RNNs is that the recurrent nature of the models makes it challenging to batch and parallelize training. 
+\item In an RNN each element of a sequence needs to be processed in sequential order which means it cannot be easily parallelized.
+\item Adoption of attention mechanisms combined with this constraint led to the creation of the now State of the Art Transformer Models that we know and use today from BERT to OpenGPT3.
+\item ATTENTION IS ALL YOU NEED!!
 \end{itemize}
 \end{frame}
 
-%
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{frame}[fragile] \frametitle{}
-%
-%\includegraphics[width=\linewidth]{keras.pdf}
-%
-%\end{frame}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{frame}[fragile] \frametitle{}
-%\begin{itemize}
-%\item For an input vector $x$ and a response $y$, we can view the network
-%as simply being something like:
-%\begin{align}
-%z^1 &= W^1 a^0 + b^1 \\
-%a^1 &= \sigma(z^1) \\
-%z^2 &= W^2 a^1 + b^2 \\
-%a^2 &= \sigma(z^2) \\
-%z^3 &= W^3 a^2 + b^3 \\
-%a^3 &= \sigma(z^3) \\
-%\text{Cost} &= (y - a^3)^2
-%\end{align}
-%\item Each level can be described by a \textit{module}. 
-%\item The $z$ layers
-%are called linear layers, the $a$'s as sigmoid layers, and the last
-%line is simply the cost function.
-%\item The activation functions
-%are now their own layers, which actually simplifies things mathematically.
-%\end{itemize}
-%\end{frame}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{frame}[fragile] \frametitle{}
-%
-%Each type of module needs to be able to:
-%\begin{itemize}
-%\item take an input and return an output for the current tuning parameters
-%\item calculate the matrix $\frac{\partial \text{output}_i}{\partial \text{input}_j}$
-%\item calculate the set $\frac{\partial \text{output}_i}{\partial \text{parameters}_j}$
-%\item store the tuning parameters
-%\item update parameters from a minibatch
-%\end{itemize}
-%If all of these is readily implemented, one can simply chain together
-%modules and have a built-in algorithm for learning from input data.
-%
-%\end{frame}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{frame}[fragile] \frametitle{}
-%
-%An example, using the \textbf{keras} library, describes this
-%well:
-%\begin{lstlisting}
-%model = Sequential()
-%model.add(Dense(64, input_dim=20, init='uniform'))
-%model.add(Activation('sigmoid'))
-%model.add(Dropout(0.5))
-%model.add(Dense(64, init='uniform'))
-%model.add(Activation('sigmoid'))
-%model.add(Dropout(0.5))
-%model.add(Dense(10, init='uniform'))
-%model.add(Activation('softmax'))
-%\end{lstlisting}
-%Where dense refers to a linear connected layer.
-%
-%\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Transformers}
 
+
+\begin{itemize}
+\item Instead of forwarding the context of each previous prediction into the next evaluation step, transformer models use positional encodings and attention to capture the context of a given input with in a provided window of text.
+\item Since each input position is mapped independently to each output position, transformers can parallelize better than RNNs, which enables much larger and more expressive language models. 
+\item Each attention head can be used to learn different relationships between words that improves downstream Natural Language Processing tasks.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{pyt61}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{BERT}
+
+Bidirectional Encoder Representations from Transformers
+
+\begin{itemize}
+\item is a very large multi layer transformer network with 12 layers for BERT-base, and 24 for BERT-large. The model is first pre-trained on large corpus of text data (WikiPedia + books) using unsupervised training (predicting masked words in a sentence). 
+\item During pre-training the model absorbs significant level of language understanding which can then be leveraged with other datasets using fine tuning, called transfer learning.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{BERT}
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{pyt62}
+\end{center}
+
+There are many variations of Transformer architectures including BERT, DistilBERT. BigBird, OpenGPT3 and more that can be fine tuned. The HuggingFace package provides repository for training many of these architectures with PyTorch.
+\end{frame}
