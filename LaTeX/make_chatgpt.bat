@@ -1,2 +1,2 @@
 @echo off
-for /r %%i in (Main_*_ChatGPT*.tex) do texify -cp %%i
+for /r %%i in (*_ChatGPT*.tex) do texify -cp %%i
