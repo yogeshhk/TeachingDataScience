@@ -103,7 +103,6 @@ We are leveraging our Azure OpenAI deployments (associated to a davinci model) t
 
 \begin{lstlisting}
 user_input = st.text_input("You: ","Hello, how are you?", key="input")
-
 if user_input:
     output = openai.Completion.create(
           engine="test1",
@@ -115,12 +114,10 @@ if user_input:
           presence_penalty=0,
           best_of=1,
           stop=None)
-
     st.session_state.past.append(user_input)
     st.session_state.generated.append(output["choices"][0]["text"].strip())
 		
 if st.session_state['generated']:
-
     for i in range(len(st.session_state['generated'])-1, -1, -1):
         message(st.session_state["generated"][i], avatar_style = 'bottts', key=str(i))
         message(st.session_state['past'][i], avatar_style = 'big-ears',is_user=True, key=str(i) + '_user')		
@@ -134,7 +131,7 @@ if st.session_state['generated']:
  Save the .py file and run it via the terminal command \lstinline|streamlit run file.py|.
 
 \begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{chatgpt39}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{chatgpt39}
 \end{center}
 
 \end{frame}
@@ -171,7 +168,7 @@ if user_input:
  Save the .py file and run it via the terminal command \lstinline|streamlit run file.py|.
 
 \begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{chatgpt40}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{chatgpt40}
 \end{center}
 
 Nice! Our custom ChatGPT kept memory about its previous answer, knowing what “title 2” refers to.
@@ -188,7 +185,121 @@ Nice! Our custom ChatGPT kept memory about its previous answer, knowing what “
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Customizing GPT-3 for your application \\ OpenAI}
+{\Large Build your own Q\&A KnowledgeBot using GPT-Index \& LangChain - Document to Chatbot\\ 1littlecoder}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intro}
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{chatgpt43}
+
+{\tiny (Ref: Getting Started with GPT-3 vs. Open Source LLMs - James Briggs)}
+
+\end{center}		
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Contours}
+
+\begin{itemize}
+\item Input: some txt file, say of book `Meditations` by Marcus Aurelius
+\item Goal: to build a chatbot to answer questions related to the book.
+\item Usage: FAQ chatbot, based on QnA bank.
+\item Method: LangChain (https://github.com/hwchase17/langchain) to access OpenAI model and GPT-index (https://github.com/jerryjliu/llama\_index) to build the vector search, to create embedding of given documents.
+\end{itemize}	 
+
+{\tiny (Ref: Colab https://colab.research.google.com/drive/1JYTczk-4D86XNn0GTaXux5yi2-LfoIPd?usp=sharing)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Setup}
+
+
+\begin{lstlisting}
+!pip install gpt_index
+!pip install langchain
+
+!wget http://classics.mit.edu/Antoninus/meditations.mb.txt # save it to directory_path
+
+from gpt_index import SimpleDirectoryReader, GPTListIndex, GPTSimpleVectorIndex, LLMPredictor, PromptHelper
+from langchain import OpenAI
+import sys
+#from google.colab import drive
+import os
+
+os.environ["OPENAI_API_KEY"] = ''
+\end{lstlisting}
+
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Inputs}
+
+Construct index, meaning vectorize documents
+
+\begin{lstlisting}
+def construct_index(directory_path):
+  max_input_size = 4096
+  num_outputs = 256
+  max_chunk_overlap = 20
+  chunk_size_limit = 600
+
+  prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
+  llm_predictor = LLMPredictor(llm=OpenAI(temperature=0, model_name="text-ada-001", max_tokens=num_outputs))
+  documents = SimpleDirectoryReader(directory_path).load_data()
+  index = GPTSimpleVectorIndex(documents, llm_predictor=llm_predictor, prompt_helper=prompt_helper)
+  index.save_to_disk('index.json')
+
+  return index
+	
+index = construct_index("/content/")
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{ChatBot}
+
+Interface
+
+\begin{lstlisting}
+def ask_bot(input_index = 'index.json'):
+  index = GPTSimpleVectorIndex.load_from_disk(input_index)
+  while True:
+    query = input('What do you want to ask the bot?   \n')
+    response = index.query(query, response_mode="compact")
+    print ("\nBot says: \n\n" + response.response + "\n\n\n")
+		
+ask_bot('index.json')
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Demo}
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{chatgpt42}
+\end{center}		
+
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Customizing GPT-3 for your application - Jsonl method\\ OpenAI}
 \end{center}
 \end{frame}
 
@@ -225,7 +336,7 @@ Fine-tuning lets you get more out of the models available through the API by pro
 \begin{frame}[fragile]\frametitle{Fine tuning}
 
 \begin{itemize}
-\item GPT-3 has been pre-trained on a vast amount of text from the open internet. 
+\item GPT-3 has been pre-trained on a vast amount of text from the open Internet. 
 \item When given a prompt with just a few examples, it can often intuit what task you are trying to perform and generate a plausible completion. This is often called "few-shot learning."
 \item Fine-tuning improves on few-shot learning by training on many more examples than can fit in the prompt, letting you achieve better results on a wide number of tasks. 
 \item Once a model has been fine-tuned, you won't need to provide examples in the prompt anymore. 
@@ -427,18 +538,11 @@ Each input in the prompt should be classified into one of the predefined classes
   "object": "text_completion",
   "created": 1589498378,
   "model": "YOUR_FINE_TUNED_MODEL_NAME",
-  "choices": [
-    {
+  "choices": [  {
       "logprobs": {
-        "text_offset": [
-          19
-        ],
-        "token_logprobs": [
-          -0.03597255
-        ],
-        "tokens": [
-          " positive"
-        ],
+        "text_offset": [19],
+        "token_logprobs": [-0.03597255],
+        "tokens": [" positive"],
         "top_logprobs": [
           {
             " negative": -4.9785037,
@@ -446,7 +550,6 @@ Each input in the prompt should be classified into one of the predefined classes
           }
         ]
       },
-
       "text": " positive",
       "index": 0,
       "finish_reason": "length"
