@@ -49,8 +49,19 @@
 \begin{itemize}
 \item LLMs and Prompts: Prompt management, Prompt optimization, Generic interface for all LLMs and Common utilities for working with LLMs. Powers the agent.
 \item Chains: Chains are sequences of calls that whether to an LLM or a different utility. LangChain provides a standard interface for chains, many integrations with other tools, \& end-to-end chains for common applications. Chains go in order.
-\item Extenal Data Augmentation: Specific types of chains that first interact with an external data source to fetch data to use in the generation step. Examples of this include summarization of long pieces of text \& question/answering over specific data sources
-\item Agents: Agents involve an LLM making decisions about which actions to take, taking that action, seeing an observation, \& repeating that until done. LangChain provides a standard interface for agents, a selection of agents to choose from, and examples of end-to-end agents. Agents decide the next action based on LLM response.
+\item External Data Augmentation: Specific types of chains that first interact with an external data source to fetch data to use in the generation step. Examples of this include summarization of long pieces of text \& question/answering over specific data sources
+\item Agents: Agents involve an LLM making decisions about which actions to take, taking that action, seeing an observation, \& repeating that until done. LangChain provides a standard interface for agents, a selection of agents to choose from, and examples of end-to-end agents. Agents decide the next action based on LLM response. Agents are entities that drive decision-making in LangChain. They have access to a suite of tools and can decide which tool to call based on user input. 
+\end{itemize}
+
+{\tiny (Ref: Linkedin Post by Munjal Patel)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Why LangChain?}
+
+\begin{itemize}
+\item Toolkits are sets of tools that, when used together, can accomplish a specific task. The Agent Executor is responsible for running agents with the appropriate tools.
 \item Tool: A function that performs a specific duty. This can be things like: Google Search, Database lookup,
 \item Memory: Memory refers to the concept of persisting state between calls of a chain/agent. LangChain provides a standard interface for memory, a collection of memory implementations, and examples of chains/agents that use memory.
 \item Evaluation [BETA]: Generative models are notoriously hard to evaluate with traditional metrics. One new way of evaluating them is using language models themselves to do the evaluation. LangChain provides some prompts/chains for assisting in this.
@@ -58,6 +69,63 @@
 
 {\tiny (Ref: Linkedin Post by Munjal Patel)}
 \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Clarifications}
+
+\begin{itemize}
+\item A chain is a sequence of components (or other chains) put together to accomplish a specific task. For example, a chain might include a prompt template, a language model, and an output parser, all working together to handle user input, generate a response, and process the output.
+\item Chains vs Agents: Whereas a chain defines an immediate input/output process, the logic of agents allows a step-by-step thought process. The advantage of this step-by-step process is that the LLM can work through multiple reasoning steps or tools to produce a better answer.
+\item Generic chains as standalone chains are used rarely. There are specialized chains, comprised of many LLMs to help solve a specific task. For example, LangChain supports some end-to-end chains (such as AnalyzeDocumentChain for summarization, QnA, etc) and some specific ones (such as GraphQnAChain for creating, querying, and saving graphs). 
+\item Chains can be composed of entities other than LLMs, say, chaining agents and LLMs together.
+\end{itemize}
+
+{\tiny (Ref: 'Superpower LLMs with Conversational Agents', 'A Gentle Intro to Chaining LLMs, Agents, and utils via LangChain', etc)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Clarifications}
+
+\begin{itemize}
+\item An agent has access to an LLM to parse the input query and decide the tool to be used and a suite of tools for example Google Search, Python REPL, math calculator, weather APIs, etc. to do the actual work.
+\item What’s the point of getting an agent to do the same thing that an LLM can do. Some applications will require not just a predetermined chain of calls to LLMs/other tools, but potentially an unknown chain that depends on the user’s input. In these types of chains, there is an 'agent' which has access to a suite of tools e.g. an agent that can fetch the correct documents (from the vectorstores) for RetrievalQAChain depending on whether the question refers to document A or document B.
+\end{itemize}
+
+{\tiny (Ref: 'Superpower LLMs with Conversational Agents', 'A Gentle Intro to Chaining LLMs, Agents, and utils via LangChain', etc)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Clarifications}
+
+Combine Agent and Chain in another chain.
+
+\begin{lstlisting}
+# Chain1 - solve math problem, get the age
+chain_one = agent
+
+# Chain2 - suggest age-appropriate gift
+template = """You are a gift recommender. Given a person's age,\n
+ it is your job to suggest an appropriate gift for them.
+
+Person Age:
+{age}
+Suggest gift:"""
+prompt_template = PromptTemplate(input_variables=["age"], template=template)
+chain_two = LLMChain(llm=llm, prompt=prompt_template) 
+
+from langchain.chains import SimpleSequentialChain
+
+overall_chain = SimpleSequentialChain(
+                  chains=[chain_one, chain_two],
+                  verbose=True)
+				  
+question = "If my age is half of my dad's age and he is going to be 60 next year, what is my current age?"
+overall_chain.run(question)				  
+\end{lstlisting}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\frametitle{LangChain Usecases}
