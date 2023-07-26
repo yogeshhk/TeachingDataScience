@@ -15,6 +15,12 @@
 {\tiny (Ref: Building the Future with LLMs, LangChain, \& Pinecone)}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Data Loaders}
+\end{center}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{LangChain Data Loaders}
@@ -31,6 +37,168 @@ index = VectorstoreIndexCreator().from_loaders([loader])
 query = "What did the president say about Ketanji Brown Jackson"
 index.query(query)
 \end{lstlisting}	  
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Memory}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Need}
+
+\begin{itemize}
+    \item LangChain's ConversationChain has a simple type of memory.
+    \item The memory remembers all previous inputs/outputs and adds them to the context passed.
+    \item This memory can be considered a type of short-term memory.
+    \item Example: How to use ConversationChain with short-term memory.
+    \item It can remember the initial messages even after 3 questions.
+\end{itemize}
+
+\begin{lstlisting}
+from langchain import OpenAI, ConversationChain
+
+llm = OpenAI(model_name="text-davinci-003", temperature=0)
+conversation = ConversationChain(llm=llm, verbose=True)
+
+output = conversation.predict(input="Hi there!")
+
+print(output)
+
+> Entering new ConversationChain chain...
+
+Prompt after formatting:
+
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+
+Human: Hi there!
+AI:
+
+> Finished chain.
+
+Hi there! It's nice to meet you. How can I help you today?
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{ConversationBufferMemory}
+
+\begin{itemize}
+    \item ConversationChain uses the ConversationBufferMemory class by default to store a history of messages.
+    \item This memory saves previous conversations in the form of variables.
+    \item The class accepts the return\_messages argument, which is useful for dealing with chat models.
+\end{itemize}
+
+\begin{lstlisting}
+from langchain.memory import ConversationBufferMemory
+
+memory = ConversationBufferMemory(return_messages=True)
+memory.save_context({"input": "hi there!"}, {"output": "Hi there! It's nice to meet you. How can I help you today?"})
+
+print( memory.load_memory_variables({}) )
+
+>>{'history': [HumanMessage(content='hi there!', additional_kwargs={}, example=False),
+  AIMessage(content="Hi there! It's nice to meet you. How can I help you today?", additional_kwargs={}, example=False)]}
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{ConversationBufferMemory}
+
+\begin{itemize}
+    \item This memory implementation stores the entire conversation history as a single string.
+    \item Advantages:
+    \begin{itemize}
+        \item Maintains a complete record of the conversation.
+        \item Straightforward to implement and use.
+    \end{itemize}
+    \item Disadvantages:
+    \begin{itemize}
+        \item Less efficient as the conversation grows longer.
+        \item May lead to excessive repetition if the conversation history is too long for the model's token limit.
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{ConversationBufferMemory (Contd.)}
+
+\begin{itemize}
+    \item If the model's token limit is surpassed, the buffer gets truncated to fit within the limit.
+    \item Older interactions may be removed from the buffer to accommodate newer ones.
+    \item This truncation may cause the conversation context to lose some information.
+    \item To avoid surpassing the token limit:
+    \begin{itemize}
+        \item Monitor the token count in the buffer.
+        \item Manage the conversation accordingly, e.g., shorten input texts or remove less relevant parts.
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{ConversationBufferWindowMemory}
+
+\begin{itemize}
+    \item This class limits memory size by keeping a list of the most recent K interactions.
+    \item Maintains a sliding window of recent interactions to prevent the buffer from growing too large.
+    \item Advantages:
+    \begin{itemize}
+        \item Stores a fixed number of recent messages, making it more efficient than ConversationBufferMemory.
+        \item Reduces the risk of exceeding the model's token limit.
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{ConversationBufferWindowMemory (Contd.)}
+
+\begin{itemize}
+    \item Disadvantage:
+    \begin{itemize}
+        \item Does not maintain the complete conversation history.
+        \item Chatbot might lose context if essential information falls outside the fixed window of messages.
+    \end{itemize}
+    \item Possible to retrieve specific interactions from ConversationBufferWindowMemory.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{ConversationSummaryMemory}
+ConversationSummaryBufferMemory is a memory management strategy that combines the ideas of keeping a buffer of recent interactions in memory and compiling old interactions into a summary. It extracts key information from previous interactions and condenses it into a shorter, more manageable format. 
+\textbf{Advantages:}
+\begin{itemize}
+    \item Condensing conversation information.
+    \item Reducing the number of tokens required to store the conversation history.
+    \item Flexibility in returning history as a list of messages or a plain text summary.
+    \item Direct summary prediction with \texttt{predict\_new\_summary} method.
+    \item Provides more control over the summarization process.
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item Loss of information in the summary.
+    \item Possible omission of important details from the conversation.
+    \item Increased complexity compared to simpler memory types like ConversationBufferMemory.
+\end{itemize}
 
 \end{frame}
 
@@ -116,6 +284,62 @@ conversation.run("Can you tell me a similar joke?")
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Recap and Strategies}
+
+\textbf{Strategies to Manage Token Limit:}
+\begin{itemize}
+    \item Remove oldest messages once token count is reached.
+    \item Limit conversation duration to max token length or turns.
+\end{itemize}
+
+\textbf{ConversationBufferWindowMemory Method:}
+\begin{itemize}
+    \item Maintains fixed-size buffer window of most recent tokens.
+    \item Suitable for remembering recent interactions.
+\end{itemize}
+
+\textbf{ConversationSummaryBufferMemory Approach:}
+\begin{itemize}
+    \item Combines features of ConversationSummaryMemory and ConversationBufferWindowMemory.
+    \item Summarizes earliest interactions while maintaining recent tokens.
+    \item Allows model to remember both distant and recent interactions.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Recap and Strategies (Contd.)}
+
+\textbf{Handling Token Limit:}
+\begin{itemize}
+    \item Keep track of token count and send prompt within the limit.
+    \item Maximum token limit for GPT-3.5-turbo is 4096 tokens.
+    \item Split input text into smaller chunks and process separately.
+    \item Use batch processing to work with large texts.
+\end{itemize}
+
+\textbf{Note:}
+\begin{itemize}
+    \item Removing a message from input causes model to lose knowledge of it.
+\end{itemize}
+
+\textbf{Remember:}
+\begin{itemize}
+    \item Utilize OpenAI's tiktoken library for efficient token counting.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Inputs}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Building Blocks: Inputs}
 
 Input types that LLMs accept
@@ -139,6 +363,129 @@ Document(page_content="This is my document. It is full of text that I've gathere
 
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Models}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Large Language Models (LLMs)}
+
+\begin{itemize}
+    \item LLMs, such as GPT-3, Bloom, PaLM, and Aurora genAI, take text as input and produce human-like text as output.
+    \item Trained on language modeling tasks, LLMs can perform complex reasoning and generate text for various applications.
+    \item Pre-training involves presenting large-scale corpora to predict the next word, learning word relationships.
+    \item LLMs find applications in form-filling, predictive text, arts, sciences, law, and more.
+    \item Some models are domain-specific, e.g., Intel Aurora genAI, trained on general and domain-specific data.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Using LLMs in LangChain}
+
+\begin{itemize}
+    \item To use an LLM like GPT-3 in LangChain:
+    \begin{enumerate}
+        \item Import the \texttt{OpenAICopy} wrapper from \texttt{langchain.llmsCopy} module.
+        \item Initialize with the desired model name and any additional arguments (e.g., high temperature for more randomness).
+        \item Create a \texttt{PromptTemplateCopy} to format the input for the model.
+        \item Define an \texttt{LLMChainCopy} to combine the model and prompt.
+        \item Run the chain with desired input using \texttt{.run()Copy}.
+    \end{enumerate}
+    \item Remember to set your OpenAI key in the “OPENAI\_API\_KEY” environment variable.
+    \item Install required packages: \texttt{pip install langchain==0.0.208 deeplake openai tiktokenCopy}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LangChain Models}
+
+\begin{lstlisting}
+from langchain.llms import OpenAI
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+
+# Before executing the following code, make sure to have
+# your OpenAI key saved in the "OPENAI_API_KEY" environment variable.
+llm = OpenAI(model_name="text-davinci-003", temperature=0)
+
+prompt = PromptTemplate(
+  input_variables=["product"],
+  template="What is a good name for a company that makes {product}?",
+)
+
+chain = LLMChain(llm=llm, prompt=prompt)
+
+print( chain.run("wireless headphones") )
+
+>>Wireless Audio Solutions
+\end{lstlisting}	  
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Chat Models in LangChain}
+
+\begin{itemize}
+    \item Chat Models like ChatGPT are popular in LangChain for their ability to incorporate GPT-3 or GPT-4 at their core.
+    \item They use LLMs as their underlying technology but have more structured APIs.
+    \item Chat Models take a list of messages as input and return an \texttt{AIMessageCopy}.
+    \item They remember previous exchanges with the user to generate relevant responses and benefit from reinforcement learning from human feedback.
+    \item However, they may have limitations in reasoning and require careful handling to avoid inappropriate content.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{API Differences and Message Types}
+
+\begin{itemize}
+    \item In LangChain, three main message types are used when interacting with chat models:
+    \begin{itemize}
+        \item \texttt{SystemMessageCopy}: Provides initial instructions or context for the AI model. Not user inputs but guidelines for the AI.
+        \item \texttt{HumanMessageCopy}: Comes from the user and represents their input. The AI model is expected to respond to these messages.
+        \item \texttt{AIMessageCopy}: Sent from the AI's perspective, representing its responses to human input.
+    \end{itemize}
+    \item You can customize the human prefix (e.g., "User") and AI prefix (e.g., "AI Assistant" or "AI") in the conversation summary to change how input and responses are represented.
+    \item An example of using \texttt{ChatOpenAI} with a \texttt{HumanMessageCopy}: Creating a chatbot for English to French translation, using multiple message types to enhance model comprehension.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LangChain Chat Models}
+
+\begin{lstlisting}
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import (
+  HumanMessage,
+  SystemMessage
+)
+
+chat = ChatOpenAI(model_name="gpt-4", temperature=0)
+
+messages = [
+	SystemMessage(content="You are a helpful assistant that translates English to French."),
+	HumanMessage(content="Translate the following sentence: I love programming.")
+]
+
+chat(messages)
+
+>> AIMessage(content="J'aime la programmation.", additional_kwargs={}, example=False)
+\end{lstlisting}	  
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Building Blocks: Models}
@@ -205,6 +552,12 @@ print (f"Here's a sample: {text_embedding[:5]}...")
 \end{lstlisting}	  
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Prompts}
+\end{center}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Building Blocks: Prompts}
@@ -320,6 +673,13 @@ llm(similar_prompt.format(noun=my_noun))
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Indexes}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Building Blocks: Indexes}
 
 \begin{itemize}
@@ -361,6 +721,63 @@ retriever = db.as_retriever()
 docs = retriever.get_relevant_documents("what types of things did the author want to build?")
 \end{lstlisting}	  
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Chains}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{The Chains in LangChain}
+
+\begin{itemize}
+    \item A chain in LangChain is an end-to-end wrapper around multiple components.
+    \item It combines individual components in a specific sequence to accomplish a common use case.
+    \item The most commonly used type of chain is the LLMChain.
+    \begin{itemize}
+        \item Consists of a PromptTemplate, a model (LLM or ChatModel), and an optional output parser.
+    \end{itemize}
+    \item LLMChain's working process:
+    \begin{enumerate}
+        \item Takes (multiple) input variables.
+        \item Formats the input variables into a prompt using the PromptTemplate.
+        \item Passes the formatted prompt to the model (LLM or ChatModel).
+        \item If provided, uses the OutputParser to parse the LLM's output into a final format.
+    \end{enumerate}
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{The Chains in LangChain}
+
+This example showcases the flexibility and ease of using LangChain to create custom chains for various language generation tasks.
+
+\begin{lstlisting}
+from langchain.prompts import PromptTemplate
+from langchain.llms import OpenAI
+from langchain.chains import LLMChain
+
+llm = OpenAI(model="text-davinci-003", temperature=0.9)
+prompt = PromptTemplate(
+    input_variables=["product"],
+    template="What is a good name for a company that makes {product}?",
+)
+
+chain = LLMChain(llm=llm, prompt=prompt)
+
+# Run the chain only specifying the input variable.
+print(chain.run("eco-friendly water bottles"))
+
+>>Eco-Pure Water Bottles.
+\end{lstlisting}	  
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -568,6 +985,105 @@ print(catchphrase)
 
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Agents}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Agents in LangChain}
+
+\begin{itemize}
+    \item Agents are high-level components in LangChain that utilize Language Models (LLMs) to make decisions about actions.
+    \item Actions can involve using a tool and observing its output or returning it to the user.
+    \item Tools are functions that perform specific duties like Google Search, database lookups, or Python REPL.
+    \item Agents operate by making decisions, taking actions, observing outputs, and repeating until a task is completed.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Types of Agents in LangChain}
+
+\begin{itemize}
+    \item The \textbf{zero-shot-react-description} agent: Uses ReAct framework to decide which tool to employ based on the tool's description. Requires a description for each tool.
+    \item The \textbf{react-docstore} agent: Engages with a docstore through ReAct framework. Needs a Search tool and a Lookup tool. Searches for a document and looks up a term in the most recent document found.
+    \item The \textbf{self-ask-with-search} agent: Employs a single tool named Intermediate Answer to look up factual responses to queries. Similar to the original self-ask with the search paper, where a Google search API was provided as the tool.
+    \item The \textbf{conversational-react-description} agent: Designed for conversational situations. Uses ReAct framework to select a tool and utilizes memory to remember past conversation interactions.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Example: Using Google Search Tool with LangChain Agent}
+
+\begin{itemize}
+    \item The Agent will utilize the Google Search tool to retrieve recent information about the Mars rover and generate a response.
+    \item To use Google Search via API, set the environment variables \texttt{GOOGLE\_API\_KEY} and \texttt{GOOGLE\_CSE\_ID}. Refer to the guide for obtaining them.
+    \item Import the necessary modules:
+    \begin{itemize}
+        \item \texttt{langchain.llms.OpenAI}: Create an instance of the OpenAI language model for human-like text generation.
+        \item \texttt{langchain.agents.load\_tools}: Load a list of tools that an AI agent can use.
+        \item \texttt{langchain.agents.initialize\_agent}: Initialize an AI agent with specific tools and a language model for user interaction.
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Using Google Search Tool with LangChain Agent (Contd.)}
+
+\begin{itemize}
+    \item Continue with the module imports:
+    \begin{itemize}
+        \item \texttt{langchain.agents.Tool}: Define a tool that an AI agent can use, specifying its name, action function, and description.
+        \item \texttt{langchain.utilities.GoogleSearchAPIWrapper}: Wrapper for the Google Search API, allowing it to be used as a tool by an AI agent.
+    \end{itemize}
+    \item The Google Search API wrapper likely contains a method to send search queries to Google and retrieve results.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{The Tool Object in LangChain}
+
+\begin{itemize}
+    \item The Tool object represents a specific capability or function the system can use, like performing Google searches.
+    \item It is initialized with three parameters:
+    \begin{itemize}
+        \item \texttt{name}: A unique identifier for the tool. (e.g., "google-search")
+        \item \texttt{func}: The function executed when the tool is called. (e.g., \texttt{search.run()})
+        \item \texttt{description}: A brief explanation of the tool's purpose. (e.g., answering questions about current events using Google)
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Using Agents in LangChain}
+
+\begin{itemize}
+    \item To create an agent that uses the Google Search tool:
+    \begin{itemize}
+        \item Call \texttt{initialize\_agent()} to create and initialize the agent.
+        \item \texttt{tools}: Represents the list of Tool objects the agent can use.
+        \item \texttt{agent="zero-shot-react-description"}: The agent type that uses ReAct framework to decide which tool to use based on the tool's description.
+        \item \texttt{verbose=True}: Provides detailed information about agent actions (useful for debugging).
+        \item \texttt{max\_iterations=6}: Sets a limit on agent iterations to prevent infinite execution in certain cases.
+    \end{itemize}
+    \item In summary, LangChain Agents help decide actions based on user input. The example demonstrates using a "zero-shot-react-description" agent with a Google search tool.
+\end{itemize}
+
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Agents}
@@ -710,6 +1226,92 @@ The SimpleSequentialChain combines several chains of operations to run a pipelin
 {\tiny (Ref: Getting started with LangChain - Avra)}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+\frametitle{Guarding Against Undesirable Outputs with Self-Critique Chain}
+
+\begin{itemize}
+    \item Large language models (LLMs) may occasionally produce undesirable outputs, such as harmful or hallucinating content.
+    \item Employ a mechanism to ensure model responses are appropriate in the production environment.
+    \item \textbf{Self-Critique Chain:} Keeps the model in line by iterating over its output and checking predefined expectations.
+    \item If expectations are not met, the chain asks the model to fix itself based on application requirements.
+    \item Ensures ethical responses, e.g., a student mentoring assistant suggesting hard work over cheating in exams.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Evil prompting}
+
+\begin{lstlisting}
+from langchain.llms import OpenAI
+from langchain.prompts import PromptTemplate
+from langchain.chains.llm import LLMChain
+
+evil_assistant_prompt = PromptTemplate(
+    template="""
+			You are a evil mentor for students with no morals. Give suggestions that are easiest and fastest to achieve the goal.
+			Goal: {inquiry}
+			Easiest way:""",
+    input_variables=["inquiry"],
+)
+
+# Before executing the following code, make sure to have
+# your OpenAI key saved in the "OPENAI_API_KEY" environment variable.
+llm = OpenAI(model_name="text-davinci-003", temperature=0)
+evil_assistant_chain = LLMChain(llm=llm, prompt=evil_assistant_prompt)
+
+result = evil_assistant_chain.run(inquiry="Getting full mark on my exams.")
+
+print( result )
+
+>>
+1. Cheat on the exam by bringing in notes or using a phone to look up answers.
+2. Bribe the teacher or professor to give you full marks.
+3. Copy someone else's answers.
+4. Memorize the answers to the exam questions.
+5. Ask a friend who has already taken the exam for the answers.
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Solution prompting}
+Let’s use the combination of ConstitutionalPrinciple and ConstitutionalChain classes to set some ground rules.
+\begin{lstlisting}
+from langchain.chains.constitutional_ai.base import ConstitutionalChain
+from langchain.chains.constitutional_ai.models import ConstitutionalPrinciple
+
+ethical_principle = ConstitutionalPrinciple(
+    name="Ethical Principle",
+    critique_request="The model should only talk about ethical and fair things.",
+    revision_request="Rewrite the model's output to be both ethical and fair.",
+)
+
+constitutional_chain = ConstitutionalChain.from_llm(
+    chain=evil_assistant_chain,
+    constitutional_principles=[ethical_principle],
+    llm=llm,
+    verbose=True,
+)
+
+result = constitutional_chain.run(inquiry="Getting full mark on my exams.")
+
+>>
+Applying Ethical Principles...
+
+Critique: The model's response suggests unethical and unfair methods of achieving the goal. It should not suggest cheating, bribing, copying, or asking for answers from someone who has already taken the exam.
+
+Updated response: 1. Study hard and review the material thoroughly.
+2. Make sure to get enough sleep the night before the exam.
+3. Practice answering exam questions with a friend or classmate.
+4. Take practice exams to get familiar with the format and types of questions.
+5. Ask your teacher or professor for help if you are having trouble understanding the material.
+\end{lstlisting}
+
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\frametitle{Prompt Engineering}
@@ -750,3 +1352,496 @@ The SimpleSequentialChain combines several chains of operations to run a pipelin
 {\tiny (Ref: What is Langchain and why should I care as a developer? - Logan Kilpatrick)}
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Output Parsers}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Managing Outputs with Output Parsers}
+
+\begin{itemize}
+    \item The problem: Lack of a method to dynamically extract relevant information from the response string.
+    \item Responses may have varying formats, making it challenging to extract information consistently.
+    \item Output Parsers: Create a data structure to precisely define expectations from the output.
+    \item Define specific data structures for different applications (e.g., a list of words or a combination of variables).
+    \item Output Parsers extract the expected information, making output management easier.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Output Parsers - PydanticOutputParser}
+
+\begin{itemize}
+    \item There are three classes of Output Parsers we'll introduce.
+    \item PydanticOutputParser is a powerful and flexible wrapper to handle JSON outputs.
+    \item Treat the parser's output as a list, allowing easy indexing through the results.
+    \item Use Pydantic library to define and validate data structures in Python.
+    \item Characterize the expected output with a name, type, and description.
+    \item For the thesaurus application, define a class inheriting from Pydantic's BaseModel.
+    \item Not all models have the same capability in generating JSON outputs.
+    \item Use a more powerful model (e.g., OpenAI's DaVinci) for better results.
+    \item PydanticOutputParser enhances parsing and data structure definition in Python.	
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Output Parsers - PydanticOutputParser}
+
+\begin{lstlisting}
+from langchain.output_parsers import PydanticOutputParser
+from pydantic import BaseModel, Field, validator
+from typing import List
+
+# Define your desired data structure.
+class Suggestions(BaseModel):
+    words: List[str] = Field(description="list of substitue words based on context")
+
+    # Throw error in case of receiving a numbered-list from API
+    @validator('words')
+    def not_start_with_number(cls, field):
+        for item in field:
+            if item[0].isnumeric():
+                raise ValueError("The word can not start with numbers!")
+        return field
+
+parser = PydanticOutputParser(pydantic_object=Suggestions)	
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Output Parsers - PydanticOutputParser (Contd.)}
+
+\begin{itemize}
+    \item Two essential parts of the PydanticOutputParser class:
+    \begin{enumerate}
+        \item Expected Outputs: Define outputs with desired types (e.g., list of strings or single string).
+        \item Use the Field function's description attribute to provide explanations for the model during inference.
+    \end{enumerate}
+    \item Validators: Declare functions to validate formatting, like ensuring the first character is not a number.
+    \item Use the @validator decorator with the same name as the variable you want to approve (e.g., @validator('words')).
+    \item The field variable inside the validator function will be a list if specified as one.
+    \item Pass the class to PydanticOutputParser to create a LangChain parser object, then prepare the prompt.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Output Parsers - PydanticOutputParser}
+
+\begin{lstlisting}
+from langchain.prompts import PromptTemplate
+
+template = """
+Offer a list of suggestions to substitue the specified target_word based the presented context.
+{format_instructions}
+target_word={target_word}
+context={context}
+"""
+
+prompt = PromptTemplate(
+    template=template,
+    input_variables=["target_word", "context"],
+    partial_variables={"format_instructions": parser.get_format_instructions()}
+)
+
+model_input = prompt.format_prompt(
+			target_word="behaviour",
+			context="The behaviour of the students in the classroom was disruptive and made it difficult for the teacher to conduct the lesson."
+)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Output Parsers (Contd.)}
+
+\begin{itemize}
+    \item  \texttt{CommaSeparatedOutputParser}: Manages comma-separated outputs, useful for receiving a list of model responses.
+    \item  \texttt{StructuredOutputParser}: Supports processing multiple text outputs, not suitable for other data types like lists or integers.
+    \item \texttt{StructuredOutputParser} is suitable for scenarios where only one response from the model is needed (e.g., thesaurus application with one substitute word).
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Fixing Errors}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Fixing Errors - OutputFixingParser}
+
+\begin{itemize}
+    \item The parsers are powerful tools for dynamic information extraction, but they do not guarantee responses.
+    \item Incomplete model responses may cause parsers to throw errors, leading to undesirable outcomes.
+    \item \textbf{2-1. OutputFixingParser:} Tries to fix parsing errors using a Large Language Model (LLM) like GPT-3.
+    \item Uses the LLM to solve the issue and add a layer on top of the model's response to handle errors.
+    \item You can use any supported model, but we'll use GPT-3 for consistency in this lesson.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Fixing Errors - OutputFixingParser}
+
+The \lstinline|from_llm()| function takes the old parser and a language model as input parameters. Then, It initializes a new parser for you that has the ability to fix output errors. In this case, it successfully identified the misnamed key and changed it to what we defined.
+
+\begin{lstlisting}
+from langchain.llms import OpenAI
+from langchain.output_parsers import OutputFixingParser
+
+model = OpenAI(model_name='text-davinci-003', temperature=0.0)
+
+outputfixing_parser = OutputFixingParser.from_llm(parser=parser, llm=model)
+outputfixing_parser.parse(missformatted_output)
+
+>> Suggestions(words=['conduct', 'manner'], reasons=['refers to the way someone acts in a particular situation.', 'refers to the way someone behaves in a particular situation.'])
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{RetryOutputParser}
+\begin{itemize}
+    \item In some cases, the parser needs access to both the output and the prompt for full context processing.
+    \item Define the necessary variables to facilitate access to output and prompt.
+    \item \textbf{RetryWithErrorOutputParser:} Fixes parsing issues using a new parser object.
+    \item Receives the old parser and a model to create the new parser.
+    \item The \texttt{parse\_with\_prompt} function fixes parsing issues, requiring both output and prompt.
+\end{itemize}
+
+\begin{lstlisting}
+from langchain.output_parsers import RetryWithErrorOutputParser
+
+missformatted_output = '{"words": ["conduct", "manner"]}'
+
+retry_parser = RetryWithErrorOutputParser.from_llm(parser=parser, llm=model)
+
+retry_parser.parse_with_prompt(missformatted_output, model_input)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Retrying with RetryWithErrorOutputParser (Contd.)}
+
+\begin{itemize}
+    \item The RetryWithErrorOutputParser can resolve parsing issues where OutputFixingParser fails.
+    \item The parser correctly guides the model to generate one reason for each word in the example.
+    \item Best practice for production: Catch parsing errors using a try-except method.
+    \item Capture errors in the except section and attempt to fix them using mentioned classes.
+    \item This approach limits API calls, avoiding unnecessary costs associated with them.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Reasoning}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Introduction}
+
+\textbf{LangChain and LLMs:}
+\begin{itemize}
+    \item New horizons in AI - data analysis, information synthesis, content generation.
+    \item Central concept: Agents - intelligent systems using LLMs for actions and complex tasks.
+    \item LLMs as reasoning engines or planners, less as content generators.
+\end{itemize}
+
+\textbf{Two Ways to Harness LLMs:}
+\begin{itemize}
+    \item Content Generators: LLMs leverage internal knowledge to create creative content.
+    \item Reasoning Engines: Proficient synthesizers, extract relevant data, plan actions.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Introduction (Contd.)}
+
+\textbf{Advantages and Challenges:}
+\begin{itemize}
+    \item Content Generators:
+        \begin{itemize}
+            \item Engaging and creative content from scratch.
+            \item May lack context and coherence for complex tasks.
+        \end{itemize}
+    \item Reasoning Engines:
+        \begin{itemize}
+            \item Synthesize information, extract and summarize data.
+            \item Effective planning for tasks, context-rich.
+            \item Challenges in balancing information and avoiding over-synthesis.
+        \end{itemize}
+\end{itemize}
+
+\textbf{Choice Depends On Task:}
+\begin{itemize}
+    \item Specific requirements determine content generator or reasoning engine approach.
+\end{itemize}
+
+\end{frame}
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Agents in LangChain}
+
+Agents in LangChain play a crucial role in decision-making and task execution based on user input. There are two primary categories of agents:
+
+\textbf{1. Action Agents:}
+\begin{itemize}
+    \item Determine and execute a single action.
+    \item Suitable for straightforward tasks.
+\end{itemize}
+
+\textbf{2. Plan-and-Execute Agents:}
+\begin{itemize}
+    \item Devise a plan with multiple actions.
+    \item Execute actions sequentially.
+    \item Ideal for complex or long-running tasks with long-term objectives.
+    \item May lead to more calls and higher latency.
+\end{itemize}
+
+\textbf{Action Agents + Plan-and-Execute Agents:}
+\begin{itemize}
+    \item Action Agents manage execution for Plan-and-Execute Agents.
+    \item Utilize both strengths for optimal performance.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Agents and Tools in LangChain}
+
+\textbf{Agents:}
+\begin{itemize}
+    \item Employ language models as reasoning mechanisms.
+    \item Linked with key elements called \textit{tools}.
+\end{itemize}
+
+\textbf{Tools:}
+\begin{itemize}
+    \item Connect language models with data sources (e.g., search engines, APIs).
+    \item Retrieve current data as context for the prompt.
+    \item Execute actions and observe results, influencing the model's decision-making process.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{LLMs as Content Generators and Reasoning Engines}
+
+\textbf{Content Generator:}
+\begin{itemize}
+    \item Language model creates content solely from its internal knowledge base.
+    \item Leads to highly creative outputs.
+    \item May produce unverified information or 'hallucinations.'
+\end{itemize}
+
+\textbf{Reasoning Engine:}
+\begin{itemize}
+    \item Acts as an information manager rather than a creator.
+    \item Gathers relevant, accurate information using external tools.
+    \item Draws from similar resources to extract and summarize relevant details.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Example}
+"What's the result of 1000 plus the number of goals scored in the soccer world cup in 2018?"
+
+\begin{lstlisting}
+# Loading the language model to control the agent
+llm = OpenAI(model="text-davinci-003", temperature=0)
+
+# Loading some tools to use. The llm-math tool uses an LLM, so we pass that in.
+tools = load_tools(["google-search", "llm-math"], llm=llm)
+
+# Initializing an agent with the tools, the language model, and the type of agent we want to use.
+agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True)
+
+# Testing the agent
+query = "What's the result of 1000 plus the number of goals scored in the soccer world cup in 2018?"
+response = agent.run(query)
+print(response)
+
+> Entering new AgentExecutor chain...
+ I need to find out the number of goals scored in the 2018 soccer world cup
+Action: Google Search
+Action Input: "number of goals scored in 2018 soccer world cup"
+Observation: Jan 13, 2023 ... A total of 172 goals were scored during the 2022 World Cup in Qatar, marking a new record for the tournament. Jan 31, 2020 ... A 
+Thought: I now know the number of goals scored in the 2018 soccer world cup
+Action: Calculator
+Action Input: 1000 + 169
+Observation: Answer: 1169
+Thought: I now know the final answer
+Final Answer: The result of 1000 plus the number of goals scored in the soccer world cup in 2018 is 1169.
+
+> Finished chain.
+
+The result of 1000 plus the number of goals scored in the soccer world cup in 2018 is 1169.
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Agent as a Reasoning Engine}
+
+\textbf{Steps in Agent's Reasoning:}
+\begin{itemize}
+    \item Query Processing: Identify distinct tasks within the query.
+    \item Tool Utilization: Use external tools to gather accurate and relevant information.
+    \item Information Processing: Process the gathered data to perform required operations.
+    \item Synthesis and Response: Coherently synthesize information to generate a response.
+\end{itemize}
+
+\textbf{Example:}
+\begin{itemize}
+    \item Query: "What's the result of 1000 plus the number of goals scored in the soccer world cup in 2018?”
+    \item Agent uses "google-search" tool to find goals scored in 2018 world cup.
+    \item Agent uses "llm-math" tool to perform the addition operation.
+    \item The agent synthesizes the information to provide a response.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Agent as a Content Generator}
+
+\textbf{Scenario:} Writing a Science Fiction Story
+
+\begin{itemize}
+    \item Agent Role: Content Generator
+    \item Task: Write a science fiction story based on a given prompt.
+    \item Approach: Initialize the agent with a language model.
+    \item Temperature Parameter: Set a higher value to encourage creativity.
+    \item External Tools: Not required as the agent generates content from scratch.
+\end{itemize}
+
+\textbf{Output:}
+\begin{itemize}
+    \item The language model generates a long science fiction story about interstellar explorers.
+    \item The story is based on the patterns it learned during training, showcasing its creativity.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Example}
+
+\begin{lstlisting}
+prompt = PromptTemplate(
+    input_variables=["query"],
+    template="You're a renowned science fiction writer. {query}"
+)
+
+# Initialize the language model
+llm = OpenAI(model="text-davinci-003", temperature=0)
+llm_chain = LLMChain(llm=llm, prompt=prompt)
+
+tools = [
+    Tool(
+        name='Science Fiction Writer',
+        func=llm_chain.run,
+        description='Use this tool for generating science fiction stories. Input should be a command about generating specific types of stories.'
+    )
+]
+
+# Initializing an agent with the tools, the language model, and the type of agent we want to use.
+agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True)
+
+# Testing the agent with the new prompt
+response = agent.run("Compose an epic science fiction saga about interstellar explorers")
+print(response)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Example}
+
+\begin{lstlisting}
+> Entering new AgentExecutor chain...
+ I need a way to generate this kind of story
+Action: Science Fiction Writer
+Action Input: Generate interstellar exploration story
+Observation: .
+
+The crew of the interstellar exploration vessel, the U.S.S. Discovery, had been traveling through the depths of space for months, searching for something that no one had ever seen before. They were searching for a planet, an anomaly, something out of the ordinary.
+
+:
+Eventually, the crew was able to unlock the secrets of the alien technology and use it to power their ship. With the newfound energy source, they were able to travel to the far reaches of the universe and explore places that no human had ever seen
+Thought: I now know the final answer
+Final Answer: The crew of the U.S.S. Discovery set out to explore the unknown reaches of the universe, unlocking the secrets of alien technology and discovering an ancient civilization with the power to travel faster than the speed of light.
+
+> Finished chain.
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Agent as a Content Generator}
+
+\textbf{Scenario:} Composing an Epic Science Fiction Saga
+
+\begin{itemize}
+    \item Agent Role: Content Generator
+    \item Task: Compose an epic science fiction saga about interstellar explorers.
+    \item Approach: The agent primarily uses its internal knowledge to generate the output.
+    \item Understanding: The agent's understanding comes from its training data.
+    \item Training Data: Trained on diverse internet text, giving it a broad base of information.
+    \item Knowledge Source: It uses patterns learned during training to structure the story.
+\end{itemize}
+
+\textbf{How it works:}
+\begin{itemize}
+    \item The agent receives the prompt to compose a science fiction saga.
+    \item It uses its understanding of language, narrative structure, and themes to generate the story.
+    \item The language model's vast training data provides a rich source of information to draw from.
+    \item It uses patterns learned during training to structure the story in a science fiction context.
+\end{itemize}
+
+\end{frame}
+
+
+
