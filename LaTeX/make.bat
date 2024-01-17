@@ -1,2 +1,2 @@
 @echo off
-for /r %%i in (Main_*Graph_KnowledgeGraph_*.tex) do texify -cp %%i
+for /r %%i in (Main_Workshop_LLM_Presentation*.tex) do texify -cp %%i
