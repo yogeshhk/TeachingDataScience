@@ -1,0 +1,603 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Transformer \\ \small ``Attention is all you need''}
+\end{center}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Goal: Study Transformer}
+
+
+	\begin{center}
+	\includegraphics[width=0.35\linewidth,keepaspectratio]{transformer}
+	\end{center}		
+
+{\tiny (Ref: ``Attention is all you need''. 2017.  Aswani, Shazeer, Parmar, Uszkoreit,  Jones, Gomez, Kaiser, Polosukhin  https://arxiv.org/pdf/1706.03762.pdf}
+
+
+			
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{A High-Level Look}
+
+Lets start with a very high-level view \ldots and then Zoom in each sub-blocks.
+
+Here is the Transformer block and its i/o.
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{transformer_jay}
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+\begin{itemize}
+\item Main architecture: encoder-decoder ie sequence to sequence
+\item Task: machine translation with parallel corpus (encoder-decoder)
+\item Sub-tasks: Word Embedding (Encoder), Predict each translated word (Decoder)
+\item can be done by RNNs, LSTMs, etc. But they had issues.
+\item Here we bring parallelization.
+\item Challenges? Different input-output sizes, different attention correspondence, word order matters, semantic preservation, compute cost, storage cost, etc.
+\end{itemize}
+
+			
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{One level down}
+
+Within Transformer block we have
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_encoders_decoders_jay}
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+Inference time flow: 
+\begin{itemize}
+\item Encoder takes input
+\item Does some processing, creates a `latent` representation, sends it to decoder
+\item Decoder processes this input to generate the output
+\end{itemize}
+
+What would be ML training flow?
+			
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{One level down}
+
+Each sub-block ie Encoder-Decoder blocks are actually stacks of encoders decoders.
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_encoder_decoder_stack_jay}
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+ 
+\begin{itemize}
+\item Encoder has 6 blocks, so does Decoder. 
+\item Why 6? Why not 7? They found it to be good. Like Hyper-parameter.
+\end{itemize}
+
+How many blocks GPT 3.5 has?
+			
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{One level down in Encoder Cell}
+
+Each Encoder sub-block is actually stack of \ldots
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+		\begin{center}
+		\includegraphics[width=\linewidth,keepaspectratio]{transformer_encoder_jay}
+		
+		{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+		\end{center}		
+	\end{column}
+	\begin{column}[T]{0.5\linewidth}
+		\begin{itemize}
+		\item Self Attention:  a layer that helps the encoder look at other words in the input sentence as it encodes a specific word.
+		\item Feed Forward: The outputs of the self-attention layer are fed to a feed-forward neural network. The exact same feed-forward network is independently applied to each position.
+		\end{itemize}
+	\end{column}
+\end{columns}
+Input Embedding? Positional Embedding? Residual connections? batch normalization?
+			
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Similarly on Decoder side}
+
+Each Decoder sub-block is actually stack of \ldots
+
+
+		\begin{center}
+		\includegraphics[width=\linewidth,keepaspectratio]{transformer_decoder_jay}
+		
+		{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+
+		\end{center}		
+		
+
+		\begin{itemize}
+		\item The decoder also has both those layers (Self but Masked Attention and Feed Forward), but between them is an (cross) attention layer that helps the decoder focus on relevant parts of the input sentence
+		\end{itemize}
+
+		
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Transformer Encoder}
+
+Actual architecture in the research paper.
+
+\begin{columns}
+    \begin{column}[T]{0.4\linewidth}
+			\begin{center}
+			\includegraphics[width=0.6\linewidth,keepaspectratio]{bert70}
+			\end{center}		
+		\end{column}
+    \begin{column}[T]{0.6\linewidth}
+      \begin{itemize}
+			\item For encoder block, initial input, tokenization, embedding, positional encoding, happens at the start, then the first Encoder cell starts.
+			\item In each cell, we have multi-head self attention, residual connections, batch normalization and then feed forward then again residual + batch normalization.
+			\item Output of this cell is passed to the next encoder cell.
+			\item Output of the last encoder cell in the encoder block is passed to the Decoder block.
+			\end{itemize}
+    \end{column}
+  \end{columns}
+		
+     \begin{itemize}
+			\item Mind well, that each word here gets processed parallelly, unlike RNN or LSTM.
+			\item Cells are repeated 6 times (in vertical stack)
+			\end{itemize}		
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Transformer Decoder}
+
+
+			\begin{center}
+			\includegraphics[width=\linewidth,keepaspectratio]{bert71}
+			\end{center}		
+
+			
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Transformer Encoder-Decoder}
+
+			\begin{center}
+			\includegraphics[width=\linewidth,keepaspectratio]{bert72}
+			\end{center}		
+
+			
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Transformer Encoder-Decoder}
+Next, let’s look at the Transformer Encoder and Decoder Blocks in action
+
+
+      \begin{itemize}
+			\item Imagine Machine Translation: French to English
+			\item What would be ML training flow?
+			\item What would be ML inference flow?
+			\item Can we use input or output text as is, ie in string format?
+			\item Whats the NLP way of making text available for ML or DL algorithms?
+	\end{itemize}
+			
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Block: Input Embedding}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Convert Word to Vectors}
+
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{embeddings_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+
+\begin{itemize}
+\item Either by Frequency based ie one-hot or tf-idf or Neural way ie Word2Vec (in paper)
+\item Or put embedding layer (like in TensorFlow or Keras NLP, which also gets trained)
+\item Size: 512, a hyper-parameter we can set – basically it would be the length of the longest sentence in our training dataset.
+\item After embedding the words in our input sequence, each of them flows through each of the two layers of the encoder.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Flow of Vectors in Encoder Cell}
+
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{encoder_with_tensors_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+\begin{itemize}
+\item Key property : the word in each position flows through its own path in the encoder. 
+\item Calculations in the self-attention layer do need other words. 
+\item But later, in the feed-forward layer does not have those dependencies, \item thus the various paths can be executed in parallel while flowing through the feed-forward layer.
+\end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Block: Positional Encoding}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Self Attention}
+\end{center}
+\end{frame}
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Dot-Product Attention}
+
+
+      % \begin{itemize}
+			% \item Inputs: a query q and a set of key-value (k-v) pairs to an output
+			% \item Query, keys, values, and output are all vectors
+			% \item Output is weighted sum of values, where
+			% \item Weight of each value is computed by an inner product of query and corresponding key
+			% \item Queries and keys have same dimensionality $d_k$ , value have $d_v$
+			% \end{itemize}
+			
+			% \begin{center}
+			% \includegraphics[width=0.4\linewidth,keepaspectratio]{bert73}
+			% \end{center}		
+			
+			% % {\tiny (Ref: CS224n: Natural Language Processing with Deep Learning - Christopher Manning)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Matrix notation}
+
+
+      % \begin{itemize}
+			% \item Inputs: a query q and a set of key-value (k-v) pairs to an output
+			% \item Query, keys, values, and output are all vectors
+			% \item Output is weighted sum of values, where
+			% \item Weight of each value is computed by an inner product of query and corresponding key
+			% \item Queries and keys have same dimensionality $d_k$ , value have $d_v$
+			% \end{itemize}
+			
+			% \begin{center}
+			% \includegraphics[width=0.8\linewidth,keepaspectratio]{bert74}
+			% \end{center}		
+			
+			% % {\tiny (Ref: CS224n: Natural Language Processing with Deep Learning - Christopher Manning)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Key-Query-Value Attention}
+
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert75}
+			% \end{center}		
+			
+% % {\tiny (Ref: Language \& Machine Learning - John Hewitt)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Key-Query-Value Attention}
+
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert76}
+			% \end{center}		
+			
+% % {\tiny (Ref: Language \& Machine Learning - John Hewitt)}
+
+% \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Multi-head Attention}
+\end{center}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Multi-headed attention}
+
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert77}
+			% \end{center}		
+			
+% % {\tiny (Ref: Language \& Machine Learning - John Hewitt)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{The Transformer Encoder: Multi-headed attention}
+
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert78}
+			% \end{center}		
+			
+% % {\tiny (Ref: Language \& Machine Learning - John Hewitt)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Attention visualization in layer 5}
+
+			
+			% \begin{center}
+			% \includegraphics[width=0.8\linewidth,keepaspectratio]{bert79}
+			% \end{center}		
+			
+			% % {\tiny (Ref: CS224n: Natural Language Processing with Deep Learning - Christopher Manning)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Attention visualization: Implicit anaphora resolution}
+
+			
+			% \begin{center}
+			% \includegraphics[width=0.6\linewidth,keepaspectratio]{bert80}
+			% \end{center}		
+			
+			% In 5th layer. Isolated attentions from just the word ‘its’ for attention heads 5 and 6.  Note that the attentions are very sharp for this word.
+
+			
+			% % {\tiny (Ref: CS224n: Natural Language Processing with Deep Learning - Christopher Manning)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Parallel attention heads}
+
+			
+			% \begin{center}
+			% \includegraphics[width=0.6\linewidth,keepaspectratio]{bert81}
+			% \end{center}		
+			
+		
+			% % {\tiny (Ref: Ashish Vaswani)}
+
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Add \& Norm}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Feed Forward}
+\end{center}
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Residual connections}
+
+			% The Transformer Encoder: Residual connections [He et al., 2016]
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert82}
+			% \end{center}		
+			
+		
+			% % {\tiny (Ref: John Hewitt)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Layer normalization}
+% The Transformer Encoder: Layer normalization [Ba et al., 2016]
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert83}
+			% \end{center}		
+			
+		
+			% % {\tiny (Ref: John Hewitt)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{ Softmax}
+
+			% The Transformer Encoder: Scaled Dot Product [Vaswani et al., 2017]
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert84}
+			% \end{center}		
+			
+		
+			% % {\tiny (Ref: John Hewitt)}
+
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Encoder side is ready with latent space, parallel word embedding of the input sentence ie BERT}
+\end{center}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Decoder Side}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Output Embedding plus Positional Encoding}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Masked Attention}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Masked Multi-head Attention}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Linear plus Softmax}
+\end{center}
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Attending Encoder side}
+
+% The Transformer Encoder: Scaled Dot Product [Vaswani et al., 2017]
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert85}
+			% \end{center}		
+			
+		
+			% % {\tiny (Ref: John Hewitt)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Attending Encoder side}
+
+			% The Transformer Encoder: Scaled Dot Product [Vaswani et al., 2017]
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert86}
+			% \end{center}		
+			
+		
+			% % {\tiny (Ref: John Hewitt)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Attending Encoder side}
+
+						% The Transformer Encoder: Scaled Dot Product [Vaswani et al., 2017]
+
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert87}
+			% \end{center}		
+			
+		
+			% % {\tiny (Ref: John Hewitt)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Attending Encoder side}
+
+						% The Transformer Encoder: Scaled Dot Product [Vaswani et al., 2017]
+
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert88}
+			% \end{center}		
+			
+		
+			% % {\tiny (Ref: John Hewitt)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Cross-attention}
+
+			% The Transformer Decoder: Cross-attention (details)
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert89}
+			% \end{center}		
+			
+		
+			% % {\tiny (Ref: John Hewitt)}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Cross-attention}
+
+			% The Transformer Decoder: Cross-attention (details)
+			
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{bert90}
+			% \end{center}		
+			
+			% % {\tiny (Ref: John Hewitt)}
+
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Backpropogation during training}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Decoder only workflow}
+\end{center}
+\end{frame}
