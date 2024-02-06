@@ -250,6 +250,25 @@ Next, let’s look at the Transformer Encoder and Decoder Blocks in action
   \end{columns}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Flow of Vectors in Encoder Block}
+
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{encoder_with_tensors_block_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+
+\begin{itemize}
+\item The word at each position passes through a self-attention process. 
+\item Then, they each pass through a feed-forward neural network -- the exact same network with each vector flowing through it separately.
+\item Meaning ALL weights in these cells, block are same for ALL words going through in each epoch, of course they get adjusted during back propagation.
+\end{itemize}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -259,12 +278,240 @@ Next, let’s look at the Transformer Encoder and Decoder Blocks in action
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why?}
+
+
+\begin{itemize}
+\item In languages like English (unlike Sanskrit) word order matters, meaning 'Suresh ate chicken' and 'chicken ate Suresh' are two different things.
+\item As input is all word vectors together, parallel, (unlike RNN or LSTM where they are sequential ie one after another, there the order is preserved), the sense of position is lost.
+\item Need to add that information by unique position value/signature.
+\item A cool mechanism (similar to Fourier Transform) was employed.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Representing The Order of The Sequence Using Positional Encoding}
+
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_attention_heads_z_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item In languages like English (unlike Sanskrit) word order matters, meaning 'Suresh ate chicken' and 'chicken ate Suresh' are two different things.
+\item As input is all word vectors together, parallel, (unlike RNN or LSTM where they are sequential ie one after another, there the order is preserved), the sense of position is lost.
+\item Need to add that information by unique position value/signature.
+\item A cool mechanism (similar to Fourier Transform) was employed.
+\end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large Self Attention}
 \end{center}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self-Attention at a High Level}
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_self-attention_visualization_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item ``The animal didn't cross the street because it was too tired'', what ``it'' refers to?
+\item  the street or to the animal?
+\item For “it”, self-attention mechanism (some how, or should) allows it to associate “it” with “animal”.
+\item ie for each word (each position in the input sequence), self attention allows it to look at other positions in the input sequence for clues that can help lead to a better encoding for this word.
+\item Lets see how that can be achieved.
+\end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self-Attention in Principle}
+
+
+\begin{itemize}
+\item Slight digression: lets say you have database of key($k$)-value($v$) pairs, then you have a query ($q$), which needs to go and search in the database and get corresponding or closest value.
+\item So, $q$ is matched (similarity) with all $k$s, whichever matches most, its $v$ is returned.
+\item Same mechanism is used to create self-attention score.
+\item For each word-vector in the sentence ($q$), we find similarity with $k$ vectors or all the words, which ever matches most, its $v$ vector is returned.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self-Attention in Detail}
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_self_attention_vectors_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item Create three vectors from each of the encoder’s input vectors (in this case, the embedding of each word). 
+\item So for each word, we create a Query vector, a Key vector, and a Value vector. \item These vectors are created by multiplying the embedding by three matrices, which are trained during the training process.
+\end{itemize}
+    \end{column}
+  \end{columns}
+  
+  Multiplying $x_1$ by the $W^Q$ weight matrix produces $q_1$, the ``query`` vector associated with that word. We end up creating a ``query'', a ``key'', and a ``value'' projection of each word in the input sentence.
+  
+  Note: new vectors are smaller, 64, while the embedding and encoder input/output vectors have dimensionality of 512. They don’t HAVE to be smaller, just a choice.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self-Attention Scores}
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_self_attention_score_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item Calculating the self-attention for the first word in this example, “Thinking”. 
+\item Need to score each word of the input sentence against this word, thats its importance wrt that word
+\item score = dot product of words query vector with key vector of the running words. Each is a single scalar value. So, score for first word $w_1 = q_1 k_1 + q_1 k_2 + \ldots$
+\end{itemize}
+    \end{column}
+  \end{columns}
+
+* Please note that in the diagram the Embedding vectors also include positional encoding incorporated inside.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self-Attention Scores}
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{self-attention_softmax_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item Divide the scores by 8 (the square root of the dimension of the key vectors used in the paper – 64. 
+\item This leads to having more stable gradients. There could be other possible values here, but this is the default), 
+\item then pass the result through a softmax that normalizes from 0 to 1
+
+\end{itemize}
+    \end{column}
+  \end{columns}
+  
+   Note: Clearly word with itself will have the highest softmax score, thats ok
+ but then next matching-high scores have importance
+
+* Please note that in the diagram the Embedding vectors also include positional encoding incorporated inside.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self-Attention Scores with Value Vectors}
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{self-attention-output_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item Multiply each value vector by the softmax scores respectively
+\item The intuition here is to keep intact the values of the word(s) we want to focus on, and drown-out irrelevant words, basically weighted per position.
+\item The last step is to sum up the weighted value vectors.
+\item This produces the output of the self-attention layer at this position (for the first word).
+\end{itemize}
+    \end{column}
+  \end{columns}
+
+* Please note that in the diagram the Embedding vectors also include positional encoding incorporated inside.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self-Attention Scores in a Matrix Way}
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{self-attention-matrix-calculation_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item Assuming two words in the sentence, so number of rows are two, num columns are 512 (but shown 4 just for brevity) and the q/k/v vectors (64, or 3 boxes in the figure)
+\item  Calculate the Query, Key, and Value matrices. 
+\item Input sentence vector is matrix $X$, and multiplying it by the weight matrices to be trained ($W^Q, W^K, W^V$).
+\end{itemize}
+    \end{column}
+  \end{columns}
+
+* Please note that in the diagram the Embedding vectors $X$ also include positional encoding incorporated inside.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self-Attention Scores in a single formula}
+
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{self-attention-matrix-calculation-2_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+\end{frame}
+
 
 
 
@@ -340,6 +587,133 @@ Next, let’s look at the Transformer Encoder and Decoder Blocks in action
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Beast With Many Heads}
+
+Having multiple self attention helps:
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_attention_heads_qkv_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item Expands the model’s ability to focus on different positions. Because each weight matrices of Q K V are initialized randomly, they can get settled differently, and also differently for different sentences.
+\item Paper uses 8 heads in a single multi-head self attention cell.
+\item ie Each of these sets is randomly initialized. Then, after training, each set is used to project the input embeddings (or vectors from lower encoders/decoders) into a different representation subspace.
+\end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Beast With Many Heads}
+
+Having multiple self attention helps:
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_attention_heads_z_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item One problem though. 
+\item The next feed-forward layer is not expecting eight matrices – it’s expecting a single matrix (a vector for each word). So we need a way to condense these eight down into a single matrix.
+\item How do we do that? 
+\end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Beast With Many Heads}
+
+Having multiple self attention helps:
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_attention_heads_weight_matrix_o_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item  We concat the matrices then multiply them by an additional weights matrix $W^O$.
+\end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self Attention in Summary}
+
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_multi-headed_self-attention-recap_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}	
+
+
+* Please note that in the diagram the Embedding vectors $X$ also include positional encoding incorporated inside.	
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self Attention in Summary Example}
+
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_self-attention_visualization_2_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}	
+
+
+As we encode the word "it", one attention head is focusing most on "the animal", while another is focusing on "tired" -- in a sense, the model's representation of the word "it" bakes in some of the representation of both "animal" and "tired".
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self Attention in Summary Example}
+
+
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_self-attention_visualization_3_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}	
+
+If we add all the attention heads to the picture, however, things can be harder to interpret, but thats what happens.
+
+This is how Self-Attention block generates, ``attended'' vectors.
+
+\end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \begin{frame}[fragile]\frametitle{Multi-headed attention}
