@@ -298,7 +298,9 @@ Next, let’s look at the Transformer Encoder and Decoder Blocks in action
 \begin{columns}
     \begin{column}[T]{0.5\linewidth}
 \begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{transformer_attention_heads_z_jay}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_positional_encoding_vectors_jay}
+
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_positional_encoding_example_jay}
 
 
 {\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
@@ -308,13 +310,18 @@ Next, let’s look at the Transformer Encoder and Decoder Blocks in action
     \begin{column}[T]{0.5\linewidth}
 
 \begin{itemize}
-\item In languages like English (unlike Sanskrit) word order matters, meaning 'Suresh ate chicken' and 'chicken ate Suresh' are two different things.
-\item As input is all word vectors together, parallel, (unlike RNN or LSTM where they are sequential ie one after another, there the order is preserved), the sense of position is lost.
-\item Need to add that information by unique position value/signature.
-\item A cool mechanism (similar to Fourier Transform) was employed.
+\item Special pattern based vectors encode position or the distance between different words in the sequence. 
+\item Using sine waves of different phase lags and amplitude to create unique set of basis functions, equal to number of words in the sentence.
+\item They are added to input word embedding.
 \end{itemize}
     \end{column}
   \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Positional Patterns}
+
+TBD
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -686,7 +693,7 @@ Having multiple self attention helps:
 
 
 \begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{transformer_self-attention_visualization_2_jay}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_self-attention_visualization_2_jay}
 
 
 {\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
@@ -703,7 +710,7 @@ As we encode the word "it", one attention head is focusing most on "the animal",
 
 
 \begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{transformer_self-attention_visualization_3_jay}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_self-attention_visualization_3_jay}
 
 
 {\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
@@ -786,11 +793,59 @@ This is how Self-Attention block generates, ``attended'' vectors.
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Residuals}
+
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_resideual_layer_norm_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+Each sub-layer (self-attention, ffnn) in each encoder has a residual connection around it, and is followed by a layer-normalization step.
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Visualize The Residuals}
+
+Visualize the vectors and the layer-norm operation associated with self attention, it would look like this:
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_resideual_layer_norm_2_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Also for the Decoder}
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_resideual_layer_norm_3_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large Feed Forward}
 \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feed Forward}
+
+TBD
 \end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -842,11 +897,62 @@ This is how Self-Attention block generates, ``attended'' vectors.
 
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large Decoder Side}
 \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Decoder Side - Overview}
+
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{transformer_decoding_1_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}	
+
+
+The output of the top encoder is then transformed into a set of attention vectors K and V. These are to be used by each decoder in its “encoder-decoder attention” layer which helps the decoder focus on appropriate places in the input sequence.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Decoder Side - Overview}
+
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{transformer_decoding_2_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}	
+
+
+The following steps repeat the process until a special symbol is reached indicating the transformer decoder has completed its output. The output of each step is fed to the bottom decoder in the next time step, and the decoders bubble up their decoding results just like the encoders did.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Decoder Side - Overview}
+
+
+
+\begin{itemize}
+  \item In the decoder, self-attention layers differ from those in the encoder.
+    \begin{itemize}
+      \item The self-attention layer in the decoder can only attend to earlier positions in the output sequence.
+      \item This is achieved by masking future positions (setting them to $-\infty$) before the softmax step in the self-attention calculation.
+    \end{itemize}
+  \item The "Encoder-Decoder Attention" layer functions similarly to multiheaded self-attention.
+    \begin{itemize}
+      \item It generates its Queries matrix from the layer below it.
+      \item The Keys and Values matrix are taken from the output of the encoder stack.
+    \end{itemize}
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -877,6 +983,46 @@ This is how Self-Attention block generates, ``attended'' vectors.
 {\Large Linear plus Softmax}
 \end{center}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Final Linear and Softmax Layer}
+
+\begin{itemize}
+  \item The decoder stack produces a vector of floats as its output.
+  \item How do we turn that into a word? That’s the job of the final Linear layer which is followed by a Softmax Layer.
+  \item The Linear layer is a fully connected neural network projecting the decoder stack's output vector into a much larger vector known as a logits vector.
+    \begin{itemize}
+      \item Assuming a model vocabulary of 10,000 unique English words, the logits vector has 10,000 cells, each corresponding to the score of a unique word.
+    \end{itemize}
+  \item The softmax layer transforms these scores into probabilities, ensuring they are all positive and sum up to 1.0.
+    \begin{itemize}
+      \item The cell with the highest probability determines the chosen word, which serves as the output for the current time step.
+    \end{itemize}
+  \item Given a final vector from the neural network,
+    \begin{itemize}
+      \item This vector is expanded to a vocabulary-long vecto via $ m \times n$ neural network.
+      \item Output is through a softmax function, causing the values to be compressed to the range of 0 to 1.
+      \item Each value can be interpreted as a probability.
+    \end{itemize}
+  \item The index in the vocabulary vector with the highest probability determines the output word.
+	
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Final Linear and Softmax Layer}
+
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_decoder_output_softmax_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}	
+
+\end{frame}
+
+
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \begin{frame}[fragile]\frametitle{Attending Encoder side}
@@ -968,6 +1114,118 @@ This is how Self-Attention block generates, ``attended'' vectors.
 {\Large Backpropogation during training}
 \end{center}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pre-training workflow}
+
+% \begin{columns}
+    % \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=0.7\linewidth,keepaspectratio]{one-hot-vocabulary-example_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		% \end{column}
+    % \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item During training, an untrained model would go through the exact same forward pass. 
+\item  But we have labeled dataset, ie inputs as well as output sentences. 
+\item Say, vocab is of 6 words and using one hot encoding.
+\item Assume our training sentences have only one pair, 'merci' and 'thanks'
+\end{itemize}
+    % \end{column}
+  % \end{columns}	
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Loss Function}
+
+% \begin{columns}
+    % \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_logits_output_and_label_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		% \end{column}
+    % \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item Goal: For "merci", we want the output to be a probability distribution indicating the word “thanks”. 
+\item But since this model is not yet trained (meaning all weight matrices have random values), that’s unlikely to happen just yet.
+\end{itemize}
+    % \end{column}
+  % \end{columns}	
+
+\begin{itemize}
+\item How do you compare two probability distributions? 
+\item Say, we simply subtract one from the other. (For more details, look at cross-entropy and Kullback–Leibler divergence.)
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Loss Function - More complex example}
+
+For example – input: ``je suis etudiant'' and expected output: ``i am a student''. We want our model to successively output probability distributions where:
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{output_target_probability_distributions_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item Each probability distribution is represented by a vector of width vocab\_size (6 in our toy example, but more realistically a number like 30,000 or 50,000)
+\item The first probability distribution has the highest probability at the cell associated with the word “i”
+\item The second probability distribution has the highest probability at the cell associated with the word “am”
+\item And so on, until the fifth output distribution indicates ‘<EOS>’ symbol, which also has a cell associated with it from the 10,000 element vocabulary.
+\end{itemize}
+    \end{column}
+  \end{columns}	
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Loss Function - More complex example}
+
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{output_trained_model_probability_distributions_jay}
+
+
+{\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
+\end{center}		
+
+ We repeat this for positions \#2 and \#3…etc. This method is called “beam search”
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item Now, because the model produces the outputs one at a time, we can assume that the model is selecting the word with the highest probability from that probability distribution and throwing away the rest (greedy decoding)
+\item Another way, take top 2, (say, ‘I’ and ‘a’ for example), then in the next step, run the model twice: once assuming the first output position was the word ‘I’, and another time assuming the first output position was the word ‘a’, and whichever version produced less error considering both positions \#1 and \#2 is kept.
+\end{itemize}
+    \end{column}
+  \end{columns}	
+
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
