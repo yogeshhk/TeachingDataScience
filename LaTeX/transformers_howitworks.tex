@@ -206,7 +206,23 @@ Next, let’s look at the Transformer Encoder and Decoder Blocks in action
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Convert Word to Vectors}
+\begin{frame}[fragile]\frametitle{Convert Sentence to Tokens}
+
+
+\begin{itemize}
+\item Each word can be one or more tokens
+\item Subword tokenization, prefixes, suffixes, etc
+\item Highly Language dependent, imagine Sanskrit tokenization
+\item Each model will have its corresponding tokenizer, thusr forming vocabulary array, word-to-id
+\item ``I love cats''  could be tokenised to $[816, 8129, 312]$
+\end{itemize}
+
+For now, we can use `Toekn` and `Word` synonymously.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Convert Tokens to Vectors}
 
 
 \begin{center}
@@ -224,6 +240,11 @@ Next, let’s look at the Transformer Encoder and Decoder Blocks in action
 \item After embedding the words in our input sequence, each of them flows through each of the two layers of the encoder.
 \end{itemize}
 
+% \begin{lstlisting}
+% I: [0.34, -0.21, 1.21]
+% love: [-1.36, 0.98, 0.23]
+% cats: [0.54, 0.68, 0.49]
+% \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -286,10 +307,33 @@ Next, let’s look at the Transformer Encoder and Decoder Blocks in action
 \item In languages like English (unlike Sanskrit) word order matters, meaning 'Suresh ate chicken' and 'chicken ate Suresh' are two different things.
 \item As input is all word vectors together, parallel, (unlike RNN or LSTM where they are sequential ie one after another, there the order is preserved), the sense of position is lost.
 \item Need to add that information by unique position value/signature.
+\item There are many reasons why a single number, such as the index value, is not used to represent an item’s position in transformer models. 
+\item For long sequences, the indices can grow large in magnitude. 
+\item If you normalize the index value to lie between 0 and 1, it can create problems for variable length sequences as they would be normalized differently.
 \item A cool mechanism (similar to Fourier Transform) was employed.
 \end{itemize}
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What?}
+
+\begin{lstlisting}
+Position 1: [0.1, 0.2, 0.3]
+Position 2: [0.4, 0.5, 0.6]
+Position 3: [0.7, 0.8, 0.9]
+
+Combine Embeddings and Positional Encodings
+
+I (position 1) = [0.34 + 0.1, -0.21 + 0.2, 1.21 + 0.3] = [0.44, -0.01, 1.51]
+love (position 2) = [-1.36 + 0.4, 0.98 + 0.5, 0.23 + 0.6] = [-0.96, 1.48, 0.83]
+cats (position 3) = [0.54 + 0.7, 0.68 + 0.8, 0.49 + 0.9] = [1.24, 1.48, 1.39]
+\end{lstlisting}
+
+
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Representing The Order of The Sequence Using Positional Encoding}
@@ -321,8 +365,54 @@ Next, let’s look at the Transformer Encoder and Decoder Blocks in action
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Positional Patterns}
 
-TBD
+\begin{itemize}
+\item The Position Encoding is computed independently of the input sequence. 
+\item These are fixed values that depend only on the max length of the sequence. 
+\end{itemize}
+
+$PE_{(pos,2i)} = sin(pos/n^{2i/d_{model}})$
+$PE_{(pos,2i+1)} = cos(pos/n^{2i/d_{model}})$
+
+\begin{itemize}
+\item $pos$ is the position of the word in the sequence
+\item $n$ isUser-defined scalar, set to 10,000 by the authors of Attention Is All You Need.
+\item $d_{model}$ is the length of the encoding vector (same as the embedding vector) and
+\item $i$ is the index value into this vector.Used for mapping to column indices $0 \leq i < d/2$ , with a single value of $i$
+ maps to both sine and cosine functions
+\end{itemize}
+
+{\tiny (Ref: Transformers Explained Visually - How it works, step-by-step - Ketan Doshi)}
+
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Mechanism}
+
+Each position/index is mapped to a vector
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{positional_encoding_1}
+
+
+{\tiny (Ref: ``A Gentle Introduction to Positional Encoding in Transformer Models, Part 1'' - Mehreen Saeed)}
+\end{center}		
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example}
+
+Each position/index is mapped to a vector
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{positional_encoding_2}
+
+
+{\tiny (Ref: ``A Gentle Introduction to Positional Encoding in Transformer Models, Part 1'' - Mehreen Saeed)}
+\end{center}		
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
@@ -364,11 +454,42 @@ TBD
 \begin{itemize}
 \item Slight digression: lets say you have database of key($k$)-value($v$) pairs, then you have a query ($q$), which needs to go and search in the database and get corresponding or closest value.
 \item So, $q$ is matched (similarity) with all $k$s, whichever matches most, its $v$ is returned.
-\item Same mechanism is used to create self-attention score.
-\item For each word-vector in the sentence ($q$), we find similarity with $k$ vectors or all the words, which ever matches most, its $v$ vector is returned.
+% \item Same mechanism is used to create self-attention score.
+% \item For each word-vector in the sentence ($q$), we find similarity with $k$ vectors or all the words, which ever matches most, its $v$ vector is returned.
+\item The Query word can be interpreted as the word for which we are calculating Attention. The Key and Value word is the word to which we are paying attention ie. how relevant is that word to the Query word.
+\item For example, for the sentence, “The ball is blue”, the row for the word “blue” will contain the attention scores for “blue” with every other word. Here, “blue” is the Query word, and the other words are the “Key/Value”.
 \end{itemize}
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self-Attention in Principle}
+
+
+$W_q$, $W_k$, and $W_v$ are learned during training and are shared between all of the embedding vectors.
+
+\begin{lstlisting}
+I = `[0.44, -0.01, 1.51]`
+love = `[-0.96, 1.48, 0.83]`
+cats  = `[1.24, 1.48, 1.39]`
+
+``I'' = 
+`[0.44, -0.01, 1.51] * W_q = Q_1` 
+`[0.44, -0.01, 1.51] * W_k = K_1`
+`[0.44, -0.01, 1.51] * W_v = V_1`
+
+``love'' = 
+`[-0.96, 1.48, 0.83] * W_q = Q_2`  
+`[-0.96, 1.48, 0.83] * W_k = K_2`  
+`[-0.96, 1.48, 0.83] * W_v = V_2`  
+
+``cats'' = 
+`[1.24, 1.48, 1.39] * W_q = Q_3`  
+`[1.24, 1.48, 1.39] * W_k = K_3`  
+`[1.24, 1.48, 1.39] * W_v = V_3` 
+\end{lstlisting}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Self-Attention in Detail}
@@ -413,7 +534,7 @@ TBD
     \begin{column}[T]{0.5\linewidth}
 
 \begin{itemize}
-\item Calculating the self-attention for the first word in this example, “Thinking”. 
+\item Calculating the self-attention for the first word in this example, ``Thinking''. 
 \item Need to score each word of the input sentence against this word, thats its importance wrt that word
 \item score = dot product of words query vector with key vector of the running words. Each is a single scalar value. So, score for first word $w_1 = q_1 k_1 + q_1 k_2 + \ldots$
 \end{itemize}
@@ -520,6 +641,20 @@ TBD
 \end{frame}
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Self Attention Summary}
+
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_self_attention_summary}
+
+
+{\tiny (Ref: ``Transformers Explained Visually (Part 1): Overview of Functionality'' - Ketan Doshi)}
+\end{center}		
+
+
+\end{frame}
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -691,35 +826,41 @@ Having multiple self attention helps:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Self Attention in Summary Example}
 
-
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
 \begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_self-attention_visualization_2_jay}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_self-attention_visualization_2_jay}
 
 
 {\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
 \end{center}	
-
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
 
 As we encode the word "it", one attention head is focusing most on "the animal", while another is focusing on "tired" -- in a sense, the model's representation of the word "it" bakes in some of the representation of both "animal" and "tired".
-
+    \end{column}
+  \end{columns}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Self Attention in Summary Example}
 
-
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
 
 \begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_self-attention_visualization_3_jay}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_self-attention_visualization_3_jay}
 
 
 {\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
 \end{center}	
-
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
 If we add all the attention heads to the picture, however, things can be harder to interpret, but thats what happens.
 
 This is how Self-Attention block generates, ``attended'' vectors.
-
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -789,6 +930,45 @@ This is how Self-Attention block generates, ``attended'' vectors.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
+{\Large Feed Forward}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feed Forward}
+
+\begin{itemize}
+\item The feed-forward layer operates on the output of the multi-headed self-attention layer.
+\item It treats each position of the global representation independently.
+\item It does not take the relationship between elements into consideration.
+\item The feed-forward layers contain weights that are tuned during training.
+\item There are two linear transformations/layers ($W_1,W_2$) with a non-linear activation function (usually ReLU) in between. 
+\item This non-linearity allows the model to capture complex relationships in data, relationships which aren’t directly related.
+\item The result of the feed-forward layer is added back to the global\_representation matrix through a residual connection
+\item Note that  that this operation is addition, rather than concatenation. This means that residual\_output is the global\_representation matrix enhanced by the knowledge gleaned from the feed-forward neural network.
+\item residual\_output is normalised. This step is necessary to reduce internal covariate shift and stabilise training. To put it simply, if internal parameters change too rapidly between each layer the model cannot learn properly.
+\end{itemize}
+
+
+{\tiny (Ref: Unlocking the Transformer: Advancing Technology From RNNs and LSTMs - Anthony Gavriel)}
+
+
+\begin{lstlisting}
+FNN_output_1 = ReLU((i_output * W1 + b1)) * W2 + b2
+FNN_output_2 = ReLU((love_output * W1 + b1)) * W2 + b2
+FNN_output_3 = ReLU((cats_output * W1 + b1)) * W2 + b2
+
+residual_output = global_representation + FNN_output_1 + FNN_output_2 + FNN_output_3
+
+\end{lstlisting}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
 {\Large Add \& Norm}
 \end{center}
 \end{frame}
@@ -835,18 +1015,6 @@ Visualize the vectors and the layer-norm operation associated with self attentio
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large Feed Forward}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Feed Forward}
-
-TBD
-\end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \begin{frame}[fragile]\frametitle{Residual connections}
@@ -891,8 +1059,15 @@ TBD
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Encoder side is ready with latent space, parallel word embedding of the input sentence ie BERT}
+{\Large Encoder side is done}
 \end{center}
+
+\begin{itemize}
+\item The encoder blocks then produce a final output, encoding. This vector is a rich, condensed representation of the most important information from the input.
+\item So, ready with latent space, parallel word embedding of the input sentence ie BERT
+\item The decoder uses self-attention and feed-forward layers, just like the encoder, however it has an additional component, the encoder-decoder attention layer. This layer allows the decoder to focus on significant places from the input sequence.
+\end{itemize}
+
 \end{frame}
 
 
@@ -917,7 +1092,7 @@ TBD
 \end{center}	
 
 
-The output of the top encoder is then transformed into a set of attention vectors K and V. These are to be used by each decoder in its “encoder-decoder attention” layer which helps the decoder focus on appropriate places in the input sequence.
+The output of the top encoder is then transformed into a set of attention vectors K and V. These are to be used by each decoder in its ``encoder-decoder attention'' layer which helps the decoder focus on appropriate places in the input sequence.
 
 \end{frame}
 
@@ -1157,7 +1332,7 @@ The following steps repeat the process until a special symbol is reached indicat
     % \begin{column}[T]{0.5\linewidth}
 
 \begin{itemize}
-\item Goal: For "merci", we want the output to be a probability distribution indicating the word “thanks”. 
+\item Goal: For "merci", we want the output to be a probability distribution indicating the word ``thanks''. 
 \item But since this model is not yet trained (meaning all weight matrices have random values), that’s unlikely to happen just yet.
 \end{itemize}
     % \end{column}
@@ -1190,8 +1365,8 @@ For example – input: ``je suis etudiant'' and expected output: ``i am a studen
 
 \begin{itemize}
 \item Each probability distribution is represented by a vector of width vocab\_size (6 in our toy example, but more realistically a number like 30,000 or 50,000)
-\item The first probability distribution has the highest probability at the cell associated with the word “i”
-\item The second probability distribution has the highest probability at the cell associated with the word “am”
+\item The first probability distribution has the highest probability at the cell associated with the word ``i''
+\item The second probability distribution has the highest probability at the cell associated with the word ``am''
 \item And so on, until the fifth output distribution indicates ‘<EOS>’ symbol, which also has a cell associated with it from the 10,000 element vocabulary.
 \end{itemize}
     \end{column}
@@ -1212,7 +1387,7 @@ For example – input: ``je suis etudiant'' and expected output: ``i am a studen
 {\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
 \end{center}		
 
- We repeat this for positions \#2 and \#3…etc. This method is called “beam search”
+ We repeat this for positions \#2 and \#3…etc. This method is called ``beam search''
 		\end{column}
     \begin{column}[T]{0.5\linewidth}
 
@@ -1225,11 +1400,115 @@ For example – input: ``je suis etudiant'' and expected output: ``i am a studen
 
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pre-training workflow Summary}
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
+\begin{columns}
+     \begin{column}[T]{0.5\linewidth}
 \begin{center}
-{\Large Decoder only workflow}
-\end{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_training}
+
+
+{\tiny (Ref: ``Transformers Explained Visually (Part 1): Overview of Functionality'' - Ketan Doshi)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item The input sequence is converted into Embeddings (with Position Encoding) and fed to the Encoder.
+\item The stack of Encoders processes this and produces an encoded representation of the input sequence.
+\item The target sequence is prepended with a start-of-sentence token, converted into Embeddings (with Position Encoding), and fed to the Decoder.
+\end{itemize}
+    \end{column}
+  \end{columns}	
+
 \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pre-training workflow Summary}
+
+\begin{columns}
+     \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_training}
+
+
+{\tiny (Ref: ``Transformers Explained Visually (Part 1): Overview of Functionality'' - Ketan Doshi)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item The stack of Decoders processes this along with the Encoder stack’s encoded representation to produce an encoded representation of the target sequence.
+\item The Output layer converts it into word probabilities and the final output sequence.
+\item The Transformer’s Loss function compares this output sequence with the target sequence from the training data. This loss is used to generate gradients to train the Transformer during back-propagation
+\end{itemize}
+    \end{column}
+  \end{columns}	
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Inference workflow Summary}
+
+\begin{columns}
+     \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_inference}
+
+
+{\tiny (Ref: ``Transformers Explained Visually (Part 1): Overview of Functionality'' - Ketan Doshi)}
+\end{center}		
+
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item The input sequence is converted into Embeddings (with Position Encoding) and fed to the Encoder.
+\item The stack of Encoders processes this and produces an encoded representation of the input sequence.
+\item Instead of the target sequence, we use an empty sequence with only a start-of-sentence token. This is converted into Embeddings (with Position Encoding) and fed to the Decoder.
+\item The stack of Decoders processes this along with the Encoder stack’s encoded representation to produce an encoded representation of the target sequence.
+\end{itemize}
+    \end{column}
+  \end{columns}	
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Inference workflow Summary}
+
+\begin{columns}
+     \begin{column}[T]{0.5\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{transformer_inference}
+
+
+{\tiny (Ref: ``Transformers Explained Visually (Part 1): Overview of Functionality'' - Ketan Doshi)}
+\end{center}		
+
+Note that since the Encoder sequence does not change for each iteration, we do not have to repeat steps \#1 and \#2 each time.
+		\end{column}
+    \begin{column}[T]{0.5\linewidth}
+
+\begin{itemize}
+\item The Output layer converts it into word probabilities and produces an output sequence.
+\item We take the last word of the output sequence as the predicted word. That word is now filled into the second position of our Decoder input sequence, which now contains a start-of-sentence token and the first word.
+\item Go back to step \#3. As before, feed the new Decoder sequence into the model. Then take the second word of the output and append it to the Decoder sequence. Repeat this until it predicts an end-of-sentence token. 
+
+\end{itemize}
+    \end{column}
+  \end{columns}	
+
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{}
+% \begin{center}
+% {\Large Decoder only workflow}
+% \end{center}
+% \end{frame}
