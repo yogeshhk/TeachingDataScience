@@ -311,12 +311,17 @@ For now, we can use `Toekn` and `Word` synonymously.
 \item For long sequences, the indices can grow large in magnitude. 
 \item If you normalize the index value to lie between 0 and 1, it can create problems for variable length sequences as they would be normalized differently.
 \item A cool mechanism (similar to Fourier Transform) was employed.
+\item This mechanism is such that uniqueness/signature of a position is achieved and also the distance requirement is fulfilled, meaning neighboring words have less distance and vice versa.
 \end{itemize}
 
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{What?}
+
+{\bf Note}: Confirm that uniqueness/signature of a position is achieved and also the distance requirement is fulfilled, meaning neighboring words have less distance and vice versa.
+
+
 
 \begin{lstlisting}
 Position 1: [0.1, 0.2, 0.3]
@@ -362,6 +367,8 @@ cats (position 3) = [0.54 + 0.7, 0.68 + 0.8, 0.49 + 0.9] = [1.24, 1.48, 1.39]
   \end{columns}
 \end{frame}
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Positional Patterns}
 
@@ -377,13 +384,59 @@ $PE_{(pos,2i+1)} = cos(pos/n^{2i/d_{model}})$
 
 \begin{itemize}
 \item $pos$ is the position of the word in the sequence
-\item $n$ isUser-defined scalar, set to 10,000 by the authors of Attention Is All You Need.
+\item $n$ is User-defined scalar, set to 10,000 by the authors of Attention Is All You Need.
 \item $d_{model}$ is the length of the encoding vector (same as the embedding vector) and
 \item $i$ is the index value into this vector.Used for mapping to column indices $0 \leq i < d/2$ , with a single value of $i$
  maps to both sine and cosine functions
 \end{itemize}
 
 {\tiny (Ref: Transformers Explained Visually - How it works, step-by-step - Ketan Doshi)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What Formula Means?}
+
+\begin{itemize}
+\item $pos$ is on x axis and encoded value is on y axis.
+\item If we had used just one wave, two words, say `Why' and `are` would have got same y value, so no use!!
+\item Have more waves, with phase lag and different frequencies (due to $2i/d_{model}$ part of the equation
+\item So, for these words, their y values for diff waves would be different, making them unique.
+\end{itemize}
+
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{positional_encoding_5}
+
+
+{\tiny (Ref: ``Attention is all you need || Transformers Explained || Quick Explained'' - Developers Hutt)}
+\end{center}		
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Mechanism}
+
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{positional_encoding_3}
+
+
+{\tiny (Ref: StatQuest with Josh Starmer)}
+\end{center}		
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Mechanism}
+
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{positional_encoding_4}
+
+
+{\tiny (Ref: StatQuest with Josh Starmer)}
+\end{center}		
 
 \end{frame}
 
@@ -835,7 +888,7 @@ Having multiple self attention helps:
 \end{center}	
 
 
-* Please note that in the diagram the Embedding vectors $X$ also include positional encoding incorporated inside.	
+* Please note that in the diagram the Embedding vectors $X$ also include positional encoding incorporated inside.	$R$ shown in the diagram refers to output of previous encoder cell to the next one. First the first cell, its $X$, but for the subsequent ones, its the output of the previous cell, that's $R$.
 
 \end{frame}
 
@@ -1003,6 +1056,7 @@ residual_output = global_representation + FNN_output_1 + FNN_output_2 + FNN_outp
 
 Each sub-layer (self-attention, ffnn) in each encoder has a residual connection around it, and is followed by a layer-normalization step.
 
+The dotted line means, sometimes, the self-attention block wont be considered/skipped and directed next Add/Normalize block is taken up.
 
 \end{frame}
 
@@ -1029,6 +1083,8 @@ Visualize the vectors and the layer-norm operation associated with self attentio
 
 {\tiny (Ref: ``The Illustrated Transformer'' - Jay Alammar)}
 \end{center}		
+
+Output of Encoders ($K$ and $V$) are passed to 'Cross Attention' layers of each decoder cell.
 
 \end{frame}
 
@@ -1159,6 +1215,68 @@ The following steps repeat the process until a special symbol is reached indicat
 \begin{center}
 {\Large Masked Attention}
 \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Masked Attention Need}
+
+
+
+\begin{itemize}
+  \item  we need masking to make the training parallel. And the parallelization is good as it allows the model to train faster.
+  \item  Example: to translate ``I love you'' to German
+  \item The encoder works in parallel mode, takes the input sequence ("I love you")  and produces the numbers 11, 12, 13 as the vector representations of the input sequence.
+  \item During the training we know that the translation should be ``Ich liebe dich'' with corresponding expected vector representations as 21, 22, 23.
+
+\end{itemize}
+
+{\tiny (Ref https://stackoverflow.com/questions/58127059/how-to-understand-masked-multi-head-attention-in-transformer)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Masked Attention Need}
+
+As we actually know the expected outputs we can adjust the process and make it parallel. There's no need to wait for the previous step output.
+
+\begin{itemize}
+  \item  Parallel operation \#A. Inputs: 11, 12, 13. Trying to predict 21.
+  \item Parallel operation \#B. Inputs: 11, 12, 13, and also 21. Trying to predict 22.
+	\item Parallel operation \#C. Inputs: 11, 12, 13, and also 21, 22. Trying to predict 23.
+\end{itemize}
+
+All input-output pairs are ready.
+
+{\tiny (Ref https://stackoverflow.com/questions/58127059/how-to-understand-masked-multi-head-attention-in-transformer)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Masked Attention Need}
+
+Now we can clearly see why masking is done.
+
+\begin{itemize}
+  \item  Say for Parallel operation \#A. Inputs: 11, 12, 13. As it is trying to predict 21, it should not see any of 21, 22, 23, right? so all are masked.
+  \item For Parallel operation \#B. Inputs: 11, 12, 13, and also 21. Trying to predict 22. Here we need 21, so thats unmasked, but 22, 23 are masked, as they to be predicted one by one. So here it hides  2nd and 3rd outputs.
+	\item For Parallel operation \#C. Inputs: 11, 12, 13, and also 21, 22. Trying to predict 23. It hides 3rd output.
+\end{itemize}
+
+{\tiny (Ref https://stackoverflow.com/questions/58127059/how-to-understand-masked-multi-head-attention-in-transformer)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Masked Attention Need}
+
+
+\begin{itemize}
+  \item   implementation is inside of scaled dot-product attention by masking out (setting to $\infty$ ) all values in the input of the softmax which correspond to illegal connections.
+  \item Note: during the inference (not training) the decoder works in the sequential (not parallel) mode as it doesn't know the output sequence initially. But it's different from RNN approach as Transformer inference still uses self-attention and looks at all previous outputs
+\end{itemize}
+
+{\tiny (Ref https://stackoverflow.com/questions/58127059/how-to-understand-masked-multi-head-attention-in-transformer)}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1526,6 +1644,56 @@ Note that since the Encoder sequence does not change for each iteration, we do n
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \begin{frame}[fragile]\frametitle{}
 % \begin{center}
-% {\Large Decoder only workflow}
+% {\Large Decoder only Transformer}
 % \end{center}
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Steps}
+
+% \begin{itemize}
+% \item Input: Prompt + $<EOS>$ (added internally)
+% \item Tokenize and covert all to vectors by same vectorizer, say word2vec
+% \item Add positional embedding
+% \item Masked self attention does similarity check with sentence, so far, with words added one at a time. So it looks at only past at that point in time. This is same Q K V calculation.
+% \end{itemize}
+
+% \begin{center}
+% \includegraphics[width=0.6\linewidth,keepaspectratio]{masked_self_attention_1}
+
+% {\tiny (Ref: Decoder-Only Transformers, ChatGPTs specific Transformer, Clearly Explained!!! - StatQuest with Josh Starmer)}
+% \end{center}
+
+% \end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Steps}
+
+% Multi head masked self attention
+
+% \begin{center}
+% \includegraphics[width=\linewidth,keepaspectratio]{masked_self_attention_2}
+
+% {\tiny (Ref: Decoder-Only Transformers, ChatGPTs specific Transformer, Clearly Explained!!! - StatQuest with Josh Starmer)}
+% \end{center}
+
+% \end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Steps}
+
+% \begin{itemize}
+% \item Add skip connection
+% \item Take the first word encoded output, put it in Feed Forward fully connected layer.
+% \item we already know the next word (within the prompt), that becomes output to be trained against.
+% \end{itemize}
+
+% \begin{center}
+% \includegraphics[width=0.6\linewidth,keepaspectratio]{decoder_only_1}
+
+% {\tiny (Ref: Decoder-Only Transformers, ChatGPTs specific Transformer, Clearly Explained!!! - StatQuest with Josh Starmer)}
+% \end{center}
+
 % \end{frame}
