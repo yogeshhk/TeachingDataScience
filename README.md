@@ -13,7 +13,7 @@ LinkedIn post: https://www.linkedin.com/feed/update/urn:li:activity:652300085738
 
 Copyright (C) 2019 Yogesh H Kulkarni
 
-## Steps for LaTeX source files to pdfs
+## Steps for Usage
 
 ### Code Arrangement
 *	LaTeX directory 
@@ -41,6 +41,12 @@ Copyright (C) 2019 Yogesh H Kulkarni
 * Run make bat for the course you need. Inside, its just a texify command, so you can modify it as per your OS.
 * You can compile individual "Main_Workshop/Seminar_<course>_CheatSheet/Presentation.tex" also using your LaTeX system.
 * Instead of these given driver files, you can have your own main files and include just the *content.tex files.
+
+### How to Contribute
+* Go to 'LaTeX' folder.
+* Copy your images into 'images' folder and source code to 'src' folder
+* Sample files are kept to copy and modify, they are `Main_Sample_Presentation.tex`, `Main_Sample_CheatSheet.tex`, both of them call `sample_content.tex`.
+* Fill your material directly in the content file or have further organization into multiple files and then `input` them in the content file.
 
 ## Disclaimer:
 * Author (firstnamelastname at yahoo dot com) gives no guarantee of the correctness of the content. Notes have been built using lots of publicly available material. 
