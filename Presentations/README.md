@@ -23,26 +23,60 @@
  -->
 
 ## Talks Playbook
-Avenues: Meetups, Colleges/Confs
+Avenues: LetsAI online series
 Logistics:
 - Day/time: Saturdays Mornings, 9 to 10 am, else NO
 - Pre-Talk:
     - Prep materials `_seminar.tex` and `ipynb` for 40 minutes talk and then QnA
-    - Create Google calendar event with Google Meet link
-    - Create Banner png 
-		- Create Meetup event with Google Meet link and Banner png, good intro text
-    - Advertise the Meetup link: my LinkedIn, Company Teams, WhatsApp groups
+    - Create Google calendar event with Google Meet link, 
+		- Add home-folks just in case needed, 
+		- Title: "Intro to <topic>| LetsAI Talks Series"  
+		- Copy Google Meet link for later use
+		- Check Settings in the Meet link, to disallow others to share screen,  to allow all to comment, etc
+		- Publish event copy that link as well
+    - Create Banner png
+		- Edit banner slide in AI Coach folder in gdrive
+		- Add topic, download as png
+	- Create LinkedIn event for the given date/time-slot
+		- Title: "Intro to <topic>| LetsAI Talks Series" 
+		- Use the banner pic, myself as speaker
+		- With external links mode, give Google meet link. 
+		- Add post with contents as below
+		```
+					-- LinkedIn Post --
+			Wish to share that the upcoming session in my 'LetsAI' talk series is on 'Introduction to <>'.
+
+			<Info about the topic>
+
+			The talk is open and free to all. However, to grasp the content, I recommend having a decent understanding of the following topics:
+			<Prerequisites>
+
+			Please check the Google Calendar invite below and save it to your calendar to block the time slot and get a reminder. 
+
+			<Published event link>
+
+			Direct Google Meet call link: <link>
+
+			Please join the call a few minutes early as Google Meet has limited seats and does not record the session. 😞
+
+			If you miss the session, you can access the slide deck on my GitHub yogeshhk/TeachingDataScience repo, in LaTeX format or email me for the PDF version to myfirstnamelastname at yahoo dot com.
+
+			The next session is tentatively planned on <which Saturday> and we will have a deeper dive into ‘<next topic>’. Please share your expectations about that topic in the comments.
+
+			#AI #MachineLearning #NaturalLanguageProcessing #GenerativeAI #LargeLanguageModels #FreeOnlineSessions #AIInitiative #StayTuned #aicoach #career #teaching #opensource #gde #mvp #mvpbuzz #neo4jninja #llms #genai #LetsAI #<topic>
+
+			Microsoft Google Google Developer Experts Google Cloud Community India GDG Pune GDG Cloud Pune TensorFlow User Group (TFUG) 
+	```
     - Copy material `Talks` folder, github sync
 		- No recording or YouTube streaming, content is open-sourced anyway
 - During Talk: [Simplify with Doodles (?, tablet)]
     - Take pictures or screenshots
     - At the end of the talk, 
 - Post-Talk:
-    - Fill GDE Advocu entry with picture taken
-    - Fill GDE New event survey link
-    - Share beamer pdf of the talk on meetup, post pictures there
+    - Fill GDE Advocu and MVP entry with picture taken
+    - Share beamer pdf of the talk if email comes
 
-## Courses Playbook
+<!-- ## Courses Playbook
 - Pick topic:
 	- a bit niche and not too broad, 
 	- theory or library or fast growing github repo ok. 
@@ -67,9 +101,9 @@ Logistics:
 		- Output gets stored in Videos folder
 - OpenShot to edit video, save to join
 - Handbrake to compress video
-
+ -->
  
-## Trainings/Talks
+## Training/Talks
 
 ### Seminar Topics (1-2 hours long)
 - Introduction to Artificial Intelligence (Non-technical)
