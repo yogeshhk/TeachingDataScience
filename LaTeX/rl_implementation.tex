@@ -1,0 +1,137 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Implementation}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{How to learn Policy?}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{rl51}
+\end{center}
+
+{\tiny (Ref: Which Reinforcement Learning Framework is the Best?)}
+
+‘rlib’ is part of `ray’ project.
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reinforcement Learning Work-flow}
+
+\begin{itemize}
+\item Create the Environment
+\item Define the reward
+\item Create the agent
+\item Train and validate the agent
+\item Deploy the policy
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{rl6}
+
+{\tiny (Ref: Reinforcement Learning Work-flow - KDNuggets)} 
+\end{center}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Problem: Frozen Lake Game}
+
+
+You need to walk from starting State ($S$) to the goal State ($G$) by walking on frozen tiles ($F$) only and avoiding holes ($H$).
+
+
+\begin{center}
+\includegraphics[width=0.4\linewidth,keepaspectratio]{rl5}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code}
+
+\begin{lstlisting}
+from tf_agents.environments import suite_gym
+
+# create the environment
+env = suite_gym("FrozenLake-v0")
+
+# create Q-table
+action_size = env.action_space.n
+state_size = env.state_space.n
+qtable = np.zeros((state_size,action_space))
+
+# parameters
+total_episodes = 30000
+learning_rate = 0.1
+max_steps = 100 # per episode
+gamma = 0.99
+epsilon = 1.0
+max_epsilon = 1.0
+min_epsilon = 0.01
+decay_rate = 0.01
+
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training}
+
+\begin{lstlisting}
+rewards = []
+for episode in range(total_episodes):
+	state = env.reset()
+	step = 0
+	done = False
+	total_rewards = 0
+	for step in range(max_steps):
+		exp_exp_tradeoff = random.uniform(0,1)
+		if exp_exp_tradeoff > epsilon: # exploitation
+			action = np.argmax(qtable[state,:])
+		else: # random, exploration
+			action = env.action_space.sample()
+		new_state, reward, done, info = env.step(action)
+		qtable[state,action] = qtable[state,action] + 
+		learning_rate * (reward + gamma * np.max(qtable[new_state,:]) 
+		- qtable[state,action]) 
+		total_rewards += reward
+		state = new_state
+		if done == True:
+			break
+	epsilon = min_epsilon + (max_epsilon - min_epsilon)*np.exp(-decay_rate*episode)
+	rewards.append(total_rewards)
+
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Testing}
+
+\begin{lstlisting}
+env.reset()
+for episode in range(5):
+	state = env.reset()
+	step = 0
+	done = False
+	for step in range(max_steps):
+		action = np.argmax(qtable[state,:])
+		new_state, reward, done, info = env.step(action)
+		if done == True:
+			env.render()
+			break
+		state = new_state
+env.close()
+\end{lstlisting}
+
+\end{frame}
+
