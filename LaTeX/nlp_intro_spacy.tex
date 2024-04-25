@@ -73,6 +73,9 @@ Based on OS, version, etc an installation command can be generated at https://sp
     \item Import the English class from spacy.lang.en and create the nlp object.
     \item Create a doc and print its text.
   \end{itemize}
+  
+  Extra: Import the German class from spacy.lang.de and create the nlp object and use it on ``Ich liebe!''
+
 
   \begin{lstlisting}
 from spacy.lang.____ import ____
@@ -84,7 +87,6 @@ doc = nlp("This is a sentence.")
 print(____.text)
   \end{lstlisting}
 
-Extra: Import the German class from spacy.lang.de and create the nlp object and use it on ``Ich liebe!''
 
 \end{frame}
 
@@ -235,7 +237,14 @@ for index, pos in enumerate(pos_tags):
     \item Easy to create own pipeline with reusable components.
 		\item Includes spaCy's default tagger, parser and entity recognizer, but also your own custom processing functions.
 		\item At loading a model, spaCy loos at meta.json
-		\begin{lstlisting}
+
+
+\item Iterate over the pipeline names and create each component using \lstinline|create_pipe|, which looks them up in Language.factories
+\item Add each pipeline component to the pipeline in order, using \lstinline|add_pipe|
+
+  \end{itemize}
+	
+\begin{lstlisting}
 meta.json:
 {
   "lang": "en",
@@ -243,13 +252,7 @@ meta.json:
   "description": "Example model for spaCy",
   "pipeline": ["tagger", "parser", "ner"]
 }
-\end{lstlisting}
-
-\item Iterate over the pipeline names and create each component using \lstinline|create_pipe|, which looks them up in Language.factories
-\item Add each pipeline component to the pipeline in order, using \lstinline|add_pipe|
-
-  \end{itemize}
-	
+\end{lstlisting}	
 	
 \end{frame}
 
@@ -257,6 +260,13 @@ meta.json:
 \begin{frame}[fragile]\frametitle{Pipeline under the hood}
   \begin{itemize}
     \item When you call nlp on a text, spaCy will tokenize it and then call each component on the Doc, in order.
+
+
+\item All components return the modified document, which is then processed by the component next in the pipeline.
+
+  \end{itemize}
+	
+	
 		\begin{lstlisting}
 doc = nlp.make_doc("This is a sentence")   # create a Doc from raw text
 for name, proc in nlp.pipeline:             # iterate over components in order
@@ -266,13 +276,7 @@ print(nlp.pipeline)
 # [('tagger', <spacy.pipeline.Tagger>), ('parser', <spacy.pipeline.DependencyParser>), ('ner', <spacy.pipeline.EntityRecognizer>)]
 print(nlp.pipe_names)
 # ['tagger', 'parser', 'ner']
-\end{lstlisting}
-
-\item All components return the modified document, which is then processed by the component next in the pipeline.
-
-  \end{itemize}
-	
-	
+\end{lstlisting}	
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -285,19 +289,17 @@ print(nlp.pipe_names)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Disabling}
-  \begin{itemize}
-    \item If you don't need a particular component of the pipeline – for example, the tagger or the parser, you can disable loading it
-		\begin{lstlisting}
+\begin{lstlisting}
+# If you don't need a particular component of the pipeline – for example, the tagger or the parser, you can disable loading it
+		
 nlp = spacy.load("en_core_web_sm", disable=["tagger", "parser"])
 nlp = English().from_disk("/model", disable=["ner"])
-\end{lstlisting}
 
-\item If you only need a Doc object with named entities, there's no need to run all pipeline components on it
-		\begin{lstlisting}
+# If you only need a Doc object with named entities, there's no need to run all pipeline components on it
+
 for doc in nlp.pipe(texts, disable=["tagger", "parser"]):
     # Do something with the doc here
 \end{lstlisting}
-  \end{itemize}
 	
 	
 \end{frame}
@@ -408,6 +410,14 @@ nlp.add_pipe(entity_matcher, after="ner")
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Example}
 
+
+
+  \begin{itemize}
+    \item All strings are encoded, the entries in the vocabulary don't need to include the word text themselves. Instead, they can look it up in the StringStore via its hash value. 
+		\item Each entry in the vocabulary, also called Lexeme, contains the context-independent information about a word. 
+		\item For example, no matter if “love” is used as a verb or a noun in some context, its spelling and whether it consists of alphabetic characters won't ever change. Its hash value will also always be the same.
+  \end{itemize}
+
 \begin{lstlisting}
 nlp = spacy.load("en_core_web_sm")
 doc = nlp("I love coffee")
@@ -417,18 +427,16 @@ print(doc.vocab.strings[3197928453018144401])  # 'coffee'
 3197928453018144401
 coffee
 \end{lstlisting}
-
-  \begin{itemize}
-    \item All strings are encoded, the entries in the vocabulary don't need to include the word text themselves. Instead, they can look it up in the StringStore via its hash value. 
-		\item Each entry in the vocabulary, also called Lexeme, contains the context-independent information about a word. 
-		\item For example, no matter if “love” is used as a verb or a noun in some context, its spelling and whether it consists of alphabetic characters won't ever change. Its hash value will also always be the same.
-  \end{itemize}
-
-
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Example}
+
+
+
+	\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{spacy15}
+\end{center}
 
 \begin{lstlisting}
 nlp = spacy.load("en_core_web_sm")
@@ -438,12 +446,6 @@ for word in doc:
     print(lexeme.text, lexeme.orth, lexeme.shape_, lexeme.prefix_, lexeme.suffix_,
             lexeme.is_alpha, lexeme.is_digit, lexeme.is_title, lexeme.lang_)
 \end{lstlisting}
-
-	\begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{spacy15}
-\end{center}
-
-
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
