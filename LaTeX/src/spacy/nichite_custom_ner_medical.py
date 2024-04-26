@@ -2,57 +2,57 @@
 # https://www.youtube.com/watch?v=YLQvVpCXpbU
 
 import spacy
-import json
-
-nlp = spacy.load("en_core_web_sm")
-doc_sm = nlp("Donald Trump was President of USA")
-for ent in doc_sm.ents:
-    print(ent.text, ent.label_)
-
-# https://www.kaggle.com/datasets/finalepoch/medical-ner
-with open('./data/Corona2.json', 'r') as f:
-    data = json.load(f)
-
-# print(data['examples'][0]['content'])
-# print(data['examples'][0]['annotations'])
-
-training_data = []
-for example in data['examples']:
-    temp_dict = {'text': example['content'], 'entities': []}
-    for annotation in example['annotations']:
-        start = annotation['start']
-        end = annotation['end']
-        label = annotation['tag_name'].upper()
-        temp_dict['entities'].append((start, end, label))
-    training_data.append(temp_dict)
-
-# print(training_data[0])
-
-from spacy.tokens import DocBin
-from tqdm import tqdm
-
-# For each text in the training data, create a 'doc' via 'nlp-en' model. Add all such docs to docs-bin
-nlp = spacy.blank("en")  # load a new spacy model
-doc_bin = DocBin()
-
-from spacy.util import filter_spans
-
-for training_example in tqdm(training_data):
-    text = training_example['text']
-    labels = training_example['entities']
-    doc = nlp.make_doc(text)
-    ents = []
-    for start, end, label in labels:
-        span = doc.char_span(start, end, label=label, alignment_mode="contract")
-        if span is None:
-            print("Skipping entity")
-        else:
-            ents.append(span)
-    filtered_ents = filter_spans(ents)
-    doc.ents = filtered_ents
-    doc_bin.add(doc)
-
-doc_bin.to_disk("models/train.spacy")
+# import json
+#
+# nlp = spacy.load("en_core_web_sm")
+# doc_sm = nlp("Donald Trump was President of USA")
+# for ent in doc_sm.ents:
+#     print(ent.text, ent.label_)
+#
+# # https://www.kaggle.com/datasets/finalepoch/medical-ner
+# with open('./data/Corona2.json', 'r') as f:
+#     data = json.load(f)
+#
+# # print(data['examples'][0]['content'])
+# # print(data['examples'][0]['annotations'])
+#
+# training_data = []
+# for example in data['examples']:
+#     temp_dict = {'text': example['content'], 'entities': []}
+#     for annotation in example['annotations']:
+#         start = annotation['start']
+#         end = annotation['end']
+#         label = annotation['tag_name'].upper()
+#         temp_dict['entities'].append((start, end, label))
+#     training_data.append(temp_dict)
+#
+# # print(training_data[0])
+#
+# from spacy.tokens import DocBin
+# from tqdm import tqdm
+#
+# # For each text in the training data, create a 'doc' via 'nlp-en' model. Add all such docs to docs-bin
+# nlp = spacy.blank("en")  # load a new spacy model
+# doc_bin = DocBin()
+#
+# from spacy.util import filter_spans
+#
+# for training_example in tqdm(training_data):
+#     text = training_example['text']
+#     labels = training_example['entities']
+#     doc = nlp.make_doc(text)
+#     ents = []
+#     for start, end, label in labels:
+#         span = doc.char_span(start, end, label=label, alignment_mode="contract")
+#         if span is None:
+#             print("Skipping entity")
+#         else:
+#             ents.append(span)
+#     filtered_ents = filter_spans(ents)
+#     doc.ents = filtered_ents
+#     doc_bin.add(doc)
+#
+# doc_bin.to_disk("models/train.spacy")
 
 # https://spacy.io/usage/training#quickstart to cerate the config file
 # !python -m spacy init fill-config base_config.cfg config.cfg
