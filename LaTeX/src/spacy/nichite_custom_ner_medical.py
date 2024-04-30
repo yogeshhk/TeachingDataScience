@@ -52,11 +52,11 @@ import spacy
 #     doc.ents = filtered_ents
 #     doc_bin.add(doc)
 #
-# doc_bin.to_disk("models/train.spacy")
+# doc_bin.to_disk("data/medical_train.spacy")
 
-# https://spacy.io/usage/training#quickstart to cerate the config file
+# https://spacy.io/usage/training#quickstart to create the config file
 # !python -m spacy init fill-config base_config.cfg config.cfg
-# !python -m spacy train config.cfg --output ./ --paths.train models/train.spacy --paths.dev models/train.spacy
+# !python -m spacy train config.cfg --output ./ --paths.train data/medical_train.spacy --paths.dev data/medical_train.spacy
 # creates two folders 'model-last' and 'model-best'. Load best
 nlp_ner = spacy.load("model-best")
 doc_custom = nlp_ner("""While bismuth compounds (Pepto-Bismol) decreased the number of bowel movements in those

@@ -3,8 +3,8 @@
 # How To Upload Spacy Model To Hugging Face Model Hub
 
 # To upload this big model to Hugging Face, build 'wheel' first, create one 'output' dir also
-# !python -m spacy package "model-best" "output" --build wheel
 # change name in model-best/meta.json to 'custom_medical_ner'
+# !python -m spacy package "model-best" "output" --build wheel
 # !pip install spacy-huggingface-hub
 # Create a WRITE Access Token in Hugging Face Site, Account ->Settings, copy that, and put below, when asked
 # !huggingface-cli login
