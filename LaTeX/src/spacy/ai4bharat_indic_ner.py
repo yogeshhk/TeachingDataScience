@@ -33,15 +33,15 @@ def convert_json_to_iob(infile, outfile, max_records=10):
 if __name__ == "__main__":
     language_train_ifilename = "./data/hi_IndicNER/hi_train.json"
     language_train_ofilename = "./data/hi_IndicNER/hi_train.iob"
-    convert_json_to_iob(language_train_ifilename, language_train_ofilename,8000)
+    convert_json_to_iob(language_train_ifilename, language_train_ofilename,800)
 
     language_test_ifilename = "./data/hi_IndicNER/hi_test.json"
     language_test_ofilename = "./data/hi_IndicNER/hi_test.iob"
-    convert_json_to_iob(language_test_ifilename, language_test_ofilename, 800)
+    convert_json_to_iob(language_test_ifilename, language_test_ofilename, 80)
 
     language_val_ifilename = "./data/hi_IndicNER/hi_val.json"
     language_val_ofilename = "./data/hi_IndicNER/hi_val.iob"
-    convert_json_to_iob(language_val_ifilename, language_val_ofilename, 800)
+    convert_json_to_iob(language_val_ifilename, language_val_ofilename, 80)
 
 # https://spacy.io/usage/training#quickstart to create the config file, Select Hindi in dropdown, download as hindi_base_config.cfg
 # !python -m spacy init fill-config hindi_base_config.cfg hindi_config.cfg
