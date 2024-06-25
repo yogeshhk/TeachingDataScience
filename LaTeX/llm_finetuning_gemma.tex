@@ -1,0 +1,326 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Fine-tuning Gemma on GST}
+
+{\tiny (Ref: Gemma for GST - https://medium.com/google-cloud/gemma-for-gst-4595d5f60b6b)}
+
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Overview}
+\begin{itemize}
+    \item Gemma: An open-source Large Language Model by Google.
+    \item Ludwig: A Declarative Machine Learning framework from Predibase.
+    \item Goal: Craft a sophisticated Question Answering model for GST-FAQs in India.
+    \item Gemma's functionalities:
+    \begin{itemize}
+        \item Text generation
+        \item Language translation
+        \item Creative content crafting
+        \item Informative query responses
+    \end{itemize}
+    \item Ludwig's capabilities:
+    \begin{itemize}
+        \item Train models using Encoder-Combination-Decoder (ECD) mode.
+        \item Fine-tune LLMs via Instruction Tuning mode.
+        \item Utilize declarative configuration files.
+    \end{itemize}
+    \item GST in India:
+    \begin{itemize}
+        \item Replaces multiple taxes like service tax, central excise duty, VAT.
+        \item Simplifies the tax process with a unified structure.
+    \end{itemize}
+    \item Project aim: Develop a chatbot-like application for GST-FAQs.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Example}
+\begin{lstlisting}
+# Example configuration for Ludwig model training
+model:
+  input_features:
+    - name: text
+      type: text
+      encoder: parallel_cnn
+  output_features:
+    - name: class
+      type: category
+  training:
+    epochs: 10
+    batch_size: 64
+
+# Command to train the model
+ludwig train --config config.yaml --dataset dataset.csv
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Installation and Setup}
+\begin{itemize}
+\item Prerequisites:
+    \begin{itemize}
+    \item HuggingFace API Token
+    \item Access to `Gemma-7b-it` model
+    \item GPU with minimum 12 GiB VRAM (T4 GPU used)
+    \end{itemize}
+\item Uninstall TensorFlow, install Cython
+\item Install Ludwig and LLM extension
+\item Install Accelerate for mixed precision
+\item Configure Accelerate for mixed precision
+\item Install bitsandbytes (version 0.41.3+)
+\item Obtain HuggingFace API Token
+\item Request access to `gemma-7b-it`
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Installation Commands}
+\begin{lstlisting}
+!pip uninstall -y tensorflow --quiet
+!pip install Cython
+!pip install ludwig
+!pip install ludwig[llm]
+!pip install accelerate
+from accelerate.utils import write_basic_config; write_basic_config(mixed_precision='fp16')
+!pip install -i https://pypi.org/simple/ bitsandbytes
+import getpass
+os.environ["HUGGING_FACE_HUB_TOKEN"] = getpass.getpass("Token:")
+assert os.environ["HUGGING_FACE_HUB_TOKEN"]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step-by-Step Breakdown}
+\begin{enumerate}
+\item Ensure prerequisites: HuggingFace API Token, GPU, model access
+\item Uninstall TensorFlow, install Cython
+\item Install Ludwig, LLM extension, Accelerate
+\item Configure Accelerate for mixed precision
+\item Install bitsandbytes (version 0.41.3+)
+\item Obtain HuggingFace API Token
+\item Request access to `gemma-7b-it` model
+\item Set up environment variables
+\end{enumerate}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Dataset}
+\begin{itemize}
+\item Dataset in CSV format from GitHub
+\item Use `wget` to download dataset directly
+\item Place dataset in `data` folder
+\item Load dataset into Pandas DataFrame
+\item Dataset for Question Answering
+\item Each entry contains a question and answer
+\end{itemize}
+
+
+\begin{lstlisting}
+!pip install wget
+import wget
+
+url = "https://.../cbic-gst_gov_in_fgaq.csv"
+wget.download(url, 'cbic-gst_gov_in_fgaq.csv')
+--
+import pandas as pd
+df = pd.read_csv('cbic-gst_gov_in_fgaq.csv', encoding='cp1252')
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Configuration for Instruction Fine Tuning}
+\begin{itemize}
+\item Define configuration for fine-tuning Gemma 7B model
+\item Customize prompt for specific needs
+\item Specify parameters and settings
+\end{itemize}
+
+\begin{lstlisting}
+instruction_tuning_yaml = yaml.safe_load("""
+model_type: llm
+base_model: google/gemma-7b-it
+
+quantization:
+ bits: 4
+ 
+adapter:
+ type: lora
+ 
+:
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Configuration for Instruction Fine Tuning}
+
+\begin{lstlisting}
+prompt:
+  template: |
+    ### Instruction:
+    You are a taxation expert on Goods and Services Tax used in India.
+    Take the Input given below which is a Question. Give Answer for it as a Response.
+
+    ### Input:
+    {Question}
+
+    ### Response:
+
+input_features:
+ - name: Question
+   type: text
+   preprocessing:
+      max_sequence_length: 1024
+
+output_features:
+ - name: Answer
+   type: text
+   preprocessing:
+      max_sequence_length: 384
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Configuration for Instruction Fine Tuning}
+
+\begin{lstlisting}
+trainer:
+  type: finetune
+  epochs: 8
+  batch_size: 1
+  eval_batch_size: 2
+  gradient_accumulation_steps: 16  # effective batch size = batch size * gradient_accumulation_steps
+  learning_rate: 2.0e-4
+  enable_gradient_checkpointing: true
+  learning_rate_scheduler:
+    decay: cosine
+    warmup_fraction: 0.03
+    reduce_on_plateau: 0
+
+generation:
+  temperature: 0.1
+  max_new_tokens: 512
+
+backend:
+ type: local
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Configuration Breakdown}
+\begin{itemize}
+\item \textbf{Model and Quantization:}
+    \begin{itemize}
+    \item Model type: Large Language Model (LLM)
+    \item Base model: `google/gemma-7b-it` (7B parameters)
+    \item Quantization: 4-bit quantization enabled
+    \end{itemize}
+\item \textbf{Instruction Tuning:}
+    \begin{itemize}
+    \item Prompt template for framing input/output
+    \end{itemize}
+\item \textbf{Input and Output Features:}
+    \begin{itemize}
+    \item Question: Text input (max 1024 tokens)
+    \item Answer: Text output (max 384 tokens)
+    \end{itemize}
+\item \textbf{Training Parameters:}
+    \begin{itemize}
+    \item Fine-tuning on specific data
+    \item Epochs, batch size, learning rate, scheduler
+    \item Gradient accumulation for larger batch size
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Configuration Breakdown (cont'd)}
+\begin{itemize}
+\item \textbf{Generation Parameters:}
+    \begin{itemize}
+    \item Temperature: 0.1 (low randomness)
+    \item Max new tokens: 512
+    \end{itemize}
+\item \textbf{Backend:}
+    \begin{itemize}
+    \item Local training on user's machine
+    \end{itemize}
+\item \textbf{Overall:}
+    \begin{itemize}
+    \item Fine-tunes pre-trained Gemma on GST Q\&A data
+    \item Enables model to answer GST-related questions
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training}
+\begin{itemize}
+\item Declarative approach with Ludwig
+\item Instantiate `LudwigModel` with fine-tuning config
+\item Train on GST-related CSV dataset
+\end{itemize}
+
+\begin{lstlisting}
+model_instruction_tuning = LudwigModel(config=instruction_tuning_yaml, logging_level=logging.INFO)
+results_instruction_tuning = model_instruction_tuning.train(dataset=df)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Testing}
+\begin{itemize}
+\item Test on a small set of questions
+\item Evaluate model performance and accuracy
+\item Predict and analyze model responses
+\end{itemize}
+
+\begin{lstlisting}
+import pandas as pd
+test_df = pd.DataFrame([
+    {
+        "Question": "If I am not an existing taxpayer and wish to newly register under GST, when can I do so?"
+    },
+    ...
+])
+
+predictions_instruction_tuning_df, output_directory = model_instruction_tuning.predict(dataset=test_df)
+print(predictions_instruction_tuning_df["Answer_response"].tolist())
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Potential Improvements}
+\begin{itemize}
+\item Enhance LLM quality and architecture
+\item Adjust training parameters
+\item Augment dataset size for fine-tuning
+\item Capture wider range of patterns and nuances
+\item Refine model for more accurate predictions
+\item Explore and innovate for excellence
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Summary}
+\begin{itemize}
+\item Fine-tuned model shows promising results for GST queries
+\item Ludwig's declarative approach simplifies model development
+\item Flexibility to experiment with different LLMs and configurations
+\item Streamlines training and fine-tuning processes
+\item Enables focus on task without technical complexities
+\item Unlocks new possibilities in natural language processing
+\item Ludwig: a reliable platform for declarative machine learning
+\end{itemize}
+\end{frame}
+
