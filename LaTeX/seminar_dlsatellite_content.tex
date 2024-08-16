@@ -1,0 +1,594 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Deep Learning for Satellite Imagery}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Data Processing for Satellite Imagery}
+\begin{itemize}
+\item Satellite data from mapping services like Google Maps
+\item Data divided into tile images, mask images, and labels
+\item Tiles further divided into smaller images (e.g. 2x2, 3x3, 4x4)
+\item Masks adjusted to match tile divisions
+\item Labels remain consistent across divisions
+\item Patch size defined (e.g. 256x256 or 512x512)
+\item Images reshaped to be multiples of patch size
+\item Images split into patches matching defined patch size
+\item Resulting data stored as numpy arrays
+\item One-hot encoding applied to labels
+\item Data normalized using min-max scaling
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Data Preparation Steps}
+\begin{itemize}
+\item Import required libraries (OpenCV, PIL, numpy, matplotlib, etc.)
+\item Connect to data source (e.g. Google Drive)
+\item Define dataset root folder and name
+\item Process images and masks separately
+\item Read images using OpenCV (cv2.imread)
+\item Convert mask images from BGR to RGB color order
+\item Reshape images to be multiples of patch size
+\item Use patchify library to create image patches
+\item Apply min-max scaling to normalize image data
+\item Process labels and create one-hot encodings
+\item Convert hex color codes to RGB for label processing
+\item Create RGB to label conversion function
+\item Expand label dimensions to match image dimensions
+\item Split data into training and testing sets
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: Reading Images}
+\begin{lstlisting}
+import cv2
+import os
+
+for tile_id in range(1, 9):
+    for image_id in range(1, 202):
+        image_path = os.path.join(dataset_root, dataset_name, 
+                                  f'tile_{tile_id}', 
+                                  image_type, 
+                                  f'image_part_{image_id:03d}.{image_extension}')
+        image = cv2.imread(image_path)
+        if image is not None:
+            # Process image
+            pass
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: Patching Images}
+\begin{lstlisting}
+from patchify import patchify
+import numpy as np
+
+patch_size = 256
+patches = patchify(image, (patch_size, patch_size, 3), step=patch_size)
+
+for i in range(patches.shape[0]):
+    for j in range(patches.shape[1]):
+        single_patch = patches[i, j, 0]
+        # Process single patch
+        pass
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: RGB to Label Conversion}
+\begin{lstlisting}
+def rgb_to_label(label):
+    label_segment = np.zeros(label.shape[:2], dtype=np.uint8)
+    label_segment[(label == water).all(axis=-1)] = 0
+    label_segment[(label == land).all(axis=-1)] = 1
+    label_segment[(label == road).all(axis=-1)] = 2
+    label_segment[(label == building).all(axis=-1)] = 3
+    label_segment[(label == vegetation).all(axis=-1)] = 4
+    label_segment[(label == unlabeled).all(axis=-1)] = 5
+    return label_segment[:,:,0]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: Train-Test Split}
+\begin{lstlisting}
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
+
+total_classes = len(np.unique(labels))
+labels_categorical = to_categorical(labels, num_classes=total_classes)
+
+x_train, x_test, y_train, y_test = train_test_split(
+    master_training_dataset, 
+    labels_categorical, 
+    test_size=0.15, 
+    random_state=100
+)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Key Takeaways}
+\begin{itemize}
+\item Proper data preparation is crucial for deep learning on satellite imagery
+\item Image processing involves resizing, patching, and normalization
+\item Label processing requires careful handling of color codes and encodings
+\item Data splitting ensures separate training and testing datasets
+\item Resulting datasets are ready for input into deep learning models
+\item Code available on GitHub for reference and further use
+\item Next steps involve building and training the deep learning model
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Deep Learning with Satellite Image Data: Overview}
+\begin{itemize}
+\item Focus on U-Net model architecture for deep learning
+\item Understand encoder and decoder components of the model
+\item Explore loss functions and metrics for training
+\item Implement deep learning process using Jupyter notebook in Google Colab
+\item Generate model predictions and analyze model history
+\item Extract activation outputs and gradients for each network layer
+\item Perform local and remote debugging of the deep learning process
+\item Deploy the trained model for serving predictions
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{U-Net Model Architecture}
+\begin{itemize}
+\item Based on fully convolutional network architecture
+\item Consists of contracting path (encoder) and expansive path (decoder)
+\item Encoder: series of convolutional and max pooling layers
+\item Decoder: series of up-convolutional and concatenation layers
+\item Skip connections between encoder and decoder for better localization
+\item Suitable for image segmentation tasks in satellite imagery
+\item Allows precise pixel-wise predictions
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Loss Functions and Metrics}
+\begin{itemize}
+\item Common loss functions for segmentation:
+  \begin{itemize}
+  \item Binary Cross-Entropy
+  \item Categorical Cross-Entropy
+  \item Dice Loss
+  \item Focal Loss
+  \end{itemize}
+\item Metrics for evaluating model performance:
+  \begin{itemize}
+  \item Intersection over Union (IoU)
+  \item F1 Score
+  \item Precision and Recall
+  \item Pixel Accuracy
+  \end{itemize}
+\item Choice depends on specific problem and class imbalance
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementing Deep Learning in Google Colab}
+\begin{itemize}
+\item Set up Google Colab environment
+\item Import necessary libraries (TensorFlow, Keras, etc.)
+\item Load prepared dataset from previous stage
+\item Define U-Net model architecture
+\item Compile model with chosen loss function and metrics
+\item Train model using fit() method
+\item Monitor training progress with callbacks
+\item Evaluate model on test set
+\item Generate predictions on new data
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: U-Net Model Definition}
+\begin{lstlisting}
+def unet_model(input_size=(256,256,3), num_classes=6):
+    inputs = Input(input_size)
+    
+    # Encoder (Contracting Path)
+    conv1 = Conv2D(64, 3, activation='relu', padding='same')(inputs)
+    conv1 = Conv2D(64, 3, activation='relu', padding='same')(conv1)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+    
+    # More encoder layers...
+    
+    # Decoder (Expansive Path)
+    up9 = Conv2DTranspose(64, 2, strides=(2,2), padding='same')(conv9)
+    up9 = concatenate([up9, conv1])
+    conv9 = Conv2D(64, 3, activation='relu', padding='same')(up9)
+    conv9 = Conv2D(64, 3, activation='relu', padding='same')(conv9)
+    
+    outputs = Conv2D(num_classes, 1, activation='softmax')(conv9)
+    
+    model = Model(inputs=inputs, outputs=outputs)
+    return model
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Model Training and Evaluation}
+\begin{itemize}
+\item Split data into training and validation sets
+\item Use data augmentation techniques to improve generalization
+\item Implement early stopping to prevent overfitting
+\item Use learning rate scheduling for better convergence
+\item Monitor training progress with TensorBoard
+\item Analyze model history (loss and accuracy curves)
+\item Evaluate model on test set using various metrics
+\item Visualize model predictions on sample images
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: Model Training}
+\begin{lstlisting}
+model = unet_model()
+model.compile(optimizer='adam', 
+              loss='categorical_crossentropy', 
+              metrics=['accuracy', iou_score])
+
+history = model.fit(x_train, y_train,
+                    batch_size=32,
+                    epochs=100,
+                    validation_split=0.2,
+                    callbacks=[EarlyStopping(patience=10),
+                               ReduceLROnPlateau(factor=0.1, patience=5)])
+
+test_loss, test_acc, test_iou = model.evaluate(x_test, y_test)
+print(f"Test accuracy: {test_acc}, Test IoU: {test_iou}")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Extracting Activation Outputs and Gradients}
+\begin{itemize}
+\item Use Keras Functional API to access intermediate layer outputs
+\item Create a new model that returns activations for each layer
+\item Implement gradient computation using tf.GradientTape
+\item Visualize activations and gradients as heatmaps
+\item Analyze which parts of the image contribute most to predictions
+\item Use insights to improve model architecture or training process
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Local and Remote Debugging}
+\begin{itemize}
+\item Local debugging:
+  \begin{itemize}
+  \item Use TensorFlow's eager execution for step-by-step debugging
+  \item Implement custom callbacks for detailed logging
+  \item Utilize TensorBoard for visualizing model graph and metrics
+  \end{itemize}
+\item Remote debugging with Weights \& Biases (wandb):
+  \begin{itemize}
+  \item Track experiments and hyperparameters
+  \item Visualize model performance in real-time
+  \item Compare different runs and model versions
+  \item Collaborate with team members on model development
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Model Deployment and Serving}
+\begin{itemize}
+\item Save trained model in appropriate format (e.g., SavedModel, H5)
+\item Implement custom metrics and loss functions if needed
+\item Create a model serving application (e.g., Flask API)
+\item Deploy model on cloud platforms (e.g., Google Cloud AI Platform)
+\item Develop a user interface for easy interaction with the model
+\item Implement Gradio-based UI for model demo on Hugging Face Spaces
+\item Ensure scalability and efficiency in serving predictions
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Next Steps and Advanced Topics}
+\begin{itemize}
+\item Experiment with different model architectures (e.g., SegNet, DeepLab)
+\item Implement ensemble methods for improved predictions
+\item Explore transfer learning with pre-trained models
+\item Investigate advanced techniques like attention mechanisms
+\item Address challenges specific to satellite imagery (e.g., cloud cover)
+\item Implement multi-temporal analysis for change detection
+\item Explore integration with GIS systems for practical applications
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Deep Learning with Satellite Image Data}
+\begin{itemize}
+\item Remote debugging with Weights \& Biases
+\item Model saving and reloading with custom metrics and loss functions
+\item Activation/Gradients outputs with heatmap visualization
+\item Model deployment application
+\item Model serving app on Hugging Face
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Remote Debugging with Weights \& Biases}
+\begin{itemize}
+\item Set up Weights \& Biases (wandb) account and project
+\item Initialize wandb in your Python script
+\item Log hyperparameters, metrics, and artifacts
+\item Visualize training progress in real-time
+\item Compare different runs and experiments
+\item Use wandb sweeps for hyperparameter optimization
+\item Collaborate with team members on model improvements
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: Weights \& Biases Integration}
+\begin{lstlisting}
+import wandb
+from wandb.keras import WandbCallback
+
+wandb.init(project="satellite-imagery-segmentation")
+
+model.fit(x_train, y_train,
+          validation_data=(x_val, y_val),
+          epochs=100,
+          callbacks=[WandbCallback()])
+
+wandb.log({"test_accuracy": test_acc, "test_iou": test_iou})
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Model Saving and Reloading}
+\begin{itemize}
+\item Save model architecture and weights separately
+\item Implement custom metrics and loss functions
+\item Use TensorFlow's SavedModel format for portability
+\item Reload model with custom objects
+\item Verify model performance after reloading
+\item Implement version control for saved models
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: Saving and Reloading Model}
+\begin{lstlisting}
+# Saving model
+model.save('unet_model.h5')
+model.save_weights('unet_weights.h5')
+
+# Custom objects
+custom_objects = {
+    'iou_score': iou_score,
+    'custom_loss': custom_loss
+}
+
+# Reloading model
+from tensorflow.keras.models import load_model
+
+loaded_model = load_model('unet_model.h5', 
+                          custom_objects=custom_objects)
+loaded_model.load_weights('unet_weights.h5')
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Activation/Gradients Outputs with Heatmap}
+\begin{itemize}
+\item Create a model to output intermediate layer activations
+\item Implement gradient computation using tf.GradientTape
+\item Generate class activation maps (CAMs)
+\item Visualize activations and gradients as heatmaps
+\item Interpret model decisions and focus areas
+\item Use insights to refine model architecture or training process
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: Generating Activation Heatmaps}
+\begin{lstlisting}
+def generate_heatmap(model, img_array, layer_name):
+    grad_model = tf.keras.models.Model(
+        [model.inputs], 
+        [model.get_layer(layer_name).output, model.output]
+    )
+    
+    with tf.GradientTape() as tape:
+        conv_outputs, predictions = grad_model(img_array)
+        loss = predictions[:, output_index]
+    
+    grads = tape.gradient(loss, conv_outputs)
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+    
+    heatmap = tf.reduce_mean(tf.multiply(pooled_grads, conv_outputs), axis=-1)
+    heatmap = np.maximum(heatmap, 0) / np.max(heatmap)
+    return heatmap
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Model Deployment Application}
+\begin{itemize}
+\item Choose deployment platform (e.g., Flask, FastAPI)
+\item Create RESTful API for model predictions
+\item Implement input validation and preprocessing
+\item Ensure efficient batch processing for multiple inputs
+\item Add authentication and rate limiting for API security
+\item Dockerize the application for easy deployment
+\item Set up monitoring and logging for production use
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: Flask API for Model Serving}
+\begin{lstlisting}
+from flask import Flask, request, jsonify
+import numpy as np
+
+app = Flask(__name__)
+model = load_model('unet_model.h5')
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.json
+    image = np.array(data['image'])
+    prediction = model.predict(np.expand_dims(image, axis=0))
+    return jsonify({'prediction': prediction.tolist()})
+
+if __name__ == '__main__':
+    app.run(debug=True)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Model Serving App on Hugging Face}
+\begin{itemize}
+\item Create a Hugging Face account and new Space
+\item Develop a Gradio-based UI for the model demo
+\item Upload model artifacts to Hugging Face
+\item Implement input processing and output visualization
+\item Add descriptive text and usage instructions
+\item Share the Space publicly for easy access
+\item Gather feedback and iterate on the demo
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Snippet: Gradio UI for Hugging Face Spaces}
+\begin{lstlisting}
+import gradio as gr
+import numpy as np
+from PIL import Image
+
+def predict(input_image):
+    # Preprocess image
+    img_array = np.array(input_image)
+    img_array = preprocess_input(img_array)
+    
+    # Make prediction
+    prediction = model.predict(np.expand_dims(img_array, axis=0))
+    
+    # Postprocess and visualize output
+    output_image = visualize_prediction(prediction[0])
+    return output_image
+
+iface = gr.Interface(
+    fn=predict,
+    inputs=gr.Image(type="pil"),
+    outputs=gr.Image(type="pil"),
+    title="Satellite Image Segmentation"
+)
+
+iface.launch()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conclusion and Future Directions}
+\begin{itemize}
+\item Recap of deep learning workflow for satellite imagery
+\item Importance of proper data preparation and model architecture
+\item Value of advanced techniques like activation visualization
+\item Significance of model deployment and serving in real-world applications
+\item Potential for further improvements and research:
+  \begin{itemize}
+  \item Multi-temporal analysis for change detection
+  \item Integration with other data sources (e.g., LiDAR, multispectral)
+  \item Adaptation to different geographical regions and use cases
+  \item Exploration of more advanced architectures (e.g., transformers)
+  \end{itemize}
+\item Encouragement to experiment and contribute to the field
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{References}
+		\begin{itemize}
+		\item ``Deep learning Workshop for Satellite Imagery Parts 1 to 3'' - `650 AI Lab' (Youtube)
+		\item ``Deep learning with Satellite Image'' https://github.com/prodramp/DeepWorks/tree/main/DL-SatelliteImagery
+		\item Dubai Segmentation Dataset Kaggle - https://www.kaggle.com/datasets/humansintheloop/semantic-segmentation-of-aerial-imagery
+		\item Dubai Segmentation Dataset Home: https://humansintheloop.org/resources/datasets/semantic-segmentation-dataset-2/
+		\item Super Large (38GB) Space Satellite Image Daset - https://spacenet.ai/sn6-challenge/
+		\item ``Satellite imagery segmentation using U-NET'' - Chinmay Paranjape - AI Mind
+		\item ``Understanding Satellite Image For Geo-spatial Deep Learning'' - Fractal AI Research
+		\end{itemize}
+\end{frame}
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Sample List Slide}
+
+% \begin{itemize}
+% \item aaa
+% \end{itemize}
+	  
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Sample Picture Inclusion}
+
+% \begin{center}
+% \includegraphics[width=0.8\linewidth,keepaspectratio]{myphoto}
+% \end{center}	  
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Sample Code Listing}
+% \begin{lstlisting}
+% import aaa
+% \end{lstlisting}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Sample Two Columns Slide}
+% \begin{columns}
+    % \begin{column}[T]{0.6\linewidth}
+      % \begin{itemize}
+		% \item aaa
+	  % \end{itemize}
+
+    % \end{column}
+    % \begin{column}[T]{0.4\linewidth}
+      % \begin{itemize}
+		% \item bbb
+	  % \end{itemize}
+    % \end{column}
+  % \end{columns}
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Sample Tabular Data}
+
+% aaa
+
+% \begin{tabular}{|c|c|}
+	% \hline
+	% Platform & Time (s) \\
+	% \hline \hline
+	% Python & $\sim$1500.0 \\
+	% \hline
+	% NumPy & 29.3 \\
+	% \hline
+	% Matlab & $\sim$29.0 \\
+	% \hline
+	% Octave & $\sim$60.0 \\
+	% \hline
+	% Blitz (C++) & 9.5 \\
+	% \hline
+	% Fortran & 2.5 \\
+	% \hline
+	% C & 2.2 \\
+	% \hline
+% \end{tabular}
+
+% \end{frame}
