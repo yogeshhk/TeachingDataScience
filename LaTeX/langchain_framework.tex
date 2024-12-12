@@ -81,6 +81,220 @@ index.query(query)
 \end{center}
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LangChain Memory Types}
+
+Memory in LangChain allows conversational systems to:
+\begin{itemize}
+\item Retain context across multiple interactions
+\item Store and retrieve previous conversation details
+\item Enhance continuity in conversational AI
+\end{itemize}
+
+Types of Memory:
+\begin{itemize}
+\item Buffer Memory
+\item Conversation Buffer Window Memory
+\item Entity Memory
+\item Conversation Knowledge Graph Memory
+\item Vector Store-backed Memory
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Buffer Memory}
+
+\begin{lstlisting}
+from langchain.memory import ConversationBufferMemory
+
+# Simple memory that stores entire conversation history
+memory = ConversationBufferMemory()
+
+# Add conversation interactions
+memory.save_context(
+    {"input": "Hi, I'm Tom"},
+    {"output": "Hello Tom, nice to meet you!"}
+)
+
+# Retrieve entire conversation history
+print(memory.load_memory_variables({}))
+\end{lstlisting}
+
+Characteristics:
+\begin{itemize}
+\item Stores entire conversation verbatim
+\item No limit on conversation length
+\item Can become memory-intensive for long conversations
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conversation Buffer Window Memory}
+
+\begin{lstlisting}
+from langchain.memory import ConversationBufferWindowMemory
+
+# Memory that only keeps the last K interactions
+memory = ConversationBufferWindowMemory(k=2)
+
+# Add multiple conversation interactions
+memory.save_context(
+    {"input": "Tell me about Python"},
+    {"output": "Python is a versatile programming language"}
+)
+memory.save_context(
+    {"input": "What makes it versatile?"},
+    {"output": "Its extensive libraries and ease of use"}
+)
+memory.save_context(
+    {"input": "Give an example"},
+    {"output": "Like NumPy for scientific computing"}
+)
+
+# Retrieves only the last 2 interactions
+print(memory.load_memory_variables({}))
+\end{lstlisting}
+
+Benefits:
+\begin{itemize}
+\item Limits memory to recent interactions
+\item Prevents context overflow
+\item Maintains recent conversation context
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Entity Memory}
+
+\begin{lstlisting}
+from langchain.memory import ConversationEntityMemory
+from langchain.llms import OpenAI
+
+# Memory that remembers specific entities
+llm = OpenAI(temperature=0)
+memory = ConversationEntityMemory(llm=llm)
+
+# Add context about entities
+memory.save_context(
+    {"input": "My friend Sarah works at Google"},
+    {"output": "That's interesting! Tell me more about Sarah"}
+)
+
+# Retrieve information about specific entities
+entities = memory.load_memory_variables({"input": ""})
+print(entities['entities'])
+\end{lstlisting}
+
+Key Features:
+\begin{itemize}
+\item Tracks and remembers specific named entities
+\item Uses LLM to extract and remember entity details
+\item Useful for maintaining context about people, places, organizations
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conversation Knowledge Graph Memory}
+
+\begin{lstlisting}
+from langchain.memory import ConversationKGMemory
+from langchain.llms import OpenAI
+
+# Memory that creates a knowledge graph of interactions
+llm = OpenAI(temperature=0)
+memory = ConversationKGMemory(llm=llm)
+
+# Save interactions that build a knowledge graph
+memory.save_context(
+    {"input": "Alice works at a tech company in San Francisco"},
+    {"output": "Tell me more about her work"}
+)
+
+# Retrieve knowledge graph relationships
+graph_memory = memory.load_memory_variables({"input": ""})
+print(graph_memory['history'])
+\end{lstlisting}
+
+Advantages:
+\begin{itemize}
+\item Creates structured relationships between conversation entities
+\item Tracks complex interactions and connections
+\item Enables more sophisticated context retention
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Vector Store-backed Memory}
+
+\begin{lstlisting}
+from langchain.memory import VectorStoreRetrieverMemory
+from langchain.vectorstores import Chroma
+from langchain.embeddings import OpenAIEmbeddings
+
+# Create vector store for memory
+embeddings = OpenAIEmbeddings()
+vectorstore = Chroma.from_texts(
+    texts=["Previous conversation details"],
+    embedding=embeddings
+)
+
+# Memory that retrieves similar past conversations
+memory = VectorStoreRetrieverMemory(
+    retriever=vectorstore.as_retriever()
+)
+
+# Save and retrieve semantically similar memories
+memory.save_context(
+    {"input": "Discuss machine learning"},
+    {"output": "ML is about training models"}
+)
+\end{lstlisting}
+
+Key Characteristics:
+\begin{itemize}
+\item Uses semantic similarity to retrieve relevant context
+\item Can store and retrieve large amounts of conversation data
+\item Enables more nuanced memory retrieval
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Choosing the Right Memory}
+
+Memory Selection Criteria:
+\begin{itemize}
+\item \textbf{Conversation Length}: 
+    \begin{itemize}
+    \item Short interactions: Buffer Memory
+    \item Limited context needed: Buffer Window Memory
+    \item Complex, entity-rich conversations: Entity/Knowledge Graph Memory
+    \item Large, searchable conversation history: Vector Store Memory
+    \end{itemize}
+
+\item \textbf{Computational Resources}:
+    \begin{itemize}
+    \item Limited resources: Buffer or Buffer Window Memory
+    \item More computational power: Knowledge Graph or Vector Store Memory
+    \end{itemize}
+
+\item \textbf{Specific Requirements}:
+    \begin{itemize}
+    \item Track specific entities: Entity Memory
+    \item Semantic context retrieval: Vector Store Memory
+    \item Simple context tracking: Basic Buffer Memory
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Need}
@@ -399,6 +613,19 @@ Document(page_content="This is my document. It is full of text that I've gathere
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LangChain: Models, Prompts, and Indexes}
+
+Key Components Overview:
+\begin{itemize}
+\item \textbf{Models}: Different types of language models
+\item \textbf{Prompts}: Strategies for interacting with models
+\item \textbf{Indexes}: Techniques for accessing and organizing external data
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large Models}
@@ -418,6 +645,73 @@ Document(page_content="This is my document. It is full of text that I've gathere
 \end{itemize}
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Models in LangChain}
+
+Types of Models:
+\begin{itemize}
+\item \textbf{LLMs (Large Language Models)}
+    \begin{itemize}
+    \item Take string input, produce string output
+    \item Examples: GPT-3, GPT-4, BLOOM
+    \item Providers: OpenAI, Hugging Face, Cohere
+    \end{itemize}
+
+\item \textbf{Chat Models}
+    \begin{itemize}
+    \item Take list of chat messages as input
+    \item Return chat message as output
+    \item Designed for conversational interactions
+    \item Examples: ChatGPT, Claude
+    \end{itemize}
+
+\item \textbf{Embedding Models}
+    \begin{itemize}
+    \item Convert text to numerical vector representations
+    \item Used for semantic search and clustering
+    \item Examples: Word2Vec, BERT embeddings
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Model Integration Example}
+
+\begin{lstlisting}
+from langchain.llms import OpenAI, HuggingFaceHub
+from langchain.chat_models import ChatOpenAI
+from langchain.embeddings import OpenAIEmbeddings
+
+# LLM Model
+llm = OpenAI(model_name='text-davinci-003', temperature=0.7)
+
+# Chat Model
+chat_model = ChatOpenAI(
+    model_name='gpt-3.5-turbo', 
+    temperature=0.5
+)
+
+# Embedding Model
+embeddings = OpenAIEmbeddings()
+
+# Generate text
+response = llm("Explain quantum computing")
+
+# Chat interaction
+messages = [
+    SystemMessage(content="You are a helpful assistant"),
+    HumanMessage(content="What is machine learning?")
+]
+chat_response = chat_model(messages)
+
+# Generate embedding
+text_embedding = embeddings.embed_query("Machine learning is...")
+\end{lstlisting}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
@@ -606,6 +900,65 @@ print (f"Here's a sample: {text_embedding[:5]}...")
 	  
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Prompts in LangChain}
+
+Prompt Strategies:
+\begin{itemize}
+\item \textbf{Prompt Templates}
+    \begin{itemize}
+    \item Parameterized text generation templates
+    \item Allows dynamic input insertion
+    \item Standardizes prompt construction
+    \end{itemize}
+
+\item \textbf{Few-Shot Prompting}
+    \begin{itemize}
+    \item Provide example inputs/outputs
+    \item Guide model's response style
+    \item Improve context understanding
+    \end{itemize}
+
+\item \textbf{Output Parsing}
+    \begin{itemize}
+    \item Convert model output to structured format
+    \item Support JSON, custom data structures
+    \item Enhance result usability
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Prompt Template Example}
+
+\begin{lstlisting}
+from langchain import PromptTemplate
+from langchain.llms import OpenAI
+
+# Simple Prompt Template
+recipe_template = """
+Suggest a {cuisine} recipe 
+that takes less than {time} minutes to prepare.
+Difficulty level: {difficulty}
+"""
+
+prompt = PromptTemplate(
+    input_variables=["cuisine", "time", "difficulty"],
+    template=recipe_template
+)
+
+llm = OpenAI(temperature=0.7)
+
+# Generate recipe
+recipe = llm(prompt.format(
+    cuisine="Italian", 
+    time=30, 
+    difficulty="Easy"
+))
+\end{lstlisting}
+
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Building Blocks: Prompts}
@@ -713,6 +1066,71 @@ llm(similar_prompt.format(noun=my_noun))
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Indexes in LangChain}
+
+Types of Indexes:
+\begin{itemize}
+\item \textbf{Document Loaders}
+    \begin{itemize}
+    \item Load documents from various sources
+    \item Supported formats: PDF, TXT, CSV, Web pages
+    \item Preprocessing and text extraction
+    \end{itemize}
+
+\item \textbf{Text Splitters}
+    \begin{itemize}
+    \item Break large documents into manageable chunks
+    \item Strategies: Character-based, token-based
+    \item Preserve context and meaning
+    \end{itemize}
+
+\item \textbf{Vector Stores}
+    \begin{itemize}
+    \item Store document embeddings
+    \item Enable semantic search
+    \item Supported stores: Chroma, Pinecone, Weaviate
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Indexing Example}
+
+\begin{lstlisting}
+from langchain.document_loaders import PyPDFLoader
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import Chroma
+
+# Load PDF document
+loader = PyPDFLoader("research_paper.pdf")
+documents = loader.load()
+
+# Split documents
+text_splitter = CharacterTextSplitter(
+    chunk_size=1000, 
+    chunk_overlap=200
+)
+texts = text_splitter.split_documents(documents)
+
+# Create vector store
+embeddings = OpenAIEmbeddings()
+vectorstore = Chroma.from_documents(
+    documents=texts, 
+    embedding=embeddings
+)
+
+# Semantic search
+results = vectorstore.similarity_search(
+    "machine learning techniques", k=3
+)
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Building Blocks: Indexes}
 
 \begin{itemize}
@@ -760,6 +1178,131 @@ docs = retriever.get_relevant_documents("what types of things did the author wan
 \begin{center}
 {\Large Chains}
 \end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Types of Chains: Overview}
+
+LangChain provides several types of chains to solve different problem scenarios:
+
+\begin{itemize}
+\item \textbf{LLMChain}: Basic building block for creating prompt-based interactions
+\item \textbf{SequentialChain}: Chaining multiple chains together
+\item \textbf{RetrievalQA Chain}: Question answering over specific data sources
+\item \textbf{Conversational Retrieval Chain}: Maintaining context in QA scenarios
+\item \textbf{Summarization Chain}: Condensing long documents
+\item \textbf{SQL Database Chain}: Querying databases using natural language
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LLMChain: Basic Example}
+
+\begin{lstlisting}
+from langchain import PromptTemplate, LLMChain
+from langchain.llms import OpenAI
+
+# Define a prompt template
+template = """
+Suggest a {type} recipe for dinner 
+that takes less than {time} minutes to prepare.
+"""
+prompt = PromptTemplate(
+    input_variables=["type", "time"], 
+    template=template
+)
+
+# Create the LLM Chain
+llm = OpenAI(temperature=0.7)
+chain = LLMChain(llm=llm, prompt=prompt)
+
+# Run the chain
+result = chain.run(type="vegetarian", time=30)
+print(result)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{SequentialChain: Chaining Multiple Operations}
+
+\begin{lstlisting}
+from langchain.chains import SimpleSequentialChain
+
+# Chain 1: Generate a story premise
+premise_chain = LLMChain(
+    llm=llm, 
+    prompt=premise_prompt
+)
+
+# Chain 2: Generate a title based on premise
+title_chain = LLMChain(
+    llm=llm, 
+    prompt=title_prompt
+)
+
+# Combine chains sequentially
+overall_chain = SimpleSequentialChain(
+    chains=[premise_chain, title_chain],
+    verbose=True
+)
+
+# Run the sequential chain
+result = overall_chain.run("Science Fiction")
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RetrievalQA Chain: Document-based Querying}
+
+\begin{lstlisting}
+from langchain.vectorstores import Chroma
+from langchain.chains import RetrievalQA
+from langchain.embeddings import OpenAIEmbeddings
+
+# Create vector store from documents
+vectorstore = Chroma.from_documents(
+    documents=docs, 
+    embedding=OpenAIEmbeddings()
+)
+
+# Create RetrievalQA Chain
+qa_chain = RetrievalQA.from_chain_type(
+    llm=OpenAI(),
+    chain_type="stuff",
+    retriever=vectorstore.as_retriever()
+)
+
+# Query the documents
+result = qa_chain.run("What is the main topic?")
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Chains vs Agents: Key Differences}
+
+\begin{itemize}
+\item \textbf{Chains}:
+    \begin{itemize}
+    \item Predetermined, linear sequence of operations
+    \item Fixed input-output process
+    \item Ideal for structured, predictable tasks
+    \end{itemize}
+
+\item \textbf{Agents}:
+    \begin{itemize}
+    \item Dynamic, adaptive decision-making
+    \item Can choose tools and actions based on input
+    \item Suitable for complex, unpredictable scenarios
+    \item Uses LLM to determine next steps
+    \end{itemize}
+\end{itemize}
+
+{\tiny (Ref: 'Superpower LLMs with Conversational Agents')}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
