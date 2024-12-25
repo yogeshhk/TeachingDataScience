@@ -5,23 +5,23 @@ Welcome to the *Machine Learning for Mechanical Engineering* course! This course
 
 ---
 
-Instructor: Yogesh H Kulkarni (Visiting Faculty, CoEP)
-Email: firstnamelastname [at] yahoo [dot] com (Subject "MLME...")
-Phone: nine eight nine zero two five one four zero six (for SMS/WhatsApp)
-
-Class: TY B.Tech Mech 6th Semester, Elective (Jan-Apr, 2018)
-Venue: CAD/CAM Lab
-Timing: Saturdays 9 am to 12 pm
-
-Course Objectives
-
-To understand the basic concepts of Machine Learning
-To study various Machine Learning techniques and implement them
-To apply learnt knowledge to Mechanical Engineering problems
-
 ## Course Logistics
+**Instructor**: Yogesh H Kulkarni (Visiting Faculty, CoEP)
+**Email**: firstnamelastname [at] yahoo [dot] com (Subject "MLME...")
+**Phone**: nine eight nine zero two five one four zero six (for SMS/WhatsApp)
 
-### **Details**
+**Class**: TY B.Tech Mech 6th Semester, Elective (Jan-Apr)
+**Venue**: TBD
+**Timing**: Saturdays 9 am to 12 pm
+
+**Course Objectives**
+- To understand the basic concepts of Machine Learning
+- To study various Machine Learning techniques and implement them
+- To apply learnt knowledge to Mechanical Engineering problems
+
+
+
+**Details**
 - TextBook: None
 - Topic-wise course material available on the website.
 - Have a personal Python environment.
