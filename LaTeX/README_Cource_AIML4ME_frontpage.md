@@ -56,4 +56,19 @@ With hands-on coding assignments, practical projects, and an emphasis on mathema
 - **Always** cite sources.
 - Avoid generating code by Gen AI; copying verbatim; use your own code/words.
 
-[Lessons Plan](./README_Cource_AIML4ME_lessonplan.md)
+<!-- 
+## Warm-up
+
+### **Exercises**
+1. Write compilable code for Fibonacci Series (10 lines).
+2. What is Machine Learning? Your thoughts (5 lines).
+
+### **Projects**
+- [Predicting Crop Yields](https://www.youtube.com/watch?v=vGOvUoqn_M8)
+- [Crop Recommendation System](https://www.youtube.com/watch?v=_R9Q_iuyvdc)
+- [Mastering Crop Disease Classification - CNN](https://www.youtube.com/watch?v=_TGjYaSnydQ)
+- [Potato Disease Classification: Deep Learning CNN](https://www.youtube.com/playlist?list=PLeo1K3hjS3ut49PskOfLnE6WUoOp_2lsD)
+
+--- -->
+
+[Lessons Plan](./course_coep_aiml4me_content.tex)
