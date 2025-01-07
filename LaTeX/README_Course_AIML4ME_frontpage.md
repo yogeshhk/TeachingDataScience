@@ -71,4 +71,4 @@ With hands-on coding assignments, practical projects, and an emphasis on mathema
 
 --- -->
 
-[Lessons Plan](./course_coep_aiml4me_content.tex)
+[Lessons Plan](./README_Course_AIML4ME_lessonplan.md)
