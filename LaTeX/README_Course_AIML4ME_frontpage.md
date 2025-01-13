@@ -6,6 +6,7 @@ This course is designed to introduce mechanical engineering students to the foun
 
 With hands-on coding assignments, practical projects, and an emphasis on mathematical rigor, this course offers a comprehensive learning experience tailored for engineers aspiring to excel in the rapidly evolving field of machine learning.
 
+![Agri](./images/agri1.png)
 
 ---
 
