@@ -15,7 +15,7 @@ With hands-on coding assignments, practical projects, and an emphasis on mathema
 - **Email**: firstnamelastname [at] yahoo [dot] com (Subject "AIML4ME...")
 - **Phone**: nine eight nine zero two five one four zero six (for SMS/WhatsApp)
 - **Class**: Final Year B.Tech Mech 8th Semester, Elective (Jan-Apr)
-- **Venue**: TBD
+- **Venue**: UG-Class Room 301 (Bajaj Building 3rd Floor)
 - **Timing**: Fridays 10:30 am to 12:30 pm (2hrs, other 1 hour is by other faculty)
 - **Course Objectives**
 	- To understand the basic concepts of Machine Learning
