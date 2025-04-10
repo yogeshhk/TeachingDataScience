@@ -162,10 +162,10 @@ class MoleculeDataset(Dataset):
         """
         if self.test:
             data = torch.load(os.path.join(self.processed_dir, 
-                                 f'data_test_{idx}.pt'))
+                                 f'data_test_{idx}.pt'), weights_only=True)
         else:
             data = torch.load(os.path.join(self.processed_dir, 
-                                 f'data_{idx}.pt'))   
+                                 f'data_{idx}.pt'), weights_only=True)   
         return data
 
 
