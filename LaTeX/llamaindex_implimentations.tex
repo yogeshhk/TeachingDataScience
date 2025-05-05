@@ -5,18 +5,158 @@
 \end{center}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Demo}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Demo}
 
-https://colab.research.google.com/drive/
-12cdBWMpOfCxpiAS1zSqZRY66o84qMiTo?usp=sharing 
+% https://colab.research.google.com/drive/
+% 12cdBWMpOfCxpiAS1zSqZRY66o84qMiTo?usp=sharing 
 
 
-\begin{center}
-\includegraphics[width=0.4\linewidth,keepaspectratio]{llm28}
+% \begin{center}
+% \includegraphics[width=0.4\linewidth,keepaspectratio]{llm28}
 
-{\tiny (Ref: LlamaIndex: A Central Interface between LLM’s + your external data)}
-\end{center}
+% {\tiny (Ref: LlamaIndex: A Central Interface between LLM’s + your external data)}
+% \end{center}
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LlamaIndex Chatbot: Overview}
+    \begin{itemize}
+        \item LlamaIndex connects LLMs to custom data sources
+        \item Main steps: Import data, build index, query index
+        \item Optional: Chunk documents, build sub-indices
+        \item GPT model (e.g., text-davinci-003) handles responses
+    \end{itemize}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Install Required Libraries}
+    \begin{itemize}
+        \item Install libraries via pip:
+        \item Set OpenAI API key:
+    \end{itemize}
+\begin{lstlisting}[language=Python]
+pip install llama-index
+pip install openai
+import os
+os.environ['OPENAI_API_KEY'] = 'API_KEY'
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ingesting Local Text Data}
+
+    \begin{itemize}
+		\item Load .txt data stored in local folder
+        \item Use built-in loaders for Wikipedia and YouTube
+    \end{itemize}
+	
+\begin{lstlisting}[language=Python]
+from llama_index import SimpleDirectoryReader
+from llama_index import download_loader
+
+documents_txt = SimpleDirectoryReader('data').load_data()
+
+WikipediaReader = download_loader("WikipediaReader")
+documents = WikipediaReader().load_data(pages=['Strawberry'])
+
+
+YoutubeTranscriptReader = download_loader("YoutubeTranscriptReader")
+documents_youtube = YoutubeTranscriptReader().load_data(
+    ytlinks=['https://www.youtube.com/watch?v=EYXQmbZNhy8'])
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Constructing the Indices}
+ Convert documents into GPT-based vector indexes
+\begin{lstlisting}[language=Python]
+from llama_index import GPTSimpleVectorIndex
+
+index_txt = GPTSimpleVectorIndex.from_documents(documents_txt)
+index_wiki = GPTSimpleVectorIndex.from_documents(documents)
+index_youtube = GPTSimpleVectorIndex.from_documents(documents_youtube)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Querying the Indices}
+Simple querying using index.query()
+
+\begin{lstlisting}[language=Python]
+index_txt.query("Which fruit is the best?").response
+index_wiki.query("Which countries produce strawberries?").response
+index_youtube.query("how should I measure the flour?").response
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Saving Index Files}
+
+Save indices to disk for use in a web app
+
+\begin{lstlisting}[language=Python]
+index_wiki.save_to_disk('index_wikepedia.json')
+index_youtube.save_to_disk('index_video.json')
+index_txt.save_to_disk('index_txt.json')
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Streamlit App: Main Structure}
+    \begin{itemize}
+        \item Build chatbot interface with Streamlit
+        \item Load saved indices and select by user input
+    \end{itemize}
+\begin{lstlisting}[language=Python]
+import streamlit as st
+from llama_index import GPTSimpleVectorIndex
+import os
+
+@st.cache_resource
+def load_indexes():
+    index_document = GPTSimpleVectorIndex.load_from_disk('index_txt.json')
+    index_video = GPTSimpleVectorIndex.load_from_disk('index_video.json')
+    index_wikepedia = GPTSimpleVectorIndex.load_from_disk('index_wikepedia.json')
+    return index_document, index_video, index_wikepedia
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Streamlit App: Interaction}
+\begin{lstlisting}[language=Python]
+def main():
+    os.environ['OPENAI_API_KEY'] = 'API_KEY'
+    index_document, index_video, index_wikepedia = load_indexes()
+
+    st.header('Custom-Made Chatbots')
+    data = st.selectbox('Data', (
+        '.txt file (My favorite fruits)', 
+        'Youtube Video (Vanilla Cake Recipe)', 
+        'Wikipedia Article (Apple)'
+    ))
+
+    index = index_document if data.startswith('.txt') else (
+        index_video if 'Youtube' in data else index_wikepedia)
+
+    query = st.text_input('Enter Your Query')
+    if st.button('Response'):
+        st.write(index.query(query))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Launching the Web App}
+
+Run the chatbot app using Streamlit
+
+\begin{lstlisting}[language=bash]
+streamlit run app.py
+\end{lstlisting}
+
+\end{frame}
+
+
+
 
 
