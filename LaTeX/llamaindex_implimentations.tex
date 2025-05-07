@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Implementations}
+{\Large ChatBot Implementation}
 \end{center}
 \end{frame}
 
@@ -157,6 +157,319 @@ streamlit run app.py
 \end{frame}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Agent Implementation}
+\end{center}
+\end{frame}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Basic Agent Example}
+\begin{lstlisting}[language=Python]
+import asyncio
+from llama_index.core.agent.workflow import FunctionAgent
+from llama_index.llms.openai import OpenAI
 
+
+# Define a simple calculator tool
+def multiply(a: float, b: float) -> float:
+    """Useful for multiplying two numbers."""
+    return a * b
+
+
+# Create an agent workflow with our calculator tool
+agent = FunctionAgent(
+    tools=[multiply],
+    llm=OpenAI(model="gpt-4o-mini"),
+    system_prompt="You are a helpful assistant that can multiply two numbers.",
+)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Basic Agent Example}
+\begin{lstlisting}[language=Python]
+async def main():
+    # Run the agent
+    response = await agent.run("What is 1234 * 4567?")
+    print(str(response))
+
+
+# Run the agent
+if __name__ == "__main__":
+    asyncio.run(main())
+	
+	
+This will output something like: The result of \( 1234 \times 4567 \) is \( 5,678,678 \).
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Adding Chat History}
+
+If the Context is passed in, the agent will use it to continue the conversation.
+
+\begin{lstlisting}[language=Python]
+from llama_index.core.workflow import Context
+
+# create context
+ctx = Context(agent)
+
+# run agent with context
+response = await agent.run("My name is Logan", ctx=ctx)
+response = await agent.run("What is my name?", ctx=ctx)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Adding RAG Capabilities}
+
+Enhance our agent by adding the ability to search through documents. The directory structure should look like this now:
+
+
+\begin{lstlisting}[language=Python]
+mkdir data
+wget https://raw.githubusercontent.com/run-llama/llama_index/main/docs/docs/examples/data/paul_graham/paul_graham_essay.txt -O data/paul_graham_essay.txt
+
+
+|- starter.py
+|- data
+	|- paul_graham_essay.txt
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Adding RAG Capabilities}
+
+\begin{lstlisting}[language=Python]
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core.agent.workflow import FunctionAgent
+from llama_index.llms.openai import OpenAI
+import asyncio
+import os
+
+# Create a RAG tool using LlamaIndex
+documents = SimpleDirectoryReader("data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+query_engine = index.as_query_engine()
+
+
+def multiply(a: float, b: float) -> float:
+    """Useful for multiplying two numbers."""
+    return a * b
+
+
+async def search_documents(query: str) -> str:
+    """Useful for answering natural language questions about an personal essay written by Paul Graham."""
+    response = await query_engine.aquery(query)
+    return str(response)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Adding RAG Capabilities}
+
+\begin{lstlisting}[language=Python]
+# Create an enhanced workflow with both tools
+agent = FunctionAgent(
+    tools=[multiply, search_documents],
+    llm=OpenAI(model="gpt-4o-mini"),
+    system_prompt="""You are a helpful assistant that can perform calculations
+    and search through documents to answer questions.""",
+)
+
+
+# Now we can ask questions about the documents or do calculations
+async def main():
+    response = await agent.run(
+        "What did the author do in college? Also, what's 7 * 8?"
+    )
+    print(response)
+
+
+# Run the agent
+if __name__ == "__main__":
+    asyncio.run(main())
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Storing the RAG Index}
+
+To avoid reprocessing documents every time, you can persist the index to disk:
+
+
+\begin{lstlisting}[language=Python]
+# Save the index
+index.storage_context.persist("storage")
+
+# Later, load the index
+from llama_index.core import StorageContext, load_index_from_storage
+
+storage_context = StorageContext.from_defaults(persist_dir="storage")
+index = load_index_from_storage(storage_context)
+query_engine = index.as_query_engine()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Frequently used Code snippets}
+
+{\tiny (Ref: https://docs.llamaindex.ai/en/stable/getting\_started/customization/)}
+
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunking}
+
+``I want to parse my documents into smaller chunks''
+
+
+\begin{lstlisting}[language=Python]
+# Global settings
+from llama_index.core import Settings
+
+Settings.chunk_size = 512
+
+# Local settings
+from llama_index.core.node_parser import SentenceSplitter
+
+index = VectorStoreIndex.from_documents(
+    documents, transformations=[SentenceSplitter(chunk_size=512)]
+)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Different Vector Store}
+
+First, you can install the vector store, then use
+
+
+\begin{lstlisting}[language=Python]
+pip install llama-index-vector-stores-chroma
+
+---
+import chromadb
+from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_index.core import StorageContext
+
+chroma_client = chromadb.PersistentClient()
+chroma_collection = chroma_client.create_collection("quickstart")
+vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+storage_context = StorageContext.from_defaults(vector_store=vector_store)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Different Vector Store}
+
+StorageContext defines the storage backend for where the documents, embeddings, and indexes are stored. 
+
+\begin{lstlisting}[language=Python]
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+
+documents = SimpleDirectoryReader("data").load_data()
+index = VectorStoreIndex.from_documents(
+    documents, storage_context=storage_context
+)
+query_engine = index.as_query_engine()
+response = query_engine.query("What did the author do growing up?")
+print(response)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Getting more context}
+
+``I want to retrieve more context when I query''
+
+\begin{lstlisting}[language=Python]
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+
+documents = SimpleDirectoryReader("data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+query_engine = index.as_query_engine(similarity_top_k=5)
+response = query_engine.query("What did the author do growing up?")
+print(response)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Different LLM}
+
+``I want to use a different LLM''
+
+\begin{lstlisting}[language=Python]
+# Global settings
+from llama_index.core import Settings
+from llama_index.llms.ollama import Ollama
+
+Settings.llm = Ollama(model="mistral", request_timeout=60.0)
+
+# Local settings
+index.as_query_engine(llm=Ollama(model="mistral", request_timeout=60.0))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Different Response mode}
+
+``I want to use a different response mode''
+
+\begin{lstlisting}[language=Python]
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+
+documents = SimpleDirectoryReader("data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+query_engine = index.as_query_engine(response_mode="tree_summarize")
+response = query_engine.query("What did the author do growing up?")
+print(response)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Stream Response mode}
+
+``I want to stream the response back''
+
+\begin{lstlisting}[language=Python]
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+
+documents = SimpleDirectoryReader("data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+query_engine = index.as_query_engine(streaming=True)
+response = query_engine.query("What did the author do growing up?")
+response.print_response_stream()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chatbot}
+
+``I want a chatbot instead of Q\&A''
+
+\begin{lstlisting}[language=Python]
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+
+documents = SimpleDirectoryReader("data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+query_engine = index.as_chat_engine()
+response = query_engine.chat("What did the author do growing up?")
+print(response)
+
+response = query_engine.chat("Oh interesting, tell me more.")
+print(response)
+\end{lstlisting}
+\end{frame}
