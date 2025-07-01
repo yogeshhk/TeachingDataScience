@@ -238,6 +238,176 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Zerodha Kite MCP Server}
+{\Large MCP is not REST API}
+
+{\tiny (Ref: Lee Han Chun)}
 \end{center}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Essence of Good API Design}
+\begin{itemize}
+  \item Easy to understand: Intent of endpoints should be clear.
+  \item Consistent: Follows predictable conventions.
+  \item Extensible: Supports versioning and future growth.
+  \item Efficient: Minimizes compute and network cost.
+  \item API = Contract: Changing it later is hard and costly.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{REST API Primer}
+\begin{itemize}
+  \item Resource-oriented: Uses HTTP methods to act on data.
+  \item CRUD model: Create, Read, Update, Delete.
+  \item Self-documenting structure enhances clarity.
+  \item Ideal for Human-Computer Interfaces (HCI).
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example REST Endpoints}
+\begin{lstlisting}
+GET /api/blogs           // List blogs
+GET /api/blogs/{id}      // Get blog
+POST /api/blogs          // Create blog
+PUT /api/blogs/{id}      // Update blog
+DELETE /api/blogs/{id}   // Delete blog
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{MCP: Origins and Design}
+\begin{itemize}
+  \item Inspired by Language Server Protocol (LSP).
+  \item Based on JSON-RPC v2 for inter-process comms.
+  \item Designed for LLM agents, not humans.
+  \item MCP servers = Plugins for agentic environments.
+\end{itemize}
+
+	\begin{center}
+	\includegraphics[width=\linewidth,keepaspectratio]{rag39}
+
+	{\tiny (Ref: MCP is not REST API -Lee Han Chun)}
+	\end{center}
+		
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RPC APIs: Action-Oriented Design}
+\begin{itemize}
+  \item RPC treats API as function calls.
+  \item Action > Resource: e.g., createUser, getBlog.
+  \item Avoids REST’s fixed verbs; uses custom method names.
+  \item Protobuf/gRPC and JSON-RPC are popular formats.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{gRPC Example}
+\begin{lstlisting}
+// blog.proto
+service BlogService {
+  rpc GetBlog(GetBlogRequest) returns (Blog);
+  rpc CreateBlog(CreateBlogRequest) returns (Blog);
+}
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Calling gRPC in Python}
+\begin{lstlisting}
+stub = blog_pb2_grpc.BlogServiceStub(channel)
+resp = stub.GetBlog(blog_pb2.GetBlogRequest(blog_id=123))
+\end{lstlisting}
+\begin{itemize}
+  \item Looks like local function calls.
+  \item No manual HTTP construction needed.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why Wrapping REST with MCP is Bad}
+\begin{itemize}
+  \item MCP = Action-oriented; REST = Resource-oriented.
+  \item Wrapping REST breaks agent's mental model.
+  \item Leads to unclear, inefficient tool usage.
+  \item Results in brittle tools and complex workflows.
+\end{itemize}
+
+	\begin{center}
+	\includegraphics[width=0.6\linewidth,keepaspectratio]{rag40}
+
+	{\tiny (Ref: MCP is not REST API -Lee Han Chun)}
+	\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Lost Semantics \& Agent Complexity}
+\begin{itemize}
+  \item Agents prefer high-level verbs (e.g. archiveOldBlogPosts).
+  \item REST forces agents to sequence CRUD ops.
+  \item Tools lose expressive power and clarity.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Transactionality Issues}
+\begin{itemize}
+  \item REST is stateless: no built-in transaction support.
+  \item MCP can encapsulate entire logic in one RPC.
+  \item Example: transferBlogPostOwnership should be atomic.
+  \item REST wrapper introduces risk of inconsistent state.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Efficiency & Tool Brittleness}
+\begin{itemize}
+  \item Wrappers require multiple REST calls for small tasks.
+  \item Example: incrementLikeCount requires GET + PUT.
+  \item REST-based MCPs are fragile to backend changes.
+  \item RPC APIs are stable, goal-aligned contracts.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Design APIs for Actions, Not Data}
+\begin{itemize}
+  \item REST = Data manipulation, not goal execution.
+  \item MCP tools should reflect agent capabilities.
+  \item Wrapping REST limits agent reliability and power.
+  \item Design dedicated RPCs aligned with agent tasks.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conclusion}
+\begin{itemize}
+  \item REST is great for CRUD and human interfaces.
+  \item MCP/RPC is built for agent action and autonomy.
+  \item Wrapping REST with MCP leads to poor agent UX.
+  \item Use RPC-first APIs for effective Agent-Computer Interaction.
+\end{itemize}
+\end{frame}
+
+\end{document}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{}
+% \begin{center}
+% {\Large Zerodha Kite MCP Server}
+% \end{center}
+% \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{References}
+    \begin{itemize}
+        \item What Are MCP Servers? (And How I Built an AI Trading Bot on It) - Harkirat Singh
+    \end{itemize}
+\end{frame}
+
+
+
