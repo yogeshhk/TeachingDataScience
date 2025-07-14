@@ -1,0 +1,292 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Parsing Resume and RAG}
+
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Introduction to Resume Parsing}
+    \begin{itemize}
+        \item \textbf{What is Resume Parsing?}
+        \begin{itemize}
+            \item Automated process of extracting structured information from unstructured resume documents.
+            \item Converts raw text into a machine-readable format like JSON or XML.
+        \end{itemize}
+        \item \textbf{Why is it Important?}
+        \begin{itemize}
+            \item Saves time for recruiters by automating data entry.
+            \item Enables efficient candidate searching and filtering.
+            \item Improves data quality and consistency in Applicant Tracking Systems (ATS).
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Traditional vs. Modern Approaches}
+    \begin{itemize}
+        \item \textbf{Traditional Approaches:}
+        \begin{itemize}
+            \item Rule-based systems using regular expressions (Regex).
+            \item Statistical methods like Conditional Random Fields (CRF).
+            \item Prone to errors with varied resume formats and language.
+        \end{itemize}
+        \item \textbf{Modern Approaches (GenAI):}
+        \begin{itemize}
+            \item Leveraging Large Language Models (LLMs).
+            \item Capable of understanding context, semantics, and diverse layouts.
+            \item Offers higher accuracy and flexibility (zero-shot or few-shot learning).
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Implementation Approaches
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementation: Specialized API (Docling)}
+    \begin{itemize}
+        \item \textbf{Docling}: A specialized document AI API for parsing specific document types like resumes and invoices.
+        \item \textbf{Pros:}
+        \begin{itemize}
+            \item Highly accurate for its specific domain.
+            \item Simple API call; no need to manage models or prompts.
+            \item Provides a structured, predictable output.
+        \end{itemize}
+        \item \textbf{Cons:}
+        \begin{itemize}
+            \item Can be a "black box"; less customizable.
+            \item Dependent on a third-party service and its costs.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code: Docling Parser}
+    \begin{lstlisting}[language=Python, caption={llm\_parsing\_docling.py}]
+import os
+from docling import Docling
+
+class DoclingResumeParser:
+    def __init__(self, api_key: str):
+        self.client = Docling(api_key=api_key)
+
+    def parse_resume(self, file_path: str):
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+        
+        with open(file_path, "rb") as f:
+            response = self.client.document_and_entity.upload(file=f)
+        return response
+    \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementation: General LLM API (Groq)}
+    \begin{itemize}
+        \item \textbf{Groq}: A platform offering high-speed inference for various open-source LLMs like Gemma and Llama 3.
+        \item \textbf{Pros:}
+        \begin{itemize}
+            \item High flexibility in prompting and output formatting (e.g., JSON mode).
+            \item Extremely fast inference speeds.
+            \item Cost-effective for many use cases.
+        \end{itemize}
+        \item \textbf{Cons:}
+        \begin{itemize}
+            \item Requires careful prompt engineering for best results.
+            \item Performance may vary depending on the LLM used and the complexity of the resume.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code: Groq Parser}
+    \begin{lstlisting}[language=Python, caption={llm\_parsing\_groq.py}]
+from groq import Groq
+import json
+
+class GroqResumeParser:
+    def __init__(self, api_key: str):
+        self.client = Groq(api_key=api_key)
+        self.model = "gemma-7b-it"
+
+    def parse_resume_text(self, text: str):
+        prompt = f"""
+        Extract entities from the following resume...
+        Return the output as clean JSON.
+        Resume: {text}
+        """
+        chat_completion = self.client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model=self.model,
+            response_format={"type": "json_object"},
+        )
+        return json.loads(chat_completion.choices[0].message.content)
+    \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RAG Implementation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building a Resume RAG System}
+    \begin{itemize}
+        \item \textbf{What is RAG?}
+        \begin{itemize}
+            \item \textbf{Retrieval-Augmented Generation}: A technique that combines a retriever (to find relevant information) with a generator (an LLM) to produce answers.
+            \item It grounds the LLM's responses in specific data, reducing hallucinations.
+        \end{itemize}
+        \item \textbf{Our RAG Pipeline:}
+        \begin{itemize}
+            \item \textbf{Load}: Read resume files (txt, pdf, docx).
+            \item \textbf{Chunk}: Split documents semantically using `SemanticSplitterNodeParser`.
+            \item \textbf{Embed \& Store}: Convert chunks to vectors (`bge-small-en-v1.5`) and store in a FAISS index.
+            \item \textbf{Query}: Use Groq's Llama 3 to generate answers based on retrieved context.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code: RAG Indexing}
+    \begin{lstlisting}[language=Python, caption={llm\_llamaindex\_rag.py - Building the Index}]
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core.node_parser import SemanticSplitterNodeParser
+from llama_index.vector_stores.faiss import FaissVectorStore
+import faiss
+
+# Load documents
+documents = SimpleDirectoryReader("data").load_data()
+
+# Semantic chunking
+splitter = SemanticSplitterNodeParser(embed_model=self.embed_model)
+nodes = splitter.get_nodes_from_documents(documents)
+
+# FAISS vector store setup
+d = 384 # Embedding dimension
+faiss_index = faiss.IndexFlatL2(d)
+vector_store = FaissVectorStore(faiss_index=faiss_index)
+
+# Create the index
+index = VectorStoreIndex(nodes, vector_store=vector_store)
+    \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code: RAG Querying}
+    \begin{lstlisting}[language=Python, caption={llm\_llamaindex\_rag.py - Querying}]
+from llama_index.llms.groq import Groq
+from llama_index.core import Settings
+
+class ResumeRAG:
+    def __init__(self, groq_api_key: str):
+        # Setup LLM and Embedding Model
+        Settings.llm = Groq(model="llama3-8b-8192", api_key=groq_api_key)
+        Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+        
+        self.index = self._build_index() # From previous slide
+
+    def query(self, question: str):
+        if not self.index:
+            return "Index not built."
+            
+        query_engine = self.index.as_query_engine()
+        response = query_engine.query(question)
+        return response
+    \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chatbot UI with Streamlit}
+    \begin{itemize}
+        \item \textbf{Streamlit}: An open-source Python library that makes it easy to create custom web apps for machine learning and data science.
+        \item \textbf{UI Components:}
+        \begin{itemize}
+            \item `st.title`: For the main application title.
+            \item `st.sidebar.text\_input`: For securely entering the API key.
+            \item `st.file\_uploader`: To allow users to upload multiple resume files.
+            \item `st.chat\_input` and `st.chat\_message`: To create an interactive chat interface.
+            \item `st.spinner`: To provide feedback during long-running processes like building the index.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code: Streamlit UI}
+    \begin{lstlisting}[language=Python, caption={streamlit\_main.py}]
+import streamlit as st
+
+st.title("AI-Powered Resume Assistant")
+
+# API Key and File Uploader in sidebar
+groq_api_key = st.sidebar.text_input("Groq API Key:", type="password")
+uploaded_files = st.file_uploader("Upload resumes", accept_multiple_files=True)
+
+if st.sidebar.button("Build RAG"):
+    # Logic to initialize the RAG system
+    st.session_state.rag_system = ResumeRAG(...)
+
+# Chat interface
+if prompt := st.chat_input("Ask a question..."):
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    
+    with st.chat_message("assistant"):
+        response = st.session_state.rag_system.query(prompt)
+        st.markdown(response)
+    \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Challenges and Future
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Challenges in Resume Parsing}
+    \begin{itemize}
+        \item \textbf{Format Diversity}: Resumes have no standard format (e.g., two-column layouts, tables, images).
+        \item \textbf{Ambiguity}: Natural language can be ambiguous. "Java" could be a skill or part of a company name.
+        \item \textbf{Implicit Information}: Dates and timelines often require inference (e.g., "Present" in work experience).
+        \item \textbf{Data Privacy}: Resumes contain Personally Identifiable Information (PII) that must be handled securely.
+        \item \textbf{Scalability and Cost}: Processing thousands of resumes requires an efficient and cost-effective pipeline.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Future Directions}
+    \begin{itemize}
+        \item \textbf{Multimodal Models}: Using models that can understand both text and the visual layout of a resume (e.g., from a PDF).
+        \item \textbf{Advanced Entity Recognition}: Moving beyond basic fields to extract proficiency levels, project details, and soft skills.
+        \item \textbf{Knowledge Graphs}: Building a knowledge graph of candidates, skills, and companies to enable complex relational queries.
+        \item \textbf{Personalized Interaction}: Fine-tuning models on specific company or industry jargon for more accurate parsing and querying.
+        \item \textbf{Proactive Insights}: Developing systems that can proactively suggest candidates for a job description without explicit searching.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conclusion}
+    \begin{itemize}
+        \item Generative AI has significantly advanced the field of resume parsing, moving from brittle rule-based systems to flexible, context-aware models.
+        \item A combination of specialized parsing APIs and general-purpose LLMs offers a powerful toolkit for developers.
+        \item Retrieval-Augmented Generation (RAG) is a key technology for building interactive and reliable applications on top of parsed resume data.
+        \item The future is trending towards more sophisticated, multimodal, and proactive talent acquisition systems.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{References}
+    \begin{itemize}
+        \item \textbf{Libraries \& APIs:}
+        \begin{itemize}
+            \item Docling: \url{https://www.docling.io/}
+            \item Groq: \url{https://groq.com/}
+            \item LlamaIndex: \url{https://www.llamaindex.ai/}
+            \item Streamlit: \url{https://streamlit.io/}
+            \item FAISS: \url{https://faiss.ai/}
+        \end{itemize}
+        \item \textbf{Models:}
+        \begin{itemize}
+            \item Gemma: \url{https://ai.google.dev/gemma}
+            \item Llama 3: \url{https://ai.meta.com/blog/meta-llama-3/}
+            \item BGE Embeddings: \url{https://huggingface.co/BAAI/bge-small-en-v1.5}
+        \end{itemize}
+    \end{itemize}
+\end{frame}
