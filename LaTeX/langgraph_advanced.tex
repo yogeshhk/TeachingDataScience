@@ -1,0 +1,683 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Advanced LangGraph}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Conditional Edges}
+
+Conditional edges allow to dynamically decide the execution flow based on the state.
+
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing import List, Dict, Literal
+from pydantic import BaseModel
+
+class AgentState(BaseModel):
+    messages: List[Dict[str, str]] = []
+    current_input: str = ""
+    tools_output: Dict[str, str] = {}
+    status: str = "RUNNING"
+    error_count: int = 0
+
+def route_by_status(state: AgentState) -> Literal["process", "retry", "error", "end"]:
+    if state.status == "SUCCESS":
+        return "end"
+    elif state.status == "ERROR":
+        if state.error_count >= 3:
+            return "error"
+        return "retry"
+    elif state.status == "NEED_TOOL":
+        return "process"
+    return "process"
+
+workflow.add_conditional_edges(
+    "check_status",
+    route_by_status,
+    {"process": "execute_tool", "retry": "retry_handler", 
+     "error": "error_handler", "end": END}
+)
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parallel Execution in LangGraph}
+Supports parallel execution of multiple nodes, which is particularly useful for handling complex tasks:
+
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+async def parallel_tools_execution(state: AgentState) -> AgentState:
+    """Parallel execution of multiple tools"""
+    tools = identify_required_tools(state.current_input)
+
+    async def execute_tool(tool):
+        result = await tool.ainvoke(state.current_input)
+        return {tool.name: result}
+
+    # Execute all tools in parallel
+    results = await asyncio.gather(*[execute_tool(tool) for tool in tools])
+
+    # Merge results
+    tools_output = {}
+    for result in results:
+        tools_output.update(result)
+
+    return AgentState(
+        messages=state.messages,
+        current_input=state.current_input,
+        tools_output=tools_output,
+        status="SUCCESS"
+    )
+      \end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{ReACT Architecture Introduction}
+      \begin{itemize}
+        \item ReACT (Reasoning and Acting) combines reasoning and acting capabilities
+        \item Agent solves problems through continuous cycle: Reason → Act → Observe
+        \item Flexible response to complex tasks using external tools
+        \item Enhanced capabilities through tool integration
+        \item LangGraph provides pre-built ReACT agents
+        \item Supports Google search, DALL-E image generation, and more
+        \item Easy implementation with create\_react\_agent function
+        \item Suitable for dynamic problem-solving scenarios
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{ReACT Agent Implementation}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+import dotenv
+from langchain_community.tools import GoogleSerperRun
+from langchain_community.tools.openai_dalle_image_generation import OpenAIDALLEImageGenerationTool
+from langchain_openai import ChatOpenAI
+from langgraph.prebuilt.chat_agent_executor import create_react_agent
+
+dotenv.load_dotenv()
+
+# Define Tools and Parameter Schemas
+google_serper = GoogleSerperRun(
+    name="google_serper",
+    description="A low-cost Google search API for current events",
+    args_schema=GoogleSerperArgsSchema,
+    api_wrapper=GoogleSerperAPIWrapper(),
+)
+
+dalle = OpenAIDALLEImageGenerationTool(
+    name="openai_dalle",
+    api_wrapper=DallEAPIWrapper(model="dall-e-3"),
+    args_schema=DallEArgsSchema,
+)
+
+tools = [google_serper, dalle]
+model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+# Create ReACT agent
+agent = create_react_agent(model=model, tools=tools)
+
+# Usage
+result = agent.invoke({"messages": [("human", "Help me draw a shark flying in the sky")]})
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Analysis of Results}
+
+      \begin{itemize}
+        \item the agent will first understand the task requirements and then decide to use the DALL-E tool to generate an image. 
+		\item It will generate a detailed image description and then call the DALL-E API to create the image. 
+        \item Finally, it will return the generated image URL along with a brief description.
+		\item The output might look like this:
+      \end{itemize}
+
+
+
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+{
+    "messages": [
+        HumanMessage(content='Help me draw a picture of a shark flying in the sky'),
+        AIMessage(content='', additional_kwargs={'tool_calls': [...]}),
+        ToolMessage(content='https://dalleproduse.blob.core.windows.net/...'),
+        AIMessage(content='Here is the image you requested: a picture of a shark flying in the sky. You can view the image by clicking the link below.\n\n![Shark flying in the sky](https://dalleproduse.blob.core.windows.net/...)')
+    ]
+}
+      \end{lstlisting}
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Message Management in LangGraph}
+      \begin{itemize}
+        \item Message accumulation can lead to performance issues
+        \item delete\_messages function removes processed messages
+        \item Filtering techniques control message flow
+        \item Conditional edges for message routing
+        \item Time-based and quantity-based pruning strategies
+        \item Essential for long-running applications
+        \item Maintains conversation clarity and focus
+        \item Improves overall system performance
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Message Deletion and Filtering}
+
+Can delete messages based on specified conditions. This function can be used in the nodes of the graph, especially after processing certain messages.
+
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.prebuilt import ToolMessage, delete_messages
+
+def process_and_delete(state):
+    # Processing logic
+    # Delete processed messages
+    state = delete_messages(state, lambda x: isinstance(x, ToolMessage))
+    return state
+
+def filter_messages(state):
+    filtered_messages = [msg for msg in state['messages'] 
+                        if not isinstance(msg, ToolMessage)]
+    return {"messages": filtered_messages}
+
+def keep_latest_messages(state, max_messages=50):
+    return {"messages": state['messages'][-max_messages:]}
+
+# Time-based pruning
+from datetime import datetime, timedelta
+
+def prune_old_messages(state):
+    current_time = datetime.now()
+    recent_messages = [msg for msg in state['messages'] 
+                      if current_time - msg.timestamp < timedelta(hours=1)]
+    return {"messages": recent_messages}
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Checkpoint Mechanism}
+      \begin{itemize}
+        \item Checkpoints are snapshots during graph execution
+        \item Enable pause and resume functionality for long-running tasks
+        \item Useful for processes requiring human intervention
+        \item Support state rollback to previous points
+        \item Allow data modification at checkpoints
+        \item Use thread\_id and thread\_ts for unique identification
+        \item Retrieve last state and execution history
+        \item Essential for resumable AI applications
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Checkpoint Implementation}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.checkpoint import create_checkpoint, load_checkpoint
+
+def process_with_checkpoint(state):
+    # Processing logic
+    # Create a checkpoint
+    checkpoint = create_checkpoint(state)
+    return {"checkpoint": checkpoint, "state": state}
+
+def resume_from_checkpoint(checkpoint):
+    state = load_checkpoint(checkpoint)
+    # Continue processing
+    return state
+
+# Using checkpoints in practice
+def summarize_and_prune(state):
+    summary = summarize_conversation(state['messages'])
+    new_messages = state['messages'][-5:]
+    new_messages.append(ToolMessage(content=summary))
+    state['messages'] = new_messages
+    
+    # Create checkpoint
+    checkpoint = create_checkpoint(state)
+    state['checkpoint'] = checkpoint
+    return state
+
+# Retrieve state and history
+graph.get_state(config)  # Get last saved state
+graph.get_state_history(config)  # Get all saved states
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Human-in-the-Loop Interaction}
+      \begin{itemize}
+        \item Allows human participation in AI decision-making process
+        \item Callback functions obtain human input during execution
+        \item Conditional branching determines when human intervention needed
+        \item Confidence-based routing for automatic vs manual processing
+        \item Enhanced system reliability through human oversight
+        \item Flexible interaction control mechanisms
+        \item Improves decision quality in critical scenarios
+        \item Supports collaborative human-AI workflows
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Human Interaction Implementation}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+def human_input_node(state):
+    # Display current state to user
+    print("Current state:", state)
+    # Get user input
+    user_input = input("Please provide your input: ")
+    # Update state
+    state['user_input'] = user_input
+    return state
+
+def check_confidence(state):
+    if state['confidence'] < 0.8:
+        return "human_input"
+    else:
+        return "auto_process"
+
+def human_intervention(state):
+    print("Current conversation:", state['messages'])
+    human_response = input("Please provide assistance: ")
+    state['messages'].append(HumanMessage(content=human_response))
+    return state
+
+# Add conditional routing
+graph.add_conditional_edges("process_query", {
+    "human_intervention": lambda s: s['confidence'] < 0.8,
+    "auto_process": lambda s: s['confidence'] >= 0.8
+})
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Architecture}
+A subgraph is essentially a complete graph structure that can be used as a node in a larger graph structure. 
+
+      \begin{itemize}
+        \item Break complex workflows into manageable components
+        \item Modular design enhances code reusability
+        \item Independent subgraphs improve maintainability
+        \item Easy testing and debugging of individual components
+        \item Scalable architecture for adding new features
+        \item Encapsulate complex logic in reusable modules
+        \item Support composition and interaction between subgraphs
+        \item Enable hierarchical workflow organization
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Implementation}
+
+Creating a Basic Subgraph
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.graph import SubGraph, Graph
+
+class ContentGenerationSubGraph(SubGraph):
+    def build(self) -> Graph:
+        graph = Graph()
+        
+        def generate_content(state):
+            # Content generation logic
+            return state
+            
+        def review_content(state):
+            # Content review logic
+            return state
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Implementation}
+
+State Management in Subgraph
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class AnalyticsSubGraph(SubGraph):
+    def build(self) -> Graph:
+        graph = Graph()
+
+        def process_analytics(state):
+            # Ensure the state contains necessary keys
+            if 'metrics' not in state:
+                state['metrics'] = {}
+            # Process analytics data
+            state['metrics']['engagement'] = calculate_engagement(state)
+            return state
+
+        graph.add_node("analytics", process_analytics)
+        return graph
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Implementation}
+
+Using Subgraphs in the Main Graph
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+def create_marketing_workflow():
+    main_graph = Graph()
+    # Instantiate subgraphs
+    content_graph = ContentGenerationSubGraph()
+    analytics_graph = AnalyticsSubGraph()
+    # Add subgraphs to the main graph
+    main_graph.add_node("content", content_graph)
+    main_graph.add_node("analytics", analytics_graph)
+    # Connect subgraphs
+    main_graph.add_edge("content", "analytics")
+    return main_graph
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Implementation}
+
+Data Passing Between Subgraphs
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class DataProcessingSubGraph(SubGraph):
+    def build(self) -> Graph:
+        graph = Graph()
+
+        def prepare_data(state):
+            # Prepare data for use by other subgraphs
+            state['processed_data'] = {
+                'content_type': state['raw_data']['type'],
+                'metrics': state['raw_data']['metrics'],
+                'timestamp': datetime.now()
+            }
+            return state
+
+        graph.add_node("prepare", prepare_data)
+        return graph
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Practical Case: Implementation of Marketing Agent}
+
+Content Generation Subgraph
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class ContentCreationSubGraph(SubGraph):
+    def build(self) -> Graph:
+        graph = Graph()
+
+        def generate_content(state):
+            prompt = f"""
+            Target Audience: {state['audience']}
+            Platform: {state['platform']}
+            Campaign Goal: {state['goal']}
+            """
+            # Use LLM to generate content
+            content = generate_with_llm(prompt)
+            state['generated_content'] = content
+            return state
+
+        def optimize_content(state):
+            # Optimize content according to platform characteristics
+            optimized = optimize_for_platform(state['generated_content'], state['platform'])
+            state['final_content'] = optimized
+            return state
+
+        graph.add_node("generate", generate_content)
+        graph.add_node("optimize", optimize_content)
+        graph.add_edge("generate", "optimize")
+        return graph
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Practical Case: Implementation of Marketing Agent}
+
+Analytics Subgraph
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class AnalyticsSubGraph(SubGraph):
+    def build(self) -> Graph:
+        graph = Graph()
+
+        def analyze_performance(state):
+            metrics = calculate_metrics(state['final_content'])
+            state['analytics'] = {
+                'engagement_score': metrics['engagement'],
+                'reach_prediction': metrics['reach'],
+                'conversion_estimate': metrics['conversion']
+            }
+            return state
+
+        def generate_recommendations(state):
+            recommendations = generate_improvements(state['analytics'], state['goal'])
+            state['recommendations'] = recommendations
+            return state
+
+        graph.add_node("analyze", analyze_performance)
+        graph.add_node("recommend", generate_recommendations)
+        graph.add_edge("analyze", "recommend")
+        return graph
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Practical Case: Implementation of Marketing Agent}
+
+Main Workflow
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+def create_marketing_agent():
+    main_graph = Graph()
+    # Instantiate subgraphs
+    content_graph = ContentCreationSubGraph()
+    analytics_graph = AnalyticsSubGraph()
+
+    # Add configuration node
+    def setup_campaign(state):
+        # Initialize marketing campaign configuration
+        if 'config' not in state:
+            state['config'] = {
+                'audience': state.get('audience', 'general'),
+                'platform': state.get('platform', 'twitter'),
+                'goal': state.get('goal', 'engagement')
+            }
+        return state
+
+    main_graph.add_node("setup", setup_campaign)
+    main_graph.add_node("content", content_graph)
+    main_graph.add_node("analytics", analytics_graph)
+    # Build workflow
+    main_graph.add_edge("setup", "content")
+    main_graph.add_edge("content", "analytics")
+    return main_graph
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Best Practices and Considerations}
+
+      \begin{itemize}
+        \item Design Principles for Subgraphs
+		      \begin{itemize}
+				\item Keep subgraph functionality singular
+				\item Ensure clear input and output interfaces
+				\item Properly handle state passing
+			  \end{itemize}
+				
+        \item Performance Considerations
+		      \begin{itemize}
+				\item Avoid frequent large data transfers between subgraphs
+				\item Design state storage structures reasonably
+				\item Consider asynchronous processing needs
+			  \end{itemize}
+				
+        \item Error Handling
+		      \begin{itemize}
+				\item Implement error handling within subgraphs
+				\item Provide clear error messages
+				\item Ensure state consistency
+			  \end{itemize}
+				
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Data State and Induction Functions}
+      \begin{itemize}
+        \item Default behavior overwrites original data completely
+        \item Manual state retrieval and update prevents data loss
+        \item Induction functions provide automatic data accumulation
+        \item Annotated wrapper simplifies state management
+        \item Independent node execution without state conflicts
+        \item Type hints improve code clarity and debugging
+        \item Simplified node modification when updating structures
+        \item Enhanced data consistency across workflow execution
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Induction Functions Example}
+
+Understanding how data states are handled in LangGraph is crucial. By default, the dictionary data returned by nodes will overwrite the original data, which may lead to unexpected results. For example:
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing import TypedDict, Annotated
+
+# Problem: Default behavior overwrites data
+class MyState(TypedDict):
+    messages: list
+
+def fn1(state: MyState):
+    return {"messages": [4]}
+
+r = graph.invoke({"messages": [1, 2, 3]})
+# Result: {"messages": [4]} instead of [1,2,3,4]
+
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Induction Functions Example}
+
+To solve this problem, LangGraph provides two methods for accumulating data:
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+
+# Manually retrieve and update the original state:
+  def fn1(state: MyState):
+      old = state.get("messages", [])
+      return {"messages": old + [4]}
+
+	
+# Use LangGraph's Annotated wrapper and induction functions:
+def concat_lists(original: list, new: list) -> list:
+    return original + new
+
+class MyState(TypedDict):
+    messages: Annotated[list, concat_lists]
+
+def fn1(state: MyState):
+    return {"messages": [4]}
+
+r = graph.invoke({"messages": [1, 2, 3]})
+# Result: {'messages': [1, 2, 3, 4]}
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parallel Node Execution}
+      \begin{itemize}
+        \item END node signifies route termination, not graph termination
+        \item Nodes at same level execute in parallel
+        \item Execution order is uncertain in parallel execution
+        \item Control flow by adjusting node connections
+        \item Important for understanding graph execution model
+        \item Optimize performance through parallel processing
+        \item Design considerations for concurrent operations
+        \item Manage dependencies between parallel nodes
+      \end{itemize}
+	  
+\begin{lstlisting}	  
+graph.add_edge(["left1", "right3"], "merge")	
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CheckPoint Mechanism}
+
+Checkpoints can be seen as a storage medium for recording node states. Key features include:
+      \begin{itemize}
+        \item Retrieving the last state and history
+        \item Supports state rollback
+        \item Allows data modification
+        \item Uses thread\_id and thread\_ts to uniquely locate archives
+      \end{itemize}
+	  
+\begin{lstlisting}	  
+  graph.get_state(config)  # Get the last saved state
+  graph.get_state_history(config)  # Get the list of all saved states	
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practice Suggestions}
+      \begin{itemize}
+        \item Choose the appropriate data processing method according to needs, considering using induction functions to handle cumulative data.
+        \item Pay attention to the hierarchy and connection of nodes when designing graph structures to achieve the desired execution flow.
+        \item Make reasonable use of the checkpoint mechanism, but be aware of storage overhead.
+        \item When dealing with complex states, consider using TypedDict and Annotated to enhance type hints and data processing logic.
+      \end{itemize}
+	  
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Considerations}
+      \begin{itemize}
+        \item The default data overwrite behavior may lead to unexpected results, so handle state updates with care.
+        \item In parallel execution of multiple nodes, be aware of the impact of uncertain execution order.
+        \item Consider performance impacts when using the checkpoint mechanism, especially when dealing with large amounts of data or frequent archiving.
+        \item Although induction functions provide convenience, they may increase complexity in certain special operations, requiring a trade-off in use.
+      \end{itemize}
+	  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Streaming Response in LangGraph}
+      \begin{itemize}
+        \item Different from traditional LLM word-by-word output
+        \item Outputs node data state each time for granular control
+        \item Values mode returns complete graph state (total)
+        \item Updates mode returns state changes only (incremental)
+        \item Compiled graph is essentially a Runnable component
+        \item Multiple streaming modes for different use cases
+        \item Enhanced user experience through real-time feedback
+        \item Future improvements for node-level streaming
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Streaming Modes Implementation}
+      \begin{itemize}
+        \item Values mode: Complete state after each node
+        \item Updates mode: Incremental changes as dictionary
+        \item Dictionary keys represent node names
+        \item Dictionary values contain state updates
+        \item Choose mode based on application requirements
+      \end{itemize}
+      \begin{lstlisting}[language=Python, basicstyle=\small]
+# Values mode: Returns complete state values
+inputs = {"messages": [("human", "What are the top 3 results of the 2024 Beijing Half Marathon?")]}
+
+for chunk in agent.stream(inputs, stream_mode="values"):
+    print(chunk["messages"][-1].pretty_print())
+
+# Updates mode: Returns state updates only
+for chunk in agent.stream(inputs, stream_mode="updates"):
+    print(chunk)
+      \end{lstlisting}
+
+\end{frame}
