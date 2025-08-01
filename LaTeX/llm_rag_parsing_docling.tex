@@ -223,6 +223,71 @@
 		\item Attaches relevant metadata including headers and captions
 	\end{itemize}
 	  \end{itemize}
+	  
+\begin{lstlisting}
+from docling.document_converter import DocumentConverter
+from docling.chunking import HybridChunker
+
+doc = DocumentConverter().convert(source=DOC_SOURCE).document
+chunker = HybridChunker()
+chunk_iter = chunker.chunk(dl_doc=doc)
+
+for i, chunk in enumerate(chunk_iter):
+    print(f"=== {i} ===")
+    print(f"chunk.text:\n{f'{chunk.text[:300]}'!r}")
+    enriched_text = chunker.contextualize(chunk=chunk)
+    print(f"chunker.contextualize(chunk):\n{f'{enriched_text[:300]}'!r}")
+    print()
+\end{lstlisting}		  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Basic Table Serialization}
+Inspect the first chunk containing a table — using the default serialization strategy (first example)
+
+	  
+\begin{lstlisting}
+chunker = HybridChunker(tokenizer=tokenizer)
+
+chunk_iter = chunker.chunk(dl_doc=doc)
+
+chunks = list(chunk_iter)
+i, chunk = find_n_th_chunk_with_label(chunks, n=0, label=DocItemLabel.TABLE)
+print_chunk(
+    chunks=chunks,
+    chunk_pos=i,
+)
+
+\end{lstlisting}		  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Table Serialization}
+Specify a different table serializer that serializes tables to Markdown instead of the triplet notation used by default:
+	  
+\begin{lstlisting}
+from docling_core.transforms.chunker.hierarchical_chunker import (
+    ChunkingDocSerializer,
+    ChunkingSerializerProvider,
+)
+from docling_core.transforms.serializer.markdown import MarkdownTableSerializer
+
+class MDTableSerializerProvider(ChunkingSerializerProvider):
+    def get_serializer(self, doc):
+        return ChunkingDocSerializer(
+            doc=doc,
+            table_serializer=MarkdownTableSerializer())
+
+chunker = HybridChunker(
+    tokenizer=tokenizer,
+    serializer_provider=MDTableSerializerProvider(),)
+
+chunk_iter = chunker.chunk(dl_doc=doc)
+
+chunks = list(chunk_iter)
+i, chunk = find_n_th_chunk_with_label(chunks, n=0, label=DocItemLabel.TABL)
+print_chunk(chunks=chunks,chunk_pos=i,)
+\end{lstlisting}		  
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

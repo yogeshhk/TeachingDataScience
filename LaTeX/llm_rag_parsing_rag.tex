@@ -1,0 +1,207 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Parsing for RAG with LLamaIndex}
+
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Overview: RAG with Docling and LlamaIndex}
+      \begin{itemize}
+          \item This implementation demonstrates Retrieval-Augmented Generation (RAG) using Docling for document processing
+          \item Combines document parsing, vector storage, and language model querying in a single pipeline
+          \item Uses ChromaDB as vector store and HuggingFace models for embeddings and text generation
+          \item Docling specializes in parsing complex PDF documents while preserving structure and metadata
+          \item LlamaIndex provides the orchestration layer for building the RAG pipeline
+          \item The system can answer questions about PDF content by retrieving relevant passages and generating responses
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Import Dependencies and Setup}
+      \begin{itemize}
+          \item Import essential libraries for document processing, vector storage, and language models
+          \item Set up environment variables and warning filters for clean execution
+          \item Load environment variables from .env file for API tokens
+          \item Configure tokenizer parallelism to avoid threading conflicts
+          \item Import specialized readers and parsers for document processing
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python]
+import os
+from pathlib import Path
+from tempfile import mkdtemp
+from warnings import filterwarnings
+import torch
+from dotenv import load_dotenv
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+:
+from llama_index.vector_stores.chroma import ChromaVectorStore
+
+load_dotenv()
+
+filterwarnings(action="ignore", category=UserWarning)
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Embedding Model Configuration}
+      \begin{itemize}
+          \item Configure HuggingFace embedding model for converting text to vector representations
+          \item BAAI/bge-small-en-v1.5 is a popular choice for semantic similarity tasks
+          \item Small model size balances performance with resource requirements
+          \item Embeddings enable semantic search by measuring similarity in vector space
+          \item This model supports English text and produces 384-dimensional vectors
+          \item The embedding model is crucial for the retrieval component of RAG
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python]
+EMBED_MODEL = HuggingFaceEmbedding(
+    model_name="BAAI/bge-small-en-v1.5"
+)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Language Model Setup}
+      \begin{itemize}
+          \item Configure local language model using HuggingFace Transformers
+          \item Local execution avoids API rate limits and ensures data privacy
+          \item Context window of 1024 tokens 
+          \item Temperature and top-p parameters control creativity, coherence
+          \item Padding configuration ensures proper token handling during generation
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python]
+GEN_MODEL = HuggingFaceLLM(
+    model_name="microsoft/DialoGPT-small",
+    tokenizer_name="microsoft/DialoGPT-small",
+    context_window=1024,
+    max_new_tokens=256,
+    model_kwargs={
+        "torch_dtype": torch.float32,
+        "do_sample": True,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "pad_token_id": 50256,    },
+    tokenizer_kwargs={"padding_side": "left"},
+    device_map="cpu",)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Source and Query Definition}
+      \begin{itemize}
+          \item Define the PDF document to be processed and indexed
+          \item Specify the query that will be answered using the RAG system
+          \item Document path points to a technical report about NVIDIA and AI models
+          \item Query focuses on identifying main AI models mentioned in the document
+          \item This setup demonstrates domain-specific question answering capabilities
+          \item The system will retrieve relevant sections and generate comprehensive answers
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python]
+SOURCE = "data/NVIDIAAn.pdf"  # Docling Technical Report
+QUERY = "What is NVIDIA's outlook for the first quarter of fiscal 2026?"
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Processing Components}
+      \begin{itemize}
+          \item Initialize DoclingReader for intelligent PDF parsing and content extraction
+          \item MarkdownNodeParser converts document structure into processable nodes
+          \item Docling preserves document layout, tables, and hierarchical structure
+          \item Node parsing breaks documents into semantic chunks for better retrieval
+          \item Each node contains text content plus metadata about source location
+          \item This preprocessing step is crucial for effective information retrieval
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python]
+reader = DoclingReader()
+node_parser = MarkdownNodeParser()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Vector Store Setup with ChromaDB}
+      \begin{itemize}
+          \item Initialize ChromaDB as an in-memory vector database for storing document embeddings
+          \item EphemeralClient stores vectors in memory for fast access during the session
+          \item Create a collection named "quickstart" to organize the vector embeddings
+          \item ChromaVectorStore provides LlamaIndex integration with ChromaDB
+          \item Vector store enables similarity search across document chunks
+          \item In-memory storage is suitable for development and small-scale applications
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python]
+# EphemeralClient operates in-memory
+chroma_client = chromadb.EphemeralClient()
+chroma_collection = chroma_client.create_collection("quickstart")
+
+# Construct vector store for LlamaIndex
+vector_store = ChromaVectorStore(
+    chroma_collection=chroma_collection,
+)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Vector Index Creation and Document Processing}
+      \begin{itemize}
+          \item Create VectorStoreIndex from documents using the configured components
+          \item DoclingReader loads and parses the PDF while preserving structure
+          \item MarkdownNodeParser transforms content into searchable nodes
+          \item StorageContext integrates the ChromaDB vector store
+          \item Embedding model converts text chunks into vector representations
+          \item This step builds the searchable knowledge base for the RAG system
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python]
+index = VectorStoreIndex.from_documents(
+    documents=reader.load_data(SOURCE),
+    transformations=[node_parser],
+    storage_context=StorageContext.from_defaults(
+        vector_store=vector_store
+    ),
+    embed_model=EMBED_MODEL,
+)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Query Execution and Results Display}
+      \begin{itemize}
+          \item Convert the vector index into a query engine with the language model
+          \item Execute the predefined query against the indexed document content
+          \item Query engine performs similarity search to find relevant document chunks
+          \item Language model generates a coherent response based on retrieved context
+          \item Display both the generated answer and the source nodes for transparency
+          \item Source nodes show which parts of the document informed the answer
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python]
+result = index.as_query_engine(llm=GEN_MODEL).query(QUERY)
+
+print(f"Q: {QUERY}")
+print(f"A: {result.response.strip()}")
+print(f"\nSources:")
+print([(n.text, n.metadata) for n in result.source_nodes])
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Pipeline Architecture Summary}
+      \begin{itemize}
+          \item Document Processing: Docling extracts and structures PDF content
+          \item Chunking: MarkdownNodeParser creates semantic text segments
+          \item Embedding: HuggingFace model converts chunks to vector representations
+          \item Storage: ChromaDB stores vectors for efficient similarity search
+          \item Retrieval: Query embeddings find most relevant document chunks
+          \item Generation: Language model synthesizes answers from retrieved context
+          \item Transparency: System returns source information for answer verification
+          \item This architecture enables accurate, contextual responses from document content
+      \end{itemize}
+\end{frame}
