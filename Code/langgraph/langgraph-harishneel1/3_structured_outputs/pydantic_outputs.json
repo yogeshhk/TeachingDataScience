@@ -1,0 +1,96 @@
+// API REQUEST PAYLOAD
+// This is what LangChain sends to the Groq API
+{
+    "model": "llama-3.1-8b-instant",
+    "messages": [
+        {
+            "role": "user",
+            "content": "Tell me about France"
+        }
+    ],
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "Country",
+                "description": "Information about a country",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "name of the country"
+                        },
+                        "language": {
+                            "type": "string",
+                            "description": "language of the country"
+                        },
+                        "capital": {
+                            "type": "string",
+                            "description": "Capital of the country"
+                        }
+                    },
+                    "required": [
+                        "name",
+                        "language",
+                        "capital"
+                    ]
+                }
+            }
+        }
+    ],
+    "tool_choice": {
+        "type": "function",
+        "function": {
+            "name": "Country"
+        }
+    }
+}
+// API RESPONSE
+// This is what Groq returns to LangChain
+{
+    "id": "completion-456abc123def",
+    "object": "chat.completion",
+    "created": 1712052000,
+    "model": "llama-3.1-8b-instant",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": null,
+                "tool_calls": [
+                    {
+                        "id": "call_789xyz456",
+                        "type": "function",
+                        "function": {
+                            "name": "Country",
+                            "arguments": "{\"name\":\"France\",\"language\":\"French\",\"capital\":\"Paris\"}"
+                        }
+                    }
+                ]
+            },
+            "finish_reason": "tool_calls"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 75,
+        "completion_tokens": 24,
+        "total_tokens": 99
+    }
+}
+// WHAT LANGCHAIN PARSES FROM THE RESPONSE
+// This is the JSON that gets passed to your Pydantic model
+{
+    "name": "France",
+    "language": "French",
+    "capital": "Paris"
+}
+// FINAL PYDANTIC OBJECT
+// This is what gets returned to your code
+Country(
+    name="France",
+    language="French",
+    capital="Paris"
+)
+  
