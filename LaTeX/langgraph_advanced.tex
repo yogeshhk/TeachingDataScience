@@ -1,10 +1,416 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Advanced LangGraph}
+{\Large Reflection Agents in LangGraph}
+
+{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
+
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Understanding Reflection - The Human Perspective}
+      \begin{itemize}
+        \item Reflection means looking at yourself or your actions, like viewing yourself in a mirror
+        \item Self-reflection after giving a presentation - thinking about how it went
+        \item Re-reading an email after writing to ensure clarity and correctness
+        \item Considering if a decision was the right choice after making it
+        \item Having a mirror in front of you to think about improvements
+        \item Thinking about what you've done in the past and how to do better
+        \item Foundation concept for understanding AI reflection patterns
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What is a Reflection Agent Pattern?}
+      \begin{itemize}
+        \item AI system pattern that can look at its own outputs and improve them
+        \item Similar to humans looking at themselves in a mirror and self-reflecting
+        \item Makes AI systems better through iterative self-improvement
+        \item Basic reflection agent system consists of two core components
+        \item Generator agent - creates initial output or response
+        \item Reflector agent - analyzes and critiques the generated output
+        \item Both agents work together in a collaborative feedback loop
+        \item Enables continuous improvement through multiple iterations
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Practical Example: Viral Tweet Generator}
+      \begin{itemize}
+        \item Simple application demonstrating basic reflection agent pattern
+        \item Start node initiates the process with user input topic
+        \item Tweet Generation Agent creates initial tweet based on provided topic
+        \item Conditional edge routes output to Tweet Critiquing Agent
+        \item Tweet Critiquing Agent acts as critical reviewer of generated content
+        \item Critique focuses on viral potential: length, CTAs, hooks, hashtags
+        \item Feedback loop continues for 4-6 iterations for improvement
+        \item Each iteration produces progressively better, more viral-worthy tweets
+        \item Real-world application potential as product feature for customers
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{System 1 vs System 2: Traditional vs Reflection Patterns}
+      \begin{itemize}
+        \item \textbf{System 1 (Traditional):} One-shot prompt approach like ChatGPT/Claude
+        \item Fast execution with immediate results
+        \item Subconscious processing without active deep thinking
+        \item Automatic response generation for everyday decisions
+        \item More error-prone due to lack of reflection
+        \item \textbf{System 2 (Reflection Pattern):} Two-agent collaborative approach
+        \item Slower execution due to iterative feedback loops
+        \item More conscious and effortful processing
+        \item Better for complex decisions requiring precision
+        \item Higher reliability through active thought-out responses
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reflection Loop Process Flow}
+      \begin{itemize}
+        \item Initial generation phase creates first response/output
+        \item Reflection phase analyzes generated content critically
+        \item Reflector identifies merits: what went right in the output
+        \item Reflector identifies issues: what went wrong and needs improvement
+        \item Critique feedback sent back to generator brain/agent
+        \item Generator incorporates feedback to revise and improve output
+        \item Loop repeats for predetermined number of iterations (n times)
+        \item Final improved output delivered to user after iteration completion
+        \item Process applicable beyond tweets to any content generation task
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Three Types of Reflection Agents in LangGraph}
+      \begin{itemize}
+        \item \textbf{Basic Reflection Agents:} Foundation pattern with generator and reflector
+        \item Reflector chain where reflector agent and generator agent work together
+        \item Simple feedback loop for iterative improvement
+        \item \textbf{Reflexion Agents:} Advanced pattern building on basic reflection
+        \item Enhanced capabilities beyond basic reflection mechanisms
+        \item \textbf{Language Agent Tree Search (LATS):} Most sophisticated approach
+        \item Tree-based search methodology for complex decision making
+        \item Recommended to master basic reflection first before advancing
+        \item Progressive learning path from basic to advanced patterns
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Introduction to LangGraph Message Graphs}
+      \begin{itemize}
+	\item MessageGraph orchestrates message flow between different nodes in a workflow
+	\item Use MessageGraph for simple routing decisions and basic chatbot conversation flows
+	\item Each node receives full list of previous messages as input
+	\item Nodes can append new messages and return updated message list to next node
+	\item Alternative StateGraph available for complex state management requirements
+	\item MessageGraph maintains single shared message history across all chain operations
+	\item System messages remain separate for each chain while sharing message history
+	\item Perfect for reflection agent patterns where AI generates and critiques iteratively
+	  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Graph Nodes and Structure}
+      \begin{itemize}
+	\item Create MessageGraph instance and define node constants (GENERATE, REFLECT)
+	\item Generate node invokes generation chain with existing message state
+	\item Reflect node uses reflection chain to critique previous AI responses
+	\item Optional: Return human messages for reflection to improve readability and tracing
+	\item Add nodes to graph using \texttt{graph.add\_node(name, function)}
+	\item Set entry point explicitly - typically the generate node for first execution
+	\item Should\_continue function controls iteration cycles based on message count
+	\item Return 'END' when maximum iterations reached, otherwise continue to reflect
+	\item Use conditional edges for branching logic (generate → should\_continue)
+	\item Use simple edges for direct connections (reflect → generate)
+	  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Basic Reflection Agents}
+
+Define two chains first, then add them to graph
+
+{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
+
+\begin{lstlisting}[basicstyle=\scriptsize\ttfamily]
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
+
+generation_prompt = ChatPromptTemplate.from_messages([("system",
+            "You are a twitter techie influencer assistant tasked with writing excellent twitter posts.Generate the best twitter post possible for the user's request. If the user provides critique, respond with a revised version of your previous attempts.",),
+        MessagesPlaceholder(variable_name="messages"),])
+
+reflection_prompt = ChatPromptTemplate.from_messages([("system",
+            "You are a viral twitter influencer grading a tweet. Generate critique and recommendations for the user's tweet. Always provide detailed recommendations, including requests for length, virality, style, etc.",),
+		MessagesPlaceholder(variable_name="messages"), ])
+
+llm = ChatOpenAI(model="gpt-4o")
+generation_chain = generation_prompt | llm
+reflection_chain = reflection_prompt | llm
+  \end{lstlisting}
+  
+  
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Basic Reflection Agents}
+
+Adding to graph
+
+{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
+
+\begin{lstlisting}[basicstyle=\scriptsize\ttfamily]
+from typing import List, Sequence
+from dotenv import load_dotenv
+from langchain_core.messages import BaseMessage, HumanMessage
+from langgraph.graph import END, MessageGraph
+from chains import generation_chain, reflection_chain
+
+load_dotenv()
+
+REFLECT = "reflect"
+GENERATE = "generate"
+graph = MessageGraph()
+
+def generate_node(state):
+    return generation_chain.invoke({
+        "messages": state })
+
+def reflect_node(messages):
+    response = reflection_chain.invoke({
+        "messages": messages})
+    return [HumanMessage(content=response.content)]
+
+graph.add_node(GENERATE, generate_node)
+graph.add_node(REFLECT, reflect_node)
+graph.set_entry_point(GENERATE)
+\end{lstlisting}
+  
+  
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Basic Reflection Agents}
+
+Adding to graph
+
+{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
+
+\begin{lstlisting}[basicstyle=\scriptsize\ttfamily]
+def should_continue(state):
+    if (len(state) > 6):
+        return END 
+    return REFLECT
+
+
+graph.add_conditional_edges(GENERATE, should_continue)
+graph.add_edge(REFLECT, GENERATE)
+
+app = graph.compile()
+
+print(app.get_graph().draw_mermaid())
+app.get_graph().print_ascii()
+
+response = app.invoke(HumanMessage(content="AI Agents taking over content creation"))
+
+print(response)
+
+  \end{lstlisting}
+  
+  
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Structured LLM Outputs}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Introduction to Structured Outputs}
+      \begin{itemize}
+	\item LLMs traditionally return unstructured string responses that are difficult to process programmatically
+	\item Structured outputs allow models to return data matching specific schemas we define
+	\item Essential for software engineering where we work with objects, JSON, and database-ready formats
+	\item Instead of random strings, get organized data with exact properties for manipulation
+	\item Multiple output formats supported: JSON, dictionary, string, YAML, HTML
+	\item Example: Request a joke and receive setup, punchline, and rating in structured JSON format
+	\item Enables seamless integration with databases and application workflows
+	\item Critical foundation for building advanced agentic AI systems like reflexion agents
+	\item Transforms LLM responses from text blobs into actionable data structures
+	\item Makes LLM outputs suitable for automated processing and storage systems
+	  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pydantic Models for Structured Output}
+      \begin{itemize}
+	\item Pydantic is a Python library that defines data structures as blueprints for data validation
+	\item Uses Python type hints (string, integer) to enforce correct data types automatically
+	\item Define classes with required fields and descriptions for each property
+	\item Integrated with LangChain using \texttt{with\_structured\_output()} method for LLM binding
+	\item Works with any chat model (OpenAI, Groq, Llama) by simply swapping the model
+	\item Internally converts Pydantic model into a tool that LLM must use exclusively
+	\item Automatic validation ensures all properties are present with correct data types
+	\item Throws errors automatically if validation fails, enabling fallback strategies
+	\item LLM receives tool schema with property descriptions and required field specifications
+	\item Response parsing and conversion handled automatically by LangChain framework
+	  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pydantic Model Implementation Example}
+      \begin{itemize}
+	\item Use \texttt{with\_structured\_output()} to bind model to LLM instance
+	\item Tool choice parameter forces LLM to use only the specified schema
+	\item Request payload includes tools array with function type and parameter specifications
+	\item Response contains structured JSON matching exact schema requirements
+	\item LangChain handles parsing, validation, and Pydantic model instantiation automatically
+	\item Validation failures trigger automatic error handling for robust applications
+	  \end{itemize}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from pydantic import BaseModel, Field
+
+class Country(BaseModel):
+    """Information about a country"""
+    name: str = Field(description="Name of the country")
+    language: str = Field(description="Language of the country")
+    capital: str = Field(description="Capital of the country")
+
+structured_llm = model.with_structured_output(Country)
+response = structured_llm.invoke("Tell me about France")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Alternative Methods: TypedDict and JSON Schema}
+      \begin{itemize}
+	\item TypedDict approach uses Python typing without Pydantic validation overhead
+	\item Annotated class provides type hints, default values, and property descriptions
+	\item JSON schema method offers direct schema definition without Python classes
+	\item Schema requires title, description, properties, and required field specifications
+	  \end{itemize}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# TypedDict approach
+from typing import TypedDict, Annotated, Optional
+
+class JokeDict(TypedDict):
+    setup: Annotated[str, "Setup of the joke"]
+    punchline: Annotated[str, "Punchline to the joke"]
+    rating: Annotated[Optional[int], None, "Joke rating 1-10"]
+
+# JSON Schema approach
+joke_schema = {"title": "Joke","type": "object",
+    "properties": {
+        "setup": {"type": "string", "description": "Setup of joke"},
+        "punchline": {"type": "string", "description": "Punchline"}
+    },"required": ["setup", "punchline"]
+}
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Reflexion Agent in LangGraph}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reflexion Agent System: Overview}
+      \begin{itemize}
+          \item Addresses drawbacks of basic reflection systems that lack grounding in live data
+          \item Unlike reflection agents, reflexion agents fact-check with external data via API calls
+          \item Combines self-critique with internet search capabilities for enriched content
+          \item Generates citations and references from external sources during content creation
+          \item Particularly useful for marketers writing blog posts requiring recent information
+          \item Not limited to LLM training data cutoff dates like traditional reflection systems
+          \item Iteratively improves content quality through multiple search-revise cycles
+          \item Enables creation of well-researched, factually grounded content with live data
+          \item Prevents hallucinations by validating information against current sources
+          \item Supports episodic memory for context-aware, personalized interactions over time
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reflexion Agent}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{langgraph11}
+
+{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
+
+\end{center}	  
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Core Components Architecture}
+      \begin{itemize}
+          \item \textbf{Actor Agent:} Main driver that orchestrates all subcomponents and processes
+          \item \textbf{Responder Agent:} Generates initial response with self-reflection capabilities
+          \item \textbf{Revisor Agent:} Creates revised responses based on new external data
+          \item \textbf{Tools/Tool Execution:} Handles API calls, primarily internet search functionality
+          \item \textbf{Episodic Memory:} Recalls specific past interactions and experiences for context
+          \item Actor contains all subcomponents: responder, revisor, and execute tools modules
+          \item System operates through iterative loops of generation, search, and revision
+          \item Each component has specific responsibilities within the overall workflow
+          \item Tool execution primarily uses Tavily Search for gathering live internet data
+          \item Architecture designed for modularity and extensibility with additional tools
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Workflow and Data Flow}
+      \begin{itemize}
+          \item User request goes to responder agent for initial content generation
+          \item Responder outputs JSON with response, critique, and suggested search keywords
+          \item Execute tools component searches internet using suggested keywords via Tavily
+          \item Search results combined with initial response fed to revisor agent
+          \item Revisor generates revised response with updated critique and citations
+          \item Citations added to reference external sources used in content creation
+          \item Process iterates: revised search terms trigger new searches and revisions
+          \item Each iteration enriches content with more recent, relevant information
+          \item Content length maintained (e.g., 250 words) while improving quality and accuracy
+          \item Final output returned to user after multiple refinement cycles complete
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{JSON Response Structure Example}
+      \begin{itemize}
+          \item Responder agent outputs structured JSON with three main properties
+          \item \textbf{Response:} Contains the initial generated content (e.g., 250-word blog post)
+          \item \textbf{Critique:} Self-assessment identifying areas for improvement in content
+          \item \textbf{Search Terms:} Keywords suggested for gathering additional relevant information
+          \item Revisor agent extends structure with additional citation property
+          \item \textbf{Citations:} References to external sources with URLs and factual backing
+          \item Revised versions update all properties: response, critique, search terms, citations
+          \item Structure enables systematic improvement through multiple iterations
+          \item JSON format facilitates programmatic processing and integration with LangGraph
+          \item Supports grounding of content claims with verifiable external sources
+      \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Advanced Concepts in LangGraph}
+\end{center}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Advanced Conditional Edges}
