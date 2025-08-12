@@ -1087,3 +1087,169 @@ for chunk in agent.stream(inputs, stream_mode="updates"):
       \end{lstlisting}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Multi Agents in LangGraph}
+
+{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
+
+\end{center}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multi-Agent Systems: Problems and Solutions}
+      \begin{itemize}
+          \item Agent is a system using LLM to control application flow
+          \item Complex systems become harder to manage and scale over time
+          \item Problem: Agents have too many tools, make poor decisions
+          \item Problem: Context grows too complex for single agent tracking
+          \item Problem: Need for multiple specialization areas (planning, research, math)
+          \item Solution: Break application into smaller independent agents
+          \item Independent agents can be simple prompt+LLM or complex React agents
+          \item Primary benefit: Modularity makes development, testing, maintenance easier
+          \item Primary benefit: Specialization creates expert domain-focused agents
+          \item Primary benefit: Control explicit agent communication vs function calling
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multi-Agent Architecture Types}
+      \begin{itemize}
+          \item Single Agent: Basic LLM with tools attachment
+          \item Network: Four agents communicating with each other directly
+          \item Network: Agents solve task parts, hand control to next agent
+          \item Supervisor: One supervisor orchestrates team of specialized employees
+          \item Supervisor: Coding agent, research agent, validation agent examples
+          \item Supervisor: Agents don't communicate directly, only through supervisor
+          \item Supervisor as Tools: Same as supervisor but agents provided as LLM tools
+          \item Hierarchical: Extension of supervisor with multiple supervisor levels
+          \item Hierarchical: Similar to big company organizational structure
+          \item Custom: No clear definitions, conditional flow based on agent outputs
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multi-Agent Architecture Types}
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{langgraph12}
+
+{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
+
+\end{center}	  
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraphs: Foundation for Multi-Agent Systems}
+      \begin{itemize}
+          \item Subgraphs build complex systems with multiple graph components
+          \item Common use case: Building multi-agent systems architecture
+          \item Key question: How parent graph and subgraph communicate
+          \item Key question: How to pass state between graphs during execution
+          \item Scenario 1: Parent and subgraph share same schema keys
+          \item Scenario 1: Add node with compiled subgraph directly
+          \item Scenario 2: Parent and subgraph have different schemas
+          \item Scenario 2: Add node function that invokes subgraph with transformation
+          \item Transformation useful when state schemas differ between graphs
+          \item Foundation enables building complex multi-agent architectures
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementing Subgraphs: Code Examples}
+      \begin{itemize}
+          \item Case 1: Shared schema - direct embedding approach
+          \item Case 2: Different schemas - intermediate transformation node required
+          \item Child graph: Simple LLM with Tavily search tool integration
+          \item Parent graph: Embeds child graph as specialized search agent
+          \item Shared schema: Compile subgraph, add as parent graph node
+          \item Different schema: Extract query, transform to messages format
+          \item Different schema: Invoke subgraph, extract response from result
+          \item State transformation: Convert between parent and child schemas
+          \item Example: Weather query routing through search agent subgraph
+          \item Pattern enables modular, scalable multi-agent system construction
+      \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementing Subgraphs: Code Examples}
+
+Parent and subgraph have shared state keys in their state schemas. In this case, you can include the subgraph as a node in the parent graph
+
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.graph import StateGraph, MessagesState, START
+
+# Subgraph
+
+def call_model(state: MessagesState):
+    response = model.invoke(state["messages"])
+    return {"messages": response}
+
+subgraph_builder = StateGraph(State)
+subgraph_builder.add_node(call_model)
+...
+subgraph = subgraph_builder.compile()
+
+# Parent graph
+
+builder = StateGraph(State)
+builder.add_node("subgraph_node", subgraph)
+builder.add_edge(START, "subgraph_node")
+graph = builder.compile()
+...
+graph.invoke({"messages": [{"role": "user", "content": "hi!"}]})
+      \end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementing Subgraphs: Code Examples}
+
+Parent  graph and subgraph have different schemas (no shared state keys in their state schemas). In this case, you have to call the subgraph from inside a node in the parent graph
+
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing_extensions import TypedDict, Annotated
+from langchain_core.messages import AnyMessage
+from langgraph.graph import StateGraph, MessagesState, START
+from langgraph.graph.message import add_messages
+
+class SubgraphMessagesState(TypedDict):
+    subgraph_messages: Annotated[list[AnyMessage], add_messages]
+
+# Subgraph
+
+def call_model(state: SubgraphMessagesState):
+    response = model.invoke(state["subgraph_messages"])
+    return {"subgraph_messages": response}
+
+subgraph_builder = StateGraph(SubgraphMessagesState)
+subgraph_builder.add_node("call_model_from_subgraph", call_model)
+subgraph_builder.add_edge(START, "call_model_from_subgraph")
+...
+subgraph = subgraph_builder.compile()
+
+# Parent graph
+
+def call_subgraph(state: MessagesState):
+    response = subgraph.invoke({"subgraph_messages": state["messages"]})
+    return {"messages": response["subgraph_messages"]}
+
+builder = StateGraph(State)
+builder.add_node("subgraph_node", call_subgraph)
+builder.add_edge(START, "subgraph_node")
+graph = builder.compile()
+...
+graph.invoke({"messages": [{"role": "user", "content": "hi!"}]})
+      \end{lstlisting}
+\end{frame}
