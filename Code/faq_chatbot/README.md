@@ -67,17 +67,16 @@ This will create sample FAQ data and test the chatbot with example questions.
 #### Option 3: Benchmark Testing
 ```bash
 # Test with cosine similarity (default)
-python benchmark_testing.py --csv_file your_faq.csv --questions 10
+python benchmark_testing.py 
 
-# Test with LLM judge evaluation
-python benchmark_testing.py --csv_file your_faq.csv --mode llm --questions 5
+# Test with LLM judge evaluation (change mode inside)
 ```
 
 ## 📋 CSV Format
 
 Your FAQ CSV file should have at least 2 columns:
 
-| question | answer |
+| Question | Answer |
 |----------|--------|
 | What is your return policy? | We offer a 30-day return policy for all unused items. |
 | How long does shipping take? | Standard shipping takes 5-7 business days. |
@@ -184,7 +183,7 @@ tester.print_results(results)
 
 ### Common Issues
 
-1. **"GROQ_API_KEY environment variable not found"**
+1. **"HUGGINGFACE_API_KEY environment variable not found"**
    - Solution: Set your HuggingFace API key as an environment variable
 
 2. **"CSV file must have at least 2 columns"**
@@ -260,5 +259,4 @@ benchmark_testing.py: it runs the query function from the FAQ class on random 10
 README.md: standard GitHub readme with introduction, explanation of the files, how to use and contribution sections.
 
 Please review all these files a few times for consistency before outputting. Keep code simple and well documented.
-
 ```
