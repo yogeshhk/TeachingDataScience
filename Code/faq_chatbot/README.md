@@ -1,6 +1,6 @@
 # FAQ Chatbot with RAG (Retrieval Augmented Generation)
 
-A sophisticated FAQ chatbot built using Retrieval Augmented Generation (RAG) approach with LlamaIndex and Groq LLM API. The system vectorizes FAQ questions, performs semantic similarity search, and returns relevant answers from your FAQ dataset.
+A sophisticated FAQ chatbot built using Retrieval Augmented Generation (RAG) approach with LlamaIndex and HuggingFace LLM API. The system vectorizes FAQ questions, performs semantic similarity search, and returns relevant answers from your FAQ dataset.
 
 ## 🌟 Features
 

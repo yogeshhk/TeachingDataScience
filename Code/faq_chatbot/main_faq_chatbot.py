@@ -8,7 +8,8 @@ import os
 import pandas as pd
 from typing import List, Optional, Tuple
 import logging
-from llama_index.core import Document, VectorStoreIndex, Settings
+import hashlib
+from llama_index.core import Document, VectorStoreIndex, Settings, StorageContext, load_index_from_storage
 from llama_index.core.node_parser import SimpleNodeParser
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 # from llama_index.llms.groq import Groq
@@ -49,6 +50,15 @@ class FAQChatbot:
         self._load_faq_data()
         self._create_vector_index()
         
+    def _get_index_path(self) -> str:
+        """Generate unique index path based on CSV file content hash."""
+        # Create hash of CSV content for unique identification
+        with open(self.csv_file_path, 'rb') as f:
+            file_hash = hashlib.md5(f.read()).hexdigest()[:8]
+        
+        index_dir = f"index_storage_{file_hash}"
+        return index_dir
+        
     # def _setup_llm_and_embeddings(self):
     #     """Configure LLM and embedding models for LlamaIndex."""
     #     try:
@@ -80,13 +90,16 @@ class FAQChatbot:
             if not hf_api_key:
                 raise ValueError("HUGGINGFACE_API_KEY environment variable not found")
             
+            # Set the HF token as environment variable for authentication
+            os.environ['HF_TOKEN'] = hf_api_key
+            
             llm = HuggingFaceLLM(
                 model_name="google/gemma-2b-it",
                 tokenizer_name="google/gemma-2b-it",
-                token=hf_api_key,
                 context_window=2048,
                 max_new_tokens=512,
-                generate_kwargs={"temperature": 0.1, "do_sample": True}
+                generate_kwargs={"temperature": 0.1, "do_sample": True},
+                model_kwargs={"torch_dtype": "auto"}
             )
             
             # Use HuggingFace embedding model (free alternative)
@@ -124,35 +137,75 @@ class FAQChatbot:
             raise
     
     def _create_vector_index(self):
-        """Create vector index from FAQ questions with answers as metadata."""
+        """Create or load vector index from FAQ questions with answers as metadata."""
+        index_path = self._get_index_path()
+        
+        try:
+            # Try to load existing index
+            if os.path.exists(index_path):
+                logger.info(f"Loading existing index from {index_path}")
+                from llama_index.core import StorageContext, load_index_from_storage
+                
+                storage_context = StorageContext.from_defaults(persist_dir=index_path)
+                self.index = load_index_from_storage(storage_context)
+                
+                # Create query engine
+                retriever = VectorIndexRetriever(
+                    index=self.index,
+                    similarity_top_k=3
+                )
+                self.query_engine = RetrieverQueryEngine(retriever=retriever)
+                
+                logger.info("Vector index loaded successfully from storage")
+                return
+        
+        except Exception as e:
+            logger.warning(f"Failed to load existing index: {e}. Creating new index.")
+           
+        # Create new index if loading failed or doesn't exist  
         try:
             documents = []
             
             for idx, row in self.faq_data.iterrows():
+                # Truncate long answers to fit within metadata limits
+                answer = str(row['Answer'])
+                if len(answer) > 800:  # Leave some buffer for other metadata
+                    answer = answer[:800] + "..."
+                
                 # Create document with question as content and answer as metadata
                 doc = Document(
-                    text=row['question'],
+                    text=row['Question'],
                     metadata={
-                        'answer': row['answer'],
+                        'answer': answer,
                         'question_id': idx,
-                        'original_question': row['question']
+                        'original_question': row['Question']
                     }
                 )
                 documents.append(doc)
             
-            # Create vector index
-            self.index = VectorStoreIndex.from_documents(documents)
-            
+            # Configure node parser with larger chunk size
+            node_parser = SimpleNodeParser.from_defaults(
+                chunk_size=2048,  # Increased from default 1024
+                chunk_overlap=20
+            )            
+            # Create vector index with custom node parser
+            self.index = VectorStoreIndex.from_documents(
+                documents, 
+                node_parser=node_parser
+            )
+                
             # Create query engine with similarity threshold
             retriever = VectorIndexRetriever(
                 index=self.index,
                 similarity_top_k=3
             )
             
-            self.query_engine = RetrieverQueryEngine(
-                retriever=retriever,
-                postprocessors=[SimilarityPostprocessor(similarity_cutoff=self.similarity_threshold)]
-            )
+            self.query_engine = RetrieverQueryEngine(retriever=retriever)
+            
+            # self.query_engine = RetrieverQueryEngine(
+            #     retriever=retriever,
+            #     postprocessors=[SimilarityPostprocessor(similarity_cutoff=self.similarity_threshold)]
+            # )
             
             logger.info("Vector index created successfully")
             
@@ -209,8 +262,8 @@ class FAQChatbot:
         if self.faq_data is not None:
             return {
                 'total_faqs': len(self.faq_data),
-                'avg_question_length': self.faq_data['question'].str.len().mean(),
-                'avg_answer_length': self.faq_data['answer'].str.len().mean(),
+                'avg_question_length': self.faq_data['Question'].str.len().mean(),
+                'avg_answer_length': self.faq_data['Answer'].str.len().mean(),
                 'similarity_threshold': self.similarity_threshold
             }
         return {}

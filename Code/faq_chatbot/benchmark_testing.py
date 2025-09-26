@@ -286,73 +286,42 @@ class BenchmarkTester:
 
 def main():
     """Main function to run benchmark testing."""
-    parser = argparse.ArgumentParser(description='Benchmark FAQ Chatbot Performance')
-    parser.add_argument('--csv_file', type=str, default='sample_faq.csv',
-                       help='Path to FAQ CSV file')
-    parser.add_argument('--mode', choices=['cosine', 'llm'], default='cosine',
-                       help='Evaluation mode: cosine similarity or LLM judge')
-    parser.add_argument('--questions', type=int, default=10,
-                       help='Number of questions to test')
-    parser.add_argument('--output', type=str, default='benchmark_results.csv',
-                       help='Output CSV file for detailed results')
-    
-    args = parser.parse_args()
+    csv_file = 'data/BankFAQs.csv'
+    mode = 'cosine'
+    n_questions = 10
+    output_file = 'benchmark_results.csv'
     
     try:
         # Check if CSV file exists
-        if not os.path.exists(args.csv_file):
-            print(f"CSV file {args.csv_file} not found. Creating sample data...")
-            sample_data = {
-                'question': [
-                    'What is your return policy?',
-                    'How long does shipping take?',
-                    'Do you offer customer support?',
-                    'What payment methods do you accept?',
-                    'How can I track my order?',
-                    'Do you ship internationally?',
-                    'What is your refund process?',
-                    'How can I cancel my order?',
-                    'Do you offer warranties?',
-                    'What are your business hours?',
-                    'How do I contact technical support?',
-                    'Can I change my shipping address?',
-                    'What is the minimum order value?',
-                    'Do you offer bulk discounts?',
-                    'How do I create an account?'
-                ],
-                'answer': [
-                    'We offer a 30-day return policy for all unused items in original packaging.',
-                    'Standard shipping takes 5-7 business days. Express shipping takes 2-3 business days.',
-                    'Yes, we offer 24/7 customer support via email, chat, and phone.',
-                    'We accept all major credit cards, PayPal, and bank transfers.',
-                    'You can track your order using the tracking number sent to your email after shipment.',
-                    'Yes, we ship to over 50 countries worldwide. International shipping takes 10-15 business days.',
-                    'Refunds are processed within 5-7 business days after we receive the returned item.',
-                    'You can cancel your order within 2 hours of placement by contacting customer support.',
-                    'Yes, we offer a 1-year warranty on all products against manufacturing defects.',
-                    'Our business hours are Monday to Friday 9 AM to 6 PM EST.',
-                    'Technical support is available 24/7 via our help desk and online chat.',
-                    'You can change your shipping address within 1 hour of placing the order.',
-                    'The minimum order value is $25 for domestic orders and $50 for international orders.',
-                    'Yes, we offer bulk discounts starting from orders of 100 items or more.',
-                    'You can create an account by clicking the Sign Up button and filling out the registration form.'
-                ]
-            }
-            df = pd.DataFrame(sample_data)
-            df.to_csv(args.csv_file, index=False)
-            print(f"Sample FAQ data created: {args.csv_file}")
+        if not os.path.exists(csv_file):
+            print(f"Error: CSV file {csv_file} not found.")
+            print("Please ensure the BankFAQs.csv file exists in the data/ directory.")
+            return 1
+        
+        # Validate CSV has required columns
+        try:
+            test_df = pd.read_csv(csv_file)
+            if len(test_df.columns) < 2:
+                print(f"Error: CSV file must have at least 2 columns (questions and answers).")
+                return 1
+            if len(test_df) < n_questions:
+                print(f"Warning: CSV file has only {len(test_df)} rows. Testing with available data.")
+                n_questions = len(test_df)
+        except Exception as e:
+            print(f"Error reading CSV file: {e}")
+            return 1
         
         # Initialize benchmark tester
-        tester = BenchmarkTester(args.csv_file, args.mode)
+        tester = BenchmarkTester(csv_file, mode)
         
         # Run benchmark
-        results = tester.run_benchmark(args.questions)
+        results = tester.run_benchmark(n_questions)
         
         # Display results
         tester.print_results(results)
         
         # Save detailed results
-        tester.save_results_to_csv(results, args.output)
+        tester.save_results_to_csv(results, output_file)
         
         # Performance summary
         summary = results['summary']
@@ -373,6 +342,7 @@ def main():
     except Exception as e:
         logger.error(f"Benchmark testing failed: {e}")
         print(f"Error: {e}")
+        print("Please make sure you have set the HUGGINGFACE_API_KEY environment variable")
         return 1
     
     return 0
