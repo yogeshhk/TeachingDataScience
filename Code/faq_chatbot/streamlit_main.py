@@ -52,7 +52,7 @@ def load_faq_from_upload(uploaded_file, similarity_threshold):
         # Validate CSV format
         df = pd.read_csv(tmp_file_path)
         if len(df.columns) < 2:
-            st.error("CSV file must have at least 2 columns (questions and answers)")
+            st.error("CSV file must have at least 2 columns (Question and Answer)")
             os.unlink(tmp_file_path)
             return None
         
@@ -94,7 +94,7 @@ def main():
         uploaded_file = st.file_uploader(
             "Upload FAQ CSV File",
             type=['csv'],
-            help="CSV should have two columns: questions and answers"
+            help="CSV should have two columns: Question and Answer"
         )
         
         # Similarity threshold
@@ -108,15 +108,16 @@ def main():
         )
         
         # API Key status
-        groq_api_key = os.getenv('GROQ_API_KEY')
-        if groq_api_key:
-            st.success("✅ GROQ API Key found")
-        else:
-            st.error("❌ GROQ API Key not found")
-            st.info("Please set GROQ_API_KEY environment variable")
+        # Initialize Hugging Face LLM with Gemma
+        hf_api_key = os.getenv('HUGGINGFACE_API_KEY')
+        if not hf_api_key:
+            raise ValueError("HUGGINGFACE_API_KEY environment variable not found")
+        
+        # Set the HF token as environment variable for authentication
+        os.environ['HF_TOKEN'] = hf_api_key
         
         # Load chatbot when file is uploaded
-        if uploaded_file is not None and groq_api_key:
+        if uploaded_file is not None and hf_api_key:
             if not st.session_state.faq_loaded:
                 with st.spinner("Loading FAQ data..."):
                     st.session_state.chatbot = load_faq_from_upload(
@@ -149,9 +150,9 @@ def main():
             st.rerun()
     
     # Main chat interface
-    if not groq_api_key:
-        st.warning("⚠️ Please set your GROQ API key as an environment variable to use the chatbot.")
-        st.info("Set GROQ_API_KEY in your environment or deployment platform")
+    if not hf_api_key:
+        st.warning("⚠️ Please set your HUGGINGFACE API key as an environment variable to use the chatbot.")
+        st.info("Set HUGGINGFACE_API_KEY in your environment or deployment platform")
         return
     
     if not st.session_state.faq_loaded:
@@ -160,12 +161,12 @@ def main():
         # Show sample format
         st.subheader("📋 Expected CSV Format")
         sample_df = pd.DataFrame({
-            'question': [
+            'Question': [
                 'What is your return policy?',
                 'How long does shipping take?',
                 'Do you offer customer support?'
             ],
-            'answer': [
+            'Answer': [
                 'We offer a 30-day return policy for all unused items.',
                 'Standard shipping takes 5-7 business days.',
                 'Yes, we offer 24/7 customer support via email and chat.'
@@ -214,15 +215,15 @@ def main():
     with st.expander("ℹ️ How to use"):
         st.markdown("""
         **Steps to get started:**
-        1. Set your `GROQ_API_KEY` environment variable
-        2. Upload a CSV file with FAQ data (questions in first column, answers in second)
+        1. Set your `HUGGINGFACE_API_KEY` environment variable
+        2. Upload a CSV file with FAQ data (Questions in first column, Answers in second)
         3. Adjust the similarity threshold if needed
-        4. Start asking questions!
+        4. Start asking Questions!
         
         **Tips:**
         - Higher similarity threshold = more strict matching
         - Lower similarity threshold = more flexible matching
-        - The bot will find the most similar FAQ question and return its answer
+        - The bot will find the most similar FAQ Question and return its Answer
         """)
 
 if __name__ == "__main__":

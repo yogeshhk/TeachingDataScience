@@ -28,7 +28,7 @@ faq-chatbot/
 ### Prerequisites
 
 1. **Python 3.8+** installed on your system
-2. **Groq API Key** - Get one from [Groq Console](https://console.groq.com/)
+2. **HUGGINGFACE API Key** - Get one from its site
 
 ### Installation
 
@@ -39,13 +39,13 @@ faq-chatbot/
 pip install -r requirements.txt
 ```
 
-3. **Set up your Groq API key**:
+3. **Set up your HUGGINGFACE API key**:
 ```bash
 # On Linux/Mac
-export GROQ_API_KEY="your_groq_api_key_here"
+export HUGGINGFACE_API_KEY="your_hf_api_key_here"
 
 # On Windows
-set GROQ_API_KEY=your_groq_api_key_here
+set HUGGINGFACE_API_KEY=your_hf_api_key_here
 ```
 
 ### Running the Application
@@ -109,7 +109,7 @@ The core chatbot implementation featuring:
 - **Vector Indexing**: Creates embeddings for FAQ questions using HuggingFace models
 - **Similarity Search**: Matches user queries to FAQ questions using vector similarity
 - **Metadata Storage**: Stores answers as metadata with question vectors
-- **Groq LLM Integration**: Uses Groq API for language model capabilities
+- **HuggingFace LLM Integration**: Uses HuggingFace API for language model capabilities
 
 **Key Methods:**
 - `query(user_question)`: Main method to get answers for user questions
@@ -145,7 +145,7 @@ Comprehensive testing framework:
 streamlit>=1.28.0
 pandas>=1.5.0
 llama-index>=0.9.0
-llama-index-llms-groq>=0.1.0
+llama-index-llms-huggingface>=0.1.0
 llama-index-embeddings-huggingface>=0.1.0
 sentence-transformers>=2.2.0
 scikit-learn>=1.3.0
@@ -185,7 +185,7 @@ tester.print_results(results)
 ### Common Issues
 
 1. **"GROQ_API_KEY environment variable not found"**
-   - Solution: Set your Groq API key as an environment variable
+   - Solution: Set your HuggingFace API key as an environment variable
 
 2. **"CSV file must have at least 2 columns"**
    - Solution: Ensure your CSV has question and answer columns
@@ -251,7 +251,7 @@ For questions, issues, or feature requests:
 ```
 You are an expert in building Generative AI apps using Retrieval Augmented Generation (RAG) approach. Please help build such RAG based chatbot app in python programming to answer questions from FAQs stored in a CSV file having two columns one for questions and the other for the corresponding anawes. Please generate following files:
 
-main_faq_chatbot.py:  main chatbot class which has rag approach on faq CSV. Uses llamaindex library and groq llm API. It vectorizes and indexes questions from the first column and stories corresponding answers each vector along with the metadata. When a query comes, it is vectorized and matched to vectors of questions only, answe for the most similar queston, above threshold is given as the answer. The _main_ below the file tests a couple of questions similar to questions in the csv. 
+main_faq_chatbot.py:  main chatbot class which has rag approach on faq CSV. Uses llamaindex library and HuggingFace llm API. It vectorizes and indexes questions from the first column and stories corresponding answers each vector along with the metadata. When a query comes, it is vectorized and matched to vectors of questions only, answer for the most similar question, above threshold is given as the answer. The _main_ below the file tests a couple of questions similar to questions in the csv. 
 
 streamlit _main-py: it has basic streamlit chatbot ui with facility to upload CSV on the left panel and chatbot interaction boxes in the main panel, this should call just main query function from faq class apart from the constructor.
 
