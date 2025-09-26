@@ -53,11 +53,13 @@ Agno also supports connecting to knowledge stores, like Vector databases, to ena
 \begin{frame}[fragile]\frametitle{Key Features - Model Support \& Performance}
       \begin{itemize}
 	\item \textbf{Model Agnostic:} Unified interface to 23+ model providers with no vendor lock-in
+	\item \textbf{Debugging:} Control plane which connects directly to your AgentOS for testing, monitoring and managing your system
 	\item \textbf{High Performance:} Agents instantiate in approximately 3 microseconds
 	\item \textbf{Memory Efficient:} Uses only 6.5KB memory on average per agent
 	\item \textbf{Scalable Architecture:} Designed for production workloads and high throughput
 	\item \textbf{Zero Dependencies Overhead:} Minimal resource footprint for deployment
 	\item \textbf{Production Ready:} Built-in FastAPI routes for immediate deployment
+	\item \textbf{Security:} AgentOS runs in your cloud and you get complete data privacy because no data ever leaves your system
 	  \end{itemize}
 \end{frame}
 
@@ -101,15 +103,17 @@ pip install -U agno
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{recap: What is an Agent?}
+\begin{frame}[fragile]\frametitle{Recap: What is an Agent?}
 
 \begin{center}
-\includegraphics[width=0.8\linewidth,keepaspectratio]{agno1}
+\includegraphics[width=\linewidth,keepaspectratio]{agno1}
 
 {\tiny (Ref: Agents 101 - Agno channel)}
 \end{center}	  
 \end{frame}
 
+
+      
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Level 1 Agent Example - Basic Setup}
       \begin{itemize}
@@ -138,6 +142,8 @@ reasoning_agent = Agent(
     instructions="Use tables to display data.",
     markdown=True,
 )
+agent.print_response("How NVIDIA stock performed in last two years?",
+                    stream=True, show_full_reasoning=True,stream_intermediate_steps=True)
       \end{lstlisting}
 \end{frame}
 
@@ -166,10 +172,91 @@ agent = Agent(model=Claude(id="claude-sonnet-4-20250514"),
                  "Only output the report, no other text"],
     markdown=True,)
 
-agent.print_response("Write a report on NVDA",
+agent.print_response("Write a report on NVIDIA",
                     stream=True, show_full_reasoning=True,stream_intermediate_steps=True)
       \end{lstlisting}
 \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Build MCP Agent}
+      \begin{itemize}
+	\item Connect the agent to Agno’s documentation via an MCP server, 
+	\item Give it a database to store conversation history and state.
+	\item The AgentOS gives us a FastAPI application with ready-to-use API endpoints for serving, monitoring and managing our Agents.
+	  \end{itemize}
+      
+      \begin{lstlisting}[language=python, basicstyle=\tiny]
+from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
+from agno.models.anthropic import Claude
+from agno.os import AgentOS
+from agno.tools.mcp import MCPTools
+
+# Create the Agent
+agno_agent = Agent(
+    name="Agno Agent",
+    model=Claude(id="claude-sonnet-4-0"),
+    # Add a database to the Agent
+    db=SqliteDb(db_file="agno.db"),
+    # Add the Agno MCP server to the Agent
+    tools=[MCPTools(transport="streamable-http", url="https://docs.agno.com/mcp")],
+    # Add the previous session history to the context
+    add_history_to_context=True,
+    markdown=True,
+)
+
+
+# Create the AgentOS
+agent_os = AgentOS(agents=[agno_agent])
+# Get the FastAPI app for the AgentOS
+app = agent_os.get_app()
+
+>>fastapi dev agno_agent.py % This will start your AgentOS on http://localhost:8000
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Connect your AgentOS}
+      \begin{itemize}
+	\item Agno provides a web interface that connects to your AgentOS, use it to monitor, manage and test your agentic system. 
+	\item Open os.agno.com and sign in to your account.
+		\item \item Click on “Add new OS” in the top navigation bar.
+		\item \item Select “Local” to connect to a local AgentOS running on your machine.
+		\item \item Enter the endpoint URL of your AgentOS. The default is http://	\item localhost:8000.
+	\item Give your AgentOS a descriptive name like “Development OS” or “Local 8000”.
+	\item Click “Connect”.
+	  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Connect your AgentOS}
+	  
+		\begin{center}
+		\includegraphics[width=0.8\linewidth,keepaspectratio]{agno2}
+		
+		{\tiny (Ref: Agno Documentation)}
+		\end{center}	
+	  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chat with your Agent}
+      \begin{itemize}
+		\item \item Go to the Chat section in the sidebar and select your Agent.
+		\item \item Ask “What is Agno?” and the Agent will answer using the Agno MCP server.
+	\item Agents keep their own history, tools, and instructions; switching users won’t mix context.
+	  \end{itemize}
+	  
+		\begin{center}
+		\includegraphics[width=0.8\linewidth,keepaspectratio]{agno3}
+		
+		{\tiny (Ref: Agno Documentation)}
+		\end{center}	
+	  
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Multi-Agent Teams - Architecture Principles}
