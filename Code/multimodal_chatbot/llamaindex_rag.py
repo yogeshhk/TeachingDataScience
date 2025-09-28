@@ -595,7 +595,7 @@ if __name__ == "__main__":
         pipeline = RAGPipeline()
         
         # Process a document
-        document_path = "sample_document.pdf"
+        document_path = "data/SampleReport.pdf"
         if os.path.exists(document_path):
             stats = pipeline.process_document(document_path)
             print(f"Document processed successfully: {stats}")
