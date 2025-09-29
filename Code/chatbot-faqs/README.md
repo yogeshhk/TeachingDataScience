@@ -248,7 +248,7 @@ For questions, issues, or feature requests:
 
 ## Prompt Used for Generating Initial files**
 ```
-You are an expert in building Generative AI apps using Retrieval Augmented Generation (RAG) approach. Please help build such RAG based chatbot app in python programming to answer questions from FAQs stored in a CSV file having two columns one for questions and the other for the corresponding anawes. Please generate following files:
+You are an expert in building Generative AI apps using Retrieval Augmented Generation (RAG) approach. Please help build such RAG based chatbot app in python programming to answer questions from FAQs stored in a CSV file having two columns one for questions and the other for the corresponding answers. Please generate following files:
 
 main_faq_chatbot.py:  main chatbot class which has rag approach on faq CSV. Uses llamaindex library and HuggingFace llm API. It vectorizes and indexes questions from the first column and stories corresponding answers each vector along with the metadata. When a query comes, it is vectorized and matched to vectors of questions only, answer for the most similar question, above threshold is given as the answer. The _main_ below the file tests a couple of questions similar to questions in the csv. 
 
