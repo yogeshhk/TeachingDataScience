@@ -2,1210 +2,1002 @@
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large Introduction to LangGraph}
+
+{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
 \end{center}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Objectives for learning LangGraph}
-      \begin{itemize}
-        \item Build powerful AI agents for products and business applications
-        \item Learn to create agents that think and make decisions independently
-        \item Master human-in-the-loop approval processes
-        \item Practical implementation for job opportunities
-        \item Foundation for building autonomous AI systems
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Prerequisites}
-      \begin{itemize}
-        \item Python Programming: Essential for implementation
-        \item LangChain Understanding: Foundation for LangGraph concepts
-        \item Chat Models: Core LLM interaction patterns
-        \item Prompt Templates: Structured input formatting
-        \item RAG Systems: Retrieval-augmented generation knowledge
-        \item Agents and Tools: Basic agent architecture understanding
-      \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large Background}
-
-{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
-
 \end{center}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Levels of Autonomy in LLM Applications}
+\begin{frame}[fragile]\frametitle{The Evolution of LLM Applications}
       \begin{itemize}
-        \item Code: Very little freedom, 100\% deterministic, executes exactly what we tell it. So, need to write for all cases.
-        \item LLM call: One task, atomic, limited decision-making capabilities.
-        \item Chains: unidirectional sequence of operations, Some autonomous reasoning, but can't branch out, LLM call at each position
-		\item Routers: unidirectional, branching based on reasoning, chains in each branch
-        \item Agents (State Machine): High autonomy with independent thinking, Router with Loops, any direction, Human-in approval, adv memory, refers history
-        \item LangGraph Position: Enables maximum agent autonomy
-        \item Progressive Evolution: Understanding the journey from code to agents
-        \item Freedom Spectrum: From rigid execution to flexible decision-making
+        \item \textbf{Early Days}: Simple prompt-response patterns with single LLM calls
+        \item \textbf{Challenge}: Real-world problems require multiple steps, decisions, and tool usage
+        \item \textbf{Question}: How do we give LLMs more capability while maintaining control?
+        \item \textbf{Journey}: From deterministic code → intelligent chains → autonomous agents
+        \item \textbf{Core Tension}: Freedom vs Reliability
+        \begin{itemize}
+            \item More autonomy = More capable, but less predictable
+            \item More structure = More reliable, but less flexible
+        \end{itemize}
+        \item \textbf{Goal}: Find the sweet spot between flexibility and control
       \end{itemize}
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Levels of Autonomy: Overview}
+      \begin{itemize}
+        \item Think of autonomy as a spectrum from rigid to flexible
+        \item Each level trades off control for capability
+        \item Understanding these levels helps you choose the right tool
+        \item \textbf{The Spectrum}:
+        \begin{enumerate}
+            \item Code: 100\% deterministic
+            \item LLM Call: Single intelligent decision
+            \item Chains: Sequential reasoning
+            \item Routers: Conditional branching
+            \item Agents: Autonomous decision-making with loops
+        \end{enumerate}
+        \item LangGraph enables Level 5 with reliability
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Level 1-2: Code and Single LLM Calls}
+      \begin{itemize}
+        \item \textbf{Level 1 - Pure Code}:
+        \begin{itemize}
+            \item Example: `if temperature > 30: return "It's hot"` 
+            \item 100\% deterministic, predictable
+            \item Problem: Must anticipate every scenario
+            \item Use case: Simple rule-based logic
+        \end{itemize}
+        \item \textbf{Level 2 - Single LLM Call}:
+        \begin{itemize}
+            \item Example: "Summarize this article" → LLM → Summary
+            \item One atomic task, limited reasoning
+            \item Problem: Cannot break down complex tasks
+            \item Use case: Text generation, classification, extraction
+        \end{itemize}
+        \item \textbf{Limitation}: Both lack multi-step reasoning capability
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Level 3: Chains - Sequential Reasoning}
+      \begin{itemize}
+        \item \textbf{What}: Unidirectional sequence of LLM operations
+        \item \textbf{Example - Customer Support}:
+        \begin{itemize}
+            \item Step 1: Classify intent (complaint/question/request)
+            \item Step 2: Extract key information (order ID, issue)
+            \item Step 3: Generate appropriate response
+        \end{itemize}
+        \item \textbf{Flow}: A → B → C → End (no branching, no loops)
+        \item \textbf{Advantages}: Predictable, reliable, easy to debug
+        \item \textbf{Limitations}: 
+        \begin{itemize}
+            \item Cannot adapt to different scenarios
+            \item No conditional logic or branching
+            \item Fixed execution path regardless of context
+        \end{itemize}
+        \item Like an assembly line - efficient but inflexible
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Level 4: Routers - Conditional Branching}
+      \begin{itemize}
+        \item \textbf{What}: Chains with decision points, but still unidirectional
+        \item \textbf{Example - Document Processing}:
+        \begin{itemize}
+            \item Analyze document type (invoice/contract/email)
+            \item IF invoice → Extract line items → Calculate total
+            \item IF contract → Extract parties → Identify key terms
+            \item IF email → Classify urgency → Route to handler
+        \end{itemize}
+        \item \textbf{Flow}: Decision node routes to specialized chains
+        \item \textbf{Advantages}: Handles different scenarios, specialized processing
+        \item \textbf{Limitations}:
+        \begin{itemize}
+            \item Still no loops or backward flow
+            \item Cannot revisit earlier decisions
+            \item One-way path through the system
+        \end{itemize}
+        \item Like a train switching tracks - more flexible but still one direction
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Level 5: Agents - Autonomous with Loops}
+      \begin{itemize}
+        \item \textbf{What}: State machines with independent thinking, can loop and branch
+        \item \textbf{Example - Research Assistant}:
+        \begin{itemize}
+            \item User: "Analyze SpaceX's latest launch success rate"
+            \item Agent thinks: "I need current data and historical context"
+            \item Action 1: Search web for latest SpaceX launches
+            \item Observation: Found data but it's incomplete
+            \item Action 2: Search for historical launch records
+            \item Observation: Now have full picture
+            \item Final answer: Synthesize findings into analysis
+        \end{itemize}
+        \item \textbf{Key Features}: Think → Act → Observe → Decide → Repeat
+        \item \textbf{Challenge}: Can loop infinitely if not controlled
+        \item \textbf{LangGraph Solution}: Explicit state management + cycle limits
+      \end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Levels of Autonomy in LLM Applications}
-
 \begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{langgraph5}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{langgraph5}
 
 {\tiny (Ref: LangGraph Crash Course - Harish Neel)}
-
 \end{center}	  
-
-
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Why LangGraph?}
+\end{center}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Introduction to AI Agents}
+\begin{frame}[fragile]\frametitle{Why LangGraph? - The Comprehensive Pitch}
       \begin{itemize}
-        \item AI agents are the problem solvers of the AI world
-        \item They are capable of autonomous thinking and decision-making
-        \item Unlike chains and routers, agents don't just follow specific instructions
-        \item Agents can decide for themselves what steps to take
-        \item They represent AI systems that can make independent decisions
-        \item Agents take problem-solving capabilities a step further than traditional AI systems
+        \item \textbf{Problem}: Traditional chains are too rigid, pure agents are too unpredictable
+        \item \textbf{Solution}: LangGraph provides controlled flexibility through graph-based state machines
+        \item \textbf{Key Benefits}:
+        \begin{itemize}
+            \item Explicit control flow with loops, branches, and conditional logic
+            \item Built-in state persistence for long-running workflows
+            \item Human-in-the-loop capabilities at any point
+            \item Streaming support for real-time feedback
+            \item Production-ready with debugging and observability
+        \end{itemize}
+        \item \textbf{Use Cases}: Multi-step reasoning, workflow automation, complex decision trees, collaborative agents
+        \item \textbf{Result}: Reliable autonomous systems that combine flexibility with predictability
       \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Understanding Tools for AI Agents}
+\begin{frame}[fragile]\frametitle{Agents in LangChain vs LangGraph}
       \begin{itemize}
-        \item Tools are specific functions that agents use to complete tasks
-        \item Analogy: Like a chef's kitchen tools - knife for cutting, oven for baking, blender for mixing
-        \item Tools provide special abilities to AI agents
-        \item Common tools include calculator, search engine, and calendar functions
-        \item Tools extend the agent's capabilities beyond basic reasoning
-        \item They enable agents to interact with external systems and perform specific operations
+        \item \textbf{LangChain Agents (AgentExecutor)}:
+        \begin{itemize}
+            \item Black-box execution with limited control
+            \item Fixed ReAct pattern implementation
+            \item Cannot pause, resume, or modify mid-execution
+            \item No state persistence across sessions
+            \item Prone to infinite loops without guardrails
+        \end{itemize}
+        \item \textbf{LangGraph Agents}:
+        \begin{itemize}
+            \item White-box with full visibility into execution
+            \item Custom patterns beyond ReAct
+            \item Pause, resume, edit state at any node
+            \item Persistent state with checkpointing
+            \item Explicit cycle limits and control flow
+        \end{itemize}
+        \item \textbf{Bottom Line}: LangChain agents for simple tasks, LangGraph for production systems
       \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{The ReAct Agent Pattern}
+\begin{frame}[fragile]\frametitle{Why Graph Structure Over Chains?}
       \begin{itemize}
-        \item ReAct stands for Reasoning plus Acting
-        \item One of the best-known patterns for building AI agents today
-        \item Mimics how human beings think and solve problems
-        \item Combines reasoning capabilities with action execution
-        \item Provides a structured approach to agent decision-making
-        \item Forms the foundation for many modern AI agent implementations
+        \item \textbf{Chains Limitation}: Linear, unidirectional flow - A → B → C → End
+        \item \textbf{Real-World Problems}: Require branching, loops, and conditional paths
+        \item \textbf{Graph Advantages}:
+        \begin{itemize}
+            \item Conditional branching: "If quality < threshold, loop back"
+            \item Multiple paths: "Route to specialized nodes based on task type"
+            \item Cycles: "Iterate until convergence or max iterations"
+            \item Parallel execution: "Process multiple sub-tasks simultaneously"
+        \end{itemize}
+        \item \textbf{Research-Backed}: Most complex AI problem-solving papers use graph structures
+        \item \textbf{Natural Fit}: Mirrors human problem-solving with think-act-observe-decide cycles
+        \item Graphs provide flexibility while maintaining explicit control flow
       \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{ReAct Pattern Components}
+\begin{frame}[fragile]\frametitle{Agentic Patterns: Autonomous vs Workflow Automation}
       \begin{itemize}
-        \item \textbf{Think}: LLM first thinks about the user's prompt or problem
-        \item \textbf{Action}: LLM decides if it can answer directly or needs a tool
-        \item \textbf{Action Input}: LLM provides input arguments for the selected tool
-        \item \textbf{Observe}: LLM observes the output of the tool execution
-        \item Cycle continues until the final answer is reached
-        \item Mirrors human problem-solving approach: think → act → observe
+        \item \textbf{Autonomous Agents}:
+        \begin{itemize}
+            \item High-level goals with minimal constraints
+            \item Self-directed exploration and decision-making
+            \item Example: "Research this topic and write a report"
+            \item Higher risk of unpredictability
+        \end{itemize}
+        \item \textbf{Workflow Automation Agents}:
+        \begin{itemize}
+            \item Structured processes with defined checkpoints
+            \item Predictable paths with conditional logic
+            \item Example: "Review email → Classify → Route → Draft response"
+            \item Balance between automation and control
+        \end{itemize}
+        \item \textbf{LangGraph Sweet Spot}: Workflow automation with controlled autonomy
+        \item Graphs enable explicit workflow definition while allowing intelligent decisions at each node
       \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{ReAct Pattern Workflow}
-      \begin{itemize}
-        \item Human problem-solving mimicry: identify problem, determine action, observe results
-        \item If answer is found, the cycle ends
-        \item If answer is not found, the cycle repeats with new thinking
-        \item Control flow: LLM suggests → System executes → Results return to LLM
-        \item LLM maintains complete context of all previous think-action-observation cycles
-        \item Multi-step problems require multiple cycles until resolution
-      \end{itemize}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large LangGraph Core Concepts}
+\end{center}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Control Flow in ReAct Pattern}
-      \begin{itemize}
-        \item LLM acts as the reasoning component but doesn't execute tools directly
-        \item LangChain system handles the actual tool execution
-        \item LLM provides arguments, system executes with those arguments
-        \item Tool execution output is returned to the LLM for observation
-        \item LLM has full context of all previous interactions
-        \item System manages the orchestration between reasoning and action
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Agent Architecture: Brain + Tools}
-      \begin{itemize}
-        \item LLM provides the reasoning ability (the "brain")
-        \item Tools provide execution capabilities (API calls, Google search, Python functions)
-        \item Combination of brain + tools = AI Agent
-        \item Reasoning ability alone is not sufficient for complex tasks
-        \item Tools extend the agent's reach into the real world
-        \item This simple formula creates powerful problem-solving systems
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Practical Implementation Approach}
-      \begin{itemize}
-        \item Start with building a basic ReAct agent using LangChain
-        \item Identify drawbacks and limitations of the basic approach
-        \item Understand where LangGraph comes into the picture
-        \item Learn what specific problems LangGraph solves
-        \item Progress from theory to practical coding implementation
-        \item Build understanding through hands-on experience
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Practical Implementation: LangChain ReACT way}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{LangGraph Concepts}
+\begin{itemize}
+\item Model: Large Language Model that supports Function Calling
+\item Tools: Actions taken by app - API calls, database operations, etc.
+\item State: Information carried throughout the workflow (e.g., Message State)
+\item Node: Executable logic container - a LangChain runnable or Tool invoker
+\item Edge: Control flow of information - conditional or normal
+\item Workflow: The graph with nodes and edges that can be invoked or streamed
+\end{itemize}
 
 \begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{langgraph6}
-
-
-{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
-
+\includegraphics[width=0.8\linewidth,keepaspectratio]{langgraph2}
 \end{center}	  
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Practical Implementation: LangChain ReACT way}
-
-ReACT is nothing but a prompting technique.
-
-\begin{center}
-\includegraphics[width=0.8\linewidth,keepaspectratio]{langgraph9}
-
-
-{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
-
-\end{center}	  
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Study Output}
-
-\begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{langgraph7}
-
-\includegraphics[width=\linewidth,keepaspectratio]{langgraph8}
-
-{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
-
-\end{center}	  
-
+{\tiny (Ref: Introduction to LangGraph | Building an AI Generated Podcast - Prompt Circle AI)}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Key Takeaways}
+\begin{frame}[fragile]\frametitle{LangGraph Fundamentals: Nodes, Edges \& State}
       \begin{itemize}
-        \item Agents represent autonomous AI that can make independent decisions
-        \item ReAct pattern provides a structured framework for agent behavior
-        \item Tools are essential for extending agent capabilities beyond reasoning
-        \item The think-action-observe cycle mirrors human problem-solving
-        \item LangChain orchestrates the interaction between reasoning and execution
-        \item Understanding these fundamentals is crucial for advanced agent development
+        \item \textbf{Nodes (N):} Individual processing steps as Python functions that transform state
+        \item Each node encapsulates one sub-task: LLM calls, calculations, tool invocations
+        \item \textbf{Edges (E):} Directed connections determining execution flow between nodes
+        \item Edges can be linear or conditional routes based on current state
+        \item \textbf{State (S):} Shared data object persisting throughout execution
+        \item State enables context and memory across workflow
+        \item StateGraph ties everything together with designated START and END nodes
+        \item Handles interactive, conditional loops that static chains struggle with
       \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{React Agents: Advantages and Flexibility}
-      \begin{itemize}
-        \item React agents offer high flexibility - any state execution is possible
-        \item Dynamic tool execution order: tool 1 → tool 2 or tool 2 → tool 1
-        \item Example: SpaceX launch query could execute Tavily Search first, then get current time
-        \item Alternative execution: get current system time first, then perform research
-        \item Agents can adapt execution flow based on problem requirements
-        \item Multiple valid execution paths for the same problem
-        \item State transitions are not predetermined or fixed
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{React Agents: Drawbacks and Reliability Issues}
-      \begin{itemize}
-        \item High flexibility often leads to reduced reliability
-        \item Infinite loops are a significant problem with React agents
-        \item Tools can get called repeatedly without proper termination
-        \item Common causes of infinite loops:
-        \begin{itemize}
-            \item Incorrectly defined tools
-            \item Insufficient LLM capabilities
-            \item Poor prompting without clear end conditions
-        \end{itemize}
-        \item Execution is not completely under developer control
-        \item Google Gemini example showed tool being called infinitely until stopped
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Chains vs React Agents: The Trade-off}
-      \begin{itemize}
-        \item \textbf{Chains}: Fixed assembly line approach
-        \begin{itemize}
-            \item Low flexibility but high reliability
-            \item Predetermined execution sequence
-            \item Predictable outcomes
-        \end{itemize}
-        \item \textbf{React Agents}: Dynamic execution approach
-        \begin{itemize}
-            \item High flexibility but low reliability
-            \item Unpredictable execution paths
-            \item Potential for infinite loops
-        \end{itemize}
-        \item Need for a solution combining best of both worlds
-        \item Requirement: flexible yet reliable system
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Introducing LangGraph: Best of Both Worlds}
-      \begin{itemize}
-        \item LangGraph provides flexibility with reliability
-        \item Uses state machine architecture for controlled execution
-        \item Bridges the gap between rigid chains and unpredictable React agents
-        \item Maintains dynamic execution while ensuring controllability
-        \item Framework designed for building controllable agent workflows
-        \item Combines the advantages while minimizing the drawbacks
-        \item Graph-based approach enables structured flexibility
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangGraph: Definition and Core Purpose}
-      \begin{itemize}
-        \item \textbf{Definition}: Framework for building controllable, persistent agent workflows
-        \item Built-in support for human interaction and streaming
-        \item Comprehensive state management capabilities
-        \item Uses graph data structure as foundation
-        \item Basic structure: Start Node → Agent → Action → Continue/End
-        \item Enables creation of sophisticated agent workflows
-        \item Designed for production-ready AI applications
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangGraph Key Features: Looping and Branching}
-      \begin{itemize}
-        \item \textbf{Looping and Branching Abilities}:
-        \begin{itemize}
-            \item Supports conditional statements and loop structures
-            \item Dynamic execution paths based on current state
-            \item Enables complex decision-making workflows
-        \end{itemize}
-        \item \textbf{State Persistence}:
-        \begin{itemize}
-            \item Automatic state saving and management
-            \item Support for pause and resume functionality
-            \item Ideal for long-running conversations and processes
-        \end{itemize}
-        \item Provides controlled flexibility unlike pure React agents
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangGraph Key Features: Interaction and Integration}
-      \begin{itemize}
-        \item \textbf{Human-Machine Interaction Support}:
-        \begin{itemize}
-            \item Insert human review during execution
-            \item State editing and modification capabilities
-            \item Flexible interaction control mechanisms
-        \end{itemize}
-        \item \textbf{Streaming Processing}:
-        \begin{itemize}
-            \item Real-time feedback on execution status
-            \item Enhanced user experience through streaming output
-        \end{itemize}
-        \item \textbf{Seamless LangChain Integration}:
-        \begin{itemize}
-            \item Reuses existing LangChain components
-            \item Supports LangChain Expression Language
-            \item Rich tool and model support
-        \end{itemize}
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Why Graph Data Structure?}
-      \begin{itemize}
-        \item Graph structure chosen based on research paper evidence
-        \item Most complex problem-solving research uses graph data structures
-        \item Provides flexibility while maintaining controllability
-        \item Enables autonomous decision-making capabilities
-        \item Natural fit for agent workflow representation
-        \item Balances flexibility with structured control
-        \item Supports complex branching and conditional logic
-        \item Research-proven approach for difficult AI problems
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangGraph Core Components Overview}
-      \begin{itemize}
-        \item \textbf{Four Core Components}:
-        \begin{itemize}
-            \item Nodes
-            \item Edges  
-            \item Conditional Edges
-            \item State
-        \end{itemize}
-        \item Components work together to create controllable workflows
-        \item Each component serves a specific purpose in graph execution
-        \item Understanding these components is crucial for LangGraph mastery
-        \item Will be demonstrated through Reflection Agent Pattern example
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Reflection Agent Pattern: Example Overview}
-      \begin{itemize}
-        \item \textbf{Pattern Components}:
-        \begin{itemize}
-            \item Generation Component: Creates content (e.g., tweets)
-            \item Criticism Component: Evaluates and suggests improvements
-        \end{itemize}
-        \item \textbf{Workflow}:
-        \begin{itemize}
-            \item Agent generates initial tweet
-            \item Critic evaluates quality and provides feedback
-            \item Generator improves tweet based on criticism
-            \item Process loops until quality threshold is met
-        \end{itemize}
-        \item Example of iterative improvement through agent collaboration
-        \item Demonstrates practical application of LangGraph components
-      \end{itemize}
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Core Components: Nodes}
       \begin{itemize}
-        \item \textbf{Nodes}: Fundamental execution units in the graph
-        \item Examples in Reflection Agent Pattern:
-        \begin{itemize}
-            \item Start Node: Entry point of the workflow
-            \item Generate Tweet LLM: Content creation node
-            \item Criticize Tweet LLM: Evaluation node
-            \item End Node: Termination point
-        \end{itemize}
+        \item Fundamental execution units in the graph
         \item Each node represents a specific operation or LLM call
         \item Nodes contain the actual logic and processing
         \item Can be simple operations or complex LLM interactions
+        \item Examples: Start Node, Generate Content, Evaluate Quality, Tool Invocation, End Node
       \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Is Each Node an Agent or Is the Graph an Agent?}
+      \begin{itemize}
+        \item \textbf{The Graph is the Agent} - not individual nodes
+        \item \textbf{Nodes are}: Individual processing units/functions
+        \begin{itemize}
+            \item Can be simple Python functions
+            \item Can be LLM calls
+            \item Can be tool invocations
+            \item Can be sub-agents themselves
+        \end{itemize}
+        \item \textbf{The Graph as Agent}:
+        \begin{itemize}
+            \item The complete workflow represents the agent's behavior
+            \item State flows through nodes, creating agent "memory"
+            \item Control flow (edges) represents agent's decision-making
+            \item Overall graph exhibits autonomous, goal-directed behavior
+        \end{itemize}
+        \item \textbf{Analogy}: Nodes are like neurons, the graph is the brain
+        \item Individual nodes are stateless functions; the graph maintains state
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What Can Nodes Do? - Part 1}
+      \begin{itemize}
+        \item \textbf{Nodes are Extremely Flexible} - any Python function
+        \item \textbf{1. Simple LLM Calls}:
+        \begin{itemize}
+            \item Generate text, classify, extract information
+            \item Example: `llm.invoke("Summarize this text")`
+        \end{itemize}
+        \item \textbf{2. RAG Operations}:
+        \begin{itemize}
+            \item Retrieve documents from vector database
+            \item Rerank results
+            \item Generate answers with retrieved context
+            \item Example: Vector search → Context → LLM generation
+        \end{itemize}
+        \item \textbf{3. API Calls}:
+        \begin{itemize}
+            \item External service calls (weather, database, CRM)
+            \item Example: Fetch customer data from Salesforce API
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What Can Nodes Do? - Part 2}
+      \begin{itemize}
+        \item \textbf{4. Tool-Calling Agents}:
+        \begin{itemize}
+            \item Node can itself be an agent with tools
+            \item Example: Research node that uses search, calculator, Wikipedia tools
+            \item Inner agent makes tool decisions, outer graph manages workflow
+        \end{itemize}
+        \item \textbf{5. Multi-Agent Nodes}:
+        \begin{itemize}
+            \item Node can coordinate multiple sub-agents
+            \item Example: "Code Review" node with architect, tester, security agents
+        \end{itemize}
+        \item \textbf{6. Any Computation}:
+        \begin{itemize}
+            \item Data processing, calculations, file operations
+            \item Validation, formatting, business logic
+        \end{itemize}
+        \item \textbf{Key Point}: Nodes are building blocks - combine them creatively
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Node with RAG}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+
+# Initialize RAG components
+vectorstore = FAISS.load_local("docs_index", OpenAIEmbeddings())
+llm = ChatOpenAI(model="gpt-4")
+
+def rag_node(state: State) -> State:
+    """Node that performs RAG operation"""
+    
+    # 1. Retrieve relevant documents
+    query = state.messages[-1]["content"]
+    docs = vectorstore.similarity_search(query, k=3)
+    context = "\n".join([doc.page_content for doc in docs])
+    
+    # 2. Generate answer with context
+    prompt = f"""Context: {context}
+    
+Question: {query}
+
+Answer based on the context provided:"""
+    
+    response = llm.invoke(prompt)
+    
+    # 3. Update state
+    return State(
+        messages=state.messages + [{"role": "assistant", "content": response.content}],
+        retrieved_docs=docs
+    )
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Node with API Call}
+ Any REST API, database query, or external service can be called from nodes
+ 
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+import requests
+
+def weather_api_node(state: State) -> State:
+    """Node that calls external weather API"""
+    
+    # Extract location from state
+    location = state.location
+    
+    # Call external API
+    api_key = "your_api_key"
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={location}&appid={api_key}"
+    response = requests.get(url)
+    weather_data = response.json()
+    
+    # Process and update state
+    weather_info = f"Temperature: {weather_data['main']['temp']}deg C, "
+    weather_info += f"Conditions: {weather_data['weather'][0]['description']}"
+    
+    return State(
+        location=state.location,
+        weather=weather_info,
+        messages=state.messages + [{"role": "system", "content": weather_info}]
+    )
+      \end{lstlisting}
+      
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Node as Tool-Calling Agent}
+
+      \begin{itemize}
+        \item Node delegates to inner agent for complex tool-using tasks
+        \item Outer graph manages high-level workflow
+      \end{itemize}
+	  
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain.tools import Tool
+
+# Define tools
+search_tool = Tool(name="search", func=tavily_search, description="Search the web")
+calc_tool = Tool(name="calculator", func=calculator, description="Perform calculations")
+
+# Create agent with tools
+tools = [search_tool, calc_tool]
+agent = create_tool_calling_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools)
+
+def research_node(state: State) -> State:
+    """Node that is itself an agent with tools"""
+    
+    # This node runs a full agent loop internally
+    query = state.current_task
+    result = agent_executor.invoke({"input": query})
+    
+    return State(
+        current_task=state.current_task,
+        research_results=result["output"],
+        messages=state.messages + [{"role": "researcher", "content": result["output"]}]
+    )
+      \end{lstlisting}
+     
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Core Components: Edges}
       \begin{itemize}
-        \item \textbf{Edges}: Connections between nodes in the graph
+        \item Connections between nodes in the graph
         \item Represent the flow of execution from one node to another
-        \item Shown as lines connecting different nodes
-        \item Define the possible paths through the workflow
-        \item Ensure proper sequence of operations
+        \item Define possible paths through the workflow
         \item Can be simple directional connections
-        \item Enable linear workflow progression
-        \item Essential for maintaining execution order
+        \item Ensure proper sequence of operations
       \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Core Components: Conditional Edges}
       \begin{itemize}
-        \item \textbf{Conditional Edges}: Decision points in the workflow
+        \item Decision points in the workflow
         \item Enable branching based on specific conditions
-        \item In Reflection Agent example:
-        \begin{itemize}
-            \item After tweet generation, can go to criticism OR end
-            \item Decision based on iteration count or quality threshold
-        \end{itemize}
+        \item Example: After generation, route to criticism OR end based on quality
         \item Represented by dotted lines in diagrams
         \item Allow for dynamic execution paths
-        \item Essential for implementing complex decision logic
-        \item Enable loops and conditional branching
+        \item Essential for implementing loops and conditional branching
       \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Core Components: State Management}
       \begin{itemize}
-        \item \textbf{State}: Maintains context throughout workflow execution
+        \item Maintains context throughout workflow execution
         \item Preserves information between node executions
-        \item In Reflection Agent Pattern:
-        \begin{itemize}
-            \item Stores generated tweet content
-            \item Maintains criticism feedback
-            \item Tracks iteration count
-            \item Preserves conversation context
-        \end{itemize}
+        \item State contains: messages, intermediate results, iteration count, tool outputs
         \item Enables nodes to access and modify shared information
         \item Critical for maintaining workflow coherence
         \item Supports complex, stateful operations
       \end{itemize}
 \end{frame}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Summary and Next Steps}
+\begin{frame}[fragile]\frametitle{LangGraph Key Features}
       \begin{itemize}
-        \item \textbf{Key Learnings}:
-        \begin{itemize}
-            \item React agents: flexible but unreliable
-            \item LangGraph: combines flexibility with reliability
-            \item Graph structure enables controlled autonomous decision-making
-            \item Four core components: Nodes, Edges, Conditional Edges, State
-        \end{itemize}
-        \item \textbf{Upcoming Topics}:
-        \begin{itemize}
-            \item Deep dive into Reflection Agent Pattern
-            \item Hands-on implementation and coding
-            \item Real-world applications and use cases
-        \end{itemize}
+        \item \textbf{Looping and Branching}: Conditional statements and loop structures
+        \item \textbf{State Persistence}: Automatic save/restore, pause and resume
+        \item \textbf{Human-in-the-Loop}: Insert human review, state editing capabilities
+        \item \textbf{Streaming Processing}: Real-time feedback on execution status
+        \item \textbf{LangChain Integration}: Reuses existing components, LCEL support
+        \item Provides controlled flexibility unlike pure React agents
+        \item Production-ready with debugging and observability
       \end{itemize}
 \end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Graph Data Structures}
-      \begin{itemize}
-        \item Understanding graph-based architectures
-        \item Directed Acyclic Graphs (DAGs) vs Cyclical Graphs
-        \item Graph theory applications in AI agents
-        \item Data flow management in graph structures
-        \item Node relationships and connections
-        \item State management across graph nodes
-        \item Prerequisites for LangGraph implementation
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{What is LangGraph and Why Use It?}
-      \begin{itemize}
-        \item LangGraph: Advanced framework for building AI agent workflows
-        \item Limitations of traditional LangChain approaches
-        \item Enhanced flexibility and control over agent behavior
-        \item Support for complex multi-step reasoning processes
-        \item Better state management and workflow orchestration
-        \item Low-level control for custom implementations
-        \item Production-ready agent development capabilities
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\frametitle{What is LangGraph?}
-
-\begin{itemize}
-\item Building state-ful multi agent applications using LLMs (Large Language Models)
-\item So, components are not in `chain' as in LangChain (ie Sequential) but can a Graph.
-\item Like Workflow modeling or orchestration
-\end{itemize}
-
-\begin{center}
-\includegraphics[width=0.8\linewidth,keepaspectratio]{langgraph1}
-\end{center}	  
-
-
-{\tiny (Ref: Introduction to LangGraph | Building an AI Generated Podcast - Prompt Circle AI)}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Introduction to LangGraph}
-      \begin{itemize}
-        \item LangGraph is a graph-based framework for building complex LLM applications
-        \item Represents AI workflows as directed graphs with nodes, edges, and data states
-        \item Addresses limitations of LCEL and AgentExecutor in complex scenarios
-        \item Provides intuitive and flexible approach to constructing conversational flows
-        \item Supports looping, branching, and dynamic execution paths
-        \item Enables state persistence and human-machine interaction
-        \item Seamlessly integrates with existing LangChain ecosystem
-        \item Offers streaming processing and real-time feedback capabilities
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Limitations of LCEL Chain Expressions}
-      \begin{itemize}
-        \item Linear processes with predefined execution order
-        \item Difficulty in dynamic routing and conditional branching
-        \item Complex state management in multi-turn conversations
-        \item Manual state passing and updates increase code complexity
-        \item Non-intuitive tool integration and coordination
-        \item Nested tools create highly complex LCEL expressions
-        \item Limited flexibility for dynamic conversational scenarios
-        \item Error-prone state management across chain calls
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LCEL Complexity Example}
-
-For example, when constructing a parallel sub-problem optimization chain for a problem decomposition strategy, the complexity of LCEL expressions becomes apparent. This example shows that when the nesting level of tools is slightly deeper, constructing LCEL chains becomes quite complex.
-
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
-# Decomposition chain
-decomposition_chain = (
-    {"question": RunnablePassthrough()}
-    | decomposition_prompt
-    | ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    | StrOutputParser()
-    | (lambda x: x.strip().split("\n"))
-)
-# Sub-question answer generation chain
-sub_question_chain = (
-    {"context": retriever, "question": RunnablePassthrough()}
-    | sub_question_prompt
-    | ChatOpenAI(model="gpt-4o-mini")
-    | StrOutputParser()
-)
-# Assembly chain
-chain = (
-    {"question": RunnablePassthrough(), "context": decomposition_chain}
-    | {"questions": RunnablePassthrough(), "answers": sub_question_chain.map()}
-    | RunnableLambda(format_qa_pairs)
-    | prompt
-    | llm_output_str
-)
-      \end{lstlisting}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Limitations of AgentExecutor}
-      \begin{itemize}
-        \item Complex configuration for conversational flows and multi-turn dialogues
-        \item Limited dynamic routing capability for conditional branches
-        \item Lack of built-in state persistence mechanism
-        \item Over-encapsulation with fixed input requirements
-        \item Black-box uncontrollability in tool usage order
-        \item Cannot insert human interaction during execution
-        \item Difficult secondary development due to rigid structure
-        \item Must restart from scratch when conversation resumes
-      \end{itemize}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Why LangGraph?}
-
-\begin{itemize}
-\item Limitations of LCEL and AgentExecutor, need a more flexible and powerful framework to build complex agent applications.
-\item Most of the Multi-agent frameworks are rigid, monolithic
-\item LangGraph decouples the agents from their orchestration.
-\item Here, agents can have different LLMs, can combine even non-LLM services together, can combine agents from other systems such as Autogen or Crew AI etc.
-\end{itemize}
-
-
-{\tiny (Ref: Langgraph: The Agent Orchestrator - Rajib Deb)}
-
-% \begin{lstlisting}
-% agent_1 = MyAgent("agent_1")
-% agent_2 = MyAgent("agent_2")
-% group_chat = [agent_1,agent_2]
-% group_chat.invoke("What is GST?")
-% \end{lstlisting}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangChain vs LangGraph}
-\begin{columns}
-    \begin{column}[T]{0.6\linewidth}
-        \begin{center}
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents64}
-		
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents66}
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-    \end{column}
-    \begin{column}[T]{0.4\linewidth}
-        \begin{center}
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents65}
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-    \end{column}
-  \end{columns}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangChain vs LangGraph – Why a New Approach?}
-
-      \begin{itemize}
-        \item LangChain excels at straightforward pipelines with fixed sequential tasks (retrieve → summarize → answer)
-        \item Real-world workflows aren't always linear - they need branches, loops, and dynamic decision points
-        \item LangGraph specializes in stateful, non-linear workflows within the LangChain ecosystem
-        \item LangGraph exposes control flow explicitly, allowing fine-grained control over agent behavior
-        \item You define a graph of possible steps instead of a rigid chain structure
-        \item Agents can revisit nodes or choose different paths dynamically based on conditions
-        \item Use LangChain for simple sequences, LangGraph for conditional logic and extended context
-        \item LangGraph enables complex multi-agent systems with evolving task flows
-      \end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangGraph Fundamentals: Nodes, Edges \& State}
-
-      \begin{itemize}
-        \item \textbf{Nodes (N):} Individual processing steps implemented as Python functions that transform state
-        \item Each node encapsulates one sub-task: LLM calls, calculations, file operations, or tool invocations
-        \item \textbf{Edges (E):} Directed connections determining execution order and flow between nodes
-        \item Edges can be linear progressions or conditional routes based on current state
-        \item \textbf{State (S):} Shared data object (dictionary/TypedDict) persisting throughout agent execution
-        \item State enables context and memory across workflow, allowing nodes to read previous results
-        \item StateGraph ties everything together with designated START and END nodes
-        \item This approach handles interactive, conditional loops that static chains struggle with
-      \end{itemize}
-  
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangGraph}
-\begin{columns}
-    \begin{column}[T]{0.5\linewidth}
-        \begin{center}
-		
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents67}
-		
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents68}
-		
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-    \end{column}
-    \begin{column}[T]{0.5\linewidth}
-        \begin{center}
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents69}
-		
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents70}
-		
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents71}
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-    \end{column}
-  \end{columns}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Agentic Architecture Patterns}
-      \begin{itemize}
-        \item Reflection Agent: Self-evaluation and improvement mechanisms
-        \item Reflexion Agent: Learning from past experiences
-        \item Multi-agent Workflows: Collaborative agent systems
-        \item Human-in-the-Loop Patterns: Manual oversight integration
-        \item React Patterns: Reasoning and acting frameworks
-        \item Chain Exploration: Alternative path discovery
-        \item Pattern Selection: Choosing appropriate architectures
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Key LangGraph Terminologies}
-      \begin{itemize}
-        \item Graph: Overall workflow structure and organization
-        \item State: Data persistence and management across nodes
-        \item Node: Individual processing units within the graph
-        \item Visualization: Graphical representation of workflows
-        \item Breakpoints: Debugging and control mechanisms
-        \item Edges: Connections and transitions between nodes
-        \item Flow Control: Managing execution paths and decisions
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Building LangGraph Chatbot}
-      \begin{itemize}
-        \item Web search capabilities for real-time information
-        \item Complex query routing to human reviewers
-        \item Backward chaining for alternative exploration
-        \item Human-in-the-loop integration patterns
-        \item React pattern implementation for reasoning
-        \item Multi-path exploration and decision making
-        \item Production-ready chatbot architecture
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Multi-Agent Systems}
-      \begin{itemize}
-        \item Multiple agent creation and management
-        \item Inter-agent communication protocols
-        \item Task distribution and coordination
-        \item More powerful than CrewAI with greater flexibility
-        \item Low-level control for custom workflows
-        \item Collaborative problem-solving approaches
-        \item Scalable multi-agent architectures
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{RAG Integration with LangGraph}
-      \begin{itemize}
-        \item Corrective RAG (C-RAG): Error correction mechanisms
-        \item Adaptive RAG (A-RAG): Dynamic retrieval strategies
-        \item Self-RAG: Self-evaluation and improvement
-        \item Advanced retrieval and generation patterns
-        \item Context-aware information processing
-        \item Quality control in RAG implementations
-        \item Performance optimization techniques
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Persistence and Production Tools}
-      \begin{itemize}
-        \item State persistence mechanisms in LangGraph
-        \item LangGraph Studio: Development and visualization environment
-        \item LangGraph Cloud API: Production deployment solutions
-        \item Scalability considerations for production systems
-        \item Monitoring and debugging capabilities
-        \item Performance optimization strategies
-        \item Enterprise-grade deployment patterns
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Agents in Production}
-      \begin{itemize}
-        \item Real-world use case exploration and implementation
-        \item Production deployment best practices
-        \item Future technology trends and opportunities
-        \item Industry applications and case studies
-        \item Scalability and performance considerations
-        \item Monitoring and maintenance strategies
-        \item Complete picture of AI agent technology future
-      \end{itemize}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Building an Email Sorting Agent}
-
-      \begin{itemize}
-        \item Email processing assistant inspired by Alfred managing Bruce Wayne's inbox
-        \item \textbf{EmailState:} Contains email content, spam flag, category, draft response, and message history
-        \item \textbf{Five nodes:} read\_email → classify\_email → handle\_spam/drafting\_response → notify\_mr\_wayne
-        \item Classify\_email uses LLM to analyze content and set spam status in state
-        \item Conditional edge routes to spam handler or response drafter based on classification
-        \item Handle\_spam terminates workflow early, drafting\_response continues to notification
-        \item Demonstrates clear if/else logic through graph structure rather than buried code
-        \item Successfully tested on legitimate and crypto spam emails with correct routing
-      \end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangGraph}
-\begin{columns}
-    \begin{column}[T]{0.5\linewidth}
-        \begin{center}
-	
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents72}
-	
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents73}
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-    \end{column}
-    \begin{column}[T]{0.5\linewidth}
-        \begin{center}
-
-        \includegraphics[width=0.8\linewidth,keepaspectratio]{aiagents74}
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-    \end{column}
-  \end{columns}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangGraph}
-
-        \begin{center}
-
-        \includegraphics[width=\linewidth,keepaspectratio]{aiagents75}
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\frametitle{Concepts}
-
-\begin{itemize}
-\item Model: Large Language Model that supports Function Calling
-\item Tools: Actions taken by app, ie API calls, Db operations, etc
-\item State: Represents info that is carried though out the workflow e.g Message State has list of messages produced from each Node.
-\item Node: executable logic container, a Langchain runnable or a Tool invoker. Nodes are connected by edges.
-\item Edge: control flow of info, conditional or normal
-\item Workflow: The graph, having nodes and edges, can be invoked or streamed from.
-\end{itemize}
-
-\begin{center}
-\includegraphics[width=0.8\linewidth,keepaspectratio]{langgraph2}
-\end{center}	  
-
-{\tiny (Ref: Introduction to LangGraph | Building an AI Generated Podcast - Prompt Circle AI)}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Graph and State Machine Concepts}
-      \begin{itemize}
-        \item State: System's behavioral condition (hunger, sleep, temperature)
-        \item Events: Actions that trigger state changes (feeding, soothing)
-        \item Nodes: Decision-makers and executors in the workflow
-        \item Baby care analogy: Mother decides, elders check, father executes
-        \item State updates trigger continuous decision-making cycles
-        \item Graph structure provides flexible workflow representation
-        \item State machines enable dynamic routing based on conditions
-        \item More intuitive than linear processing chains
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LangGraph Core Features}
-      \begin{itemize}
-        \item Looping and branching capabilities with conditional statements
-        \item State persistence with automatic save and restore functionality
-        \item Human-machine interaction support with review and editing
-        \item Streaming processing for real-time feedback and status updates
-        \item Seamless integration with existing LangChain components
-        \item Support for LCEL expressions and rich tool ecosystem
-        \item Flexible interaction control mechanisms
-        \item Enhanced user experience through responsive design
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Core Concept: State}
-
-      \begin{itemize}
-        \item State is the foundation of LangGraph applications
-        \item Can be simple dictionary or Pydantic model
-        \item Contains all information needed during runtime
-        \item Passed between nodes and updated throughout execution
-      \end{itemize}
-	  
-      \begin{lstlisting}[language=Python, basicstyle=\small]
-from typing import List, Dict
-from pydantic import BaseModel
-
-class ChatState(BaseModel):
-    messages: List[Dict[str, str]] = []
-    current_input: str = ""
-    tools_output: Dict[str, str] = {}
-    final_response: str = ""
-      \end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Core Concept: Nodes}
-Nodes are Python functions used to process state and return updated state:
-
-
-
-      \begin{lstlisting}[language=Python, basicstyle=\small]
-async def process_input(state: ChatState) -> ChatState:
-    # Process user input
-    messages = state.messages + [{"role": "user", "content": state.current_input}]
-    return ChatState(
-        messages=messages,
-        current_input=state.current_input,
-        tools_output=state.tools_output)
-
-async def generate_response(state: ChatState) -> ChatState:
-    # Generate response using LLM
-    response = await llm.ainvoke(state.messages)
-    messages = state.messages + [{"role": "assistant", "content": response}]
-    return ChatState(
-        messages=messages,
-        current_input=state.current_input,
-        tools_output=state.tools_output,
-        final_response=response)
-      \end{lstlisting}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Core Concept: Edges}
-
-      \begin{itemize}
-        \item Edges define connections and routing logic between nodes
-        \item Support conditional routing based on state
-        \item Enable dynamic execution paths
-      \end{itemize}
-	  
-      \begin{lstlisting}[language=Python, basicstyle=\small]
-from langgraph.graph import StateGraph, END
-
-# Create graph structure
-workflow = StateGraph(ChatState)
-
-# Add nodes
-workflow.add_node("process_input", process_input)
-workflow.add_node("generate_response", generate_response)
-
-# Define edges and routing logic
-workflow.add_edge("process_input", "generate_response")
-workflow.add_edge("generate_response", END)
-      \end{lstlisting}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Building the Chatbot Graph}
-
-This example demonstrates the basic usage of LangGraph:
-      \begin{itemize}
-        \item Define state model
-        \item Create processing nodes
-        \item Build the graph structure
-        \item Define routing logic
-        \item Compile and run
-      \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Simple Chatbot Implementation}
-      \begin{lstlisting}[language=Python, basicstyle=\tiny]
-from typing import List, Dict
-from pydantic import BaseModel
-from langgraph.graph import StateGraph, END
-from langchain_core.language_models import ChatOpenAI
-
-class ChatState(BaseModel):
-    messages: List[Dict[str, str]] = []
-    current_input: str = ""
-    should_continue: bool = True
-
-async def process_user_input(state: ChatState) -> ChatState:
-    messages = state.messages + [{"role": "user", "content": state.current_input}]
-    return ChatState(
-        messages=messages,
-        current_input=state.current_input,
-        should_continue=True
-    )
-
-async def generate_ai_response(state: ChatState) -> ChatState:
-    llm = ChatOpenAI(temperature=0.7)
-    response = await llm.ainvoke(state.messages)
-    messages = state.messages + [{"role": "assistant", "content": response}]
-    return ChatState(
-        messages=messages,
-        current_input=state.current_input,
-        should_continue=True
-    )
-
-def should_continue(state: ChatState) -> str:
-    if "goodbye" in state.current_input.lower():
-        return "end"
-    return "continue"
-      \end{lstlisting}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Building the Chatbot Graph}
-      \begin{lstlisting}[language=Python, basicstyle=\tiny]
-# Build the graph
-workflow = StateGraph(ChatState)
-
-# Add nodes
-workflow.add_node("process_input", process_user_input)
-workflow.add_node("generate_response", generate_ai_response)
-
-# Add edges
-workflow.add_edge("process_input", "generate_response")
-workflow.add_conditional_edges("generate_response", should_continue, 
-    {"continue": "process_input", "end": END})
-
-# Compile the graph
-app = workflow.compile()
-
-# Run the conversation
-async def chat():
-    state = ChatState()
-    while True:
-        user_input = input("You: ")
-        state.current_input = user_input
-        state = await app.ainvoke(state)
-        print("Bot:", state.messages[-1]["content"])
-        if not state.should_continue:
-            break
-
-# Run chat
-import asyncio
-asyncio.run(chat())			
-      \end{lstlisting}
-\end{frame}
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Applications}
+{\Large Tutorial - Workflow Automation}
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tutorial: Email Classification Workflow}
+      \begin{itemize}
+        \item \textbf{Goal}: Automate email triage with classification and routing
+        \item \textbf{Workflow Steps}:
+        \begin{enumerate}
+            \item Read incoming email
+            \item Classify as spam/legitimate using LLM
+            \item Route to spam handler or response drafter
+            \item Draft response for legitimate emails
+            \item Send notification
+        \end{enumerate}
+        \item Demonstrates conditional routing and structured workflow
+        \item Shows how graphs handle if/else logic naturally
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 1: Define State}
+
+      \begin{itemize}
+        \item State holds all information passed between nodes
+        \item Type hints ensure clarity and validation
+      \end{itemize}
+	  
+	  
+      \begin{lstlisting}[language=Python, basicstyle=\small]
+from typing import List, Dict
+from pydantic import BaseModel
+
+class EmailState(BaseModel):
+    email_content: str = ""
+    is_spam: bool = False
+    category: str = ""
+    draft_response: str = ""
+    messages: List[Dict[str, str]] = []
+      \end{lstlisting}
+      
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Create Node Functions}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(model="gpt-4", temperature=0)
+
+def read_email(state: EmailState) -> EmailState:
+    # In production, read from email API
+    return state
+
+def classify_email(state: EmailState) -> EmailState:
+    prompt = f"Classify this email as spam or legitimate:\n{state.email_content}\nRespond with only 'spam' or 'legitimate'."
+    response = llm.invoke(prompt)
+    is_spam = "spam" in response.content.lower()
+    return EmailState(
+        email_content=state.email_content,
+        is_spam=is_spam,
+        messages=state.messages + [{"role": "classifier", "content": response.content}]
+    )
+
+def handle_spam(state: EmailState) -> EmailState:
+    return EmailState(**state.dict(), 
+        messages=state.messages + [{"role": "system", "content": "Email marked as spam"}])
+
+def draft_response(state: EmailState) -> EmailState:
+    prompt = f"Draft a professional response to:\n{state.email_content}"
+    response = llm.invoke(prompt)
+    return EmailState(**state.dict(), 
+        draft_response=response.content,
+        messages=state.messages + [{"role": "drafter", "content": response.content}])
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 3: Define Routing Logic}
+
+      \begin{itemize}
+        \item Routing function decides next node based on state
+        \item Returns the name of the target node
+        \item Enables dynamic workflow execution
+      \end{itemize}
+	  
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+def route_email(state: EmailState) -> str:
+    """Conditional routing based on classification"""
+    if state.is_spam:
+        return "spam_handler"
+    else:
+        return "response_drafter"
+      \end{lstlisting}
+      
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 4: Build the Graph}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.graph import StateGraph, END
+
+# Create graph
+workflow = StateGraph(EmailState)
+
+# Add nodes
+workflow.add_node("read_email", read_email)
+workflow.add_node("classify_email", classify_email)
+workflow.add_node("spam_handler", handle_spam)
+workflow.add_node("response_drafter", draft_response)
+
+# Add edges
+workflow.set_entry_point("read_email")
+workflow.add_edge("read_email", "classify_email")
+workflow.add_conditional_edges(
+    "classify_email",
+    route_email,
+    {"spam_handler": "spam_handler", 
+     "response_drafter": "response_drafter"}
+)
+workflow.add_edge("spam_handler", END)
+workflow.add_edge("response_drafter", END)
+
+# Compile
+app = workflow.compile()
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 5: Run the Workflow}
+
+      \begin{itemize}
+        \item Workflow executes automatically with proper routing
+        \item State carries results through entire execution
+      \end{itemize}
+	  
+      \begin{lstlisting}[language=Python, basicstyle=\small]
+# Test with legitimate email
+state = EmailState(
+    email_content="Hello, I'd like to schedule a meeting to discuss the project timeline."
+)
+result = app.invoke(state)
+print(f"Is Spam: {result.is_spam}")
+print(f"Draft Response: {result.draft_response}")
+
+# Test with spam email
+spam_state = EmailState(
+    email_content="URGENT! You've won $1M! Click here now!!!"
+)
+spam_result = app.invoke(spam_state)
+print(f"Is Spam: {spam_result.is_spam}")
+      \end{lstlisting}
+      
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tutorial Takeaways}
+      \begin{itemize}
+        \item \textbf{Clear Structure}: Graph makes workflow explicit and understandable
+        \item \textbf{Conditional Logic}: Natural if/else through routing functions
+        \item \textbf{State Management}: Single state object tracks entire process
+        \item \textbf{Extensibility}: Easy to add new nodes (e.g., "urgent" category)
+        \item \textbf{Debugging}: Can inspect state at each node
+        \item \textbf{Production-Ready}: Add checkpointing, error handling, retries
+        \item This pattern scales to complex multi-step workflows
+      \end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\frametitle{Podcast Generator}
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Real-World Applications}
+\end{center}
+\end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Example: Podcast Generator}
 \begin{center}
 \includegraphics[width=0.8\linewidth,keepaspectratio]{langgraph3}
 \end{center}	  
-
-
 {\tiny (Ref: Introduction to LangGraph | Building an AI Generated Podcast - Prompt Circle AI)}
 
 Code at https://github.com/hollaugo/langgraph-framework-tutorial
 \end{frame}
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{News Aggregator}
-
+\begin{frame}[fragile]\frametitle{Example: News Aggregator}
 \begin{center}
 \includegraphics[width=0.8\linewidth,keepaspectratio]{langgraph4}
 \end{center}	
 
-Code: https://github.com/rajib76/multi\_agent/blob/main/01\_how\_to\_langgraph\_example\_01.py
+Code: https://github.com/rajib76/multi\_agent/01\_how\_to\_langgraph\_example\_01.py
 
 {\tiny (Ref: Langgraph: The Agent Orchestrator - Rajib Deb)}
+\end{frame}
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practices}
+      \begin{itemize}
+        \item \textbf{State Design}: Keep simple and clear, use type hints, only necessary information
+        \item \textbf{Node Functions}: Single responsibility, handle exceptions, return new state objects
+        \item \textbf{Edge Design}: Clear conditional logic, avoid complex cycles, consider all paths
+        \item \textbf{Error Handling}: Add at critical nodes, provide fallback mechanisms, log errors
+        \item \textbf{Testing}: Test individual nodes, test routing logic, test complete workflows
+        \item \textbf{Observability}: Use tracing tools (Langfuse, LangSmith) for production monitoring
+      \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Agents using LangGraph}
+{\Large Advanced Concepts in LangGraph}
 \end{center}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Creating a Vision Assistant Agent}
-\begin{columns}
-    \begin{column}[T]{0.7\linewidth}
+\begin{frame}[fragile]\frametitle{Human-in-the-Loop: Overview}
       \begin{itemize}
-        \item Vision-enabled agent implementing explicit "Thought → Action → Observation" loop
-        \item \textbf{AgentState:} Stores input\_file (image path) and messages list for conversation history
-        \item \textbf{Assistant node:} GPT-4 with vision capability bound to image analysis and math tools
-        \item \textbf{Tools node:} Executes tool functions (extract\_text, divide) and records results
-        \item Assistant decides to use tools or provide final answer based on task requirements
-        \item Conditional edge uses tools\_condition to route between assistant and tools nodes
-        \item Creates cycle: assistant thinks → tool execution → assistant processes results → repeat
-        \item Loop continues until assistant provides final answer without requesting tools
+        \item \textbf{What}: Ability to pause execution and request human input/approval
+        \item \textbf{Why Needed}:
+        \begin{itemize}
+            \item Critical decisions require human judgment
+            \item Verify agent actions before execution
+            \item Edit/correct agent outputs
+            \item Ensure safety and compliance
+        \end{itemize}
+        \item \textbf{Use Cases}:
+        \begin{itemize}
+            \item Approve before sending emails or making purchases
+            \item Review generated code before deployment
+            \item Validate data modifications
+            \item Content moderation and quality control
+        \end{itemize}
+        \item \textbf{LangGraph Implementation}: Interrupts and checkpointing
       \end{itemize}
-    \end{column}
-    \begin{column}[T]{0.3\linewidth}
-        \begin{center}
-        \includegraphics[width=\linewidth,keepaspectratio]{aiagents76}
-        \end{center}    
-    \end{column}
-  \end{columns}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Creating a Vision Assistant Agent}
-
-        \begin{center}
-
-        \includegraphics[width=0.9\linewidth,keepaspectratio]{aiagents77}
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Creating a Vision Assistant Agent}
-
-        \begin{center}
-
-        \includegraphics[width=\linewidth,keepaspectratio]{aiagents78}
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Tracing Agent Workflows with Langfuse}
-
+\begin{frame}[fragile]\frametitle{Human-in-the-Loop: Implementation Patterns}
       \begin{itemize}
-        \item Observability crucial for debugging complex agent behaviors with multiple steps
-        \item \textbf{Traces:} Detailed execution records capturing prompts, responses, paths, and tool usage
-        \item Langfuse provides user-friendly dashboard for inspecting agent workflow traces
-        \item Integrates via OpenTelemetry standards with tracing callbacks in LangGraph code
-        \item Enables monitoring of both email agent and vision agent execution flows
-        \item Tools-assistant loop clearly visible in Langfuse trace visualization
-        \item Answers "why did my agent do X?" through accessible trace inspection
-        \item Essential best practice for moving from prototypes to production-grade AI systems
+        \item \textbf{Pattern 1: Breakpoints}:
+        \begin{itemize}
+            \item Pause execution at specific nodes
+            \item Example: Stop before "send\_email" node
+        \end{itemize}
+        \item \textbf{Pattern 2: Approval Gates}:
+        \begin{itemize}
+            \item Node requests approval, waits for response
+            \item Conditional edge based on approval status
+        \end{itemize}
+        \item \textbf{Pattern 3: State Editing}:
+        \begin{itemize}
+            \item Pause, allow human to modify state
+            \item Resume with corrected state
+        \end{itemize}
+        \item \textbf{Pattern 4: Continuous Monitoring}:
+        \begin{itemize}
+            \item Human can interrupt at any time
+            \item Useful for long-running agents
+        \end{itemize}
       \end{itemize}
-
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Tracing Agent Workflows with Langfuse}
+\begin{frame}[fragile]\frametitle{Human-in-the-Loop: Code Example}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import StateGraph
 
-        \begin{center}
+# Create graph with checkpointing (required for interrupts)
+memory = MemorySaver()
+workflow = StateGraph(State)
 
-        \includegraphics[width=\linewidth,keepaspectratio]{aiagents79}
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-
+# Add nodes
+workflow.add_node("draft_email", draft_email_node)
+workflow.add_node("send_email", send_email_node)
+# Add edges
+workflow.add_edge("draft_email", "send_email")
+# Compile with interrupt BEFORE send_email node
+app = workflow.compile(
+    checkpointer=memory,
+    interrupt_before=["send_email"])  # Pause here for human approval
+# Run workflow
+config = {"configurable": {"thread_id": "1"}}
+result = app.invoke(initial_state, config)
+# At this point, execution is paused
+# Human reviews the drafted email in result.draft
+# To resume after approval:
+app.invoke(None, config)  # Continues from where it stopped
+# To modify state and resume:
+updated_state = result.copy()
+updated_state.draft = "Modified email content"
+app.invoke(updated_state, config)
+      \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Tracing Agent Workflows with Langfuse}
-
-        \begin{center}
-
-        \includegraphics[width=0.7\linewidth,keepaspectratio]{aiagents80}
-		
-		{\tiny (Ref: Vizuara AI Agents Bootcamp)}
-				
-        \end{center}    
-
+\begin{frame}[fragile]\frametitle{Advanced Concept: State Persistence and Checkpointing}
+      \begin{itemize}
+        \item \textbf{What}: Automatically save state at each node execution
+        \item \textbf{Benefits}:
+        \begin{itemize}
+            \item Resume after failures or interruptions
+            \item Time-travel debugging (replay from any checkpoint)
+            \item Support long-running workflows across sessions
+            \item Enable human-in-the-loop patterns
+        \end{itemize}
+        \item \textbf{Checkpoint Storage Options}:
+        \begin{itemize}
+            \item In-memory (development/testing)
+            \item SQLite (local persistence)
+            \item PostgreSQL (production)
+            \item Redis (distributed systems)
+        \end{itemize}
+        \item \textbf{Key Feature}: Each checkpoint is immutable and versioned
+        \item Can fork from any checkpoint to explore alternative paths
+      \end{itemize}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Concept: Streaming and Real-Time Updates}
+      \begin{itemize}
+        \item \textbf{What}: Stream intermediate results as graph executes
+        \item \textbf{Why Important}:
+        \begin{itemize}
+            \item Provide real-time feedback to users
+            \item Show progress in long-running workflows
+            \item Better user experience (vs waiting for completion)
+        \end{itemize}
+        \item \textbf{Streaming Modes}:
+        \begin{itemize}
+            \item \textbf{values}: Stream complete state after each node
+            \item \textbf{updates}: Stream only state changes
+            \item \textbf{messages}: Stream LLM token by token
+        \end{itemize}
+        \item \textbf{Use Case}: Chatbot showing "thinking..." → "searching..." → "responding..."
+      \end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Best Practices}
+\begin{frame}[fragile]\frametitle{Streaming Example}
 
       \begin{itemize}
-        \item State Design: Keep the state model simple and clear, only including necessary information. Use type hints to increase code readability.
-        \item Node Functions: Maintain single responsibility, handle exceptions, and return new state objects instead of modifying existing state.
-        \item Edge Design: Use clear conditional logic, avoid complex cyclic dependencies, and consider all possible paths.
-        \item Error Handling: Add error handling at critical nodes, provide fallback mechanisms, and log detailed error information.
+        \item Streaming provides transparency into agent execution
+        \item Critical for production applications with users waiting
+      \end{itemize}
+	  
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Instead of invoke(), use stream()
+for chunk in app.stream(initial_state, config):
+    # chunk contains state updates after each node
+    print(f"Node: {chunk['node']}")
+    print(f"State: {chunk['state']}")
+    
+# For token-by-token LLM streaming
+async for event in app.astream_events(initial_state, config):
+    if event["event"] == "on_chat_model_stream":
+        # Stream each token as LLM generates
+        print(event["data"]["chunk"], end="", flush=True)
+      \end{lstlisting}
+      
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Concept: Subgraphs and Modularity}
+      \begin{itemize}
+        \item \textbf{What}: Embed complete graphs as nodes within parent graphs
+        \item \textbf{Benefits}:
+        \begin{itemize}
+            \item Modular, reusable workflow components
+            \item Hierarchical organization of complex systems
+            \item Encapsulation and separation of concerns
+        \end{itemize}
+        \item \textbf{Example Hierarchy}:
+        \begin{itemize}
+            \item Parent: Customer service orchestrator
+            \item Subgraph 1: Email classification workflow
+            \item Subgraph 2: Ticket routing workflow
+            \item Subgraph 3: Response generation workflow
+        \end{itemize}
+        \item Each subgraph is self-contained with own state and logic
+        \item Parent graph coordinates between subgraphs
+        \item Enables building complex systems from simple components
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Concept: Parallel Execution}
+      \begin{itemize}
+        \item \textbf{What}: Execute multiple nodes simultaneously
+        \item \textbf{Use Cases}:
+        \begin{itemize}
+            \item Call multiple APIs concurrently
+            \item Search multiple data sources in parallel
+            \item Generate multiple variations simultaneously
+        \end{itemize}
+        \item \textbf{Implementation}: Send edges from one node to multiple nodes
+      \end{itemize}
+      
+      \begin{lstlisting}[language=Python, basicstyle=\small]
+# Parallel node execution
+workflow.add_node("search_web", search_node)
+workflow.add_node("search_db", database_node)
+workflow.add_node("search_docs", documents_node)
+workflow.add_node("aggregate", aggregate_results)
+# Fan-out: one node to many
+workflow.add_edge("start", "search_web")
+workflow.add_edge("start", "search_db")
+workflow.add_edge("start", "search_docs")
+# Fan-in: many nodes to one
+workflow.add_edge("search_web", "aggregate")
+workflow.add_edge("search_db", "aggregate")
+workflow.add_edge("search_docs", "aggregate")
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Concept: Dynamic Graph Modification}
+      \begin{itemize}
+        \item \textbf{What}: Modify graph structure during execution
+        \item \textbf{Use Cases}:
+        \begin{itemize}
+            \item Add nodes based on runtime conditions
+            \item Dynamically adjust workflow based on results
+            \item Create adaptive systems that evolve
+        \end{itemize}
+        \item \textbf{Example Scenario}:
+        \begin{itemize}
+            \item Research agent discovers new sub-topics
+            \item Dynamically creates specialized research nodes
+            \item Each node investigates a different aspect
+        \end{itemize}
+        \item \textbf{Limitation}: Advanced feature, use with caution
+        \item Most use cases handled by conditional edges
+        \item True dynamic modification for special scenarios only
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Patterns: Map-Reduce}
+      \begin{itemize}
+        \item \textbf{Pattern}: Split work, process in parallel, combine results
+        \item \textbf{Example - Document Summarization}:
+        \begin{enumerate}
+            \item Split large document into chunks (map)
+            \item Summarize each chunk in parallel (parallel processing)
+            \item Combine summaries into final summary (reduce)
+        \end{enumerate}
+        \item \textbf{Implementation}:
+        \begin{itemize}
+            \item Split node: Divides input into subtasks
+            \item Multiple processing nodes: Execute in parallel
+            \item Aggregation node: Combines results
+        \end{itemize}
+        \item \textbf{Benefits}: Scalability, speed, handles large inputs
+        \item Common in RAG systems for processing multiple documents
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practices for Advanced Features}
+      \begin{itemize}
+        \item \textbf{Start Simple}: Add complexity only when needed
+        \item \textbf{Checkpointing}: Always use for production systems
+        \item \textbf{Error Handling}: Add try-except in nodes, fallback paths in graph
+        \item \textbf{Observability}: Use LangSmith/Langfuse to trace execution
+        \item \textbf{Testing}: Test nodes individually, then integration test graphs
+        \item \textbf{State Size}: Keep state minimal - only essential data
+        \item \textbf{Cycle Limits}: Set maximum iterations to prevent infinite loops
+        \item \textbf{Human Approval}: For high-stakes actions (financial, emails, deletions)
+        \item \textbf{Documentation}: Graph visualization helps team understanding
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Summary}
+      \begin{itemize}
+        \item LangGraph enables controlled, flexible AI workflows through graph structures
+        \item Solves limitations of rigid chains and unpredictable pure agents
+        \item Key components: Nodes (logic), Edges (flow), State (context)
+        \item Ideal for workflow automation with intelligent decision-making
+        \item Production-ready with state persistence, human-in-loop, streaming
+        \item Start with simple workflows, expand to complex multi-agent systems
+        \item The future of reliable, autonomous AI applications
       \end{itemize}
 \end{frame}
