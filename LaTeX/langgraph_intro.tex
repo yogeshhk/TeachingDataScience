@@ -147,8 +147,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Why LangGraph?}
+{\Large Introduction to LangGraph}
 \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What is LangGraph?}
+      \begin{itemize}
+        \item LangGraph is an extension of the popular LangChain library. 
+		\item Allows you to create AI applications that can perform multiple steps, make decisions, and maintain information across those steps. 
+		\item Think of it like building a flowchart for your AI to follow.
+      \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -166,6 +175,16 @@
         \end{itemize}
         \item \textbf{Use Cases}: Multi-step reasoning, workflow automation, complex decision trees, collaborative agents
         \item \textbf{Result}: Reliable autonomous systems that combine flexibility with predictability
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{How is LangGraph Different?}
+      \begin{itemize}
+        \item Gives you more control over how your AI makes decisions
+        \item Allows your AI to revisit previous steps if needed
+        \item Makes it easier to add human oversight at specific points
+        \item Integrates smoothly with other LangChain tools
       \end{itemize}
 \end{frame}
 
@@ -353,109 +372,6 @@
       \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Example: Node with RAG}
-      \begin{lstlisting}[language=Python, basicstyle=\tiny]
-from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-
-# Initialize RAG components
-vectorstore = FAISS.load_local("docs_index", OpenAIEmbeddings())
-llm = ChatOpenAI(model="gpt-4")
-
-def rag_node(state: State) -> State:
-    """Node that performs RAG operation"""
-    
-    # 1. Retrieve relevant documents
-    query = state.messages[-1]["content"]
-    docs = vectorstore.similarity_search(query, k=3)
-    context = "\n".join([doc.page_content for doc in docs])
-    
-    # 2. Generate answer with context
-    prompt = f"""Context: {context}
-    
-Question: {query}
-
-Answer based on the context provided:"""
-    
-    response = llm.invoke(prompt)
-    
-    # 3. Update state
-    return State(
-        messages=state.messages + [{"role": "assistant", "content": response.content}],
-        retrieved_docs=docs
-    )
-      \end{lstlisting}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Example: Node with API Call}
- Any REST API, database query, or external service can be called from nodes
- 
-      \begin{lstlisting}[language=Python, basicstyle=\tiny]
-import requests
-
-def weather_api_node(state: State) -> State:
-    """Node that calls external weather API"""
-    
-    # Extract location from state
-    location = state.location
-    
-    # Call external API
-    api_key = "your_api_key"
-    url = f"https://api.openweathermap.org/data/2.5/weather?q={location}&appid={api_key}"
-    response = requests.get(url)
-    weather_data = response.json()
-    
-    # Process and update state
-    weather_info = f"Temperature: {weather_data['main']['temp']}deg C, "
-    weather_info += f"Conditions: {weather_data['weather'][0]['description']}"
-    
-    return State(
-        location=state.location,
-        weather=weather_info,
-        messages=state.messages + [{"role": "system", "content": weather_info}]
-    )
-      \end{lstlisting}
-      
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Example: Node as Tool-Calling Agent}
-
-      \begin{itemize}
-        \item Node delegates to inner agent for complex tool-using tasks
-        \item Outer graph manages high-level workflow
-      \end{itemize}
-	  
-      \begin{lstlisting}[language=Python, basicstyle=\tiny]
-from langchain.agents import create_tool_calling_agent, AgentExecutor
-from langchain.tools import Tool
-
-# Define tools
-search_tool = Tool(name="search", func=tavily_search, description="Search the web")
-calc_tool = Tool(name="calculator", func=calculator, description="Perform calculations")
-
-# Create agent with tools
-tools = [search_tool, calc_tool]
-agent = create_tool_calling_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools)
-
-def research_node(state: State) -> State:
-    """Node that is itself an agent with tools"""
-    
-    # This node runs a full agent loop internally
-    query = state.current_task
-    result = agent_executor.invoke({"input": query})
-    
-    return State(
-        current_task=state.current_task,
-        research_results=result["output"],
-        messages=state.messages + [{"role": "researcher", "content": result["output"]}]
-    )
-      \end{lstlisting}
-     
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Core Components: Edges}
@@ -481,8 +397,9 @@ def research_node(state: State) -> State:
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Core Components: State Management}
+\begin{frame}[fragile]\frametitle{Core Components: State}
       \begin{itemize}
+	    \item A central object updated over time by the nodes in the graph
         \item Maintains context throughout workflow execution
         \item Preserves information between node executions
         \item State contains: messages, intermediate results, iteration count, tool outputs
@@ -506,11 +423,204 @@ def research_node(state: State) -> State:
       \end{itemize}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Simple Example}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Weather Checking Assistant}
+      \begin{itemize}
+        \item Greet the user
+        \item Ask for their location
+        \item Check the weather (simulated for this example)
+        \item Provide a weather report
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Part 1}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+import operator
+from typing import TypedDict
+from typing_extensions import Annotated
+from langgraph.graph import StateGraph, END
+
+# Define our state
+class State(TypedDict):
+    messages: Annotated[list, operator.add]
+    location: str
+    weather: str
+
+# Create our graph
+workflow = StateGraph(State)
+
+# Define our nodes
+def greet(state):
+    return {"messages": [("ai", "Hello! I'm your weather assistant. Where are you located?")]}
+
+def get_location(state):
+    return {"location": state["messages"][-1][1]}
+
+def check_weather(state):
+    # In a real app, we'd call a weather API here
+    weather = "sunny" if "new york" in state["location"].lower() else "rainy"
+    return {"weather": weather}
+
+def report_weather(state):
+    return {"messages": [
+        ("ai", f"The weather in {state['location']} is {state['weather']}. Can I help you with anything else?")]}
+      \end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Part 2}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Add nodes to our graph
+workflow.add_node("greet", greet)
+workflow.add_node("get_location", get_location)
+workflow.add_node("check_weather", check_weather)
+workflow.add_node("report_weather", report_weather)
+
+# Connect our nodes
+workflow.set_entry_point("greet")
+workflow.add_edge("greet", "get_location")
+workflow.add_edge("get_location", "check_weather")
+workflow.add_edge("check_weather", "report_weather")
+workflow.add_edge("report_weather", END)
+
+# Compile our graph
+app = workflow.compile()
+
+# Run our app
+inputs = {"messages": [("human", "Hi, I'd like to check the weather.")]}
+for output in app.stream(inputs):
+    for key, value in output.items():
+        print(f"{key}: {value}")
+	
+# Printing the graph in ASCII	
+ascii_graph = app.get_graph().draw_ascii()
+print(ascii_graph)	
+	
+      \end{lstlisting}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Tutorial - Workflow Automation}
+{\Large Getting Started}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Installation}
+LangGraph requires Python 3.8 or later. 
+
+      \begin{lstlisting}
+pip install -U langgraph
+
+python -c "import langgraph; print(langgraph.__version__)"
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 1: Define State}
+
+
+      \begin{lstlisting}
+from typing import Annotated
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph
+from langgraph.graph.message import add_messages
+class State(TypedDict):
+    # messages have the type "list".
+    # The add_messages function appends messages to the list, rather than overwriting them
+    messages: Annotated[list, add_messages]
+graph_builder = StateGraph(State)
+      \end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Initialize an LLM and add it as a Chatbot node}
+
+
+      \begin{lstlisting}
+from langchain_openai import AzureChatOpenAI
+llm = AzureChatOpenAI(
+    openai_api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+    azure_deployment=os.environ["AZURE_OPENAI_CHAT_DEPLOYMENT_NAME"],
+)
+def chatbot(state: State):
+    return {"messages": [llm.invoke(state["messages"])]}
+	
+graph_builder.add_node("chatbot", chatbot)
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 3: Set edges}
+
+      \begin{lstlisting}
+# Set entry and finish points
+graph_builder.set_entry_point("chatbot")
+graph_builder.set_finish_point("chatbot")
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 4: Compile and Visualize the Graph}
+
+\lstinline|pip install graphviz|
+
+\begin{columns}
+    \begin{column}[T]{0.8\linewidth}
+      \begin{lstlisting}[language=Python, basicstyle=\small]
+import os
+
+png_graph = graph.get_graph().draw_mermaid_png()
+with open("my_graph.png", "wb") as f:
+    f.write(png_graph)
+
+print(f"Graph saved as 'my_graph.png' in {os.getcwd()}")
+      \end{lstlisting}
+
+    \end{column}
+    \begin{column}[T]{0.2\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{langgraph13.png}
+\end{center}
+    \end{column}
+  \end{columns}
+  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 5: Run the chatbot}
+
+ Implement a loop to continuously prompt the user for input, process it through the graph, and print the assistant's response. The loop exits when the user types "quit", "exit", or "q".
+ 
+      \begin{lstlisting}
+# Run the chatbot
+while True:
+    user_input = input("User: ")
+    if user_input.lower() in ["quit", "exit", "q"]:
+        print("Goodbye!")
+        break
+    for event in graph.stream({"messages": [("user", user_input)]}):
+        for value in event.values():
+            print("Assistant:", value["messages"][-1].content)
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Tutorial: Workflow Automation}
 \end{center}
 \end{frame}
 

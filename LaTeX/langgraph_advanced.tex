@@ -412,6 +412,35 @@ joke_schema = {"title": "Joke","type": "object",
 \end{center}
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom Node Types}
+
+Create custom node types to implement complex agent logic. This provides flexibility and control over your application's behavior.
+
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing import Annotated
+from langchain_anthropic import ChatAnthropic
+from langgraph.graph import StateGraph
+from langgraph.graph.message import add_messages
+class MyCustomNode:
+    def __init__(self, llm):
+        self.llm = llm
+    def __call__(self, state):
+        # Implement your custom logic here
+        # Access the state and perform actions
+        messages = state["messages"]
+        response = self.llm.invoke(messages)
+        return {"messages": [response]}
+graph_builder = StateGraph(State)
+llm = ChatAnthropic(model="claude-3-haiku-20240307")
+custom_node = MyCustomNode(llm)
+graph_builder.add_node("custom_node", custom_node)
+      \end{lstlisting}
+\end{frame}
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Advanced Conditional Edges}
 
@@ -447,6 +476,35 @@ workflow.add_conditional_edges(
 )
       \end{lstlisting}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{State management}
+
+LangGraph offers powerful state management techniques, which include using external databases like SQLite, PostgreSQL, and MongoDB, or cloud storage solutions like Amazon S3, Google Cloud Storage, and Azure Blob Storage to store and retrieve your agent's state, enabling reliability and scalability.
+
+Here's an example of using a SQLite database for state management:
+
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.checkpoint.sqlite import SqliteSaver
+# Connect to the SQLite database
+memory = SqliteSaver.from_conn_string(":memory:")
+# Compile the graph with the checkpointer
+graph = graph_builder.compile(checkpointer=memory)
+      \end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error handling}
+LangGraph also provides mechanisms for error handling:
+      \begin{itemize}
+        \item Exceptions: Node functions can raise exceptions to signal errors during execution. You can catch and handle these exceptions to prevent your graph from crashing.
+        \item Retry mechanisms: You can implement retry logic within your nodes to handle transient errors, such as network issues or API timeouts.
+        \item Logging: Use logging to record errors and track the execution of your graph.
+      \end{itemize}
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Parallel Execution in LangGraph}

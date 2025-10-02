@@ -5,6 +5,125 @@
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Node Implementation Examples}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Node with RAG}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+
+# Initialize RAG components
+vectorstore = FAISS.load_local("docs_index", OpenAIEmbeddings())
+llm = ChatOpenAI(model="gpt-4")
+
+def rag_node(state: State) -> State:
+    """Node that performs RAG operation"""
+    
+    # 1. Retrieve relevant documents
+    query = state.messages[-1]["content"]
+    docs = vectorstore.similarity_search(query, k=3)
+    context = "\n".join([doc.page_content for doc in docs])
+    
+    # 2. Generate answer with context
+    prompt = f"""Context: {context}
+    
+Question: {query}
+
+Answer based on the context provided:"""
+    
+    response = llm.invoke(prompt)
+    
+    # 3. Update state
+    return State(
+        messages=state.messages + [{"role": "assistant", "content": response.content}],
+        retrieved_docs=docs
+    )
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Node with API Call}
+ Any REST API, database query, or external service can be called from nodes
+ 
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+import requests
+
+def weather_api_node(state: State) -> State:
+    """Node that calls external weather API"""
+    
+    # Extract location from state
+    location = state.location
+    
+    # Call external API
+    api_key = "your_api_key"
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={location}&appid={api_key}"
+    response = requests.get(url)
+    weather_data = response.json()
+    
+    # Process and update state
+    weather_info = f"Temperature: {weather_data['main']['temp']}deg C, "
+    weather_info += f"Conditions: {weather_data['weather'][0]['description']}"
+    
+    return State(
+        location=state.location,
+        weather=weather_info,
+        messages=state.messages + [{"role": "system", "content": weather_info}]
+    )
+      \end{lstlisting}
+      
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Node as Tool-Calling Agent}
+
+      \begin{itemize}
+        \item Node delegates to inner agent for complex tool-using tasks
+        \item Outer graph manages high-level workflow
+      \end{itemize}
+	  
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain.tools import Tool
+
+# Define tools
+search_tool = Tool(name="search", func=tavily_search, description="Search the web")
+calc_tool = Tool(name="calculator", func=calculator, description="Perform calculations")
+
+# Create agent with tools
+tools = [search_tool, calc_tool]
+agent = create_tool_calling_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools)
+
+def research_node(state: State) -> State:
+    """Node that is itself an agent with tools"""
+    
+    # This node runs a full agent loop internally
+    query = state.current_task
+    result = agent_executor.invoke({"input": query})
+    
+    return State(
+        current_task=state.current_task,
+        research_results=result["output"],
+        messages=state.messages + [{"role": "researcher", "content": result["output"]}]
+    )
+      \end{lstlisting}
+     
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large End-to-End example}
+\end{center}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Implementing a Complete Tool-Calling Agent}
       \begin{itemize}
