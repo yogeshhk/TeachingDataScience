@@ -1,0 +1,724 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Optimization}
+\renewcommand{\coursepicture}{optim}
+\renewcommand{\coursedate}{Summer 2015}
+
+\renewcommand{\topic}{Global \& Bayesian Optimization}
+\renewcommand{\keywords}{Multi-armed bandits, exploration vs.\
+exploitation, navigation through belief space, upper confidence bound (UCB),
+global optimization = infinite bandits, Gaussian Processes,
+probability of improvement, expected improvement, UCB}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Global Optimization}{
+
+\item Is there an optimal way to optimize (in the Blackbox case)?
+
+\item Is there a way to find the \emph{global} optimum instead of only
+local?
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Core references}{
+
+%% \show[.5]{jones98}
+
+%% \item Jones, D., M. Schonlau, \& W. Welch (1998). Efficient global optimization of expensive black-box functions. Journal of Global Optimization 13, 455-492.
+
+%% \item Jones, D. R. (2001). A taxonomy of global optimization methods based on response surfaces. Journal of Global Optimization 21, 345-383.
+
+%% \item Poland, J. (2004). Explicit local models: Towards optimal optimization
+%% algorithms. Technical Report No. IDSIA-09-04. 
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{More up-to-date -- very nice GP-UCB introduction}{
+
+%% ~
+
+%% \show{GP-UCB}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Outline}{
+
+\item Play a game
+
+~
+
+\item Multi-armed bandits
+\begin{items}
+\item Belief state \& belief planning
+\item Upper Confidence Bound (UCB)
+\end{items}
+
+~
+
+\item Optimization as infinite bandits
+\begin{items}
+\item GPs as belief state
+\end{items}
+
+~
+
+\item Standard heuristics:
+\begin{items}
+\item Upper Confidence Bound ~ (GP-UCB)
+\item Maximal Probability of Improvement ~ (MPI)
+\item Expected Improvement ~ (EI)
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Bandits}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Bandits}
+\slide{Bandits}{
+
+~
+
+\show[.5]{bandits}
+
+\item There are $n$ machines.
+
+\item Each machine $i$ returns a reward $y\sim P(y;\t_i)$
+
+The machine's parameter $\t_i$ is unknown
+
+%% \item Your goal is to maximize the reward, say, collected over the
+%%   first $T$ runs.
+
+%% ~
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Bandits}{
+
+\item Let $a_t\in\{1,..,n\}$ be the choice of machine at time $t$
+
+Let $y_t\in\RRR$ be the outcome with mean $\< y_{a_t} \>$
+
+~
+
+\item A policy or strategy maps all the history to a new choice:
+$$ \pi:~ [ (a_1,y_1), (a_2,y_2), ..., (a_{t\1},y_{t\1}) ] \mapsto a_t$$
+
+~
+
+\item Problem: ~ Find a policy $\pi$ that
+$$\max \< \Sum_{t=1}^T y_t \>$$
+or
+$$\max \< y_T \>$$
+
+~
+
+{\small or other objectives like discounted infinite horizon $\max \< \Sum_{t=1}^\infty \g^t y_t \>$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Exploration, Exploitation}
+\slide{Exploration, Exploitation}{
+
+\item ``Two effects'' of choosing a machine:
+\begin{items}
+\item You collect more data about the machine $\to$ knowledge
+\item You collect reward
+\end{items}
+
+~
+
+\item For example
+\begin{items}
+\item Exploration: ~ Choose the next action $a_t$ to
+$\min \< H(b_t) \>$
+
+\item Exploitation: ~ Choose the next action $a_t$ to
+$\max \< y_t \>$
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{The Belief State}{
+
+\item ``Knowledge'' can be represented in two ways:
+\begin{items}
+\item as the full history
+$$ h_t ~=~ [ (a_1,y_1), (a_2,y_2), ..., (a_{t\1},y_{t\1}) ]$$
+
+\item as the \textbf{belief}
+$$ b_t(\t) = P(\t | h_t)$$
+where $\t$ are the unknown parameters $\t=(\t_1,..,\t_n)$ of all machines
+\end{items}
+
+~
+
+\item In the bandit case:
+\begin{items}
+\item The belief factorizes
+$b_t(\t) = P(\t|h_t) = \prod_i b_t(\t_i|h_t)$
+
+e.g.\ for Gaussian bandits with constant noise, $\t_i = \mu_i$
+\begin{align*}
+b_t(\mu_i|h_t) = \NN(\mu_i | \hat y_i, \hat s_i)
+\end{align*}
+
+e.g.\ for binary bandits, $\t_i = p_i$, with prior $\Beta(p_i|\a, \b)$:
+\begin{align*}
+b_t(p_i|h_t) &= \Beta(p_i | \a+a_{i,t}, \b+b_{i,t}) \\
+&\quad  a_{i,t} = \Sum_{s=1}^{t-1} [a_s\=i][y_s\=0]
+ \comma b_{i,t} = \Sum_{s=1}^{t-1} [a_s\=i][y_s\=1]
+\end{align*}
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Belief planning}
+\slide{The Belief MDP}{
+
+\item The process can be modelled as 
+
+\show[.5]{bandit1}
+
+or as Belief MDP
+
+\show[.5]{bandit2}
+{\small$$
+P(b'|y,a,b)
+ = \begin{cases} 1 & \text{if $b' = b'_{[b,a,y]}$} \\ 0 & \text{otherwise} \end{cases}
+\comma
+P(y|a,b)
+ = \Int_{\t_a} b(\t_a)~ P(y | \t_a)
+$$}
+
+{\small
+\item The Belief MDP describes a \emph{different} process: the
+interaction between the information available to the agent ($b_t$ or $h_t$)
+and its actions, where \emph{the agent uses his current belief to
+anticipate outcomes, $P(y|a,b)$.}
+
+
+\item The belief (or history $h_t$) is all the information the agent
+has avaiable; $P(y|a,b)$ the ``best'' possible anticipation of
+observations. If it acts optimally in the Belief MDP, it acts
+optimally in the original problem.
+
+}
+
+\emph{Optimality in the Belief MDP $~\To~$ optimality in the original problem}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Optimal policies via Belief Planning}{
+
+\item The Belief MDP:
+
+\show[.5]{bandit2}
+{\small$$
+P(b'|y,a,b)
+ = \begin{cases} 1 & \text{if $b' = b'_{[b,a,y]}$} \\ 0 & \text{otherwise} \end{cases}
+\comma
+P(y|a,b)
+ = \Int_{\t_a} b(\t_a)~ P(y | \t_a)
+$$}
+
+%% \item The belief is a sufficient (for optimal decision making)
+%%   ``aggregation'' of the history if the world is Markovian in $X$:
+
+%% $$\text{Indep}(y_s, h_t | X_t, a_{t\po}) \qquad \text{for any $s\ge t$ and $\pi$}$$
+
+
+\item Belief Planning: Dynamic Programming on the value function
+\begin{align*}
+\forall_b:~ V_{t\1}(b)
+ &= \max_\pi \< \Sum_{t=t}^T y_t \> \\
+ &= \max_\pi \[ \< y_t \> + \< \Sum_{t=t\po}^T y_t \> \] \\
+ &= \max_{a_t} \Int_{y_t} P(y_t|a_t,b)~ \[y_t + V_t(b'_{[b,a_t,y_t]})\]
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Optimal policies}{
+
+\item The value function assigns a value (maximal achievable return)
+  to a state of knowledge
+
+\item The optimal policy is greedy w.r.t.\ the value function (in the sense of the $\max_{a_t}$ above)
+
+\item Computationally heavy: $b_t$ is a probability distribution, $V_t$ a
+  function over probability distributions
+
+~
+
+~
+
+\tiny
+
+\item The term $\Int_{y_t} P(y_t|a_t,b_{t\1})~ \[y_t +
+V_t(b_{t\1}[a_t,y_t])\]$ is related to the \emph{Gittins Index}: it
+can be computed for each bandit separately.
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example exercise}{
+
+\item Consider 3 binary bandits for $T=10$.
+
+\begin{items}
+\item The belief is 3 Beta distributions $\Beta(p_i|\a+a_i,\b+b_i)$ ~ $\to$ ~ 6 integers
+
+\item $T=10$ ~ $\to$ ~ each integer $\le10$
+
+\item $V_t(b_t)$ is a function over $\{0,..,10\}^6$
+\end{items}
+
+~
+
+\item Given a prior $\a=\b=1$, 
+
+a) compute the optimal value function and policy for the final
+  reward and the average reward problems,
+
+b) compare with the UCB policy.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Upper Confidence Bound (UCB)}
+\slide{Greedy heuristic:~ Upper Confidence Bound (UCB)}{
+
+\begin{algo}
+\State Initializaiton: Play each machine once
+\Repeat
+\State Play the machine $i$ that maximizes $\hat y_i
++ \b \sqrt{\frac{2\ln n}{n_i}}$
+\Until
+\end{algo}
+
+~
+
+$\hat y_i$ is the average reward of machine $i$ so far
+
+$n_i$ is how often machine $i$ has been played so far
+
+$n = \Sum_i n_i$ is the number of rounds so far
+
+$\b$ is often chosen as $\b=1$
+
+~
+
+\tiny
+
+See \emph{Finite-time analysis of the multiarmed bandit problem},
+Auer, Cesa-Bianchi \& Fischer, Machine learning, 2002.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{UCB algorithms}{
+
+\item UCB algorithms determine a \textbf{confidence interval} such that 
+$$\hat y_i - \s_i < \<y_i\> < \hat y_i + \s_i$$
+with high probability.
+
+UCB chooses the upper bound of this confidence interval
+
+~
+
+\item \emph{Optimism in the face of uncertainty}
+
+~
+
+\item Strong bounds on the regret (sub-optimality) of UCB (e.g.\ Auer
+et al.)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Conclusions}{
+
+\item The bandit problem is an archetype for
+\begin{items}
+\item Sequential decision making
+
+\item Decisions that influence knowledge as well as rewards/states
+
+\item Exploration/exploitation
+\end{items}
+
+~
+
+\item The same aspects are inherent also in global optimization,
+active learning \& RL
+
+~
+
+\item Belief Planning in principle gives the optimal solution
+
+~
+
+\item Greedy Heuristics (UCB) are computationally much more efficient
+and guarantee bounded regret
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Further reading}{
+
+\item ICML 2011 Tutorial \emph{Introduction to Bandits: Algorithms and
+Theory}, Jean-Yves Audibert, R{\'e}mi Munos 
+
+\item \emph{Finite-time analysis of the multiarmed bandit problem},
+Auer, Cesa-Bianchi \& Fischer, Machine learning, 2002.
+
+\item \emph{On the Gittins Index for Multiarmed Bandits}, Richard
+Weber, Annals of Applied Probability, 1992.
+
+{\small Optimal Value function is submodular.}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Global Optimization}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Global Optimization as infinite bandits}
+\slide{Global Optimization}{
+
+\item Let $x\in\RRR^n$, $f:~ \RRR^n \to \RRR$, ~ find
+\begin{align*}
+\min_x~ & f(x)
+\end{align*}
+
+{\tiny
+
+(I neglect constraints $g(x)\le 0$ and $h(x)=0$ here -- but could be
+included.)
+}
+
+~
+
+\item Blackbox optimization: find optimium by sampling values
+$y_t = f(x_t)$
+
+No access to $\na f$ or $\he f$
+
+Observations may be noisy $y \sim \NN(y \| f(x_t),\s)$
+
+%% ~
+
+%% \item Example finite horizon problem definition:
+%% $$\<\min f(x_T)\>$$
+
+%% \item 
+%% (AFAIK, this research started with (gold) mining.) [[TODO: kriging]]
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Global Optimization ~{\protect$=$}~ infinite bandits}{
+
+\item In global optimization $f(x)$ defines a reward for every
+$x\in\RRR^n$
+
+-- Instead of a finite number of actions $a_t$ we now have $x_t$
+
+~
+
+\item Optimal Optimization could be defined as: ~ find $\pi:~
+h_t \mapsto x_t$ that
+$$\min \< \Sum_{t=1}^T f(x_t) \>$$
+or
+$$\min \< f(x_T) \>$$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Gaussian Processes as belief}
+\slide{Gaussian Processes as belief}{
+
+\item The unknown ``world property'' is the function $\t=f$
+
+\item Given a Gaussian Process prior $GP(f|\mu,C)$ over $f$ and a history
+$$ D_t ~=~ [ (x_1,y_1), (x_2,y_2), ..., (x_{t\1},y_{t\1}) ]$$
+the belief is
+\begin{align*}
+b_t(f)
+ &= P(f\|D_t) = \text{GP}(f|D_t,\mu,C) \\
+\hspace*{-10mm}\text{Mean}(f(x))
+ &= \hat f(x) = \vec\k(x) (\vec K + \s^2 \Id)^\1 \vec y
+&&\text{\emph{response surface}}\\
+\hspace*{-10mm}\text{Var}(f(x))
+ &= \hat \s(x) = k(x,x)
+  - \vec\k(x) (\vec K + \s^2 \Id_n)^\1 \vec\k(x)
+&&\text{\emph{confidence interval}}
+\end{align*}
+
+~
+
+\small
+
+\item Side notes:
+\begin{items}
+\item Don't forget that
+$\text{Var}(y^*|x^*,D) = \s^2 + \text{Var}(f(x^*)|D)$
+
+%% \item Gaussian Processes ~=~ Bayesian Kernel Ridge Regression
+
+%% \item GP classification ~=~ Bayesian Kernel Logistic Regression
+
+\item We can also handle discrete-valued functions $f$ using GP
+  classification
+\end{items}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+\show[.7]{BayesianPredictiveDistribution}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Optimal optimization via belief planning}{
+
+\item As for bandits it holds
+\begin{align*}
+V_{t\1}(b_{t\1})
+ &= \max_\pi \< \Sum_{t=t}^T y_t \> \\
+ &= \max_{x_t} \Int_{y_t} P(y_t|x_t,b_{t\1})~ \[y_t + V_t(b_{t\1}[x_t,y_t])\]
+\end{align*}
+
+$V_{t\1}(b_{t\1})$ is a function over the GP-belief!
+
+If we could compute $V_{t\1}(b_{t\1})$ we ``optimally optimize''
+
+~
+
+\item I don't know of a minimalistic case where this might be feasible
+
+%% Approximately: discretize $x$ ($\to$ finite but dependent bandits),
+%% small $T$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Conclusions}{
+
+\item Optimization as a problem of
+\begin{items}
+\item Computation of the belief
+\item Belief planning
+\end{items}
+
+~
+
+\item Crucial in all of this: \textbf{the prior} $P(f)$
+\begin{items}
+\item GP prior: smoothness; but also limited: only local correlations!
+
+No ``discovery'' of non-local/structural correlations through the
+space
+
+\item The latter would require different priors, e.g.\ over different
+function classes
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Heuristics}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Expected Improvement}
+\key{Maximal Probability of Improvement}
+\key{GP-UCB}
+\slide{1-step heuristics based on GPs}{
+
+\show[.45]{jones01}
+
+\item Maximize Probability of Improvement ~ (MPI)
+\anchor{30,20}{\tiny from Jones (2001)}
+$$x_t = \argmax_x \Int_{-\infty}^{y^*} \NN(y|\hat f(x),\hat\s(x))$$
+
+\item Maximize Expected Improvement ~ (EI)
+$$x_t = \argmax_x \Int_{-\infty}^{y^*} \NN(y|\hat f(x),\hat\s(x))~ (y^*-y)$$
+
+\item Maximize UCB
+$$x_t = \argmax_x \hat f(x) + \b_t \hat\s(x)$$
+
+\tiny
+
+(Often, $\b_t=1$ is chosen. UCB theory allows for
+better choices. See Srinivas et al.\ citation below.)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Each step requires solving an optimization problem}{
+
+\item Note: each $\argmax$ on the previous slide is an optimization
+problem
+
+\item As $\hat f,\hat\s$ are given analytically, we have gradients and
+Hessians. BUT: multi-modal problem.
+
+\item In practice:
+\begin{items}
+\item Many restarts of gradient/2nd-order optimization runs
+\item Restarts from a grid; from many random points
+\end{items}
+
+~
+
+\item We put a lot of effort into carefully selecting just the next
+query point
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+{\tiny From: \emph{Information-theoretic regret bounds for gaussian process
+optimization in the bandit setting}
+Srinivas, Krause, Kakade \& Seeger, Information Theory, 2012.
+
+}
+
+~
+
+%\show[1]{GP-UCB1}
+\show[1]{GP-UCB2}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+\show[1]{GP-UCB3}
+
+~
+
+\show[1]{GP-UCB4}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Pitfall of this approach}{
+
+\item A real issue, in my view, is the choice of kernel (i.e.\ prior $P(f)$)
+\begin{items}
+\item 'small' kernel: almost exhaustive search
+\item 'wide' kernel: miss local optima
+\item adapting/choosing kernel online (with CV): might fail
+\item real $f$ might be non-stationary
+\item non RBF kernels? Too strong prior, strange extrapolation
+\end{items}
+
+~
+
+\item Assuming that we have the right prior $P(f)$ is really a strong assumption
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Further reading}{
+
+\item Classically, such methods are known as \emph{Kriging}
+
+~
+
+\item \emph{Information-theoretic regret bounds for gaussian process
+optimization in the bandit setting}
+Srinivas, Krause, Kakade \& Seeger, Information Theory, 2012.
+
+~
+
+\item \emph{Efficient global optimization of expensive black-box functions.} Jones, Schonlau, \& Welch, Journal of Global Optimization, 1998.
+
+\item \emph{A taxonomy of global optimization
+methods based on response surfaces} Jones, Journal of Global
+Optimization, 2001.
+
+\item \emph{Explicit local models: Towards optimal optimization
+algorithms}, Poland, Technical Report No. IDSIA-09-04, 2004.
+
+%\show{GP-UCB}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Entropy Search}{
+
+\cen{slides by Philipp Hennig}
+
+
+P. Hennig \& C. Schuler: \emph{Entropy Search for
+Information-Efficient Global Optimization}, JMLR 13 (2012).
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Predictive Entropy Search}{\label{lastpage}
+
+\item Hern{\'a}ndez-Lobato, Hoffman \& Ghahraman: \emph{Predictive Entropy
+Search for Efficient Global Optimization of Black-box Functions}, NIPS
+2014.
+
+\item Also for constraints!
+
+\item Code: \url{https://github.com/HIPS/Spearmint/}
+
+}
+
+
+
+
+\slidesfoot

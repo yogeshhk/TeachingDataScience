@@ -1,0 +1,248 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Machine Learning}
+\renewcommand{\exnum}{7}
+
+\exercises
+
+(DS BSc students can skip the exercise 3.)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Kernels and Features (4 Points)}
+
+Reconsider the equations for Kernel Ridge regression given on slide
+05:3, and -- if features are given -- the definition of the kernel
+function and $\k(x)$ in terms of the features as given on slide 05:2.
+
+a) Prove that Kernel Ridge regression with the linear kernel function
+$k(x,x') = 1 + x^\T x'$ is equivalent to Ridge regression with linear
+features $\phi(x) = \mat{c}{1 \\ x}$. (1 P)
+
+\ifnum\value{solutions}=1
+\begin{solution}
+$\phi(x)^\T \phi(x') = (1, x)~ (1, x')^\T = 1 +x^\T x^\prime = k(x,x')$
+\end{solution}
+\fi
+
+b) In Kernel Ridge regression, the optimal function is of the form
+$f(x) = \k(x)^\T \a$ and therefore linear in $\k(x)$. In plain ridge
+regression, the optimal function is of the form $f(x) = \phi(x)^\T \b$
+and linear in $\phi(x)$. Prove that choosing $k(x,x') = (1+ x^\T x')^2$
+implies that $f(x) = \k(x)^\T \a$ is a second order polynomial over
+$x$.  (2 P)
+
+\ifnum\value{solutions}=1
+\begin{solution}
+Assume $x \in \RRR^d$.
+\begin{align}
+	k(x,x') &= (1 +x^\T x')^2 = \left(1 + \sum_i x_i x'_i\right)^2 \\
+	&= 1 + 2 \sum_i x_i x'_i + \sum_i x_i^2 {x'_i}^2 + \sum_i\sum_{j\neq i} x_i x_j x'_i x'_j \\
+	&= \phi(x)^\T \phi(x')
+\end{align}
+with $\phi(x) = (1, \sqrt{2}x_1, ..., \sqrt{2}x_d, x_1^2, ... x_d^2, \sqrt{2}x_1x_2, \sqrt{2}x_1x_3, ..., \sqrt{2}x_{d-1}x_d)^\T$ which is the (slightly scaled) second order polynomial.
+\end{solution}
+\fi
+
+c) Equally, note that choosing the squared exponential kernel $k(x,x')
+= \exp(-\gamma \|x-x'\|^2)$ implies that the optimal $f(x)$ is linear
+in radial basis function (RBF) features. Does this necessarily impliy
+that Kernel Ridge regression with squared exponential kernel, and
+plain Ridge regression with RBF features are exactly equivalent?
+(Equivalent means, have the same optimal function.) Distinguish the
+cases $\l=0$ (no regularization) and $\l>0$.  (1 P)
+
+(Voluntary: Practically test yourself on the regression problem from Exercise 2, whether Kernel Ridge Regression and RBF features are exactly equivalent.)
+
+%% In exercise 2 we implemented Ridge regression. Modify the code to
+%% implement Kernel ridge regression. Try to program it in a way that you
+%% only need to change one line to have a different kernel.  Note that this
+%% computes optimal ``parameters'' $\a= (K + \l I)^\1 y$ such that
+%% $f(x) = \k(x)^\T \a$.
+
+%% a) Using a linear kernel, does this reproduce the
+%% linear regression we looked at in exercise 2? Test this on the
+%% data. If not, how can you make it equivalent?
+
+%% %b) the general polynomial kernel $k(x,x') = (x^\T x' + a)^d$, $a\ge0$, $d\in \NNN$. Relation to the polynomial features?
+
+%% b) Is using the squared exponential kernel $k(x,x')
+%% = \exp(-\gamma \|x-x'\|^2)$ exactly equivalent to using the radial basis
+%% function features we introduced?
+
+\ifnum\value{solutions}=1
+\begin{solution}
+First fact: The kernel function $k(x,x') = e^{-(x-x')^2/\s^2}$ is
+NOT equal to the scalar product $\phi(x)^\T \phi(x')$ for radial basis
+function features $\phi_i(x) = e^{-(x-x_i)^2/\s^2}$. Also for a given
+data set $D$, the concrete kappa $\k(x)$ is not equal to
+$X \phi(x)$. Also the individual terms in the equations for computing
+optimal $\b$ or $\a$ are not equal.
+
+Second fact: In the rbf-feature case, the function class is spanned by
+$f(x) = \phi(x)^\T \b$. In the kernel case, the function class is
+spanned by $f(x) = \k(x)^\T \a$. These are the same function classes!!
+
+Third fact: Assuming zero regularization ($\l=0$) both approaches find
+the function in their respective function class that minimizes the
+squared error on the data. Both really compute the optimal function in
+their function class. As they have the same function class, they
+compute the same function! The optimal $\b$ will be equal to the
+optimal $\a$!
+
+In the case of non-zero regularization, the resulting functions will
+be different! The regularization operates differently in both cases
+(in different ``spaces'').
+
+Note: All this holds only for rbf-features without bias feature.
+\end{solution}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Kernel Construction (4 Points)}
+
+For a non-empty set $X$, a kernel is a symmetric function
+$k: X \times X \to \RRR$. Note that the set
+$X$ can be arbitrarily structured (real vector space, graphs,
+images, strings and so on). A very important class of useful kernels
+for machine learning are positive definite kernels. A kernel is
+called \emph{positive definite}, if for all arbitrary finite subsets
+$\{x_i\}_{i=1}^n \subseteq X$ the corresponding
+\emph{kernel matrix} $K$ with elements $K_{ij} = k(x_i,x_j)$ is
+positive \emph{semi}-definite,
+\begin{align}
+\a \in\RRR^n ~ \To ~ \a^\T K\a \ge 0 ~.
+\end{align}
+
+Let $k_1,k_2: X\times X \to \RRR$ be two positive definite
+kernels. Often, one wants to construct more complicated kernels out of
+existing ones. Proof that
+\begin{enumerate}
+\item $k(x,x') = k_1(x,x') + k_2(x,x')$
+\item $k(x,x') = c\cdot k_1(x,x')$ ~ for ~ $c \ge 0$
+\item $k(x,x') = k_1(x,x') \cdot k_2(x,x')$
+\item $k(x,x') = k_1(f(x),f(x'))$ ~ for ~ $f:X\to X$
+\end{enumerate}
+are positive definite kernels.
+
+
+\ifnum\value{solutions}=1
+\begin{solution}
+	1. $k(x,x^\prime) = k_1(x,x^\prime) + k_2(x,x^\prime)$
+	\begin{align*}
+		\a^\T K\a = \a^\T (K_1 + K_2)\a = \a^\T K_1\a + \a^\T K_2\a \ge 0.
+	\end{align*}
+
+	2. $k(x,x^\prime) = c\cdot k_1(x,x^\prime)$ ~ for ~ $c \ge 0$
+	\begin{align*}
+		\a^\T K\a = \a^\T (c\cdot K_1)\a = c\cdot \a^\T K_1\a \ge 0.
+	\end{align*}
+
+	3. $k(x,x^\prime) = k_1(x,x^\prime) \cdot k_2(x,x^\prime)$
+	
+	$K = K_1 \circ K_2$ where $\circ$ denotes the element-wise product.
+	
+	Use eigendecomposition on matrices $K_1, K_2$:
+	$K_1 = \sum_i \l_i u_i u_i^\T$, $K_2 = \sum_j \m_j v_j v_j^\T$ with $\l_i, \m_j \ge 0$.
+	\begin{align*}
+		K &= \left(\sum_i \l_i u_i u_i^\T\right) \circ \left(\sum_j \m_j v_j v_j^\T\right) \\
+		&= \sum_i \sum_j \l_i \m_j (u_i u_i^\T) \circ (v_j v_j^\T) \\
+		&= \sum_i \sum_j \l_i \m_j (u_i \circ v_j) (u_i \circ v_j)^\T \\
+		&= \sum_k \s_k w_k w_k^\T \\
+		\a^\T K\a &= \sum_k \s_k \a^\T w_k w_k^\T \a 
+		= \sum_k \s_k (w_k^\T \a)^2 \ge 0
+	\end{align*}
+
+	4. $k(x,x^\prime) = k_1(f(x),f(x^\prime))$ ~ for ~ $f:X\to X$
+	
+	Let $f(x) = \tilde{x} \in X$. $k_1: X\times X \to \RRR$ is a positive definite kernel
+	for all $x \in X$ and also for all $\tilde{x} \in X$.
+	\begin{align*}
+		\a^\T K(x,x^\prime)\a = \a^\T K_1(\tilde{x},\tilde{x}^\prime)\a \ge 0.
+	\end{align*}
+\end{solution}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Kernel logistic regression (2 Points)}
+
+The ``kernel trick'' is generally applicable whenever the ``solution''
+(which may be the predictive function $f^\text{ridge}(x)$, or the
+discriminative function, or principal components...) can be written in
+a form that only uses the kernel function $k(x,x')$, but never features
+$\phi(x)$ or parameters $\b$ explicitly.
+
+Derive a kernelization of Logistic Regression. That is,
+think about how you could perform the Newton iterations based only on
+the kernel function $k(x,x')$.
+
+Tips: Reformulate the Newton iterations
+\begin{align}
+\b
+&\gets \b
+ - (\vec X^\T W \vec X + 2 \l I)^\1~
+[\vec X^\T (\vec p - \vec y) + 2\l I \b] 
+\end{align}
+using the two Woodbury identities
+\begin{align}
+(X^\T W X + A)^\1 X^\T W
+&= A^\1 X^\T (X A^\1 X^\T + W^\1)^\1 \\
+(X^\T WX+A)^\1
+&= A^\1 - A^\1 X^\T (XA^\1X^\T+W^\1)^\1 X A^\1
+\end{align}
+Note that you'll need to handle the $\vec X^\T (\vec p - \vec y)$ and
+$2\l I \b$ differently.
+
+Then think about what is actually been iterated in the kernalized
+case: surely we cannot iteratively update the optimal parameters,
+because we want to rewrite equations to never touch $\b$ or $\phi(x)$
+explicitly.
+
+\ifnum\value{solutions}=1
+\begin{solution}
+For logistic regression we compute $\b$ using the Newton iterates
+\begin{align}
+	\b
+	&\gets I\b
+	- (X^\T W X + 2 \l I)^\1~
+	[X^\T (p - y) + 2\l \b] \\
+	&\quad= (X^\T W X + 2 \l I)^\1 (X^\T W X + 2 \l I)\b
+	- (X^\T W X + 2 \l I)^\1~ [X^\T (p - y) + 2\l \b] \\
+	&\quad= - (X^\T W X + 2 \l I)^\1~ [X^\T (p - y) - (X^\T W X + 2 \l I)\b + 2\l \b] \\
+	&\quad= - (X^\T W X + 2 \l I)^\1~ X^\T[(p - y) - W X \b]
+\end{align}
+Using the Woodbury identity we can rewrite this as ($A = 2 \l I$)
+\begin{align}
+	&(X^\T W X + A)^\1 X^\T W
+	= A^\1 X^\T (X A^\1 X^\T + W^\1)^\1 \\
+	\b
+	&\gets 
+	- \frac{1}{2\l} X^\T (X \frac{1}{2\l} X^\T + W^\1)^\1~ W^\1
+	[(p-y) - W X \b]\\
+	&\quad=  X^\T (X X^\T + 2\l W^\1)^\1~ \[X \b - W^\1 (p-y)\] .
+\end{align}
+We can now compute the discriminative function values $f_X =
+X \b \in\RRR^n$ at the training points by iterating over those instead
+of $\b$:
+\begin{align}
+	f_X
+	&\gets  X X^\T (X X^\T + 2\l W^\1)^\1~ \[X \b - W^\1 (p-y)\] \\
+	&=  K (K + 2\l W^\1)^\1~ \[f_X - W^\1 (p_X-y)\] 
+\end{align}
+Note, that $p_X$ on the RHS also depends on $f_X$.
+
+Side note: Given $f_X$ we can compute the discriminative
+function values $f_Z = Z \b \in\RRR^m$ for a set of $m$
+query points $Z$ using
+\begin{align}
+	f_Z
+	&\gets  \k^\T (K + 2\l W^\1)^\1~ \[f_X - W^\1 (p_X-y)\] 
+	\comma \k^\T = Z X^\T
+\end{align}
+\end{solution}
+\fi
+
+
+\exerfoot

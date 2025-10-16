@@ -1,0 +1,170 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Machine Learning}
+\renewcommand{\exnum}{5}
+
+%\usepackage{versions}
+
+\exercises
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Structured Output: mixed classification/regression}
+
+\emph{Note:} The following two exercises are meant to train you in
+modelling structured output. The generic application case would be
+time series tagging or image segmentation. However, for both of these
+applications defining features and computing the $\argmax_y f(x,y)$ is
+non-trivial. So, for the sake of simplicity of the exercises I
+describe some made up 'toy' problems.
+
+~
+
+\begin{figure}
+\show[.4]{dataMixedCRF_x_y2.png}
+\end{figure}
+
+Consider a data set of tuples $(x,y_1,y_2)$ where
+\begin{itemize}
+\item $x\in\RRR$ is the age of a machine in some factory
+\item $y_1\in\{0,1\}$ is a binary indicator whether some piece of the
+  machine got loose or broke
+\item $y_2\in\RRR$ is the performance of the machine (perhaps the
+  rate of correct production/assembly or so).
+\end{itemize}
+The figure displays the data $(x,y_2)$, which looks like two curves to
+be fit. These two curves correspond to $y_1\in\{0,1\}$.
+
+a) Properly define a \emph{representation} and \emph{objective} for
+modelling the prediction $x \mapsto (y_1, y_2)$.
+
+b) Implement the method. What is your prediction for $x=80$, that is,
+what is the probability $P(y_1 \| x=80)$ of a broken piece and,
+conditionally to that, your prediction of performance $y_2$
+conditional to $(y_1, x=80)$, i.e., for both cases $y_1\in\{0,1\}$?
+
+\ifnum\value{solutions}=1
+\begin{solution}
+We define a discriminative function
+\begin{align}
+f(x,y)
+ &= [y_1=1] \phi(x)^\T \b_c
+  + [y_1=0] (-\half y_2^2 + y_2 \phi(x)^\T \b_0)
+  + [y_1=1] (-\half y_2^2 + y_2 \phi(x)^\T \b_1) \\
+ &= -\half y_2^2
+  + [y_1=1] \phi(x)^\T \b_c
+  + [y_1=0] y_2 \phi(x)^\T \b_0
+  + [y_1=1] y_2 \phi(x)^\T \b_1 ~.
+\end{align}
+Here $\b_c$ parameterizes an ordinary binary classification
+discriminative function, and $\b_0$ and $\b_1$ are regression
+coefficients for the cases $y_1=0$ and $y_1=1$, respectively. Note
+that (I think) the coefficients $\b_0$ and $\b_1$ also may have impact on
+the classification part; so it is not only $\b_c$ determining the
+classification.
+
+We have\redoMacrosInProof
+\begin{align}
+p(y_1,y_2 \| x)
+ &= e^{-\half y_2^2
+  + [y_1=1] \phi(x)^\T \b_c
+  + [y_1=0] y_2 \phi(x)^\T \b_0
+  + [y_1=1] y_2 \phi(x)^\T \b_1 - Z(x,\b)} \\
+p(y_1\=1,y_2 \| x)
+ &= e^{\phi(x)^\T \b_c}~ \NN(y_2 \| \phi(x)^\T \b_1,1)~ \sqrt{2\pi}~ e^{\half (\phi(x)^\T \b_1)^2 - Z(x,\b)} \\
+p(y_1\=0,y_2 \| x)
+ &= e^{0}~ \NN(y_2 \| \phi(x)^\T \b_0,1)~ \sqrt{2\pi}~ e^{\half (\phi(x)^\T \b_0)^2 - Z(x,\b)} ~.
+\end{align}
+For this to be normalized, $\sum_{y_1}\int_{y_2} p(y_1,y_2 \| x) = 1$,
+we have
+\begin{align}
+1
+&= \sqrt{2\pi}~ e^{-Z(x,\b)}~ \[e^{\phi(x)^\T \b_c}~ e^{\half (\phi(x)^\T \b_1)^2} + e^{\half (\phi(x)^\T \b_0)^2}\] \\
+Z(x,\b)
+&= \half\log(2\pi) + \log\[e^{\phi(x)^\T \b_c + \half (\phi(x)^\T \b_1)^2} + e^{\half (\phi(x)^\T \b_0)^2}\] \\
+\na_{\b_c} Z(x,\b)
+&= \frac{1}{[...]}~ e^{\phi(x)^\T \b_c + \half (\phi(x)^\T \b_1)^2}~ \phi(x) \\
+\he[\b_c] Z(x,\b)
+ &= \frac{-1}{[...]^2}~ e^{2\phi(x)^\T \b_c + (\phi(x)^\T \b_1)^2}~ \phi(x) \phi(x)^\T
+  + \na_{\b_c} Z(x,\b) \phi(x)^\T \\
+\na_{\b_1} Z(x,\b)
+&= \frac{1}{[\cdots]}~ e^{\phi(x)^\T \b_c + \half(\phi(x)^\T \b_1)^2}~ \phi(x)^\T \b_1~ \phi(x) \\
+\he[\b_1] Z(x,\b)
+&= \frac{-1}{[\cdots]^2}~ e^{2\phi(x)^\T \b_c + (\phi(x)^\T \b_1)^2}~ (\phi(x)^\T \b_1)^2~ \phi(x)~ \phi(x)^\T
+ + \na_{\b_1} Z(x,\b) [(\phi(x)^\T \b_1)^2 + 1] ~ \phi(x) \phi(x)^\T \\
+\na_{\b_0} Z(x,\b)
+&= \frac{1}{[\cdots]}~ e^{\half(\phi(x)^\T \b_0)^2}~ \phi(x)^\T \b_0~ \phi(x) \\
+\he[\b_0] Z(x,\b)
+&= \frac{-1}{[\cdots]^2}~ e^{(\phi(x)^\T \b_1)^2}~ (\phi(x)^\T \b_0)^2~ \phi(x)~ \phi(x)^\T
+ + \na_{\b_0} Z(x,\b) [(\phi(x)^\T \b_0)^2 + 1] ~ \phi(x) \phi(x)^\T \\
+\na_{\b_c} f(x,y)
+&= [y_1=1] \phi(x) \\
+\na_{\b_i} f(x,y)
+&= [y_1=i] y_2 \phi(x) ~.
+\end{align}
+That gives all necessary equations.
+
+For your information, the data was sampled as follows: $n=200$ data
+points, $x \sim \UU(0,100)$ uniformly, $y_1 \sim \s(-3+.04*x)$, $y_2 |
+y_1=0 \sim \NN(10-.02*x,~ text{sdv}=.2)$, $y_2 | y_1=1 \sim \NN(1,~ text{sdv}=.2)$.
+\end{solution}
+\fi
+
+
+\exerfoot
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Labelling a time series*}
+
+Assume we are in a clinical setting. Several sensors measure
+different things of a patient, like heart beat rate, blood pressure,
+EEG signals. These measurements form a vector $x_t\in\RRR^n$ for every
+time step $t=1,..,T$.
+
+A doctor wants to annotate such time series with a binary label that
+indicates whether the patient was asleep. Your job is to develop a ML
+algorithm to automatically annotate such data. For this assume that
+the doctor has already annotated several time series of different
+patients: you are given the training data set
+$$ D = \{ (x^i_{1:T}, y^i_{1:T}) \}_{i=1}^n \comma x^i_t\in\RRR^n,~
+y^i_t\in\{0,1\} $$
+where the superscript $i$ denotes the data instance, and the subscript
+$t$ the time step (e.g., each step could correspond to 10 seconds).
+
+Develop a ML algorithms to do this job. First specify the model
+formally in all details (representation \& objective). Then detail the
+algorithm to compute optimal parameters in pseudo code, being as
+precise as possible in all respects. Finally, don't forget to sketch
+an algorithm to actually do the annotation given an input $x^i_{1:T}$
+and optimized parameters.
+
+(No need to actually implement.)
+
+\ifnum\value{solutions}=1
+\begin{solution}
+We propose a conditional random field with two types of features for
+all $t$:
+\begin{align}
+\phi(y_t,\bar x_t)
+&= [y_t=1] \phi(\bar x_t) \\
+\phi(y_t,y_{t\po})
+&= \mat{c}{1\\ {[y_t=0]}{[y_{t\po}=0]}\\ {[y_t=0]}{[y_{t\po}=1]}\\ {[y_t=1]}{[y_{t\po}=0]}\\{[y_t=1]}{[y_{t\po}=1]}}
+\end{align}
+Here $\bar x_t = x_{t-k:x+k}$ is a tuple/window of temporally local
+signals, and $\phi(bar x)$ polynomial features of this window of
+signals. Let say $\phi(bar x)\in\RRR^d$. Then
+\begin{align}
+f(x,y)
+&= \sum_t \phi(y_t,y_{t\po})^\T \tau + \phi(y_t,\bar x_t)^T \b
+\end{align}
+where $\tau\in\RRR^4$ are parameters of the temporal transitions, and
+$\b\in\RRR^d$ parameters of the ``local classifier''. In a sense,
+these are temporally coupled logistic regressions.
+\end{solution}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exerfoot

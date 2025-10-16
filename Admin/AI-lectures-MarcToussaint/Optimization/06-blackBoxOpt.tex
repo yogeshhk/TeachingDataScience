@@ -1,0 +1,961 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Optimization}
+\renewcommand{\coursepicture}{optim}
+\renewcommand{\coursedate}{Summer 2015}
+
+\renewcommand{\topic}{Blackbox Optimization: Local, Stochastic \&
+Model-based Search}
+\renewcommand{\keywords}{}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Blackbox optimization: definition}
+\slide{``Blackbox Optimization''}{
+
+\item We use the term to denote the problem: Let $x\in\RRR^n$, $f:~ \RRR^n \to \RRR$, find
+$$\min_x~ f(x)$$
+where we can \emph{only} evaluate $f(x)$ for any $x\in\RRR^n$
+
+$\na f(x)$ or $\he f(x)$ are not (directly) accessible
+
+~
+
+{\tiny
+
+\item A constrained version:~  Let $x\in\RRR^n$, $f:~ \RRR^n \to \RRR$,
+$g:~ \RRR^n\to\{0,1\}$, find
+$$\min_x~ f(x) \st g(x)=1$$
+where we can only evaluate $f(x)$ and $g(x)$ for any $x\in\RRR^n$
+
+I haven't seen much work on this. Would be interesting to consider
+this more rigorously.
+
+}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{``Blackbox Optimization'' -- terminology/subareas}{
+
+\item \textbf{Stochastic Optimization} ~ (aka.\ Stochastic \textbf{Search},
+Metaheuristics)
+\begin{items}
+\item Simulated Annealing, Stochastic Hill Climing, Tabu Search
+%\item Iterated local search, Variable neighborhood search
+\item Evolutionary Algorithms, esp.\ Evolution Strategies, Covariance Matrix Adaptation, Estimation of Distribution Algorithms
+\item Some of them (implicitly or explicitly) locally approximating gradients or 2nd order models
+\end{items}
+
+~
+
+\item \textbf{Derivative-Free Optimization} ~ (see Nocedal et al.)
+\begin{items}
+\item Methods for (locally) convex/unimodal functions; extending
+gradient/2nd-order methods
+\item Gradient estimation (finite differencing), model-based, Implicit Filtering
+%\item Coordinate and pattern-search (cf.\ Twiddle)
+%\item Nelder-Mead Downhill Simplex
+\end{items}
+
+~
+
+\item \textbf{Bayesian/Global Optimization}
+\begin{items}
+\item Methods for arbitrary (smooth) blackbox functions that get not
+stuck in local optima. 
+\item Very interesting domain -- close analogies to (active) Machine
+   Learning, bandits, POMDPs, optimal decision making/planning, optimal
+   experimental design
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Blackbox optimization: overview}
+\slide{Outline}{
+\item Basic downhill running
+\begin{items}
+\item Greedy local search, stochastic local search,
+simulated annealing
+\item Iterated local search, variable neighborhood search, Tabu search
+\item Coordinate \& pattern search, Nelder-Mead downhill simplex
+\end{items}
+
+~
+
+\item Memorize or model something
+\begin{items}
+\item General stochastic search
+\item Evolutionary Algorithms, Evolution Strategies, CMA, EDAs
+\item Model-based optimization, implicit filtering
+\end{items}
+
+~
+
+\item Bayesian/Global optimization: ~ \emph{Learn \& approximate optimal optimization}
+\begin{items}
+\item Belief planning view on optimal optimization
+\item GPs \& Bayesian regression methods for belief tracking
+\item bandits, UBC, expected improvement, etc for decision making
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Basic downhill running}{
+
+\tiny
+-- Greedy local search, stochastic local search,
+simulated annealing
+
+-- Iterated local search, variable neighborhood search, Tabu search
+
+-- Coordinate \& pattern search, Nelder-Mead downhill simplex
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Greedy local search}
+\slide{Greedy local search ~ (greedy downhill, hill climbing)}{
+
+\item Let $x\in\XX$ be continuous or discrete
+\item We assume there is a finite neighborhood $\NN(x) \subset \XX$ defined
+for every $x$
+
+~
+
+\item Greedy local search (variant 1):\\
+\begin{algo}
+\Require initial $x$, function $f(x)$
+\Repeat
+\State $x \gets \argmin_{y\in\NN(x)} f(y)$ \Comment{convention: we
+assume $x\in\NN(x)$}
+\Until $x$ converges
+\end{algo}
+
+~
+
+\item Variant 2: $x \gets $ the ``first'' $y\in\NN(x)$ such that $f(y) < f(x)$
+
+\item Greedy downhill is a basic ingredient of discrete optimization
+
+\item In the continuous case: what is $\NN(x)$? Why should it be
+fixed or finite?
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Stochastic local search}
+\slide{Stochastic local search}{
+
+\item Let $x\in\RRR^n$
+\item We assume a ``neighborhood'' probability distribution $q(y|x)$,
+typically a Gaussian $q(y|x) \propto \exp\{-\half(y-x)^\T \S^\1 (y-x)\}$
+
+~
+
+\begin{algo}
+\Require initial $x$, function $f(x)$, proposal distribution $q(y|x)$
+\Repeat
+\State Sample $y\sim q(y|x)$
+\State \textbf{If} $f(y)<f(x)$ \textbf{then} $x\gets y$
+\Until $x$ converges
+\end{algo}
+
+~
+
+\item The choice of $q(y|x)$ is crucial, e.g.\ of the covariance matrix $\S$
+
+\item Simple heuristic: decrease variance if many steps ``fail'';
+increase variance if sufficient success steps
+
+\item Covariance Matrix Adaptation (discussed later) memorizes the
+recent successful steps and adapts $\S$ based on this.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Simulated annealing}
+\slide{Simulated Annealing ~ (run also uphill)}{
+
+\item An extension to avoid getting stuck in local optima is to also
+accept steps with $f(y)>f(x)$:
+
+~
+
+\begin{algo}
+\Require initial $x$, function $f(x)$, proposal distribution $q(y|x)$
+\State initialilze the temperature $T=1$
+\Repeat
+\State Sample $y \sim q(y|x)$
+\State Acceptance probability $A
+=\min\big\{1,~ e^{\frac{f(x)-f(y)}{T}}  \frac{q(x|y)}{q(y|x)}\big\}$
+%=\min\big\{1,~ \frac{e^{-f(y)/T} q(x|y)}{e^{-f(x)/T} q(y|x)}\big\}
+\State With probability $A$ update $x \gets y$
+\State Decrease $T$, e.g.\ $T \gets (1-\e) T$ for small $\e$
+\Until $x$ converges
+\end{algo}
+
+~
+
+\item Typically: $q(y|x) \propto \exp\{-\half(y-x)^2/\s^2\}$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Simulated Annealing}{
+
+\item Simulated Annealing is a Markov chain Monte Carlo (MCMC) method.
+\begin{items}
+\item Must read!: \emph{An Introduction to MCMC for Machine Learning}
+\item These are iterative methods to sample from a distribution, in
+our case
+$$p(x) \propto e^{\frac{-f(x)}{T}}$$
+\end{items}
+
+\item For a fixed temperature $T$, one can prove that the set of
+accepted points is distributed as $p(x)$ (but non-i.i.d.!) The acceptance probability
+$$A=\min\big\{1,e^{\frac{f(x)-f(y)}{T}}  \frac{q(x|y)}{q(y|x)}\big\}$$
+compares the $f(y)$ and $f(x)$, but also the reversibility of $q(y|x)$
+
+\item When cooling the temperature, samples focus at the extrema.
+Guaranteed to sample all extrema \emph{eventually}
+
+\item Of high theoretical relevance, less of practical
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Simulated Annealing}{
+
+\show{simulatedAnnealing}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Random restarts}
+\slide{Random Restarts ~ (run downhill multiple times)}{
+
+\item Greedy local search is typically only used as an ingredient of
+more robust methods
+
+\item We assume to have a start distribution $q(x)$
+
+~
+
+\item Random restarts:\\
+\begin{algo}
+\Repeat
+\State Sample $x\sim q(x)$
+\State $x \gets \texttt{GreedySearch}(x)$ or
+$\texttt{StochasticSearch}(x)$
+\State \textbf{If} $f(x)<f(x^*)$ \textbf{then} $x^*\gets x$
+\Until run out of budget
+\end{algo}
+
+\item Greedy local search requires a neighborhood function $\NN(x)$
+
+Stochastic local search requires a transition proposal $q(y|x)$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Iterated local search}
+\slide{Iterated Local Search}{
+
+\item Random restarts may be rather expensive, sampling $x\sim q(x)$
+is fully uninformed
+
+\item Iterated Local Search picks up the last visited local minimum $x$ and
+restarts in a \textbf{meta-neighborhood} $\NN^*(x)$
+
+~
+
+\item Iterated Local Search (variant 1):\\
+\begin{algo}
+\Require initial $x$, function $f(x)$
+\Repeat
+\State $x \gets \argmin_{y'\in\{\texttt{GreedySearch}(y)\,:\,y\in\NN^*(x)\}} f(y')$
+\Until $x$ converges
+\end{algo}
+\begin{items}
+\item This version evalutes a GreedySearch for all meta-neighbors
+$y\in\NN^*(x)$ of the last local optimum $x$
+\item The inner GreedySearch uses another neighborhood function
+$\NN(x)$
+\end{items}
+
+\item Variant 2: $x \gets $ the ``first'' $y\in\NN^*(x)$ such that $f(\texttt{GS}(y)) < f(x)$
+
+\item Stochastic variant: Neighborhoods $\NN(x)$ and $\NN^*(x)$ are replaced by
+transition proposals $q(y|x)$ and $q^*(y|x)$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Iterated Local Search}{
+
+\item Application to Travelling Salesman Problem:
+
+$k$-opt neighbourhood: solutions which differ by at most k edges
+
+~
+
+\show[.6]{TSP-neighborhoods}
+{\tiny\hfill from Hoos \& St{\"u}tzle: \emph{Tutorial: Stochastic
+Search Algorithms}}
+
+~
+
+\item GreedySearch uses 2-opt or 3-opt neighborhood
+
+Iterated Local Search uses 4-opt meta-neighborhood (double bridges)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Variable neighborhood search}
+\slide{Very briefly...}{
+
+\item Variable Neighborhood Search:
+\begin{items}
+\item Switch the neighborhood function in different phases
+\item Similar to Iterated Local Search
+\end{items}
+
+~
+
+\item Tabu Search:
+\begin{items}
+\item Maintain a \emph{tabu list} points (or points features) which
+may not be visited again
+\item The list has a fixed finite size: FILO
+\item Intensification and diversification heuristics make it more global
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Coordinate search}
+\slide{Coordinate Search}{
+
+\begin{algo}
+\Require Initial $x\in\RRR^n$
+\Repeat
+\For{$i=1,..,n$}
+\State $\a^* = \argmin_\a f(x+\a \vec e_i)$ \Comment{Line Search}
+\State $x \gets x+\a^* \vec e_i$
+\EndFor
+\Until $x$ converges
+\end{algo}
+\item The LineSearch must be approximated
+\begin{items}
+\item E.g.\ abort on any improvement, when $f(x+\a \vec e_i)<f(x)$
+\item Remember the last successful stepsize $\a_i$ for each
+coordinate
+\end{items}
+
+\item Twiddle:\\
+\begin{algo}
+\Require Initial $x\in\RRR^n$, initial stepsizes $\a_i$ for all $i=1:n$
+\Repeat
+\For{$i=1,..,n$}
+\State $x \gets \argmin_{y\in\{x-\a_i e_i, x, x+\a_i e_i\}} f(y)$ \Comment{twiddle $x_i$}
+\State Increase $\a_i$ if $x$ changed; decrease $\a_i$ otherwise
+\EndFor
+\Until $x$ converges
+\end{algo}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Pattern search}
+\slide{Pattern Search}{
+
+~
+
+\begin{items}
+\item In each iteration $k$, have a (new) set of search directions $D_k
+   = \{ d_{ki} \}$ and test steps of length $\a_k$ in these directions
+\item In each iteration, adapt the search directions $D_k$ and step
+   length $\a_k$
+\end{items}
+{\tiny\hfill Details: See Nocedal et al.}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Nelder-Mead simplex method}
+\slide{Nelder-Mead method -- Downhill Simplex Method}{
+
+~
+
+\show[.5]{downsimplex}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Nelder-Mead method -- Downhill Simplex Method}{
+
+\item Let $x\in\RRR^n$
+
+\item Maintain $n+1$ points $x_0,..,x_n$, sorted by
+$f(x_0)<...<f(x_n)$
+
+\item Compute center $c$ of points
+
+\item Reflect: $y=c + \a (c-x_n)$
+\item If $f(y)<f(x_0)$:~  Expand: $y=c + \g (c-x_n)$
+\item If $f(y)>f(x_{n\1})$:~  Contract: $y=c + \r (c-x_n)$
+\item If still $f(y)>f(x_n)$:~ Shrink $\forall_{i=1,..,n} x_i \gets
+x_0 + \s(x_i-x_0)$
+
+~
+
+\item Typical parameters: $\a=1, \g=2, \r=-\half, \s=\half$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Summary: Basic downhill running}{
+
+\item These methods are highly relevant! Despite their simplicity
+
+\item Essential ingredient to iterative approaches that try to find as
+many local minima as possible
+
+~
+
+\item Methods essentially differ in the notion of
+
+\cen{\emph{neighborhood, transition proposal, or pattern of next
+search points}}
+
+to consider
+
+\item Iterated downhill can be very effective
+
+~
+
+\item However: \textbf{There should be ways to better exploit data!}
+\begin{items}
+\item Learn from previous evaluations where to test new point
+\item Learn from previous local minima where to restart
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Memorize or model something}{
+
+\tiny
+-- Stochastic search schemes
+
+-- Evolutionary Algorithms, Evolution Strategies, CMA, EDAs
+
+-- Model-based optimization, implicit filtering
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Optimizing and Learning}{
+
+%% \item Blackbox optimization is often related to learning:
+
+%% \item When we have local a gradient or Hessian, we can take that local
+%%    information and run -- no need to keep track of the history or
+%%    learn (exception: BFGS)
+
+%% \item In the Blackbox case we have no local information directly
+%%    accessible
+
+%% $\to$ one needs to account of the history in some way or another to
+%% have an idea where to continue search
+
+%% \item ``Accounting for the history'' very often means learning:
+%% Learning a local or global model of $f$ itself, learning which steps
+%% have been successful recently (gradient estimation), or which step
+%% directions, or other heuristics
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{General stochastic search}
+\slide{A general stochastic search scheme}{
+
+\item The general scheme:
+\begin{items}
+\item The algorithm maintains a probability distribution $p_\t(x)$
+\item In each iteration it takes $n$ samples $\{x_i\}_{i=1}^n \sim p_\t(x)$
+\item Each $x_i$ is evaluated ~ $\to$ ~ data $\{(x_i,f(x_i))\}_{i=1}^n$
+\item \textbf{That data is used to update $\t$}
+\end{items}
+
+~
+
+\begin{algo}
+\Require initial parameter $\t$, function $f(x)$, distribution model $p_\t(x)$, update heuristic $h(\t,D)$
+\Ensure final $\t$ and best point $x$
+\Repeat
+\State Sample $\{x_i\}_{i=1}^n \sim p_\t(x)$
+\State Evaluate samples, $D= \{(x_i,f(x_i))\}_{i=1}^n$
+\State Update $\t \gets h(\t,D)$
+\Until $\t$ converges
+\end{algo}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example:~ Gaussian search distribution ~ ``$(\mu,\l)$-ES''}{
+
+{\tiny From 1960s/70s. Rechenberg/Schwefel}
+
+\item The simplest distribution family
+$$\t = (\hat x) \comma p_\t(x) = \NN(x\|\hat x,\s^2)$$
+a $n$-dimenstional isotropic Gaussian with fixed variance $\s^2$
+
+~
+
+\item Update heuristic:
+\begin{items}
+\item Given $D=\{(x_i,f(x_i))\}_{i=1}^\l$, select $\m$ best: $D'=\text{bestOf}_\mu(D)$
+
+\item Compute the new mean $\hat x$ from $D'$
+\end{items}
+
+~
+
+\item This algorithm is called ``Evolution Strategy $(\m,\l)$-ES''
+\begin{items}
+\item The Gaussian is meant to represent a ``species''
+
+\item $\l$ offspring are generated
+
+\item the best $\mu$ selected
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{$\t$ is the ``knowledge/information'' gained}{
+
+~
+
+\item The parameter $\t$ is the only ``knowledge/information'' that is
+being propagated between iterations
+
+$\t$ encodes what has been learned from the history
+
+$\t$ defines where to search in the future
+
+~
+
+\item The downhill methods of the previous section did not store any
+information other than the current $x$. (Exception: Tabu search,
+Nelder-Mead)
+
+~
+
+\item Evolutionary Algorithms are a special case of this stochastic
+search scheme
+
+%% Evolution Strategies: ~ $\t$ is the mean \& variance of a Gaussian
+
+%% Evolutionary Algorithms: ~ $\t$ is a parent population
+
+%% Estimation of Distribution Algorithms: ~ $\t$ are parameters of some
+%% distribution model, e.g.\ Bayesian Network
+
+%% Simulated Annealing: ~ $\t$ is the ``current point'' and a temperature
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Example:~ ``elitarian'' selection ~ $(\mu+\l)$-ES}{
+
+%% \item $\t$ also stores the $\mu$ best previous points
+%% $$\t = (\hat x, D') \comma p_t(x) = \NN(x\|\hat x,\s^2)$$
+
+%% \item The $\t$ update:
+
+%% \item Select the $\mu$ best from $D' \cup D$: $D'=\text{bestOf}_\mu(D'\cup D)$
+%% \begin{items}
+%% \item Compute the new mean $\hat x$ from $D'$
+
+%% \item Is called ``elitarian'' because good parents can survive
+%% \end{items}
+
+%% ~
+
+%% \item Consider the $(1+1)$-ES: a Hill Climber
+
+%% \item There is considerable theory on convergence of, e.g.,
+%% $(1+\l)$-ES
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Evolutionary algorithms}
+\slide{Evolutionary Algorithms (EAs)}{
+
+\item EAs can well be described as special kinds of parameterizing $p_\t(x)$ and updating $\t$
+\begin{items}
+\item The $\t$ typically is a set of good points found so far (parents)
+
+\item Mutation \& Crossover define $p_\t(x)$
+
+\item The samples $D$ are called offspring
+
+\item The $\t$-update is often a selection of the best, or ``fitness-proportional'' or rank-based
+\end{items}
+
+~
+%% \item In discrete optimization, where $x$ is a string of integers,
+%% $\t$ is a population of parents (strings)
+
+%% $p_\t(x)$ is the offspring distribution (via crossover \& mutation)
+%% defined by these parents
+
+\item Categories of EAs:
+\begin{items}
+\item \textbf{Evolution Strategies}:~ $x\in\RRR^n$, often Gaussian $p_\t(x)$
+
+\item \textbf{Genetic Algorithms}:~ $x\in\{0,1\}^n$, crossover \& mutation define
+   $p_\t(x)$
+
+\item \textbf{Genetic Programming}:~ $x$ are programs/trees, crossover \& mutation
+
+\item \textbf{Estimation of Distribution Algorithms}:~ $\t$ directly defines
+   $p_\t(x)$
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Covariance Matrix Adaptation (CMA)}
+\slide{Covariance Matrix Adaptation (CMA-ES)}{
+
+\item An obvious critique of the simple Evolution Strategies:
+\begin{items}
+
+\item The search distribution $\NN(x\|\hat x,\s^2)$ is isotropic
+
+(no going \emph{forward}, no preferred direction)
+
+\item The variance $\s$ is fixed!
+\end{items}
+
+~
+
+\item Covariance Matrix Adaptation Evolution Strategy (CMA-ES)
+
+\show[.7]{CMA-ES}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Covariance Matrix Adaptation (CMA-ES)}{
+
+\item In Covariance Matrix Adaptation
+$$\t=(\hat x,\s,C,\r_\s,\r_C) \comma p_\t(x) = \NN(x\|\hat x,\s^2C)$$
+where $C$ is the covariance matrix of the search distribution
+
+\item The $\t$ maintains two more pieces of information: $\r_\s$ and
+$\r_C$ capture the ``path'' (motion) of the mean $\hat x$ in recent
+iterations
+
+\item Rough outline of the $\t$-update:
+\begin{items}
+\item Let $D'=\text{bestOf}_\mu(D)$ be the set of selected points
+
+\item Compute the new mean $\hat x$ from $D'$
+
+\item Update $\r_\s$ and $\r_C$ proportional to $\hat x_{k\po} - \hat x_k$
+
+\item Update $\s$ depending on $|\r_\s|$
+
+\item Update $C$ depending on $\r_c\r_c^\T$ (rank-1-update) and $\text{Var}(D')$
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{CMA references}{
+
+Hansen, N. (2006), "The CMA evolution strategy: a comparing review"
+
+Hansen et al.: Evaluating the CMA Evolution Strategy on Multimodal
+Test Functions, PPSN 2004.
+
+\show[.7]{CMA-ES1}
+
+\item For ``large enough'' populations local minima
+are avoided
+
+%% ~
+
+%% \item A variant:
+
+%% Igel et al.: A Computational Efficient
+%% Covariance Matrix Update and a $(1+1)$-CMA for Evolution
+%% Strategies, GECCO 2006.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{CMA conclusions}{
+
+\item It is a good starting point for an off-the-shelf blackbox
+algorithm
+
+\item It includes components like estimating the local gradient
+($\r_\s, \r_C$), the local ``Hessian'' ($\text{Var}(D')$), smoothing out
+local minima (large populations)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Estimation of Distribution Algorithms (EDAs)}
+\slide{Estimation of Distribution Algorithms (EDAs)}{
+
+\item Generally, EDAs fit the distribution $p_\t(x)$ to model the
+distribution of previously good search points
+
+{\tiny
+
+For instance, if in all previous distributions, the 3rd bit equals the
+7th bit, then the search distribution $p_\t(x)$ should put higher
+probability on such candidates.
+
+$p_\t(x)$ is meant to capture the \emph{structure} in previously good
+points, i.e.\ the dependencies/correlation between variables.
+
+}
+
+~
+
+\item A rather successful class of EDAs on discrete spaces uses
+graphical models to learn the dependencies between variables, e.g.
+
+Bayesian Optimization Algorithm (BOA)
+
+~
+
+\item In continuous domains, CMA is an example for an EDA
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Further Ideas}{
+
+%% \item We could learn a distribution over steps
+
+%% -- which steps have decreased $f$ recently $\to$ model
+
+%% ~~ (Related to ``differential evolution'')
+
+%% ~
+
+%% \item We could learn a distributions over directions only
+
+%% $\to$ sample one $\to$ line search
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Stochastic search conclusions}{
+
+\begin{algo}
+\Require initial parameter $\t$, function $f(x)$, distribution model $p_\t(x)$, update heuristic $h(\t,D)$
+\Ensure final $\t$ and best point $x$
+\Repeat
+\State Sample $\{x_i\}_{i=1}^n \sim p_\t(x)$
+\State Evaluate samples, $D= \{(x_i,f(x_i))\}_{i=1}^n$
+\State Update $\t \gets h(\t,D)$
+\Until $\t$ converges
+\end{algo}
+
+\item The framework is very general
+
+\item The crucial difference between algorithms is their
+choice of $p_\t(x)$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Model-based optimization}{
+\tiny
+following Nodecal et al.\ ``Derivative-free optimization''
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Model-based optimization}
+\slide{Model-based optimization}{
+
+\item The previous stochastic serach methods are heuristics to update
+$\t$
+
+\cen{\emph{Why not store the previous data directly?}}
+
+~
+
+\item Model-based optimization takes the approach
+\begin{items}
+\item Store a data set $\t=D=\{(x_i,y_i)\}_{i=1}^n$ of previously
+explored points
+
+(let $\hat x$ be the current minimum in $D$)
+\item Compute a (quadratic) model $D\mapsto \hat f(x) = \phi_2(x)^\T\b$
+\item Choose the next point as
+$$x^+ = \argmin_x \hat f(x) \st |x-\hat x|<\a$$
+\item Update $D$ and $\a$ depending on $f(x^+)$
+\end{items}
+
+\item The $\argmin$ is solved with constrained optimization methods
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Model-based optimization}{
+
+\begin{algo}
+\State Initialize $D$ with at least $\half (n+1)(n+2)$ data points
+\Repeat
+\State Compute a regression $\hat f(x) = \phi_2(x)^\T\b$ on $D$
+\State Compute $x^+ = \argmin_x \hat f(x) \st |x-\hat x|<\a$
+\State Compute the improvement ratio $\r = \frac{f(\hat x)-f(x^+)}{\hat
+f(\hat x)-\hat f(x^+)}$
+\If{$\r>\e$}
+\State Increase the stepsize $\a$
+\State Accept $\hat x \gets x^+$
+\State Add to data, $D \gets D \cup \{(x^+,f(x^+))\}$
+\Else
+\If{$\det(D)$ is too small} \Comment{Data improvement}
+\State Compute $x^+ = \argmax_x \det(D\cup\{x\}) \st |x-\hat x|<\a$
+\State Add to data, $D \gets D \cup \{(x^+,f(x^+))\}$
+\Else
+\State Decrease the stepsize $\a$
+\EndIf
+\EndIf
+\State Prune the data, e.g., remove $\argmax_{x\in\D} \det(D\setminus\{x\})$
+\Until $x$ converges
+\end{algo}
+\tiny
+\item \textbf{Variant:} Initialize with only $n+1$ data points and fit
+a linear model as long as $|D|<\half (n+1)(n+2) = \dim(\phi_2(x))$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Model-based optimization}{
+
+
+\item Optimal parameters ~ (with data matrix $X\in\RRR^{n\times\dim(\b)}$)
+$$\hat \b^{\text{ls}} = (\vec X^\T \vec X)^\1 \vec X^\T y$$ The
+determinant $\det (\vec X^\T \vec X)$ or $\det(\vec X)$ (denoted
+$\det(D)$ on the previous slide) is a measure for well the data
+supports the regression. The data improvement explicitly selects a
+next evaluation point to increase $\det(D)$.
+
+\item Nocedal describes in more detail a geometry-improving procedure to update $D$.
+
+~
+
+\item Model-based optimization is closely related to Bayesian approaches. But
+\begin{items}
+\item Should we really prune data to have only a minimal set $D$ (of
+size $\dim(\b)$?)
+\item Is there another way to think about the ``data improvement''
+selection of $x^+$? ($\to$ maximizing uncertainty/information gain)
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Implicit filtering}
+\slide{Implicit Filtering (briefly)}{
+
+\item Estimates the local gradient using finite differencing
+$$\na_\e f(x) \approx \[\frac{1}{2\e} (f(x+\e e_i) - f(x-\e
+e_i))\]_{i=1,..,n}$$
+
+\item Lines search along the gradient; if not succesful, decrease $\e$
+
+\item Can be extended by using $\na_\e f(x)$ to update an
+approximation of the Hessian (as in BFGS)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Conclusions}{\label{lastpage}
+
+\item We covered
+\begin{items}
+\item ``downhill running''
+\item Two flavors of methods that exploit the recent data:
+
+-- stochastic search (\& EAs), maintaining $\t$ that defines $p_\t(x)$
+
+-- model-based opt., maintaining local data $D$ that defines $\hat f(x)$
+\end{items}
+
+~
+
+\item These methods can be very efficient, but somehow the problem
+formalization is unsatisfactory:
+\begin{items}
+\item What would be optimal optimization?
+\item What exactly is the information that we can gain from data about
+the optimum?
+\item If the optimization algorithm would be an ``AI agent'',
+selecting points his actions, seeing $f(x)$ his observations, what
+would be his optimal decision making strategy?
+\item And what about \textbf{global} blackbox optimization?
+\end{items}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot

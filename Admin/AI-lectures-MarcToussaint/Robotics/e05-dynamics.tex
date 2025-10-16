@@ -1,0 +1,86 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\exnum}{5}
+
+\exercises
+
+In the lecture we discussed PD force control on a 1D point mass,
+which leads to oscillatory behavior for high $K_p$ and damped behavior
+for high $K_d$. Slide 03:15 replaces the parameters
+$K_p,K_d$ by two other, more intuitive parameters, $\lambda$ and
+$\xi$: $\lambda$ roughly denotes the time (or time steps) until the
+goal is reached, and $\xi$ whether it is reached agressively ($\xi>1$,
+which overshoots a bit) or by exponential decay ($\xi\le 1$). Use this
+to solve the following exercise.
+
+\exsection{PD force control on a 1D mass point}
+
+a) Implement the system equation for a 1D point mass with mass
+$m=3.456$. That is, implement the Euler intergration (see below) of
+the system dynamics that computes $x_{t\po}$ given $x_t$ and $u_t$ in
+each iteration, where $x_t = (q_t,\dot q_t)$.
+
+There is no need for the robot simulator code---implement it directly
+in plain C++ or another language.
+
+Assume a step time of $\tau=0.01$sec. Generate a trajectory from the
+start position $q_0=0$ and velocity $\dot q_0=0$ that approaches the
+goal position $q^*=1$ with high precision within about 1 second using
+PD force control.  Find 3 different parameter sets for $K_p$ and $K_d$
+to get oscillatory, overdamped and critical damped behaviors. Plot the
+point trajectory (e.g.\ using the routine
+%
+@gnuplot(arr& q); MT::wait();@ .)
+
+b) Repeat for time horizon $t=2$sec and $t=5$sec. How should the
+values of $K_p$ and $K_d$ change when we have more time?
+
+c) Implement a PID controller (including the integral (stationary error)
+term). How does the solution behave with only $K_i$ turned on
+($K_p=K_d=0$); how with $K_i$ and $K_d$ non-zero?
+
+\textbf{Note on Euler Integration:} See
+also \url{http://en.wikipedia.org/wiki/Euler_method}. Given a
+differential equation $\dot x = f(x,u)$, Euler integration numerically
+``simulates'' this equation forward by iterating
+$$x_{t\po} = x_t + \tau f(x,u)$$
+for small time steps $\tau$.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Following a reference trajectory with PD control}
+
+We have the same point mass as above. But now the goal position $q^*$
+changes over time: we have a reference trajectory
+$$q^*(t) = \cos(t)$$
+
+How can one use a PD controller to let the point mass
+robustly and \emph{precisely} follow this reference trajectory?
+
+Simulate the problem as above, but at every full second apply a randomized
+impuls (=instantaneous change in velocity) on the point mass. That
+is, simply set $\dot q \gets \dot q + \xi$ for $\xi\sim\NN(0,.1)$. (In
+code: @double xi = 0.1 * rnd.gauss();@) Generate oscillatory,
+overdamped and critical recovery behaviors.
+
+
+%% A PD controller can not only be used to stabalize a system around a
+%% fixed target $q^*,\dot q^*$. It can also be used to follow a moving
+%% target $q^*_t$, which is called a \emph{reference trajectory}. From a
+%% given a reference trajectory $q^\text{ref}_{0:T}$ of joint angles only, we
+%% compute the velocity as $\dot q^\text{ref}_t=(q_{t\po}-q_{t-1})/(2\tau)$ and the
+%% acceleration as $\ddot q_t^\text{ref} = (q_{t\1} + q_{t\po} -
+%% 2q_t)/\tau^2$. The last equation on slide 04:22 shows how we can use
+%% PD acceleration control to follow such a reference trajectory. Use
+%% this to finally solve the full-fleged, noisy, dynamic peg-in-a-hole
+%% problem in the next exercise.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exerfoot

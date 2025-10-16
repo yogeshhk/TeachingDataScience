@@ -1,0 +1,142 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\exnum}{1}
+
+\exercises
+
+No need to prepare for this first tutorial. We'll do the exercises together on the fly.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\exsection{Prerequisites: Matrix equations}
+
+a) Let $X,A$ be arbitrary matrices, $A$ invertible. Solve for $X$:
+$$ X A + A^\T = \Id $$
+
+\begin{solution}
+\begin{align}
+ X = (\Id - A^\T)A^\1
+\end{align}
+\end{solution}
+
+b) Let $X,A,B$ be arbitrary matrices, $(C-2A^\T)$ invertible. Solve for $X$:
+$$ X^\T C = [2 A (X + B)]^\T $$
+
+\begin{solution}
+\begin{align}
+ C^\T X &= 2 A (X + B) \\
+ (C^\T-2A) X &= 2 A B \\
+ X &= 2 (C^\T-2A)^\1 A B  
+\end{align}
+\end{solution}
+
+c) Let $x\in\RRR^n,y\in\RRR^d,A\in\RRR^{d\times n}$. $A$ obviously \emph{not}
+invertible, but let $A^\T A$ be invertible. Solve for $x$:
+$$ (A x - y)^\T A = \vec 0_n^\T $$
+
+\begin{solution}
+\begin{align}
+A^\T (A x - y) &= \vec 0_n \\
+A^\T A x  &= A^\T y \\
+x  &= (A^\T A)^\1 A^\T y
+\end{align}
+\end{solution}
+
+d) As above, additionally $B\in\RRR^{n\times n}$, $B$
+positive-definite. Solve for $x$: 
+$$ (A x - y)^\T A + x^\T B = \vec 0_n^\T $$
+
+\begin{solution}
+\begin{align}
+A^\T (A x - y) + B^\T x &= \vec 0_n \\
+(A^\T A + B^\T) x  &= A^\T y \\
+x  &= (A^\T A + B^\T)^\1 A^\T y
+\end{align}
+\end{solution}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\exsection{Prerequisites: Vector derivatives}
+
+Let $x\in\RRR^n,~ y\in\RRR^d,~ f,g: \RRR^n \to \RRR^d,~
+A\in\RRR^{d\times n},~ C \in \RRR^{d \times d}$. (Also provide the dimensionality of the results.)
+
+a) What is $\frac{\del}{\del x} x$ ~?
+
+\begin{solution}
+$\del_x x = \Id_n$ (This is the Jacobian of the vector-valued function $f(x)=x$.)
+\end{solution}
+
+b) What is $\frac{\del}{\del x}[x^\T x]$ ~?
+
+\begin{solution}
+$\del_x[x^\T x] = 2 x^\T$ (Convention: We think of the vector derivative as a co-vector (row vector).)
+\end{solution}
+
+c) What is $\frac{\del}{\del x}[f(x)^\T f(x)]$ ~?
+
+\begin{solution}
+$\del_x[f(x)^\T f(x)] = 2 f(x)^\T~ \del_x f(x)$
+\end{solution}
+
+d) What is $\frac{\del}{\del x}[f(x)^\T C g(x)]$ ~?
+
+\begin{solution}
+$\del_x[f(x)^\T C g(x)]
+ = f(x)^\T C~ \del_x g(x) + 
+   g(x)^\T C^\T~ \del_x f(x)$
+\end{solution}
+
+e) Let $B$ and $C$ be symmetric (and pos.def.). What is the minimum of $(Ax -
+y)^\T C (Ax - y) + x^\T B x$ ?
+
+\begin{solution}
+\begin{align}
+0^\T
+&= \del_x \[ (Ax - y)^\T C (Ax - y) + x^\T B x \] \\
+&= 2 (Ax - y)^\T C A + 2 x^\T B \\
+0
+&= A^\T C (A x - y) + B x \\
+x
+&= (A^\T C A+B)^\1 A^\T C y
+\end{align}
+\end{solution}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\exsection{Optimization}
+
+Given $x\in\RRR^n,~ f:~ \RRR^n \to \RRR$, we want to find $\argmin_x f(x)$.  (We assume $f$ is uni-modal.)
+
+a) What 1st-order optimization methods (querying $f(x),\na f(x)$ in each iteration) do you know?
+
+\begin{solution}
+Plain gradient descent with stepsize adaptation (backtracking, see below), steepest descent, Quasi-Newton methods (BFGS), Rprop. (BTW, here $\na f(x) = [\del_x f(x)]^\T$ is the gradient \emph{vector}, and $\he f(x)$ the Hessian.)
+\end{solution}
+
+b) What 2nd-order optimization methods (querying $f(x),\na f(x), \he
+f(x)$ in each iteration) do you know?
+
+\begin{solution}
+Newton with stepsize adaptation (backtracking) and/or damping (trust region method)
+\end{solution}
+
+c) What is backtracking line search?
+
+\begin{solution}
+\newcommand{\step}{{d}}
+%\newcommand{\lsstop}{\r}
+%\newcommand{\adec}{\a^\text{dec}}
+%\newcommand{\ainc}{\a^\text{inc}}
+
+While minimizing $f(x)$: given a current $x$, a descent direction $\step$, and an initial stepsize $\a$, reduce the stepsize until 'success' (=Wolfe conditions)\\
+\begin{algo}
+\While{$f(x+\a\step) > f(x) + \lsstop \na f(x)^\T (\a\step)$} \Comment{backtracking line search}
+\State $\a \gets \a~\adec$ \Comment{decrease stepsize}
+\EndWhile
+\State $x \gets x + \a\step$ \Comment{step is accepted}
+\end{algo}\\
+With parameters (and default values) $\ainc=1.2, \adec=0.5, \lsstop=0.01$. On success, the stepsize can be increased again, $\a \gets \a~\ainc$. Plain gradient descent chooses $d = \frac{\na f}{|\na f|}$
+\end{solution}
+
+\exerfoot

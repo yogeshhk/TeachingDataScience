@@ -1,0 +1,991 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\topic}{Reinforcement Learning in Robotics -- briefly}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\cen{\large\textbf{RL = Learning to Act}}
+
+~
+
+\show{RLagenAndEnvironment}
+
+~
+
+{\hfill\tiny from  Satinder Singh's \emph{Introduction to RL}, videolectures.com}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+~
+
+\twocol{.5}{.4}{\center
+  \mov{\show[.7]{mov-balance}}{05-sethu-movies/DA_PoleLearn.avi}
+}{\center
+  \mov{\show[.7]{mov-juggle}}{05-sethu-movies/DB_juggle.avi}
+}
+
+~
+
+{\hfill\tiny (around 2000, by Schaal, Atkeson, Vijayakumar)}
+
+~
+
+\mov{\show[.3]{helicopter}}{07-andrew-ng/Aerobatic_rolls.wmv}
+
+{\hfill\tiny (2007, Andrew Ng et al.)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Applications of RL}{
+
+{\small
+
+\item Robotics
+
+-- Navigation, walking, juggling, helicopters, grasping, etc...
+
+%-- e.g., google Peter Stone, Russ Tedrake, Andrew Ng, Jan Peters
+
+
+\item Games
+
+-- Backgammon, Chess, Othello, Tetris, ...
+
+
+\item Control
+
+-- factory processes, resource control in multimedia networks, elevators, ....
+
+
+\item Operations Research
+
+-- Warehousing, transportation, scheduling, ...
+}
+
+%% ~\mypause
+
+%% \item \textbf{Why Machine Learning?}
+
+%% ~
+
+
+%% 1) ML as a data analysis tool
+
+%% ~~ --- in sciences
+
+%% ~~ --- in commerce
+
+%% ~
+
+%% 2) \emph{ML as a framework to model behavior, learning, decision making}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Markov Decision Process}
+\slide{Markov Decision Process}{
+
+~
+
+\shows[.7]{mdp1}
+
+\cen{$P(s_{0:T\po},a_{0:T},r_{0:T};\pi) = P(s_0)~ \prod_{t=0}^T
+P(a_t|s_t;\pi)~ P(r_t|s_t,a_t)~ P(s_{t\po}|s_t,a_t)$}
+
+~
+
+-- world's initial state distribution $P(s_0)$
+
+-- world's transition probabilities $P(s_{t\po} \| s_t,a_t)$
+
+-- world's reward probabilities $P(r_t \| s_t,a_t)$
+
+-- agent's \emph{policy} $\pi(a_t \| s_t) = P(a_0|s_0;\pi)$ ~ (or
+   deterministic $a_t = \pi(s_t)$)
+
+~
+
+\item \textbf{Stationary MDP:}
+
+-- We assume $P(s' \| s,a)$ and $P(r|s,a)$ independent of time
+
+-- We also define $R(s,a) := \Exp{r|s,a} = \int r~ P(r|s,a)~ dr$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Relation to optimal control}
+\slide{... in the notation of control theory}{
+
+\item We have a (potentially stochastic) controlled system
+$$\dot x = f(x,u) + \text{noise}(x,u)$$
+
+~
+
+\item We have costs (neg-rewards), e.g.\ in the finite horizon case:
+$$J^\pi = \int_0^T c(x(t),u(t))~ dt + \phi(x(T)) $$
+
+~
+
+\item We want a policy ~ (``controller'')
+$$\pi: (x,t)\mapsto u$$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\cen{\textbf{Reinforcement Learning ~ = ~ the dynamics $f$ and costs $c$ are unknown}}
+
+~
+
+~
+
+\item All the agent can do is collect data
+$$D=\{(x_t,u_t,c_t)\}_{t=0}^T$$
+
+~
+
+\cen{What can we do with this data?}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Five approaches to RL}
+\slide{Five approaches to RL}{
+
+~
+
+~
+
+\show[1.]{RLover}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Five approaches to RL}{
+
+~
+
+~
+
+\show[1.]{RLover2}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Imitation Learning}
+\slide{Imitation Learning}{
+
+~
+
+\cen{\fbox{$D = \{ (s_{0:T},a_{0:T})^d \}_{d=1}^n$
+$\quad\stackrel{\text{learn/copy}}\to\quad$
+$\pi(s)$}}
+
+
+~
+
+\item Use ML to imitate demonstrated state trajectories $x_{0:T}$
+
+~
+
+Literature:
+
+~\liter
+
+Atkeson \& Schaal: Robot learning from demonstration (ICML 1997)
+
+Schaal, Ijspeert \& Billard: Computational approaches to motor
+learning by imitation (Philosophical Transactions of the Royal Society
+of London. Series B: Biological Sciences 2003)
+
+Grimes, Chalodhorn \& Rao: Dynamic Imitation in a Humanoid Robot
+through Nonparametric Probabilistic Inference. (RSS 2006)
+
+%Rao's paper on policy recognition
+
+%% David Silver, James Bagnell, Anthony Stentz: High Performance Outdoor Navigation from Overhead Data using Imitation Learning, RSS 2008.
+%% http://www.roboticsproceedings.org/rss04/p34.html 
+
+R\"udiger Dillmann: Teaching and learning of robot tasks via observation
+of human performance (Robotics and Autonomous Systems, 2004)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Imitation Learning}{
+
+\item There a many ways to imitate/copy the oberved policy:
+
+~
+
+Learn a density model $P(a_t\|s_t) P(s_t)$ (e.g., with mixture of
+   Gaussians) from the observed data and use it as policy (Billard et
+   al.)
+
+~
+
+Or trace observed trajectories by minimizing perturbation costs
+(Atkeson \& Schaal 1997)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Imitation Learning}{
+
+~
+
+\mov{\show{DA-PoleBalancing-Imitation}}{05-sethu-movies/DA-PoleBalancing-Imitation.mov}
+
+{\tiny\hfill Atkeson \& Schaal}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Inverse RL}
+\slide{Inverse RL}{
+
+~
+
+\cen{\fbox{$D=\{ (s_{0:T},a_{0:T})^d \}_{d=1}^n$
+$\quad\stackrel{\text{learn}}\to\quad$
+$R(s,a)$
+$\quad\stackrel{\text{DP}}\to\quad$
+$V(s)$
+$\quad\to\quad$
+$\pi(s)$}}
+
+~
+
+\item Use ML to ``uncover'' the latent reward function in observed
+behavior
+
+~
+
+Literature:
+
+~\liter
+
+Pieter Abbeel \& Andrew Ng: Apprenticeship learning via inverse
+reinforcement learning (ICML 2004)
+
+Andrew Ng \& Stuart Russell: Algorithms for Inverse Reinforcement
+Learning (ICML 2000)
+
+{\color{blue}Nikolay Jetchev \& Marc Toussaint: Task Space Retrieval
+Using Inverse Feedback Control (ICML 2011).}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Inverse RL ~ (Apprenticeship Learning)}{
+
+\item Given: demonstrations $D=\{ x_{0:T}^d \}_{d=1}^n$
+
+\item Try to find a reward function
+that \textbf{discriminates demonstrations from other policies}
+
+-- Assume the reward function is linear in some features $R(x) =
+   w^\T \phi(x)$
+
+-- Iterate:
+
+\begin{enumerate}
+\item Given a set of candidate policies $\{ \pi_0, \pi_1, .. \}$
+
+\item Find weights $w$ that maximize the value margin between teacher and
+all other candidates
+\begin{align*}
+\max_{w,\xi}
+ ~&~ \xi \\
+\text{s.t.}
+ ~&~ \forall_{\pi_i}:~ \underbrace{w^\T \<\phi\>_D}_\text{value of
+ demonstrations}
+ \ge \underbrace{w^\T \<\phi\>_{\pi_i}}_\text{value of $\pi_i$} + \xi \\
+ ~&~ \norm{w}^2 \le 1
+\end{align*}
+
+\item Compute a new candidate policy $\pi_i$ that optimizes $R(x) =
+w^\T \phi(x)$ and add to candidate list.
+\end{enumerate}
+{\hfill\tiny (Abbeel \& Ng, ICML 2004)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\mov{\show{04-abbeel-NastyDriver-invRL}}{04-abbeel-NastyDriver-invRL.avi}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Policy Search with Policy Gradients}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% \slide{LSPI: Least Squares Policy Iteration}{
+% 
+% \item The $Q$-functions for a given policy $\pi$ fulfills for any $s,a$:
+% \begin{align*}
+% Q^\pi(s,a)
+%  &= R(s,a)  +  \g \sum_{s'} P(s'\|s,a)~ Q^\pi(s',\pi(s'))
+% \end{align*}
+% 
+% ~\mypause
+% 
+% \item If we have $n$ data points $D = \{ (s_i,a_i,r_i,s_i')
+%   \}_{i=1}^n$, we require that this equation holds (approximatly) for
+%   these $n$ data points:
+% \begin{align*}
+% \forall_i:~ Q^\pi(s_i,a_i) = r_i  +  \g Q^\pi(s'_i,\pi(s'_i))
+% \end{align*}
+% 
+% ~\mypause
+% 
+% \item Written in vector notation: $\vec Q = \vec R + g \vec{\bar Q}$
+%  with $N$-dim data vectors $\vec Q, \vec R, \vec{\bar Q}$
+% 
+% ~\mypause
+% 
+% \item Written as optmization: minimize the \textbf{Bellman residual
+% error}
+% \begin{align*}
+% L(Q^\pi) = \sum _{i=1}^n [Q^\pi(s_i,a_i) - r_i  -  \g
+% Q^\pi(s'_i,\pi(s'_i))]^2 = \norm{\vec R - \vec Q + \g \vec{\bar Q}}^2
+% \end{align*}
+% 
+% }
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% \slide{LSPI: Least Squares Policy Iteration}{
+% 
+% \item Approximate $Q(s,a)$ as a linear function
+% $$\hat Q(s,a) = \tsum_{j=1}^k \phi_j(s,a) \b_j = \phi(s,a)^\T \b$$
+% 
+% in $k$ features $\phi_j$. Then
+% \begin{align*}
+% \vec Q
+%  &= \vec \phi \b \comma
+%  \vec \phi_{ij} = \phi_j(s_i,a_i) \in \RRR^{n\times k}\\
+% \vec{\bar Q}
+%  &= \vec{\bar\phi} \b \comma
+% \vec{\bar \phi}_{ij} = \phi_j(s'_i,\pi(s'_i)) \in \RRR^{n\times k}
+% \end{align*}
+% 
+% ~
+% 
+% \item The loss becomes
+% \begin{align*}
+% L(\b)
+%  &= \norm{\vec R - (\vec \phi - \g \vec{\bar\phi})^\T \b}^2
+% \end{align*}
+% 
+% ~\mypause
+% 
+% \item Given the $Q$-function, we can \emph{numerically} find
+% $\argmax_a Q(s,a)$ for the current state to update the policy
+% (as in Policy Iteration)
+% 
+% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% \slide{LSPI: Least Squares Policy Iteration}{
+% 
+% Technical detail: The $L(\b)$ we defined is called the Bellman
+% residual error. If instead we minimize the norm
+% $\norm{\vec\phi^\T \vec R - \vec \phi^\T(\vec \phi
+% - \g \vec{\bar\phi})^\T \b}^2$ we minimize an error projected to the
+% feature space -- which is called fixed point error. The latter seems
+% more efficient.
+% 
+% ~
+% 
+% See Lagoudakis \& Parr (JMLR 2003) for details.
+% 
+% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% \slide{LSPI: Riding a bike}{
+% 
+% \show{LSPI-ridingBike}
+% 
+% \hfill from Lagoudakis \& Parr (JMLR 2003)
+% 
+% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% \slide{LSPI: Riding a bike}{
+% 
+% \show{LSPI-ridingBike2}
+% 
+% \hfill from Lagoudakis \& Parr (JMLR 2003)
+% 
+% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Policy Search with Policy Gradients}
+\slide{Policy gradients}{
+
+\item In continuous state/action case, represent the 
+policy as linear in arbitrary state features:
+\begin{align*}
+\pi(s)
+ &= \sum_{j=1}^k \phi_j(s) \b_j = \phi(s)^\T \b &&\text{(deterministic)}\\
+\pi(a\|s)
+ &= \NN(a \| \phi(s)^\T \b, \phi(s)^\T \S \phi(s)) && \text{(stochastic)}
+\end{align*}
+with $k$ features $\phi_j$.
+
+~
+
+\item Given an episode $\xi =(s_t,a_t,r_t)_{t=0}^H$,
+we want to estimate
+
+$$\frac{\del V(\b)}{\del \b}$$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Policy Gradients}{
+
+\small
+\item One approach is called REINFORCE:
+\begin{align*}
+\hspace*{-5mm}
+&\frac{\del V(\b)}{\del \b}
+=
+\frac{\del}{\del \b}
+\int P(\xi|\b)~ R(\xi)~ d\xi
+= \int P(\xi|\b) \frac{\del}{\del \b} \log P(\xi|\b) R(\xi) d\xi \\
+\hspace*{-5mm}
+&=
+\Exp[\xi|\b]{\frac{\del}{\del \b} \log P(\xi|\b) R(\xi)}
+ = \Exp[\xi|\b]{\sum_{t=0}^H \g^t \frac{\del \log\pi(a_t|s_t)}{\del \b}
+ \underbrace{\sum_{t'=t}^H \g^{t'-t} r_{t'}}_{Q^\pi(s_t,a_t,t)}}
+\end{align*}
+
+\item Another is Natural Policy Gradient
+\begin{items}
+\item Estimate the $Q$-function as linear in the basis functions
+$\frac{\del}{\del\b}\log\pi(a|s)$:
+$$Q(s,a) \approx \[\frac{\del \log\pi(a|s)}{\del\b}\]^\T w$$
+
+\item Then the natural gradient ($\frac{\del V(\b)}{\del \b}$
+multiplied with inv.\ Fisher metric) updates
+$$\b^\text{new} = \b + \a w$$
+\end{items}
+
+\item Another is PoWER: Use the stochastic policy $\pi(a\|s)$,
+let $a_t=\phi(s_t)^\T(\b+\e_t)$ where $\e_t\sim\NN(0,\S)$ is the
+sampled noise, then $\frac{\del V(\b)}{\del \b}=0$ implies
+\begin{align*}
+\b\gets \b + \frac{
+\Exp[\xi|\b]{\sum_{t=0}^H  \e_t Q^\pi(s_t,a_t,t)}
+}{
+\Exp[\xi|\b]{\sum_{t=0}^H  Q^\pi(s_t,a_t,t)}
+}
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\mov{\showh[.7]{Peters-ball-in-a-cup}}{08-Peters-ball-in-a-cup.flv}
+
+~
+
+\tiny\hfill
+Kober \& Peters: \emph{Policy Search for Motor Primitives in
+Robotics}, NIPS 2008.
+
+~
+
+\cen{(serious reward shaping!)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Learning to walk in 20 Minutes}{
+
+\item Policy Gradient method (Reinforcement Learning)
+
+Stationary policy parameterized as linear in features $u = \sum_i w_i
+\phi_i(q,\dot q)$
+
+\item Problem: find parameters $w_i$ to minimize expected costs
+
+cost = mimick $(q,\dot q)$ of the passive down-hill walker at
+``certain point in cycle''
+
+\centerline{\showh[.2]{tedrake-LearningToWalk}
+\qquad
+\mov{Learning To Walk}{10-RoboticsLecture/tedrake-LearningToWalk.avi}
+}
+
+~
+
+\tiny
+
+Tedrake, Zhang \& Seung: \emph{Stochastic
+policy gradient reinforcement learning on a simple 3D biped.} IROS,
+2849-2854, 2004.
+\url{http://groups.csail.mit.edu/robotics-center/public_papers/Tedrake04a.pdf}
+
+}
+
+%% FROM RUSS:
+
+%% ** WHat makes walking control hard?
+
+%% -- Dynamic constraints (friction cones)
+
+%%  - Underactuated (can't follow arbitrary trajectories)
+
+%%  - Power limits at the actuators (Torque/Speed limits)
+
+%%  - limits on ground reaction forces from the friction cones
+
+%%  - fairly complicated constraints to reason about in the control system
+
+
+%% ** What works:
+
+%% -- trajectory optimization (can handle constraints)
+
+%% -- Local stabalization of such trajectories
+
+%%  - via Hybrid Zero Dynamics, or Transverse Linearization
+
+%%  - more difficult to handle constraints (but only locally)
+
+%%  - model-predictive control
+
+
+%% -- Global path finding
+
+%% -- Estimating regions of attraction
+
+
+
+%% ** Rolling vs. Walking
+%% \show{snakeRobot}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Policy Gradients -- references}{
+
+{\tiny Peters \& Schaal (2008): \emph{Reinforcement learning of
+motor skills with policy gradients}, Neural Networks.
+
+\medskip
+
+Kober \& Peters: \emph{Policy Search for Motor Primitives in
+Robotics}, NIPS 2008.
+
+\medskip
+
+Vlassis, Toussaint (2009): \emph{Learning Model-free Robot Control by
+a Monte Carlo EM Algorithm.} Autonomous Robots 27, 123-130. 
+
+\medskip
+
+Rawlik, Toussaint, Vijayakumar(2012): \emph{On Stochastic Optimal
+Control and Reinforcement Learning by Approximate Inference.} RSS
+2012. \emph{($\psi$-learning)}
+
+}
+
+~
+
+\item These methods are sometimes called \textbf{white-box
+optimization}:
+
+They optimize the policy parameters $\b$ for the total reward
+$R=\sum \g^t r_t$ while tying to exploit knowledge of how the
+process is actually parameterized
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Policy Search with Black-Box Optimization}
+\slide{Policy Search with Black-Box Optimization [skipped]}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{``Black-Box Optimization''}{
+
+\item The term is not really well defined
+
+-- I use it to express that \emph{only} $f(x)$ can be evaluated
+
+-- $\na f(x)$ or $\he f(x)$ are not (directly) accessible
+
+More common terms:
+
+~
+
+\item \textbf{Global optimization}
+
+\begin{items}
+\item This usually emphasizes that methods should not get stuck in local
+   optima
+
+\item Very very interesting domain -- close analogies to (active) Machine
+   Learning, bandits, POMDPs, optimal decision making/planning, optimal
+   experimental design
+
+\item Usually mathematically well founded methods
+\end{items}
+
+
+~
+
+\item \textbf{Stochastic search} or \textbf{Evolutionary Algorithms}
+or \textbf{Local Search}
+
+\begin{items}
+\item Usually these are local methods (extensions trying to be ``more''
+global)
+
+\item Various interesting heuristics
+
+\item Some of them (implicitly or explicitly) locally approximating gradients or 2nd order models
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Black-Box Optimization}{
+
+\item Problem: Let $x\in\RRR^n$, $f:~ \RRR^n \to \RRR$, find
+$$\min_x~ f(x)$$
+where we can only evaluate $f(x)$ for any $x\in\RRR^n$
+
+~
+
+~
+
+{\tiny
+
+\item A constrained version:~  Let $x\in\RRR^n$, $f:~ \RRR^n \to \RRR$,
+$g:~ \RRR^n\to\{0,1\}$, find
+$$\min_x~ f(x) \st g(x)=1$$
+where we can only evaluate $f(x)$ and $g(x)$ for any $x\in\RRR^n$
+
+I haven't seen much work on this. Would be interesting to consider
+this more rigorously.
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{A zoo of approaches}{
+
+\item People with many different backgrounds drawn into this
+
+{\tiny Ranging from heuristics and Evolutionary Algorithms to heavy
+mathematics
+
+}
+
+~
+
+\begin{items}
+\item
+Evolutionary Algorithms, esp.\ Evolution
+Strategies, Covariance Matrix Adaptation, Estimation of Distribution Algorithms
+
+\item Simulated Annealing, Hill Climing, Downhill Simplex
+
+\item local modelling (gradient/Hessian), global modelling 
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Optimizing and Learning}{
+
+\item Black-Box optimization is strongly related to learning:
+
+\item When we have local a gradient or Hessian, we can take that local
+   information and run -- no need to keep track of the history or
+   learn (exception: BFGS)
+
+\item In the black-box case we have no local information directly
+   accessible
+
+$\to$ one needs to account for the history in some way or another to
+have an idea where to continue search
+
+\item ``Accounting for the history'' very often means learning:
+Learning a local or global model of $f$ itself, learning which steps
+have been successful recently (gradient estimation), or which step
+directions, or other heuristics
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Stochastic Search}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Stochastic Search}{
+
+\item The general recipe:
+
+-- The algorithm maintains a probability distribution $p_\t(x)$
+
+-- In each iteration it takes $n$ samples $\{x_i\}_{i=1}^n \sim p_\t(x)$
+
+-- Each $x_i$ is evaluated ~ $\to$ ~ data $\{(x_i,f(x_i))\}_{i=1}^n$
+
+-- That data is used to update $\t$
+
+~
+
+\item Stochastic Search:
+
+\begin{algo}
+\Require initial parameter $\t$, function $f(x)$, distribution model $p_\t(x)$, update heuristic $h(\t,D)$
+\Ensure final $\t$ and best point $x$
+\Repeat
+\State Sample $\{x_i\}_{i=1}^n \sim p_\t(x)$
+\State Evaluate samples, $D= \{(x_i,f(x_i))\}_{i=1}^n$
+\State Update $\t \gets h(\t,D)$
+\Until $\t$ converges
+\end{algo}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Stochastic Search}{
+
+\item The parameter $\t$ is the only ``knowledge/information'' that is
+being propagated between iterations
+
+$\t$ encodes what has been learned from the history
+
+$\t$ defines where to search in the future
+
+~
+
+\item Evolutionary Algorithms: ~ $\t$ is a parent population
+
+Evolution Strategies: ~ $\t$ defines a Gaussian with mean \& variance
+
+Estimation of Distribution Algorithms: ~ $\t$ are parameters of some
+distribution model, e.g.\ Bayesian Network
+
+Simulated Annealing: ~ $\t$ is the ``current point'' and a temperature
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example:~ Gaussian search distribution ~ $(\mu,\l)$-ES}{
+
+{\tiny From 1960s/70s. Rechenberg/Schwefel}
+
+\item Perhaps the simplest type of distribution model
+$$\t = (\hat x) \comma p_t(x) = \NN(x|\hat x,\s^2)$$
+a $n$-dimenstional isotropic Gaussian with fixed deviation $\s$
+
+~
+
+\item Update heuristic:
+
+-- Given $D=\{(x_i,f(x_i))\}_{i=1}^\l$, select $\m$ best: $D'=\text{bestOf}_\mu(D)$
+
+-- Compute the new mean $\hat x$ from $D'$
+
+~
+
+\item This algorithm is called ``Evolution Strategy $(\m,\l)$-ES''
+
+-- The Gaussian is meant to represent a ``species''
+
+-- $\l$ offspring are generated
+
+-- the best $\mu$ selected
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Covariance Matrix Adaptation (CMA-ES)}{
+
+\item An obvious critique of the simple Evolution Strategies:
+
+-- The search distribution $\NN(x|\hat x,\s^2)$ is isotropic
+
+~~ (no going \emph{forward}, no preferred direction)
+
+-- The variance $\s$ is fixed!
+
+~
+
+\item Covariance Matrix Adaptation Evolution Strategy (CMA-ES)
+
+\show[.7]{CMA-ES}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Covariance Matrix Adaptation (CMA-ES)}{
+
+\item In Covariance Matrix Adaptation
+$$\t=(\hat x,\s,C,p_\s,p_C) \comma p_\t(x) = \NN(x|\hat x,\s^2C)$$
+where $C$ is the covariance matrix of the search distribution
+
+\item The $\t$ maintains two more pieces of information: $p_\s$ and
+$p_C$ capture the ``path'' (motion) of the mean $\hat x$ in recent
+iterations
+
+\item Rough outline of the $\t$-update:
+
+-- Let $D'=\text{bestOf}_\mu(D)$ be the set of selected points
+
+-- Compute the new mean $\hat x$ from $D'$
+
+-- Update $p_\s$ and $p_C$ proportional to $\hat x_{k\po} - \hat x_k$
+
+-- Update $\s$ depending on $|p_\s|$
+
+-- Update $C$ depending on $p_cp_c^\T$ (rank-1-update) and $\text{Var}(D')$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{CMA references}{
+
+Hansen, N. (2006), "The CMA evolution strategy: a comparing review"
+
+Hansen et al.: Evaluating the CMA Evolution Strategy on Multimodal
+Test Functions, PPSN 2004.
+
+\show[.7]{CMA-ES1}
+
+\item For ``large enough'' populations local minima
+are avoided
+
+~
+
+\item An interesting variant:
+
+Igel et al.: A Computational Efficient
+Covariance Matrix Update and a $(1+1)$-CMA for Evolution
+Strategies, GECCO 2006.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{CMA conclusions}{
+
+\item It is a good starting point for an off-the-shelf black-box
+algorithm
+
+\item It includes components like estimating the local gradient
+($p_\s, p_C$), the local ``Hessian'' ($\text{Var}(D')$), smoothing out
+local minima (large populations)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Stochastic search conclusions}{
+
+\begin{algo}
+\Require initial parameter $\t$, function $f(x)$, distribution model $p_\t(x)$, update heuristic $h(\t,D)$
+\Ensure final $\t$ and best point $x$
+\Repeat
+\State Sample $\{x_i\}_{i=1}^n \sim p_\t(x)$
+\State Evaluate samples, $D= \{(x_i,f(x_i))\}_{i=1}^n$
+\State Update $\t \gets h(\t,D)$
+\Until $\t$ converges
+\end{algo}
+
+\item The framework is very general
+
+\item The crucial difference between algorithms is their
+choice of $p_\t(x)$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{RL under Partial Observability}{ \label{lastpage}
+
+\item Data:
+$$D=\{(u_t,c_t,y_t)_t\}_{t=0}^T$$
+$\to$ state $x_t$ not observable
+
+~
+
+\item Model-based RL is dauting: Learning $P(x'|u,x)$ and $P(y|u,x)$
+with latent $x$ is very hard
+
+~
+
+\item Model-free: The policy needs to map the \textbf{history} to a
+new control
+$$\pi:~ (y_{t-h,..,t\1},u_{t-h,..,t-1}) \mapsto u_t$$
+or any \textbf{features of the history}
+$$u_t = \p(y_{t-h,..,t\1},u_{t-h,..,t-1})^\T w$$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Features for the racer?}{
+
+%% \item Potential features might be:
+%% $$\(y_t, \dot y_t, \<y\>_{0.5}, \<\dot y\>_{0.5}, \<y\>_{0.9}, \<\dot
+%% y\>_{0.9}, u_t, u_{t-1}\)$$
+
+%% where $\dot y = \frac{y_t-y_{t-1}}{\tau_t}$ and $\<y\>_\a$ is a
+%% low-pass filter
+
+%% }
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot

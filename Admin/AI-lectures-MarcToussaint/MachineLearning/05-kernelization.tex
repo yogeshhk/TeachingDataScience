@@ -1,0 +1,270 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Machine Learning}
+\renewcommand{\coursepicture}{course_ml}
+\renewcommand{\coursedate}{Summer 2019}
+\renewcommand{\topic}{Kernelization}
+\renewcommand{\keywords}{}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\sublecture{Kernels}{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Kernel trick}
+\key{Kernel ridge regression}
+\slide{Kernel Ridge Regression---the ``Kernel Trick''}{
+
+\item Reconsider solution of Ridge regression (using the \emph{Woodbury} identity):
+
+\cen{$
+\hat \b^\text{ridge}
+= (X^\T X + \l \Id_k)^\1 X^\T y
+= X^\T (X X^\T +  \l \Id_n)^\1 y
+$}
+
+~\mypause
+
+\item Recall $X^\T = (\phi(x_1),..,\phi(x_n)) \in \RRR^{k\times n}$, then:
+
+\medskip
+\eqbox{$
+f^\text{ridge}(x) = \phi(x)^\T \b^\text{ridge}
+= \underbrace{\phi(x)^\T X^\T}_{\k(x)^\T} (\underbrace{X X^\T}_{K} + \l I)^\1 y
+$}
+\medskip
+
+$K$ is called \emph{kernel matrix} and has elements
+
+\medskip
+\eqbox{$K_{ij} = k(x_i,x_j) := \phi(x_i)^\T \phi(x_j)$}
+\medskip
+
+$\k$ is the vector: $\k(x)^\T = \phi(x)^\T X^\T= k(x,x_{1:n})$
+
+~
+
+\cen{\emph{The kernel function $k(x,x')$ calculates the scalar product in feature
+space.}}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{The Kernel Trick}{
+
+\item We can rewrite kernel ridge regression as:
+\begin{align*}
+f^\text{rigde}(x)
+&= \k(x)^\T (K + \l I)^\1 y \\
+\text{with} \,\,\, K_{ij}
+ & = k(x_i,x_j)\\
+\k_i(x)
+ &= k(x,x_i)
+\end{align*}
+
+$\to$ at no place we actually need to compute the parameters $\hat\b$
+
+$\to$ at no place we actually need to compute the features $\phi(x_i)$
+
+$\to$ we only need to be able to compute $k(x,x')$ for any $x,x'$
+
+~\pause
+
+\item This rewriting is called \emph{kernel trick.}
+
+\item It has great implications:
+
+\begin{items}
+\item Instead of inventing funny non-linear features, we may directly
+invent funny kernels
+
+\item Inventing a kernel is intuitive: $k(x,x')$ expresses how correlated
+   $y$ and $y'$ should be: it is a meassure of similarity, it compares
+   $x$ and $x'$. Specifying how 'comparable' $x$ and $x'$ are is often
+   more intuitive than defining ``features that might work''.
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item Every choice of features implies a kernel.
+
+~
+
+\item But, does every choice of kernel correspond to a specific choice
+  of features?
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Reproducing Kernel Hilbert Space}{
+
+\small
+
+\item Let's define a vector space $\HH_k$, spanned by infinitely many
+basis elements
+$$\{\phi_x = k(\cdot,x) ~:~ x\in\RRR^d\}$$
+
+Vectors in this space are linear combinations of such basis elements,
+e.g.,
+$$f = \sum_i \a_i \phi_{x_i} \comma f(x) = \sum_i \a_i k(x,x_i)$$
+
+~
+
+\item Let's define a scalar product in this space. Assuming
+$k(\cdot,\cdot)$ is positive definite, we first
+define the scalar product for every basis element,
+$$\<\phi_x,\phi_y\>:=k(x,y)$$
+Then it follows
+$$\<\phi_x,f\> = \sum_i \a_i \<\phi_x,\phi_{x_i}\> = \sum_i \a_i
+k(x,x_i) = f(x)$$
+
+~
+
+\item The $\phi_x = k(\cdot,x)$ is the `feature' we associate with
+$x$. Note that this is a function and infinite dimensional. Choosing $\a = (K + \l I)^\1 y$ represents
+$f^\text{ridge}(x) = \sum_{i=1}^n \a_i k(x,x_i) = \k(x)^\T \a$, and shows that
+ridge regression has a \textbf{finite-dimensional solution} in the basis
+elements $\{ \phi_{x_i} \}$. A more general version of this insight
+is called \textbf{representer theorem}.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Representer Theorem}{
+
+\item For
+$$f^* = \argmin_{f\in\HH_k} L(f(x_1),..,f(x_n)) +
+  \O(\norm{f}_{\HH_k}^2)$$
+where $L$ is an arbitrary loss function, and $\O$ a monotone
+regularization, it holds
+$$f^* = \sum_{i=1}^n \a_i k(\cdot,x_i)$$
+
+~
+
+\item Proof:
+\begin{items}
+\item[] decompose $f=f_s + f_\bot,~ f_s \in \Span\{\phi_{x_i} :
+  x_i \in D\}$
+\item[] $f(x_i) = \<f,\phi_{x_i}\>  = \<f_s+f_\bot,\phi_{x_i}\> = \<f_s,\phi_{x_i}\> = f_s(x_i)$
+\item[] $L(f(x_1),..,f(x_n)) = L(f_s(x_1),..,f_s(x_n))$
+\item[] $\O(\norm{f_s + f_\bot}_{\HH_k}^2) \ge \O(\norm{f_s}_{\HH_k}^2)$
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Example Kernels}{
+
+\item Kernel functions need to be positive definite: $\forall_{z:|z|>0}: k(z,z')>0$
+
+$\to$ $K$ is a positive definite matrix
+
+\item Examples:
+
+\begin{items}
+\item Polynomial: $k(x,x')=(x^\T x'+c)^d$
+
+Let's verify for $d=2$, $\phi(x) = \mat{c}{1,\sqrt{2}x_1, \sqrt{2}x_2, x_1^2, \sqrt{2} x_1 x_2, x_2^2}^\T$:\\%[-2ex]
+\hspace*{-15mm}\twocol[.04]{0.5}{0.5}{
+\begin{align*}
+& k(x,x') = ( (x_1, x_2) \mat{c}{x'_1 \\ x'_2} + 1)^2  \\
+& = (x_1 x'_1 + x_2 x'_2 + 1)^2 \\
+& = x^2_1 {x'_1}^2
++ 2 x_1 x_2 x'_1 x'_2 
++ x^2_2 {x'_2}^2
++ 2x_1 x'_1 + 2x_2 x'_2 + 1 \\
+%% & = (1,\sqrt{2}[x_1,x_2, x_1 x_2],x_1^2, x_2^2) (1,x'_1,x'_2,{x'_1}^2, \sqrt{2} x'_1 x'_2,
+%% {x'_2}^2)^\T \\
+& = \phi(x)^\T \phi(x')
+\end{align*}
+}{
+\showh[1.]{featurespace}
+}
+
+~
+
+~
+
+\item Squared exponential (radial basis function): $k(x,x') = \exp(-\gamma \|x-x'\|^2)$
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example Kernels}{
+
+~
+
+\item Bag-of-words kernels: let $\phi_w(x)$ be the count of word $w$
+  in document $x$; define $k(x,y) = \<\phi(x),\phi(y)\>$
+
+\item Graph kernels (Vishwanathan et al: Graph kernels, JMLR 2010)
+\begin{items}
+\item Random walk graph kernels
+\end{items}
+
+~\pause
+
+\item Gaussian Process regression will explain that $k(x,x')$ has the semantics of an (apriori) \emph{correlatedness} of the yet unknown underlying function values $f(x)$ and $f(x')$
+\begin{items}
+\item $k(x,x')$ should be high if you believe that $f(x)$ and $f(x')$ might be similar
+\item $k(x,x')$ should be zero if $f(x)$ and $f(x')$ might be fully unrelated
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Kernel Logistic Regression*}{\label{lastpage}
+
+\tiny
+
+For logistic regression we compute $\b$ using the Newton iterates
+\begin{align}
+\b
+&\gets \b
+ - (X^\T W X + 2 \l I)^\1~
+[X^\T (p - y) + 2\l \b] \\
+&\quad= - (X^\T W X + 2 \l I)^\1~ X^\T[(p - y) - W X \b]
+\end{align}
+Using the Woodbury identity we can rewrite this as
+\begin{align}
+&(X^\T W X + A)^\1 X^\T W
+ = A^\1 X^\T (X A^\1 X^\T + W^\1)^\1 \\
+\b
+&\gets 
+ - \frac{1}{2\l} X^\T (X \frac{1}{2\l} X^\T + W^\1)^\1~ W^\1
+ [(p-y) - W X \b]\\
+&\quad=  X^\T (X X^\T + 2\l W^\1)^\1~ \[X \b - W^\1 (p-y)\] .
+\end{align}
+We can now compute the discriminative function values $f_X =
+X \b \in\RRR^n$ at the training points by iterating over those instead
+of $\b$:
+\begin{align}
+f_X
+&\gets  X X^\T (X X^\T + 2\l W^\1)^\1~ \[X \b - W^\1 (p-y)\] \\
+&=  K (K + 2\l W^\1)^\1~ \[f_X - W^\1 (p_X-y)\] 
+\end{align}
+Note, that $p_X$ on the RHS also depends on $f_X$. Given $f_X$ we
+can compute the discriminative function values $f_Z =
+Z \b \in\RRR^m$ for a set of $m$ query points $Z$ using
+\begin{align}
+f_Z
+&\gets  \k^\T (K + 2\l W^\1)^\1~ \[f_X - W^\1 (p_X-y)\] 
+\comma \k^\T = Z X^\T
+\end{align}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slidesfoot
+

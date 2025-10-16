@@ -1,0 +1,823 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\topic}{SKIPPED THIS TERM -- Legged Locomotion (brief intro)}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Legged Locomotion}{
+
+\item Why legs?
+
+~
+
+Bacterial Flagellum: ~ (rotational ``motors'' in Biology?)
+
+~
+
+\centerline{
+\showh[.4]{flagellum1}
+\qquad
+\showh[.4]{flagellum2}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Legged Locomotion}{
+
+\item Why legs?
+
+~
+
+-- Human/Animal Locomotion Research
+ 
+~
+
+-- Potentially less weight
+
+~
+
+-- Better handling of rough terrains
+
+~~ (climbing, isolated footholds, ladders, stairs)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Rolling vs walking}{
+
+~
+
+\show[.45]{rollingVsWalking}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{One-legged locomotion}{
+
+\twocol{.4}{.5}{\center
+
+\mov{\showh[.7]{3D_hopper}}{10-RoboticsLecture/3D_hopper_hopping.mpeg}
+
+}{
+
+\item Three separate controllers for:
+
+-- hopping height
+
+-- horizontal velocity ~ (foot placement)
+
+-- attitude ~ (hip torques during stance)
+
+~
+
+\item Each a simple (PD-like) controller
+
+}
+
+~
+
+~
+
+{\tiny
+Raibert et al.: \emph{Dynamically Stable Legged
+  Locomotion.} 1985
+\url{http://dspace.mit.edu/handle/1721.1/6820}
+
+~
+
+Tedrake: \emph{Applied Optimal Control for
+Dynamically Stable Legged Locomotion.} PhD thesis (2004).
+\url{http://groups.csail.mit.edu/robotics-center/public_papers/Tedrake04b.pdf}
+
+}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Biped locomotion}{
+
+\item Walking vs Running
+
+Walking := in all instances at least one foot is on ground
+
+Running := otherwise
+
+~
+
+\item 2 phases of Walking
+
+-- double-support phase (in Robotics often statically stable)
+
+-- single-support phase (statically instable)
+
+\show[.4]{walkingFSC}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Asimo}{
+\center
+
+\hspace*{-8mm}
+\twocol{.5}{.5}{
+\mov{\show[.9]{11-Honda-All-New-ASIMO-hopping2}}{10-RoboticsLecture/11-Honda-All-New-ASIMO-hopping.mp4}
+}{
+\mov{\show[.9]{11-Honda-All-New-ASIMO-slowMotion}}{10-RoboticsLecture/11-Honda-All-New-ASIMO-slowMotion.mp4}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Statically stable walk}
+\slide{Statically Stable Walk}{
+
+\item You could rest (hold pose) at any point in time and not fall over
+
+~
+
+\centerline{$\iff$ ~ \emph{CoG projected on ground is within \color{red}{support polygon}}}
+
+~
+
+CoG = center of gravity of all body masses
+
+support polygon = hull of foot contact points
+
+~
+
+\item Try yourself: Move as slow as you can but make normal length
+  steps...
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Zero moment point (ZMP)}
+\slide{Zero Moment Point}{
+
+\item Vukobratovic's view on walking, leading to ZMP ideas:
+
+``Basic characteristics of all biped locomotion systems are:
+
+~
+
+(i) the possibility of rotation of the overall system about one of the foot
+edges caused by strong disturbances, which is equivalent to the appearance of an
+unpowered (passive) DOF,
+
+~
+
+(ii) gait repeatability (symmetry), which is related to
+regular gait only
+
+~
+
+(iii) regular interchangeability of single- and double-support
+phases''
+
+~
+
+~
+
+\tiny
+
+Vukobratovic \& Borovac: \emph{Zero-moment point---Thirty five years
+  of its life.} International Journal of Humanoid Robotics 1, 157-173,
+  2004.
+\url{http://www.cs.cmu.edu/~cga/legs/vukobratovic.pdf}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Zero Moment Point}{
+
+\show[.5]{zmp1}
+
+\show[.7]{zmp3}
+
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Zero Moment Point}{
+
+\item ``ZMP is defined as that point on the ground at
+which the net moment of the inertial forces and the gravity forces has no
+component along the horizontal axes.''
+(Vukobratovic \& Borovac, 2004)
+
+~
+
+\item $f_i$ = force vector acting on body $i$ (gravity plus external)
+
+$w_i$ = angular vel vector of body $i$
+
+$I_i$ = interia tensor ($\in \RRR^{3\times 3}$) of body  $i$
+
+$r_i = p_i - p_{\text{ZMP}}$ = relative position of body $i$ to ZMP
+
+~
+
+\item Definition: $p_{\text{ZMP}}$ is the point on the ground for which
+
+\centerline{\Large
+$
+\sum_i r_i \times f_i + I_i \dot w_i + w_i \times I_i w_i
+\overset{!}= (0,0,\*)^\T
+$}
+
+~
+
+\tiny See also: Popovic, Goswami \& Herr: \emph{Ground Reference Points in Legged
+  Locomotion: Definitions, Biological Trajectories and Control
+  Implications.} International Journal of Robotics Research 24(12),
+2005.
+\url{http://www.cs.cmu.edu/~cga/legs/Popovic_Goswami_Herr_IJRR_Dec_2005.pdf}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Zero Moment Point}{
+
+\item If the ZMP is outside the support polygon $\to$ foot rolls over
+  the edge
+
+  (presumes foot is a rigid body, and non-compliant control)
+
+~
+
+\item Locomotion is \emph{dynamically stable} if the ZMP remains within the
+  foot-print polygons.
+
+($\oto$ the support can always apply some momentum, if necessary)
+
+~
+
+\item Computing the ZMP in practise:
+\anchor{10,-70}{\showh[.5]{zmp2}}
+
+-- either exact robot model
+
+-- or foot pressure sensors
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Zero Moment Point -- example}{
+
+\item combine ZMP with 3D linear inverted pendulum model and
+  model-predictive control
+
+~
+
+\showh[.4]{hrp-2}
+\qquad
+\showh[.25]{hrp-2-ZMPwalk}
+
+\mov{HRP-2 stair climbing}{10-RoboticsLecture/HRP-2_Stair_Climbing.mp4}
+
+~
+
+\tiny
+
+Kajita et al.: \emph{Biped Walking Pattern Generation by using Preview
+Control of Zero-Moment Point.} ICRA 2003.
+\url{http://eref.uqu.edu.sa/files/eref2/folder1/biped_walking_pattern_generation_by_usin_53925.pdf}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Zero Moment Point}{
+
+%% Another commonly used approach:
+
+%% \item Start with a hand-designed ro human motion capture trajectory.
+
+%% \item Modify/optimize trajectory such that locomotion is stable
+%%   according to the ZMP criterion.
+
+%% \item Add online stabilization to deal with perturbations.
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{ZMP Summary}{
+
+\item ZMP is the ``rescue'' for conventional methods:
+
+-- ZMP-stability $\to$ the robot can be controlled as if foot is
+   ``glued'' (virtually) to the ground!
+
+-- The whole body behaves like a ``conventional arm''
+
+-- Can accellerate $\ddot q$ any DoF $\to$ conventional dynamic control
+
+\centerline{\emph{fully actuated system}}
+
+~
+
+\item Limitations:
+
+-- Humans don't use ZMP stability, we allow our feet to roll
+
+~~ (toe-off, heel-strike: ZMP at edge of support polygon)
+
+-- Can't describe robots with point feet (walking on stilts)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Human locomotion}
+\slide{Models of human bipedal locomotion}{
+
+~
+
+The following illustrations are from:
+
+~
+
+McMahon: \emph{Mechanics of Locomotion.} IJRR 3:4-28, 1984
+
+{\tiny
+
+\url{http://www.cs.cmu.edu/~cga/legs/mcmahon1.pdf}
+
+\url{http://www.cs.cmu.edu/~cga/legs/mcmahon2.pdf}
+
+}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+Walking research from Marey 1874:
+
+~
+
+\show[.4]{humanWalking1}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Six determinants of gait}{
+
+{\small following Saunders, Inman \& Eberhart (1953)}
+
+\only<1>{1. Compass Gait:\\[2ex] \show[.5]{humanWalking2}}
+\only<2>{2. Pelvic Rotation:\\[2ex] \show[.55]{humanWalking2b}}
+\only<3>{3. Pelvic Tilt:\\[2ex] \show[.5]{humanWalking3} \show[.5]{humanWalking3b}}
+\only<4>{4. Stance Knee Flexion:\\[2ex] \show[.5]{humanWalking4}}
+\only<5>{5. Stance Ankle Flextion:\\[2ex] \show[.5]{humanWalking5}}
+\only<6>{6. Pelvis Lateral Displacement:\\[2ex] \show[.3]{humanWalking6}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Models of human bipedal locomotion}{
+
+\item Human model with 23 DoFs, 54 muscles
+
+-- Compare human walking data with model
+
+-- Model: optimize energy-per-distance 
+
+-- Energy estimated based on metabolism and muscle heat rate models
+
+~
+
+\twocol{.5}{.5}{
+\show[.25]{humanWalkModels}
+}{
+\mov{\show[.7]{walkingAnderson}}{10-RoboticsLecture/walkingAnderson.mpg}
+}
+
+~
+
+~
+
+\tiny
+
+Anderson \& Pandy: \emph{Dynamic Optimization of Human
+Walking.} Journal of Biomechanical Engineering 123:381-390, 2001.
+\url{http://e.guigon.free.fr/rsc/article/AndersonPandy01.pdf}
+
+Anderson \& Pandy:
+\emph{Static and dynamic optimization solutions for gait
+are practically equivalent.} Journal of Biomechanics 34 (2001) 153-161.
+\url{http://www.bme.utexas.edu/faculty/pandy/StaticOptWalking2001.pdf}
+
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Models of human bipedal locomotion}{
+
+\item Suggest different principles of human motion:
+
+-- passive dynamics (Compass Gait) ~ $\oto$ ~ underactuated system
+
+-- modulation of basic passive dynamics
+
+-- Energy minimization
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Passive dynamic walking: Compass Gait}
+\slide{Passive dynamic walking: Compass Gait}{
+
+\item Basic 2D planar model of the Compass Gait:
+
+\show[.4]{compassGait1}
+
+~
+
+The pose is described by $q=(\t_{s}, \t_{ns})$, the state by $(q, \dot q)$
+
+~
+
+\tiny
+Goswami, Thuilot \& Espiau: \emph{A study of the passive gait of a
+  compass-like biped robot: symmetry and chaos.} International Journal
+of Robotics Research 17, 1998.
+
+\url{http://www.ambarish.com/paper/COMPASS_IJRR_Goswami.pdf}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Passive dynamic walking: Compass Gait}{
+
+\item Swing phase has analytic equations of motions
+
+\centerline{\large $M(q) \ddot q + C(q,\dot q) \dot q + G(q) = 0$}
+
+but can't be solved analytically...
+
+\item Phase space plot of numeric solution:
+
+\show[.6]{compassGait2}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Passive walker examples}{
+
+\mov{compass gait simulation}{10-RoboticsLecture/compassGait1.mp4}
+
+\mov{controlled on a circle}{10-RoboticsLecture/compassGait2-manipulated.flv}
+
+\mov{passive walker}{10-RoboticsLecture/Passive_Dynamic_Walker.mp4}
+
+~
+
+\item Minimally actuated: 
+\mov{Minimal Control on rough terrain}{10-RoboticsLecture/tedrakeCompassGait.avi}
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Impact models}
+\slide{Impact Models in the Compass Gait}{
+
+\item Switch between two consecutive swing phases: depends on slope!
+
+\item Typical assumptions made in simulation models:
+
+{\small
+
+-- The contact of the swing leg with the ground results in
+no rebound and no slipping of the swing leg.
+
+-- At the moment of impact, the stance leg lifts from the
+ground without interaction.
+
+-- The impact is instantaneous.
+
+-- The external forces during the impact can be represented
+by impulses.
+
+-- The impulsive forces may result in an instantaneous
+change in the velocities, but there is no instantaneous
+change in the configuration.
+
+-- The actuators cannot generate impulses and, hence, can
+be ignored during impact.
+}
+
+~
+
+\tiny
+
+Westervelt, Grizzle \& Koditschek: \emph{Hybrid Zero Dynamics of
+  Planar Biped Walkers.}  IEEE Trans.\ on Automatic Control 48(1),
+2003.
+
+\url{http://repository.upenn.edu/cgi/viewcontent.cgi?article=1124&context=ese_papers}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Implausibility of the stiff Compass Gait leg}{
+
+\show[.5]{walkingVsRunning}
+
+~
+
+~
+
+\tiny
+
+Geyer, Seyfarth \& Blickhan: \emph{Compliant leg behaviour explains
+basic dynamics of walking and running.} Proc. Roy. Soc. Lond. B,
+273(1603): 2861-2867, 2006.
+\url{http://www.cs.cmu.edu/~cga/legs/GeyerEA06RoySocBiolSci.pdf}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Learning to walk in 20 Minutes}{
+
+\item Policy Gradient method (Reinforcement Learning)
+
+Stationary policy parameterized as linear in features $u = \sum_i w_i
+\phi_i(q,\dot q)$
+
+\item Problem: find parameters $w_i$ to minimize expected costs
+
+cost = mimick $(q,\dot q)$ of the passive down-hill walker at
+``certain point in cycle''
+
+\centerline{\showh[.2]{tedrake-LearningToWalk}
+\qquad
+\mov{Learning To Walk}{10-RoboticsLecture/tedrake-LearningToWalk.avi}
+}
+
+~
+
+\tiny
+
+Tedrake, Zhang \& Seung: \emph{Stochastic
+policy gradient reinforcement learning on a simple 3D biped.} IROS,
+2849-2854, 2004.
+\url{http://groups.csail.mit.edu/robotics-center/public_papers/Tedrake04a.pdf}
+
+}
+
+%% FROM RUSS:
+
+%% ** WHat makes walking control hard?
+
+%% -- Dynamic constraints (friction cones)
+
+%%  - Underactuated (can't follow arbitrary trajectories)
+
+%%  - Power limits at the actuators (Torque/Speed limits)
+
+%%  - limits on ground reaction forces from the friction cones
+
+%%  - fairly complicated constraints to reason about in the control system
+
+
+%% ** What works:
+
+%% -- trajectory optimization (can handle constraints)
+
+%% -- Local stabalization of such trajectories
+
+%%  - via Hybrid Zero Dynamics, or Transverse Linearization
+
+%%  - more difficult to handle constraints (but only locally)
+
+%%  - model-predictive control
+
+
+%% -- Global path finding
+
+%% -- Estimating regions of attraction
+
+
+
+%% ** Rolling vs. Walking
+%% \show{snakeRobot}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Summary}{\label{lastpage}
+
+\item ZMP type walking was successful (ASIMO, HRP-2, etc), but limited
+
+~
+
+\item Future types of walking:
+
+-- Exploit passive dynamics, cope with \emph{underactuation}
+
+-- Follow some general optimiality principle ~ (but real-time!)
+
+-- Learn ~ (esp.\ Reinforcement Learning)
+
+-- Compliant hardware! ~ (controllable elasticity \& damping)
+
+~
+
+\item Recommended reading: Tedrake: \emph{Underactuated Robotics:
+  Learning, Planning, and Control for Effcient and Agile Machines.}
+  Course Notes for MIT 6.832
+
+{\tiny\url{www.cs.berkeley.edu/~pabbeel/cs287-fa09/readings/Tedrake-Aug09.pdf}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Finally, multi-legged locomotion}{
+
+~
+
+\show{gaits}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Finally, multi-legged locomotion}{
+
+~
+
+\mov{\show[.3]{2010-BostonDynamics-RISE}}{10-RoboticsLecture/2010-BostonDynamics-RISE.wmv}
+
+~
+
+\tiny
+\url{http://www.bostondynamics.com/robot_rise.html}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot
+
+
+%% COURSE PAGES
+%% Atkeson:
+%% http://www.cc.gatech.edu/fac/Chris.Atkeson/legs/
+%% http://www.cs.cmu.edu/~cga/legs/
+%% EPFL:
+%% http://moodle.epfl.ch/course/view.php?id=261
+%% MIT:
+%% http://www.ai.mit.edu/projects/leglab/6894/6894.html
+
+
+%% ****
+%% NOTES from Christ Atkeson's lectures: topic ideas!
+
+%% http://www.cc.gatech.edu/fac/Chris.Atkeson/legs/topics.txt
+
+%% Topics:
+%% *** indicates "classic, must read"
+%% +++ indicates "new interesting stuff"
+
+%% --------------------------------------------------------------------
+%% Understanding Task, Mechanics
+
+%% - biomechanics
+%%   *** McMahon paper or book chapter
+%%   *** Pandy and Anderson
+
+%% - passive dynamic walking
+%%   *** McGeer
+%%   simplest (compass w/ point feet)
+%%   extended feet
+%%   knees
+%%   body
+%%   3D
+%%   role of double support
+
+%% - powered passive dynamic walking
+
+%% - actuators and compliance
+%%   - muscle
+%%   - M2
+
+%% - non anthropomorphic designs
+
+%% --------------------------------------------------------------------
+%% Existing systems
+
+%% - bipeds
+%%   ZMP-based: Honda, Sony, HRP-2, H7, ...
+%%   Raibert
+%%   Pratt - virtual control
+
+%% - quadrupeds
+%%   AIBO
+
+%% - hexapods
+%%   Rhex
+
+%% --------------------------------------------------------------------
+%% Control Design
+
+%% - manual approaches
+%%   Hodgins walk-run paper
+
+%% - control using dynamic systems
+%%   Kimura
+
+%% - nonlinear control design
+%%   Hopping robot controller papers series
+%%   Grizzle, UMich
+
+%% - "understanding dynamics
+%%   abstraction/simplification
+
+%% - trajectory optimization
+%%   understanding human gait as well as generating robot gait
+%%   *** Pandy and Anderson
+
+%% - policy optimization
+%%   simulated annealing
+%%   evolutionary approaches (graphics, robotics, ...)
+%%   policy search in machine learning, including derivative based.
+
+%% --------------------------------------------------------------------
+%% Robust Control and Disturbances
+
+%% - How design a robust controller (wrt initial states, disturbances,
+%% and modeling error)?
+
+%% - How handle wide range of activities (sit, stand, avoid obstacles,
+%% stepping stones, carry loads, ...)
+
+%% - How handle wide range of disturbances (slip, trip, stumble;
+%% respond with continuous response, recovery step(s), using arms or
+%% grabbing support, safe fall)
+%%   Hodgins paper(s)
+%%   Ukemi paper
+
+%% --------------------------------------------------------------------
+%% Measurement
+
+%% - how deal with measurement problem
+%%   state estimation
+%%   reduced order controllers
+
+%% --------------------------------------------------------------------
+%% Planning for Dynamic Behaviors
+
+%% - Extending ZMP approach
+%%   filters
+
+%% - Kuffner stuff
+
+%% - data driven behavior
+%%   style
+
+%% - templates (Koditschek)
+
+%% - rough terrain
+
+%% - coordinating lower and upper body
+%%   pick up, carry, move, put down
+%%   grab for support
+%%   wave arms to assist balance
+
+%% - coordinating behaviors
+%%   soccer (kick and run)
+
+%% - gait transitions, supporting multiple gaits
+%%   kinematics
+%%   mechanism
+
+%% - autonomy
+
+%% --------------------------------------------------------------------_
+%% Intermittent Control Not Involving Legs
+
+%% - snake locomotion
+
+%% - juggling/manipulation
+
+%% --------------------------------------------------------------------
+%% Other topics
+
+%% - scaling
+
+%% - fall prediction and balance assessment in humans
+
+%% - learning?
+
+%% - dancing
+
+%% - graphical characters
+%%   interactive
+%%   non-interactive
+%% --------------------------------------------------------------------
+%% --------------------------------------------------------------------
+

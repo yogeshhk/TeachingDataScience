@@ -1,0 +1,302 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Machine Learning}
+\renewcommand{\exnum}{4}
+
+\exercises
+
+At the bottom several 'extra' exercises are given. These are not part of the tutorial and only for your interest.
+
+\medskip
+
+(BSc Data Science students may skip preparing exercise 2.)
+
+\medskip
+
+(There were questions about an API documentation of the C++ code. See
+{\small\url{https://github.com/MarcToussaint/rai-maintenance/blob/master/help/doxygen.md}}.)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Logistic Regression (6 Points)}
+
+On the course webpage there is a data set @data2Class.txt@ for a binary
+classification problem. Each line contains a data entry $(x,y)$ with
+$x\in\RRR^2$ and $y\in\{0,1\}$.
+
+a) Compute the optimal parameters $\b$ and the mean neg-log-likelihood
+$- \frac{1}{n} \log L(\b)$ for logistic regression using linear
+features. Plot the probability $P(y=1 \| x)$ over a 2D grid of test
+points. (4 P)
+
+\begin{itemize}
+\item Recall the objective function, and its gradient and Hessian that
+we derived in the last exercise:
+\begin{align}
+L(\b)
+&= - \sum_{i=1}^n \log P(y_i \| x_i) + \l\norm{\b}^2 \\
+&= - \sum_{i=1}^n \[ y_i \log p_i + (1-y_i) \log [1-p_i]\] + \l\norm{\b}^2 \\
+\na L(\b)
+&= \frac{\del L(\b)}{\del \b}^\T
+ = \sum_{i=1}^n (p_i - y_i)~ \phi(x_i) + 2\l I \b
+ = X^\T (p - y) + 2\l I \b \\
+\he L(\b)
+&= \frac{\del^2 L(\b)}{\del \b^2}
+ = \sum_{i=1}^n p_i(1-p_i)~ \phi(x_i)~ \phi(x_i)^\T + 2\l I
+ = X^\T W X + 2 \l I \\
+\text{where}
+ &~ p(x) := P(y\=1 \| x) = \s(\phi(x)^\T \b),~
+ p_i := p(x_i),~
+ W := \diag(p\circ(1-p))
+\end{align}
+
+\item Setting the gradient equal to zero can't be done
+ analytically. Instead, optimal parameters can quickly be found by
+ iterating Newton steps: For this, initialize $\b=0$ and iterate
+\begin{align}
+\b \gets \b - (\he L(\b))^\1~ \na L(\b) ~.
+\end{align}
+You usually need to iterate only a few times ($\sim$10) til
+convergence.
+\item As you did for regression, plot the discriminative function
+$f(x) = \phi(x)^\T \b$ or the class probability function $p(x)
+= \s(f(x))$ over a grid.
+\end{itemize}
+
+Useful gnuplot commands:
+
+\begin{code}%[fontsize=\tiny,numbers=none,xleftmargin=2ex] 
+\begin{verbatim}
+splot [-2:3][-2:3][-3:3.5] 'model' matrix \
+   us ($1/20-2):($2/20-2):3 with lines notitle
+plot [-2:3][-2:3] 'data2Class.txt' \
+   us 1:2:3 with points pt 2 lc variable title 'train'
+\end{verbatim}
+\end{code}
+
+
+b) Compute and plot the same for quadratic features. (2 P)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Structured Output (4 Points)}
+
+(Warning: This is one of these exercises that do not have ``one correct solution''.)
+
+Consider data of tuples $(x,y_1,y_2)$ where
+\begin{itemize}
+\item $x\in\RRR^d$ is the age and some other features of a spotify user
+\item $y_1\in\RRR$ quantifies how much the user likes
+  HipHop
+\item $y_2\in\RRR$ quantifies how much the user likes
+  Classic
+\end{itemize}
+Naively one could train separate regressions $x\mapsto y_1$ and
+$x\mapsto y_2$. However, it seems reasonable that somebody that likes
+HipHop might like Classic a bit less than average (anti-correlated).
+
+a) Properly define a \emph{representation} and \emph{objective} for
+modelling the prediction $x \mapsto (y_1, y_2)$. (2 P)
+
+Tip: Discriminative functions $f(y,x)$ can not only be used to define a class prediction $F(x) = \argmax_y f(y,x)$, but equally also continuous predictions where $y\in\RRR$ or $y\in\RRR^O$. How can you setup and parameterize a discriminative function for the mapping $x \mapsto (y_1, y_2)$?
+
+b) Assume you would not only like to make a deterministic prediction $x \mapsto (y_1, y_2)$, but map $x$ to a probability distribution $p(y_1,y_2|x)$, where presumably $y_1$ and $y_2$ would be anti-correlated. How can this be done? (2 P)
+
+c) Extra: Assume that the data set would contain a third output variable $y_3\in\{0,1\}$, e.g.\ $y_3$ may indicate whether the user pays for music. How could you setup learning a model $x \mapsto (y_1, y_2, y_3)$?
+
+d) Extra: General discussion: Based on this, how are regression, classification, and conditional random fields related?
+
+
+\ifnum\value{solutions}=1
+\begin{solution}
+Let us define $y=(y_1,y_2)\in\RRR^2$, the regression parameter matrix
+$\a=(\b_1^\T;\b_2^\T) \in \RRR^{d\times 2}$, and the correlation
+matrix $B=(1,\b_c; \b_c,1)$. We define a discriminative function
+\begin{align}
+f(x,y)
+ &= -\half (y-\phi^\T\a)^\T B (y-\phi^\T\a) + \half \a^\T \phi B \phi^\T\a ~.
+\end{align}
+Note that this is not anymore linear in the parameters: E.g., the term $y^\T
+B \phi^\T \a$ includes the monomial $\b_c\b_1$. But that's not a
+problem. We have
+\begin{align}
+p(y \| x)
+&= \NN(y \| \phi^\T\a, B^\1)~ \frac{|B|^{1/2}}{2\pi}~ e^{\half \a^\T \phi B \phi^\T\a - Z(x,\b)} ~.
+\end{align}
+Again, for this to be normalized, $Z(x,\b)$ has to subsume all terms,
+and $p(y \| x) = \NN(y \| \phi^\T\a, B^\1)$.
+\end{solution}
+\fi
+
+
+%% \begin{figure}[b]
+%% \show{digits_twoClasses}
+%% \show{digits_pca}
+%% \caption{\label{figDigits} The top figure displays data examples of
+%% two classes of digits. The bottom figure displays the 20 first
+%% principle components of the whole (10 digit) data set -- these were
+%% uses as inputs in the file \texttt{xdigit\_pcs.txt}}
+%% \end{figure}
+
+%% \exsection{Handwritten Digit Classification (optional)}
+
+%% On the course webpage there is a data set in two files,
+%% @digit_pcs.txt@ and @digit_label.txt@, the first containing the inputs
+%% $x_i$ in each row, the second the label $y\in\{0,1\}$ in each
+%% row. This data are handwritten digits, encoded using PCA components
+%% (explained later in the lecture), as illustrated in
+%% Figure \ref{figDigits}.
+
+%% Use the same code as above to learn a binary classifier on this
+%% data. What is the mean neg-log-likelihood you achieve with linear and
+%% with quadratic features? What the correct classification rate?
+
+%% For further information on how this data was generated, see\\ @http://..../teaching/data/LogReg_digits_PCA_by_Stefan_Otte.pdf@.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \begin{figure}[b]
+%% \show{digits_twoClasses}
+%% \show{digits_pca}
+%% \caption{\label{figDigits} The top figure displays data examples of
+%% two classes of digits. The bottom figure displays the 20 first
+%% principle components of the whole (10 digit) data set -- these were
+%% uses as inputs in the file \texttt{xdigit\_pcs.txt}}
+%% \end{figure}
+
+%% \exsection{Handwritten Digit Classification (optional)}
+
+%% On the course webpage there is a data set in two files,
+%% @digit_pcs.txt@ and @digit_label.txt@, the first containing the inputs
+%% $x_i$ in each row, the second the label $y\in\{0,1\}$ in each
+%% row. This data are handwritten digits, encoded using PCA components
+%% (explained later in the lecture), as illustrated in
+%% Figure \ref{figDigits}.
+
+%% Use the same code as above to learn a binary classifier on this
+%% data. What is the mean neg-log-likelihood you achieve with linear and
+%% with quadratic features? What the correct classification rate?
+
+%% For further information on how this data was generated, see\\ @http://..../teaching/data/LogReg_digits_PCA_by_Stefan_Otte.pdf@.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Extra: Discriminative Function in Logistic Regression}
+
+Logistic Regression (slide 03:19) defines class probabilities as proportional to
+the exponential of a discriminative function:
+$$P(y|x) = \frac{\exp f(x, y)}{\sum_{y'}\exp f(x, y')}$$
+
+Prove that, in the binary classification case, you can assume $f(x, 0) = 0$
+without loss of generality.  
+
+This results in $$P(y=1|x) = \frac{\exp f(x, 1)}{1 + \exp f(x, 1)} =
+\sigma(f(x, 1)).$$
+
+(Hint: first assume $f(x, y) = \phi(x, y)^\T\beta$, and then define a new
+discriminative function $f'$ as a function of the old one, such that $f'(x,
+0)=0$ and for which $P(y|x)$ maintains the same expressibility.)
+
+\ifnum\value{solutions}=1
+\begin{solution}
+	Assume $f(x, y) = \phi(x, y)^\T\beta$. Define new discriminative function $f'(x, y) = f(x, y) - f(x, 0)$.
+	
+	Proof that new discriminative function $f'$ still fulfills class probabilites:
+	\begin{align*}
+		P'(y|x)
+		&= \frac{\exp f'(x, y)}{\sum_{y'}\exp f'(x, y')} \\
+		&= \frac{\exp (f(x, y) - f(x, 0))}{\sum_{y'}\exp (f(x, y') - f(x, 0))} \\
+		&= \frac{\exp (f(x, y)) \cdot \exp (-f(x, 0))}{\sum_{y'}\exp (f(x, y')) \cdot \exp (-f(x, 0))} \\
+		&= \frac{\exp (-f(x, 0))}{\exp (-f(x, 0))} \cdot \frac{\exp (f(x, y))}{\sum_{y'}\exp (f(x, y'))} \\
+		&= \frac{\exp f(x, y)}{\sum_{y'}\exp f(x, y')} 
+		= P(y|x)
+	\end{align*}
+\end{solution}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Extra: Special cases of CRFs}
+
+Slide 03:31 summarizes the core equations for CRFs.
+
+a) Confirm the given equations for $\na_\b Z(x,\b)$ and $\he[\b]
+Z(x,\b)$ (i.e., derive them from the definition of $Z(x,\b)$).
+
+b) Binary logistic regression is clearly a special case of
+CRFs. Sanity check that the gradient and Hessian given on slide 03:20
+can alternatively be derived from the general expressions for $\na_\b L(\b)$ and
+$\he[\b] L(\b)$ on slide 03:31. (The same is true for the multi-class case .)
+
+c) Proof that ordinary ridge regression is a special case of CRFs if
+you choose the discriminative function $f(x,y) = - y^2 + 2 y \phi(x)^\T \b$.
+
+\ifnum\value{solutions}=1
+\begin{solution}
+In all of the following, $f=f(x,y;\b)$ and $Z=Z(x;\b)$.
+
+a)
+\begin{align}
+\na Z
+&= \na \log \sum_y e^f
+ = \frac{1}{e^Z}~ \sum_y e^f \na f
+ = \sum_y p(y|x)~ \na f \\
+\he Z
+&= \na \[ \sum_y p(y|x)~ \na f^\T \] \\
+\na p(y|x)
+&= \na e^{f-Z} = e^{f-Z}~ [\na f - \na Z] = p(y|x)~ [\na f - \na Z] \\
+\he Z
+&= \sum_y p(y|x)~ [\na f - \na Z]~  \na f^\T \\
+&= \sum_y p(y|x)~ \na f~  \na f^\T  - \na Z [\sum_y p(y|x)~ \na f^\T]\\
+&= \sum_y p(y|x)~ \na f~  \na f^\T  - \na Z \na Z^\T
+\end{align}
+b)
+\begin{align}
+y & \in\{0,1\}\\
+f(x,y)
+&= \phi(x,y)^\T \b = [y=1] \phi(x)^\T \b = y \phi(x)^\T \b \\
+\na Z
+&= \sum_y p(y|x)~ [y=1]~ \phi(x) = p(x)~ \phi(x) \\
+\na L
+&= \sum_i \na Z(x_i) - \na f(x_i,y_i) \\
+&= \sum_i p(x_i) \phi(x) - y_i \phi(x_i) \\
+&= \sum_i (p_i - y_i) \phi(x_i) = X^\T (\vec p-\vec y) \\
+\he Z
+&= \sum_y p(y|x)~ [y=1]~ \phi(x) \phi(x)^\T - [p(x)~ \phi(x)]~
+[p(x)~ \phi(x)]^\T\\
+&= [p(x) - p(x)^2] \phi(x) \phi(x)^\T \\
+\he L
+&= \sum_i \he Z(x_i)
+ = \sum_i \phi(x_i) [p_i - p_i^2] \phi(x_i)^\T
+ = X^\T W X
+\end{align}
+c) Let me define $f(x,y) = -\half y^2 + y \phi(x)^\T \b$ instead. We have
+\begin{align}
+p(y | x)
+ &= e^{f(x,y) - Z(x,\b)}
+  = e^{ -\half  y^2 + y \phi(x)^\T \b - Z(x,\b)} \\
+ &= e^{- \half (y - \phi(x)^\T \b)^2 + \half (\phi(x)^\T \b)^2 - Z(x,\b)} \\
+ &=  (2\pi)^{1/2}~ \NN(y \| \phi(x)^\T \b, 1)~ e^{\half (\phi(x)^\T \b)^2 - Z(x,\b)} \\
+ &= \NN(y \| \phi(x)^\T \b, 1) \comma Z(x,\b) \defeq \half (\phi(x)^\T \b)^2 - \half \log( 2\pi )
+\end{align}
+where $\NN(y|m,1) = \frac{1}{\sqrt{2\pi}} e^{-\half(y-m)^2}$. Note
+that we \emph{have} to define $Z(x,y)$ as above, because, by
+definition, $Z(x,y)$ needs to be the normalization factor (partition
+function). So, the conditional probability $p(y | x) = \NN(y
+\| \phi(x)^\T \b, 1)$ is just the unit-variance Gaussian around the
+linear prediction $\phi(x)^\T \b$. Next, the loss:
+\begin{align}
+L(\b)
+ &= - \sum_i \log p(y_i | x_i)
+  = - \sum_i \half \log(2\pi) - \half (y_i - \phi(x_i)^\T \b)^2 ~.
+\end{align}
+and that's nothing but the squared error. (The factor $\half$ changes
+the effect of regularization a bit; let's neglect this; or I shouldn't
+have redefined $f(x,y)$...) So, as we have the same objective, the
+optimal $\b$ will be exactly the same as for ridge regression.
+\end{solution}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\exerfoot
+

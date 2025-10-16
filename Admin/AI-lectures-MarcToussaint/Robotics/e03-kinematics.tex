@@ -1,0 +1,180 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\exnum}{3}
+
+\exercises
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Task spaces and Jacobians}
+
+%% a) Assume you want to control the position of the left hand ($L$)
+%% relative to the right hand ($R$), that is $p^R$, where $p$ is a point
+%% on the left hand and $p^R$ its coordinate w.r.t.\ the right hand's
+%% frame. What is the respective task map $\phi:~ q \mapsto p^R$
+%% expressed on the basic transformations $\TR{W}{L}$ and $\TR{W}{R}$? What is
+%% its Jacobian?
+
+In the lecture we introduced the basic kinematic maps
+$\phi^\pos_{i,v}(q)$ and $\phi^\veC_{i,v}(q)$, and their Jacobians,
+$J^\pos_{i,v}(q)$ and $J^\veC_{i,v}(q)$, where $i$ may refer to any
+part of the robot and $v$ is any point or direction on this part. In
+the following you may assume that we have routines to compute these
+for any $q$. The problem is to express other kinematic maps and their
+Jacobians in terms of these knowns. In the following you're asked to
+define more involved kinematics maps (a.k.a.\ task maps) $\phi(q)$ to solve
+certain motion problems. Please formulate all these maps such that the
+overall optimization problem is
+$$ f(q) = \norm{q-q_0}^2_W + \norm{\phi(q)}^2 $$
+that is, the motion aims to minimize $\phi(q)$ to zero (absorb the
+$y^*$ in the definition of $phi$.)
+
+a) Assume you would like to control the pointing direction of the robot's
+head (e.g., its eyes) to point to a desired external world point $x^W$. What
+task map can you define to achieve this? What is the Jacobian?
+
+\begin{solution}
+There are really many ways to define a task map $\phi(q)$ such that
+$\phi(q)=0$ implies looking at $x^W$. Let $\phi^\pos_{h,e}$ be the
+position of the eye on the robot's head, let $\phi^\veC_{h,g}$ be the
+gaze direction of the eye, let $\phi^\veC_{h,x}$ and $\phi^\veC_{h,y}$
+be the two direction \emph{orthogonal} to the gaze direction (spanning
+the camera plane of the eye). We may define
+\begin{align}
+\phi_1(q)
+ &= \mat{c}{
+\phi^\veC_{h,x}{}^\T (x^W - \phi^\pos_{h,e}) \\
+\phi^\veC_{h,y}{}^\T (x^W - \phi^\pos_{h,e}) } \quad\in \RRR^2 \\
+\phi_2(q)
+ &= 
+\phi^\veC_{h,g} - \frac{x^W - \phi^\pos_{h,e}}{|x^W - \phi^\pos_{h,e}|}  \quad\in \RRR^3 \\
+\phi_3(q)
+ &= 
+\phi^\veC_{h,g}{}^\T \[\frac{x^W - \phi^\pos_{h,e}}{|x^W - \phi^\pos_{h,e}|}\] - 1  \quad\in \RRR^1
+\end{align}
+Here, $\phi_1$ enforces that the eye-camera plane is orthogonal to the
+desired gaze, $\phi_2$ enforces that the eye gaze vector is equal to
+the normalized desired gaze, and $\phi_3$ enforces that the scalar
+product between the eye gaze vector and the normalized desired gaze is
+equal to 1. The Jacobians are straight-forward, except for where the
+normalization is involved. For any vector-valued function
+$f:~ \RRR^n \to \RRR^d$ we have
+\begin{align}
+\del_q \frac{f(x)}{|f(x)|}
+&= \del_q \frac{f(x)}{[f(x)^\T f(x)]^\half} \\
+&= \frac{1}{[f(x)^\T f(x)]^\half} \del_q f(x)
+ + f(x) \del_q \frac{1}{[f(x)^\T f(x)]^\half} \\
+&= \frac{1}{[f(x)^\T f(x)]^\half} \del_q f(x)
+ + f(x) \frac{-1/2}{[f(x)^\T f(x)]^{3/2}} [2f(x)^\T \del_q f(x)]  \\
+&= \frac{1}{|f(x)|} \[ \Id - \frac{f(x)f(x)^\T}{f(x)^\T f(x)} \] \del_q f(x)
+\end{align}
+NOTE: A student proposed a variant of (2) where the normalization
+$|x^W - \phi^\pos_{h,e}|$ is dropped. Well, yes, it does the job of
+gazing a $x^W$. But this additionally does the job of trying to place
+the point 1 Meter in front of the eye exactly at $x^W$---which might
+be quite undesirable.
+\end{solution}
+
+b) You would like the two hands or the robot to become parallel
+(e.g.\ for clapping). What task map can you define to achieve this?
+What is the Jacobian?
+
+\begin{solution}
+Option 1: align the hand normals requiring their scalar product to be
+$+1$ or $-1$. Option 2: make the hand-plane vectors of one hand
+orthogonal to the normal of the other hand (2-dimensional task, as (1) above).
+\end{solution}
+
+c) You would like to control a standard endeffector position $p_\eff$
+to be at $y^*$, as usual. Can you define a 1-dimensional task map
+$\phi:~ \RRR^n \to \RRR$ to achieve this? What is its Jacobian?
+
+\begin{solution}
+Two options:
+\begin{align}
+\phi_1(q)
+&= \norm{\phi^\pos_\eff - y^*}^2 \\
+\phi_2(q)
+&= |\phi^\pos_\eff - y^*|
+ = \sqrt{(\phi^\pos_\eff - y^*)^\T (\phi^\pos_\eff - y^*)} \\
+J_2
+&= \half \sqrt{(\phi^\pos_\eff - y^*)^\T (\phi^\pos_\eff -
+ y^*)}^{-\half}~ 2 (\phi^\pos_\eff - y^*)^\T~ J^\pos_\eff 
+ = \frac{(\phi^\pos_\eff - y^*)^\T}{|\phi^\pos_\eff - y^*|}~ J^\pos_\eff
+\end{align}
+The first option has the  drawback that $\norm{\phi_1(q)}^2$
+is of fourth order, which has little slope at 0. The second option is
+ok, but numerically difficult when $\phi^\pos_\eff - y^* \approx 0$.
+\end{solution}
+
+%% \exsection{Derivation of inverse kinematics}
+
+%% \show[.25]{optim-InvKin}
+
+%% We want to find an optimum for joint angle step $\d q\in\RRR^n$
+%% under two ``competing tasks'': On the one hand, we want $\d q$ to be
+%% small (be lazy); on the other hand, we want $\d q$ to be close to
+%% the hyperplane $J\d q-\d y=0$, for given $J\in\RRR^{d\times n}$
+%% and $\d y\in\RRR^d$. We associate square costs to both tasks and
+%% define the cost function
+%% \begin{align} \label{eq1}
+%% f(\d q)
+%%  &= \d q^\T~ W~ \d q + (J\d q-\d y)^\T~ C~ (J\d q-\d y) ~.
+%% \end{align}
+%% We introduced metrics (=symmetric positive definite matrix)
+%% $W \in\RRR^{n\times n}$ and $C \in \RRR^{d\times d}$ to weight the
+%% cost terms. Find the optimal $\d q^* = \argmin_{\d q} f(\d q)$.
+
+%% \emph{Simplification:} If you like, first solve a simplified problem: 
+%% Drop $W$ and $C$ (let $W$ and $C$ be Euclidean metrics).
+
+%% \emph{Bonus:} What is the solution for $C \to \infty\Id$ (enforcing
+%% the solution to be definitely on the hyperplane)? Tip: Before taking the limit,
+%% rewrite the solution using the \emph{Woodbury identity} (for positive
+%% definite matrices $W$ and $C$):
+%% \begin{align}
+%% (W + J^\T C J)^\1 J^\T C = W^\1 J^\T (C^\1 + J W^\1 J^\T)^\1 ~.
+%% \end{align}
+
+%% \emph{For discussion during exercises:} How are the solutions related to the
+%% so-called pseudo-inverse? How are they related to singularities, the
+%% ``singularity robust Jacobian'' and ``Tikhonov regularization''?
+
+\exsection{IK in the simulator}
+
+Download the simulator code from
+{\tiny\url{http://ipvs.informatik.uni-stuttgart.de/mlr/marc/source-code/libRoboticsCourse.14.tgz}}. (See
+last exercise for instructions. The @libRoboticsCourse.13.msvc.tgz@
+might include a project file for MSVC.)  The header
+@<src/Ors/roboticsCourse.h>@ provides a very simple interface to the
+simulator---we will use only this header and some generic matrix
+functionalities. In @share/examples/Core/array@ you find many examples
+on how to use the @arr@ for working with vectors and matrices (many
+conventions are similar to Matlab).
+
+Consider the example in @teaching/RoboticsCourse/01-kinematics@
+(rename @main.problem.cpp@ to @main.cpp@). The goal is to reach the
+coordinates $y^*=(-0.2, -0.4, 1.1)$ with the right hand of the
+robot. Assume $W=\Id$ and $\s=.01$.
+
+a) The example solution generates a motion in one step using inverse
+kinematics $\d q = J^\sharp~ \d y$ with $J^\sharp = (J^\T J + \s^2
+W)^\1 J^\T$. Record the task error, that is, the deviation of hand
+position from $y^*$ after each step. Why is it initially large?
+
+b) Try to do 100 smaller steps $\d q = \a J^\sharp~ \d y$ with $\a=.1$
+(each step starting with the outcome of the previous step). How does
+the task error evolve over time?
+
+c) Generate a nice trajectory composed of $T=100$ time
+steps. Interpolate the target linearly $\hat y \gets y_0 + (t/T)(y^*-y_0)$ in
+each time step.
+
+d) Generate a trajectory that moves the right hand in a circle centered at
+$(-0.2, -0.4, 1.1)$, aligned with the $xz$-plane, with radius $0.2$.
+
+
+\exerfoot

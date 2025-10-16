@@ -1,0 +1,1006 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Optimization}
+\renewcommand{\coursepicture}{optim}
+\renewcommand{\coursedate}{Summer 2015}
+
+\newcommand{\step}{{d}}
+\newcommand{\lscurv}{\r_{\text{ls2}}}
+\newcommand{\Min}{\text{min}}
+
+\renewcommand{\topic}{Unconstraint Optimization Basics}
+\renewcommand{\keywords}{Descent direction \& stepsize,
+plain gradient descent, stepsize adaptation \& monotonicity, line
+search, trust region, steepest descent, Newton, Gauss-Newton,
+Quasi-Newton, BFGS, conjugate gradient, exotic: Rprop}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{}{
+ 
+%% If $x^*$ is a local minimizer of $f$ and $\he f$ exists and is
+%% continuous in an open neighborhood of $x^*$, then $\na f (x^*) = 0$
+%% and $\he f (x^*)$ is positive semidefinite.
+
+%% Suppose that $\he f$ is continuous in an open neighborhood of $x^*$
+%% and that $\na f (x^*) = 0$ and $\he f (x^*)$ is positive
+%% definite. Then $x^*$ is a strict local minimizer of $f$.
+
+%% When $f$ is convex, any local minimizer $x^*$ is a global minimizer of
+%% $f$. If in addition $f$ is differentiable, then any stationary point
+%% $x^*$ is a global minimizer of $f$.
+
+%% Wolfe conditions: $\a$ is a good choice iff
+
+%% a) sufficient decrease condition
+%% $$f (x + \a \d) \le f (x) + c_1\a\na f(x)^\T \d\comma c_1\approx 10^{-4}$$
+%% b) curvature condition (sufficient step)
+%% $$|\na f (x + \a \d)^\T \d| \le c_2|\na f(x)^\T \d|$$
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\key{Plain gradient descent}
+\slide{Gradient descent}{
+
+\anchor{200,-70}{\showh[.3]{gradient_descent}}
+
+~
+
+\item Objective function:~ $f:~ \RRR^n \to \RRR$
+
+Gradient vector:~ $\na f(x) = \[\frac{\del}{\del_x} f(x)\]^\T ~ \in \RRR^n$
+
+~
+
+\item Problem:
+\begin{align*}
+\min_x f(x)
+\end{align*}
+where we can evaluate $f(x)$ and $\na f(x)$ for any $x\in\RRR^n$
+
+~
+
+\item Plain gradient descent: iterative steps in the direction $-\na f(x)$.
+
+
+\begin{algo}
+\Require initial $x\in\RRR^n$, function $\na f(x)$, stepsize $\a$, tolerance $\t$
+\Ensure $x$
+\Repeat
+\State $x \gets x - \a \na f(x)$
+\Until $|\D x| <\t$ ~ [perhaps for 10 iterations in sequence]
+\end{algo}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Stepsize and step direction as core issues}
+\slide{}{
+
+\item Plain gradient descent is really not efficient
+
+\item Two core issues of unconstrainted optimization:
+
+~
+
+\begin{center}\large
+\textbf{A. Stepsize}
+
+\textbf{B. Descent direction}
+\end{center}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Stepsize}{
+
+\item Making steps proportional to $\na f(x)$?
+
+~
+
+\show[.6]{gradientOpt}
+
+~
+
+\item We need methods that
+\begin{items}
+\item robustly adapt stepsize
+\item exploit convexity, if known
+\item perhaps be independent of $|\na f(x)|$ ~ (e.g.\ if non-convex as
+above)
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Stepsize adaptation}
+\slide{Stepsize Adaptation}{
+
+\begin{algo}
+\Require initial $x\in\RRR^n$, functions $f(x)$ and $\na f(x)$,
+tolerance $\t$, parameters (defaults: $\ainc=1.2, \adec=0.5, \lsstop=0.01$)
+\Ensure $x$
+\State initialize stepsize $\a=1$
+\Repeat
+\State $\step \gets -\frac{\na f(x)}{|\na
+f(x)|}$ \Comment{(alternative: $\step=-\na f(x)$)}
+\While{$f(x+\a\step) > f(x) {\color{green}+ \lsstop \na f(x)^\T (\a\step)}$} \Comment{line search}
+\State $\a \gets \adec \a$ \Comment{decrease stepsize}
+\EndWhile
+\State $x \gets x + \a\step$
+\State $\a \gets \ainc \a$ \Comment{increase stepsize
+(alternative: $\a=1$)}
+\Until $|\a\step| <\t$ ~ [perhaps for 10 iterations in sequence]
+\end{algo}
+
+~
+
+\item $\a$ determines the absolute stepsize
+
+\item Guaranteed monotonicity (by construction)
+
+(``Typically'' ensures convergence to locally convex minima; see later)
+%% ~
+
+%% If $f$ is convex $\To$ convergence
+
+%% For typical non-convex bounded $f$ $\To$ convergence to local optimum
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Backtracking}
+\key{Line search}
+\slide{Backtracking line search}{
+
+\item Line search in general denotes the problem
+$$\min_{\a\ge 0} f(x+\a\step)$$
+for some step direction $\step$.
+
+\item The most common line search is \textbf{backtracking}, which
+decreases $\a$ as long as
+$$f(x+\a\step) > f(x) + \lsstop \na f(x)^\T (\a\step)$$
+
+$\adec$ describes the stepsize decrement in case of a rejected step
+
+$\lsstop$ describes a minimum desired decrease in $f(x)$
+
+%% \item In the 2nd order methods we described, we chose $a=0$:
+
+%% We did not invest into further line search steps if $f(x+\a\step) \le f(x)$
+
+\item Boyd at al: typically $\lsstop\in[0.01,0.3]$ and $\adec\in[0.1,0.8]$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Backtracking line search}{
+
+~
+
+~
+
+\show[.6]{backtracking}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Wolfe conditions}
+\slide{Wolfe Conditions}{
+
+~
+
+\item The 1st Wolfe condition (``sufficient decrease condition'')
+$$f(x+\a\step) \le f(x) - \lsstop \na f(x)^\T (\a\step)$$
+requires a decrease of $f$ at least $\lsstop$-times ``as expected''
+
+\item The 2nd (stronger) Wolfe condition (``curvature condition'')
+$$|\na f (x + \a\step)^\T \step| \le \lscurv |\na f(x)^\T \step|$$ implies a
+requires an decrease of the slope by a factor $\lscurv$.
+
+$\lscurv\in(\lsstop,\half)$ (for conjugate gradient)
+
+\item See Nocedal~et~al., Section 3.1 \& 3.2 for more general proofs of convergence of any
+method that ensures the Wolfe conditions after each line search
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Gradient descent convergence}
+\slide{Convergence for (locally) convex functions}{
+
+{\tiny following Boyd et al.\ Sec 9.3.1}
+
+\small
+
+\item \textbf{Assume} that $\forall_x$ the Hessian is
+$m \le \text{eig}(\he f(x)) \le M$. If follows
+\begin{align*}
+f(x) + \na f(x)^\T (y-x) + \frac{m}{2} (y-x)^2
+&\le f(y) \\
+&\le f(x) + \na f(x)^\T (y-x) + \frac{M}{2} (y-x)^2 \\
+f(x) - \frac{1}{2m} |\na f(x)|^2
+&\le f_\Min
+ \le f(x) - \frac{1}{2M} |\na f(x)|^2 \\
+|\na f(x)|^2 
+&\ge 2m(f(x) - f_\Min)
+\end{align*}
+
+\item Consider a \textbf{perfect line search} with $y=x-\a^*\na f(x)$,
+$\a^*=\argmin_\a f(y(\a))$. The following eqn.\ holds as $M$ also
+upper-bounds $\he f(x)$ along $-\na f(x)$:
+\begin{align*}
+f(y)
+ &\le f(x) - \frac{1}{2M} |\na f(x)|^2 \\
+f(y) - f_\Min
+ &\le f(x) - f_\Min - \frac{1}{2M} |\na f(x)|^2 \\
+ &\le f(x) - f_\Min - \frac{2m}{2M} (f(x) - f_\Min) \\
+ &\le \[1-\frac{m}{M}\]~ (f(x) - f_\Min)
+\end{align*}
+$\to$ each step is contracting at least by $1-\frac{m}{M}<1$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Convergence for (locally) convex functions}{
+
+{\tiny following Boyd et al.\ Sec 9.3.1}
+
+\small
+
+\item In the case of \textbf{backtracking line search}, backtracking
+will terminate \emph{latest} when $\a\le \frac{1}{M}$, because for
+$y=x-\a\na f(x)$ and $\a\le \frac{1}{M}$ we have
+\begin{align*}
+f(y)
+&\le f(x) - \a |\na f(x)|^2 + \frac{M\a^2}{2}|\na f(x)|^2 \\
+&\le f(x) - \frac{\a}{2} |\na f(x)|^2 \\
+&\le f(x) - \lsstop \a |\na f(x)|^2
+\end{align*}
+As backtracking terminates for any $\a\le\frac{1}{M}$, a step $\a\ge\frac{\adec}{M}$ is chosen,
+such that
+\begin{align*}
+f(y)
+&\le f(x) - \frac{\lsstop\adec}{M} |\na f(x)|^2 \\
+f(y) - f_\Min
+ &\le f(x) - f_\Min - \frac{\lsstop\adec}{M} |\na f(x)|^2 \\
+ &\le f(x) - f_\Min - \frac{2m\lsstop\adec}{M} (f(x) - f_\Min) \\
+ &\le \[1-\frac{2m\lsstop\adec}{M}\]~ (f(x) - f_\Min)
+\end{align*}
+$\to$ each step is contracting at least by $1-\frac{2m\lsstop\adec}{M}<1$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{B. Descent Direction}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Steepest descent direction}
+\slide{Steepest Descent Direction}{
+
+\item The gradient $\na f(x)$ is sometimes called \emph{steepest
+  descent direction}
+
+~
+
+\cen{\emph{Is it really?}}
+
+~\mypause
+
+\item Here is a possible definition:
+
+~
+
+\emph{The steepest descent direction is the one where, {\color{red} when I
+      make a step of length 1}, I get the largest decrease of $f$ in
+    its linear approximation.}
+
+\begin{align*}
+\argmin_\d \na f(x)^\T \d \text{\qquad s.t.~} \norm{\d}=1
+\end{align*}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Steepest Descent Direction}{
+
+\item But the norm $\norm{\d}^2=\d^\T A \d $ depends on the metric $A$!
+
+~
+
+Let $A = B^\T B$ (Cholesky decomposition) and $z = B \d$
+\begin{align*}
+\d^*
+&= \argmin_\d \na f^\T \d \text{\qquad s.t.~} \d^\T A \d=1 \\
+&= B^\1 \argmin_z (B^\1 z)^\T \na f \text{\qquad s.t.~} z^\T z = 1\\
+&= B^\1 \argmin_z z^\T B^\mT \na f \text{\qquad s.t.~} z^\T z = 1\\
+&= B^\1 [- B^\mT \na f] = - A^\1 \na f
+\end{align*}
+
+~
+
+\eqbox{The steepest descent direction is $\d=- A^\1 \na f$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Covariant gradient descent}
+\slide{Behavior under linear coordinate transformations}{
+
+\item Let $B$ be a matrix that describes a linear transformation in
+  coordinates
+
+~
+
+\item A coordinate vector $x$ transforms as $z = B x$
+
+\item The gradient vector $\na_x f(x)$ transforms as $\na_z f(z) =
+  B^\mT \na_x f(x)$
+
+\item The metric $A$ transforms as $A_z = B^\mT A_x B^\1$
+
+\item The steepest descent transforms as $A_z^\1 \na_z f(z) = B A_x^\1
+  \na_x f(x)$
+
+~
+
+The steepest descent transforms like a normal coordinate vector (covariant)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Newton direction}
+\slide{Newton Direction}{
+
+\item Assume we have access to the symmetric \textbf{Hessian}
+$$\he f(x) = {\small\mat{cccc}{
+\frac{\del^2}{\del_{x_1}\del_{x_1}} f(x) &
+\frac{\del^2}{\del_{x_1}\del_{x_2}} f(x) &
+\cdots &
+\frac{\del^2}{\del_{x_1}\del_{x_n}} f(x) \\
+\frac{\del^2}{\del_{x_1}\del_{x_2}} f(x) &
+& & \vdots \\
+\vdots & & & \vdots \\
+\frac{\del^2}{\del_{x_n}\del_{x_1}} f(x) &
+\cdots &
+\cdots &
+\frac{\del^2}{\del_{x_n}\del_{x_n}} f(x)}} ~\in\RRR^{n\times n}$$
+
+~
+
+\item which defines the Taylor expansion:
+$$f(x+\d) \approx f(x) + \na f(x)^\T \d + \half \d^\T~ \he f(x)~ \d$$
+
+Note: $\he f(x)$ acts like a \textbf{metric} for $\d$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Newton method}
+\slide{Newton method}{
+
+\item For finding roots (zero points) of $f(x)$
+
+\cen{\twocol{.4}{.4}{
+\show[1]{newton}
+}{
+$$x \gets x - \frac{f(x)}{f'(x)}$$
+}}
+
+~
+
+~
+
+\item For finding optima of $f(x)$ in 1D:
+$$x \gets x - \frac{f'(x)}{f''(x)}$$
+
+For $x\in\RRR^n$:
+$$x \gets x - \he f(x)^\1 \na f(x)$$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Why 2nd order information is better}{
+
+~
+
+\item Better direction:
+
+\show[.4]{2ndOrder}
+
+~
+
+\item Better stepsize:
+\begin{items}
+\item a \emph{full step} jumps directly to the minimum of the local
+squared approx.
+
+\item often this is already a good heuristic
+
+\item additional stepsize reduction and dampening are straight-forward
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Newton method with adaptive stepsize}{
+
+\begin{algo}
+\Require initial $x\in\RRR^n$, functions $f(x), \na f(x), \he f(x)$,
+tolerance $\t$, parameters (defaults:
+$\ainc=1.2, \adec=0.5, \linc=1, \ldec=0.5, \lsstop=0.01$)
+\Ensure $x$
+\State initialize stepsize $\a=1$ and damping $\l=\l_0$
+\Repeat
+\State compute $\step$ to solve $(\he f(x) + \l \Id)~ \step = - \na f(x)$
+\label{alg0}
+\While{$f(x+\a\step) > f(x) + \lsstop \na f(x)^\T (\a\step)$} \Comment{line search}
+\State $\a \gets \adec\a$ \Comment{decrease stepsize}
+\State optionally: $\l \gets \linc\l$ and recompute $d$ \Comment{increase damping}
+\EndWhile
+\State $x \gets x + \a\step$ \Comment{step is accepted}
+\State $\a \gets \min\{\ainc\a,1\}$ \Comment{increase stepsize}
+\State optionally: $\l \gets \ldec\l$ \Comment{decrease damping}
+\Until $\norm{\a\step}_\infty < \t$ %or exessive evaluations
+\end{algo}
+
+~\tiny
+
+\item Notes:
+\begin{items}
+\item Line \ref{alg0} computes the Newton step $\step = -\he f(x)^\1 \na f(x)$,
+
+use special Lapack routine \texttt{dposv} to solve $A x = b$ (using Cholesky)
+
+\item $\l$ is called \textbf{damping}, related to trust region
+methods, makes the parabola more steep around current $x$
+
+ for $\l\to\infty$:~ $\step$ becomes colinear with $-\na f(x)$ but $|\step|=0$
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Demo}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Computational issues}{
+
+%% \item Let
+
+%% $C_{f}$ be computational cost of evaluating $f(x)$ only
+
+%% $C_\text{eval}$ be computational cost of evaluating $f(x), \na f(x), \he f(x)$
+
+%% $C_\D$ be computational cost of solving $(\he f(x) + \l \Id)~ \D = - \na f(x)$
+
+%% ~
+
+%% \item If $C_\text{eval} \gg C_f$ ~$\to$~ proper line search instead of
+%% stepsize adaptation
+
+%% If $C_{\D} \gg C_f$ ~$\to$~ proper line search instead of
+%% stepsize adaptation
+
+%% \item However, in many applications (in robotics at least)
+%% $C_\text{eval} \approx C_f \gg C_\D$
+
+%% ~
+
+%% \item Often, $\he f(x)$ is banded (non-zero around diagonal only)
+
+%% $\to$ $A x = b$ becomes super fast using \texttt{dpbsv} ~ (Dynamic
+%% Programming)
+
+%% ~
+
+%% \tiny
+
+%% (If $\he f(x)$ is a ``tree'': Dynamic Programming on the ``Junction
+%% Tree'')
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item In the remainder: Extensions of the Newton approach:
+\begin{items}
+\item Gauss-Newton
+
+\item Quasi-Newton
+
+\item BFGS, (L)BFGS
+
+\item Conjugate Gradient
+\end{items}
+
+~
+
+\item And a crazy method: Rprop
+
+~
+
+\item Postponed: trust region methods properly
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Gauss-Newton method}
+\slide{Gauss-Newton method}{
+
+\item Consider a \textbf{sum-of-squares} problem:
+\begin{align*}
+\min_x f(x) \qquad\text{where}~ f(x) = \phi(x)^\T \phi(x) = \sum_i \phi_i(x)^2
+\end{align*}
+and we can evaluate $\phi(x)$, $\na \phi(x)$ for any $x\in\RRR^n$
+
+~\small
+
+\item $\phi(x)\in\RRR^d$ is a vector; each entry contributes a squared
+cost term to $f(x)$
+
+\item $\na \phi(x)$ is the \textbf{Jacobian} ~ ($d\times n$-matrix)
+$$\na \phi(x) = {\small\mat{cccc}{
+\frac{\del}{\del_{x_1}} \phi_1(x) &
+\frac{\del}{\del_{x_2}} \phi_1(x) &
+\cdots &
+\frac{\del}{\del_{x_n}} \phi_1(x) \\
+\frac{\del}{\del_{x_1}} \phi_2(x) &
+& & \vdots \\
+\vdots & & & \vdots \\
+\frac{\del}{\del_{x_1}} \phi_d(x) &
+\cdots &
+\cdots &
+\frac{\del}{\del_{x_n}} \phi_d(x)}} ~\in\RRR^{d\times n}$$
+
+with 1st-order Taylor expansion~ $\phi(x+\d) = \phi(x) + \na \phi(x) \d$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Gauss-Newton method}{
+
+\item The gradient and Hessian of $f(x)$ become
+\begin{align*}
+f(x)
+ &= \phi(x)^\T \phi(x) \\
+\na f(x)
+ &= 2 \na\phi(x)^\T \phi(x) \\
+\he f(x)
+ &= 2 \na\phi(x)^\T \na\phi(x) + 2 \phi(x)^\T \he \phi(x)
+\end{align*}
+%{\hfill\tiny $\he \phi(x)$ is a ${}^{d}{}_{nn}$-tensor}
+
+~
+
+\item \emph{The Gauss-Newton method is the Newton method for         
+$f(x) = \phi(x)^\T \phi(x)$ with approximating $\he \phi(x)\approx 0$}
+
+~
+
+In the Newton algorithm, replace line \ref{alg0} by
+{\tiny
+\cen{\ref{alg0}:~ compute $\step$ to solve $(2\na\phi(x)^\T \na\phi(x)
++ \l \Id)~ \step = - 2\na\phi(x)^\T \phi(x)$}
+}
+
+~
+
+\item The approximate Hessian $2\na\phi(x)^\T \na\phi(x)$ is \textbf{always semi-pos-def!}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Quasi-Newton methods}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Quasi-Newton methods}
+\slide{Quasi-Newton methods}{
+
+~
+
+\item Assume we \emph{cannot} evaluate $\he
+f(x)$.
+
+\cen{Can we still use 2nd order methods?}
+
+~
+
+\item Yes: We can approximate $\he f(x)$ from the data $\{(x_i, \na
+f(x_i))\}_{i=1}^k$ of previous iterations
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Basic example}{
+
+\item We've seen already two data points $(x_1,\na f(x_1))$ and
+$(x_2,\na f(x_2))$
+
+How can we estimate $\he f(x)$?
+
+~
+
+\item In 1D:
+\begin{align*}
+\he f(x)
+ &\approx \frac{\na f(x_2) - \na f(x_1)}{x_2-x_1}
+% &= \frac{y}{\d} \comma y:=\na f(x_2) - \na f(x_1) \comma \d=x_2-x_1
+\end{align*}
+
+~
+
+\item In $\RRR^n$: ~ let $y=\na f(x_2) - \na f(x_1)$,~ $\d=x_2-x_1$
+\begin{align*}
+\he f(x)~ \d &\overset{!}= y &&&  \d &\overset{!}= \he f(x)^{-1} y \\
+\he f(x) &= \frac{y~ y^\T}{y^\T \d} &&&  \he f(x)^{-1} &= {\color{blue}\frac{\d \d^\T}{\d^\T y}}
+\end{align*}
+Convince yourself that the last line solves the desired relations
+
+\tiny
+[Left: how to update $\he f$(x).~ Right: how to update directly $\he f(x)^\1$.]
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Broyden-Fletcher-Goldfarb-Shanno (BFGS)}
+\slide{BFGS}{
+
+\item Broyden-Fletcher-Goldfarb-Shanno (BFGS) method:
+
+\begin{algo}
+\Require initial $x\in\RRR^n$, functions $f(x), \na f(x)$, tolerance $\t$
+\Ensure $x$
+\State initialize $H^\1=\Id_n$
+\Repeat
+\State compute $\step = - H^\1 \na f(x)$
+\State perform a line search $\min_\a f(x + \a \step)$
+\State $\d \gets \a \step$
+\State $y \gets \na f(x+\d) - \na f(x)$
+\State $x \gets x + \d$
+\State update $H^\1 \gets {\color{red}\(\Id-\frac{y \d^\T}{\d^\T y}\)^\T H^\1
+\(\Id-\frac{y \d^\T}{\d^\T y}\)} + {\color{blue}\frac{\d \d^\T}{\d^\T y}}$
+\Until $\norm{\d}_\infty < \t$
+\end{algo}
+
+~\small
+
+\item Notes:
+
+-- The blue term is the $H^\1$-update as on the previous slide
+
+-- The red term ``deletes'' previous $H^\1$-components
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Quasi-Newton methods}{
+
+\item BFGS is the most popular of all Quasi-Newton methods
+
+Others exist, which differ in the exact $H^\1$-update
+
+~
+
+\item \textbf{L-BFGS} (limited memory BFGS) is a version which does
+not require to explicitly store $H^\1$ but instead stores the previous data
+$\{(x_i, \na f(x_i))\}_{i=1}^k$ and manages to compute $\step = -
+H^\1 \na f(x)$ directly from this data
+
+~
+
+\item Some thought:
+
+In principle, there are alternative ways to estimate $H^\1$
+from the data $\{(x_i, f(x_i), \na f(x_i))\}_{i=1}^k$, e.g.\ using
+Gaussian Process regression with derivative observations
+\begin{items}
+\item Not only the derivatives but also the value $f(x_i)$ should give
+   information on $H(x)$ for non-quadratic functions
+
+\item Should one weight `local' data stronger than `far away'?\\
+ (GP covariance function)
+\end{items}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{(Nonlinear) Conjugate Gradient}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Conjugate gradient}
+\slide{Conjugate Gradient}{
+
+\item The ``Conjugate Gradient Method'' is a method for solving
+(large, or sparse) linear eqn.\ systems $Ax+b=0$, without inverting or
+decomposing $A$. The steps will be ``$A$-orthogonal'' (=conjugate).
+
+We mention its extension for optimizing nonlinear functions $f(x)$
+
+~
+
+\item A key insight:
+
+-- at $x_k$ we computed $g'=\na f(x_k)$
+
+-- assume we made a \emph{exact} line-search step to $x_{k\po}$
+
+-- at $x_{k\po}$ we computed $g=\na f(x_{k\po})$
+
+~
+
+\cen{What conclusions can we draw about the ``local quadratic shape'' of $f$?}
+
+%If the function \emph{was} $f(x) = x^\T A x + b^\T x$
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Conjugate Gradient}{
+
+\begin{algo}
+\Require initial $x\in\RRR^n$, functions $f(x), \na f(x)$, tolerance $\t$
+\Ensure $x$
+\State initialize descent direction $d = g = -\na f(x)$
+\Repeat
+\State $\a \gets \argmin_\a f(x+\a d)$ \Comment{line search}
+\State $x \gets x + \a d$
+\State $g' \gets g$,~ $g = -\na f(x)$ \Comment{store and compute grad}
+\State $\b \gets \max\left\{\frac{g^\T(g - g')}{g'^\T g'},0\right\}$
+\State $d \gets g + \b d$ \Comment{conjugate descent direction}
+\Until $|\D x| <\t$
+\end{algo}
+
+{\small
+
+\item Notes:
+
+-- $\b>0$: The new descent direction always adds a bit of the old
+   direction!
+
+-- This essentially provides 2nd order information
+
+-- The equation for $\b$ is by Polak-Ribi{\`e}re: On a quadratic
+   function $f(x) = x^\T A x + b^\T x$ this leads to \textbf{conjugate} search
+   directions, $d'^\T A d = 0$.
+
+-- Line search can be replaced by 1st \textbf{and 2nd Wolfe condition}
+   with $\lscurv<\half$
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Conjugate Gradient}{
+
+\cen{\twocol{.5}{.5}{
+\show{conjugateGradient}
+}{
+\show{conjugateGradient2}
+}}
+
+~
+
+~
+
+\item For quadratic functions CG converges in $n$ iterations. But
+each iteration does \emph{line search}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Convergence Rates Notes}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Convergence Rates Notes}{
+
+~
+
+\item Linear, quadratic convergence (for $q=1,2$):
+$$\lim_k \frac{|x_{k\po}-x^*|}{|x_k-x^*|^p} = r$$
+with rate $r$. E.g.\ $x_k = r^k$ (linear) or $x_{k\po}=r x_k^2$
+(quadratic)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Convergence Rates Notes}{
+
+\item Theorem 3.3 in Nocedal et al.:
+
+Plain gradient descent with exact line search applied to $f(x) = x^\T
+A x$, $A$ with eigenvalues $0 < \l_1 \le .. \le \l_n$, satisfies
+\begin{align*}
+\norm{x_{k\po}-x^*}^2_A
+ &\le \(\frac{\l_n-\l_1}{\l_n+\l_1}\)^2~ \norm{x_k-x^*}^2_A
+\end{align*}
+
+\item same on a smooth, locally pos-def function $f(x)$: For
+sufficiently large $k$
+$$ f(x_{k\po}) - f(x^*) \le r^2 [f(x_k)-f(x^*)] $$
+
+\item Newton steps (with $\a=1$) on smooth locally pos-def
+function $f(x)$:
+\begin{items}
+\item $x_k$ converges \emph{quadratically} to $x^*$
+\item $|\na f(x_k)|$ converges \emph{quadratically} to zero
+\end{items}
+
+\item Quasi-Newton methods also converge superlinearly if the Hessian
+approximation is sufficiently precise (Thm. 3.7)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Conjugate Gradient}{
+
+%% \item Useful tutorial on CG and line search:
+
+%% ~
+
+%% J.\ R.\ Shewchuk: \emph{An Introduction to
+%% the Conjugate Gradient Method
+%% Without the Agonizing Pain}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Rprop}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Rprop}
+\slide{Rprop}{
+
+``Resilient Back Propagation'' (outdated name from NN times...)
+
+\begin{algo}[7]
+\Require initial $x\in\RRR^n$, function $f(x), \na f(x)$, initial stepsize $\a$, tolerance $\t$
+\Ensure $x$
+\State initialize $x=x_0$, all $\a_i=\a$, all $g_i=0$
+\Repeat
+\State $g \gets \na f(x)$
+\State $x' \gets x$
+\For{$i=1:n$}
+\If{$g_i g_i' > 0$} \Comment{same direction as last time}
+\State $\a_i \gets 1.2 \a_i$
+\State $x_i \gets x_i - \a_i~ \sign(g_i)$
+\State $g_i' \gets g_i$
+\ElsIf{$g_i g_i' <0$} \Comment{change of direction}
+\State $\a_i \gets 0.5 \a_i$
+\State $x_i \gets x_i - \a_i~ \sign(g_i)$
+\State $g_i' \gets 0$ \Comment{force last case next time}
+\Else
+\State $x_i \gets x_i - \a_i~ \sign(g_i)$
+\State $g_i' \gets g_i$
+\EndIf
+\State optionally: cap $\a_i \in [\a_{\text{min}}~ x_i, \a_{\text{max}}~ x_i]$
+\EndFor
+\Until $|x'-x| <\t$ for 10 iterations in sequence
+\end{algo}
+
+~
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Rprop}{
+
+\item Rprop is a bit crazy:
+
+-- stepsize adaptation in each dimension \emph{separately}
+
+-- it not only ignores $|\na f|$ but also its exact direction
+
+~~ step directions may differ up to $<90^\circ$ from $\na f$
+
+-- Often works very robustly
+
+-- Guarantees? See work by Ch.\ Igel
+
+~
+
+\item If you like, have a look at:
+
+{\small
+
+Christian Igel, Marc Toussaint, W. Weishui (2005): Rprop using the
+natural gradient compared to Levenberg-Marquardt optimization. In
+Trends and Applications in Constructive Approximation. International
+Series of Numerical Mathematics, volume 151, 259-272.
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Appendix}{\label{lastpage}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Stopping Criteria}{
+
+\item Standard references (Boyd) define stopping criteria based on the
+  ``change'' in $f(x)$, e.g.\ $|\D f(x)|<\t$ or $|\na f(x)|<\t$.
+
+~
+
+\item Throughout I will define stopping criteria based on the change in
+$x$, e.g.\ $|\D x|<\t$! In my experience with certain applications
+this is more meaningful, and invariant of the scaling of $f$. But this
+is application dependent.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Evaluating optimization costs}{
+
+\item Standard references (Boyd) assume line search is cheap and 
+  measure optimization costs as the number of iterations (counting 1
+  per line search).
+
+~
+
+\item Throughout I will assume that every evaluation of $f(x)$ or
+  $(f(x),\na f(x))$ or $(f(x),\na f(x),\na^2 f(x))$ is approx.\ equally
+  expensive---as is the case in certain applications.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot

@@ -1,0 +1,91 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\exnum}{15}
+
+\exercises
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Getting familiar with the OpenCV image processing library}
+
+Install OpenCV (e.g., the current Ubuntu package @libopencv-dev@).
+
+Start from the following example code.
+
+\begin{code}
+\begin{verbatim}
+#include <iostream>
+#include <opencv2/opencv.hpp>
+
+using namespace cv;
+using namespace std;
+
+int main(int argc, char** argv){
+  VideoCapture capture;
+  capture.open(0);
+
+  if(!capture.isOpened()){
+    cerr <<"Could not initialize video capture" <<endl;
+    return -1;
+  }
+
+  Mat img,last;
+  uint t;
+  for(t=0;;t++){
+    capture >>img;
+    imshow("original image", img);
+
+    if((waitKey(2)&0xff)==27)  break;
+  }
+
+  return 0;
+}
+\end{verbatim}
+\end{code}
+which should compile using\\
+\begin{code}
+\begin{verbatim}
+g++ -g -Wall -fPIC `pkg-config --cflags-only-other opencv` `pkg-config --cflags-only-I opencv` -c main.cpp
+g++ -o x.exe main.o -lrt `pkg-config --libs opencv`
+\end{verbatim}
+\end{code}
+
+This code demonstrates a simple online loop, accessing the webcam and
+displaying the image. Test the following
+OpenCV image processing routines:
+
+\begin{enumerate}
+\item Blurring using \verb+GaussianBlur+. Simply add the
+  following lines in the loop:\\
+\begin{code}
+\begin{verbatim}
+    Mat blur;
+    GaussianBlur(img, blur, Size(5,5), 1., 1.);
+    imshow("blurred image", blur);
+\end{verbatim}
+\end{code}
+
+\item Difference image: Use \verb+img.copyTo(last);+ to remember the
+  last image, and \verb+diff = img-last;+ to compute the difference
+  image. Display the output \verb+diff+.
+
+\item Canny edge detection using
+  \verb+Canny(imgGray, canny,  50, 200.f, 3);+ For this you first
+  need to convert the image to a gray image using
+  \verb+cvtColor(img, imgGray, CV_BGR2GRAY);+. Test different
+  threshold values and display the output \verb+canny+.
+
+\item Hough transform using
+  \verb+HoughLinesP(canny, lines, 1, CV_PI/180, 50, 30, 10 );+. See
+  the example in the documentation for how to use it and display the
+  output (draw the lines on the original \verb+img+).
+
+\item SURF keypoint detection using the \verb+SurfFeatureDetector+
+  class and its \verb+detect+ method. Note: it requires a gray image
+  as imput! Display the keypoints using \verb+drawKeypoints+.
+\end{enumerate}
+
+\exerfoot

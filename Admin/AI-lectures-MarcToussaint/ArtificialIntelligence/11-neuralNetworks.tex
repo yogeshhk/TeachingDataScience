@@ -1,0 +1,990 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Artificial Intelligence}
+\renewcommand{\coursepicture}{course_ai}
+\renewcommand{\coursedate}{Winter 2019}
+\renewcommand{\topic}{AI \& Machine Learning \& Neural Nets}
+\renewcommand{\keywords}{}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\story{
+
+Neural networks became a central topic for Machine Learning and
+AI. But in principle, they're just parameterized functions that can be
+fit to data. They lack many appealing aspects that were the focus of
+ML research in the '90-'10. So why are they so successful now? This
+lecture introduces the basics and tries to discuss the success of NNs.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{What is AI?}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{What is AI?}{
+
+\item AI is a research field
+
+~%\pause
+
+\item AI research is about systems that take decisions
+\begin{items}
+\item AI formalizes decision processes: interactive (decisions change world state), or passive
+\item AI distinguishes between agent(s) and the external world: decision variables
+\end{items}
+
+~%\pause
+
+\item ... systems that take optimal/desirable decisions
+\begin{items}
+\item AI formalizes decision objectives
+\item AI aims for systems to exhibit functionally \emph{desirable behavior}
+\end{items}
+
+~%\pause
+
+\item ... systems that take optimal decisions on the basis of all available information
+\begin{items}
+\item AI is about inference
+\item AI is about learning
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{What is Machine Learning?}{
+
+\item In large parts, ML is: \quad (let's call this ML$^0$)
+
+\cen{\emph{Fitting a function $f: x\mapsto y$ to given data $D=\{ (x_i,y_i) \}_{i=1}^n$}}
+
+~\pause
+
+\item And what does that have to do with AI?
+
+\item Taken literally, not much:
+\begin{items}
+\item The decision made by a ML$^0$ method is only a single decision: Decide on the function $f\in\HH$ in the hypothesis space $\HH$
+
+\item This ``single-decision process'' is not interactive; ML$^0$ does not formalize/model/consider how the choice of $f$ changes the world
+
+\item The objective $\LL(f, D)$ in ML$^0$ depends only on the given static data $D$ and the decision $f$, not how $f$ might change the world
+
+\item ``Learning'' in ML$^0$ is not an interactive process, but some method to pick $f$ on the basis of the static $D$. The typically iterative optimization process is not the decision process that ML$^0$ focusses on.
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\textbf{But,} function approximation can be used to help solving AI (interactive decision process) problems:
+
+\item Building a trained/fixed $f$ into an interacting system based on human expert knowledge
+
+\smallskip
+
+{\tiny E.g., an engineer trains a NN $f$ to recognize street signs based on
+a large fixed data set $D$. S/he builds $f$ into a car to drive
+autonomously. That car certainly solves an AI problem; $f$
+continuously makes decisions that change the state of the world. But
+$f$ was never optimized literally for the task of interacting with the
+world; it was only optimized to minimze a loss on the static data
+$D$. It is not a priori clear that minimizing the loss of $f$ on $D$
+is related to maximizing rewards in car driving. That fact is the
+expertise of the engineer; it is not some AI algorithm that discovered
+that fact. At no place there was an AI method that ``learns to drive a
+car''. There was only an optimization method to minimize the loss of
+$f$ on $D$.
+
+}
+
+\item Using ML in interactive decision processes
+
+\smallskip
+
+{\tiny
+E.g., to approximate a $Q$-function, state evaluation function, reward
+function, the system dynamics, etc. Then, other AI methods can use
+these approximate models to actually take decisions in the interactive
+context.
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{[Machine Learning beyond ML$^0$]}{
+
+\item Many areas of ML go beyond plain function approximation:
+
+~
+
+\item Fitting more structured models to data, which includes
+\begin{items}
+\item Time series, recurrent processes
+\item Graphical Models
+\item Unsupervised learning (semi-supervised learning)
+\end{items}
+{\small
+...but in all these cases, the scenario is still not interactive, the data $D$ is static, the decision is about picking a single model $f$ from a hypothesis space, and the objective is a loss based on $f$ and $D$ only.
+
+}
+
+\item Active Learning, where the ``ML agent'' makes decisions about what data label to query next
+
+\item Bandits
+
+\item Reinforcement Learning ~ {\tiny(roughly, marriage of ML and decision theory)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Machine Learning primer}{
+
+\item Basic ML$^0$ (function approximation) is all about specifying the
+\begin{items}
+\item \textbf{Model:} How is the function $f:x\mapsto y$ represented/parameterized?
+\item \textbf{Objective:} Given a data set $D$, what loss should $f$ minimize?
+\item \textbf{Solver:} What algorithm do we use to minimize the loss?
+\end{items}
+
+~\pause
+
+\item Given data $D=\{ (x_i,y_i) \}_{i=1}^n$, the standard objective is to minimize the ``error'' on the data
+\begin{align*}
+f^* \argmin _{f\in\HH} \sum_{i=1}^n \ell(f(x_i), y_i) ~,
+\end{align*}
+where $\ell(\hat y, y) > 0$ penalizes a discrepancy between a model output $\hat y$ and the data $y$.
+
+\begin{items}
+\item Squared error $\ell(\hat y, y) = (\hat y - y)^2$
+\item Classification error $\ell(\hat y, y) = [ \hat y \not= y ]$
+\item neg-log likelihood $\ell(\hat y, y) = -\log p(y \| \hat y)$
+\item etc
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: Polynomial Ridge Regression}{
+
+\item \textbf{Model:} Given input $x\in\RRR^d$ and output $y\in\RRR$, we represent functions $f_\b$ as polynomials over $x$,
+$$f(x) = \sum_{j=1}^k \phi_j(x)~ \b_j = \phi(x)^\T \b$$
+where $\phi(x)$ is the \textbf{feature} vector of all monomials, e.g.\ quadratic:
+$\phi(x) = (1,x_1,..,x_d,x_1^2,x_1x_2,x_1x_3,..,x_d^2)$
+
+~\pause
+
+\item \textbf{Objective:} Given data $D=\{(x_i,y_i)\}_{i=1}^n$ we define the loss as
+$$L^{\text{ridge}}(\b) = \sum_{i=1}^n (y_i - \phi(x_i)^\T \b)^2 + \l \sum_{j=2}^k \b_j^2$$
+
+~\pause
+
+\item \textbf{Solver:} We can solve this analytically:
+$$\hat \b^\text{ridge} = \argmin_\b L^\text{ridge}(\b) = (X^\T X + \l I)^\1 X^\T y$$
+
+{\tiny where $y=(y_1,..,y_n)$ is the vector of outputs, and $X_{i\cdot} = \phi(x_i)$ contains the feature vectors in rows.
+
+}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Neural Networks}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{What is a Neural Network?}{
+
+\item A NN is a parameterized function $f_\b: \RRR^d \mapsto \RRR^M$
+\begin{items}
+\item $\b$ are called weights
+\item Given a data set $D=\{(x_i,y_i)\}_{i=1}^n$, we minimize some loss
+$$\beta^* = \argmin_\b \sum_{i=1}^n \ell(f_\b(x_i), y_i) + \text{~regularization}$$
+\end{items}
+
+\item In that sense, they just replace our previous model assumption $f(x) = \phi(x)^\T \b$, the reset is ``in principle'' the same
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Neural Network function class}
+\slide{Neural Network models}{
+
+\item A (fwd-forward) NN $\RRR^{h_0} \mapsto \RRR^{h_L}$ with $L$ layers, each $h_l$-dimensional, defines the function
+\begin{tabular}{l@{~}l@{~}l}
+1-layer: & $f_\b(x) = W_1 x + b_1$, & $W_1 \in \RRR^{h_1\times h_0}, b_1\in\RRR^{h_1}$ \\
+2-layer: & $f_\b(x) = W_2 \s(W_1 x+b_1) + b_2$, & $W_l \in \RRR^{h_l\times h_{l\1}}, b_l\in\RRR^{h_l}$ \\
+$L$-layer: & $f_\b(x) = W_L \s(\cdots \s(W_1 x+b_1) \cdots) + b_L$\hspace*{-5mm}
+\end{tabular}
+
+~
+
+\item The parameter $\b=(W_{1:L}, b_{1:L})$ is the collection of all\\
+\textbf{weights} $W_l \in \RRR^{h_l\times h_{l\1}}$ and \textbf{biases} $b_l\in\RRR^{h_l}$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\only<1>{\show{NeuralNet-new-regression}}
+\only<2>{\show{NeuralNet-new-classification}}
+\only<3>{\show{NeuralNet-new-NN}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Neural Network models}{
+
+\item To describe the mapping as an iteration, we introduce notation for the intermediate values:
+\begin{items}
+\item the \textbf{input} to layer $l$ is $z_l = W_l x_{l\1} + b_l \in \RRR^{h_l}$
+\item the \textbf{activation} of layer $l$ is $x_l = \s(z_l) \in \RRR^{h_l}$
+\end{items}
+
+\item Then the $L$-layer NN model can be computed using the \textbf{forward propagation:} 
+$$\forall_{l=1,..,L\1}:~ z_l = W_l x_{l\1} + b_l \comma x_l=\s(z_l)$$
+where $x_0\equiv x$ is the input, and $f_\b(x) \equiv z_L$ the output
+
+~
+
+\begin{items}
+\item $x_{l\1}\mapsto z_l$ is a linear transformation, highly parameterized with $W_l,b_l$
+\item $z_l\mapsto x_l$ is a non-linear transformation, element-wise and without parameters
+\end{items}
+
+~
+
+\item $L$-layer means $L-1$ hidden layers plus 1 output layer. (The input $x_0$ is not counted.)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Neural Network models}{
+
+\item The \textbf{activation function} $\s(z)$ is applied \emph{element-wise},
+
+{\small
+\begin{tabular}{ll}
+rectified linear unit (ReLU) & $\s(z) = [z]_+ = \max\{0,z\} = z [z\ge 0]$\\
+leaky ReLU & $\s(z) = \max\{0.01z, z\} =  \begin{cases} 0.01 z & z<0 \\ z & z\ge 0\end{cases}$\\
+sigmoid, logistic & $\s(z) = 1/(1+e^{-z})$ \\
+tanh & $\s(z) = \tanh(z)$
+\end{tabular}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Neural Network models}{
+
+\item We can think of the second-to-last layer $x_{L\1}$ as a feature vector
+$$\phi_\b(x) = x_{L\1}$$
+
+\item This aligns NNs models with what we discussed so far. But the crucial difference is:
+
+\cen{\textbf{In NNs, the features $\phi_\b(x)$ are also parameterized and trained!}}
+
+While in previous lectures, we had to fix $\phi(x)$ by hand, NNs allow us to learn features and \textbf{intermediate representations}
+
+~\tiny
+
+\item Note: It is a common approach to train NNs as usual, but after training fix the trained features $\phi(x)$ (``remove the head (=output layer) and fix the remaining body of the NN'') and use these trained features for similar problems or other kinds of ML on top.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{NNs as unversal function approximators}{
+
+\item A 1-layer NN is linear in the input
+
+\item Already a 2-layer NN with $h_1\to \infty$ hidden neurons is a universal function approximator
+\begin{items}
+\item Corresponds to $k\to\infty$ features $\phi(x)\in\RRR^k$ that are well tuned
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Objectives to train NNs}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{NN loss functions}
+\slide{Loss functions as usual}{
+
+\item Squared error regression, for $h_L$-dimensional output:
+\begin{items}
+\item for a single data point $(x,y^*)$, $\ell(f(x),y^*) = (f(x) - y^*)^2$
+
+\item the loss gradient is $\frac{\del\ell}{\del f} = 2 (f-y^*)^\T$
+\end{items}
+
+~
+
+\item For multi-class classification we have $h_L=M$ outputs, and $f_\beta(x)\in\RRR^M$ represents the \emph{discriminative function},
+which means that the predicted class is the $\argmax_{y\in\{1,..,M\}}
+[f_\t(x)]_y$.
+
+\item Neg-log-likelihood or cross entropy loss:
+\begin{items}
+\item for a single data point $(x,y^*)$, $\ell(f(x),y^*) = -\log p(y^* | x)$
+
+\item the loss gradient at output $y$ is $\frac{\del\ell}{\del f_y} = p(y|x) - [y=y^*]$
+\end{items}
+
+\item One-vs-all hinge loss:
+\begin{items}
+\item for a single data point $(x,y^*)$, $\ell(f(x),y^*) = \sum_{y\not=y^*} [1 - (f_{y^*}-f_y)]_+$,
+
+\item the loss gradient at non-target outputs $y\not=y^*$ is $\frac{\del\ell}{\del f_y} = [f_{y^*} < f_y+1 ]$
+
+\item the loss gradient at the target output $y^*$ is $\frac{\del\ell}{\del f_{y^*}} = -\sum_{y\not=y^*} [f_{y^*} < f_y+1]$
+
+\item this is also called \textbf{Perceptron Algorithm}
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{NN regularization}
+\key{NN Dropout}
+\slide{New types of regularization}{
+
+\item Conventionally: add a $L_2$ or $L_1$ regularization.
+\begin{items}
+\item adds a penalty $\l W_{l,ij}^2$ (Ridge) or $\l|W_{l,ij}|$ (Lasso) for every weight
+\item In practise, compute the unregularized gradient as usual, then add $\l W_{l,ij}$ (for $L_2$),
+or $\l\sign{W_{l,ij}}$ (for $L_1$) to the gradient
+\item Historically, this is called \textbf{weight decay}, as the additional gradient (executed after the unregularized weight update) just decays weights
+\end{items}
+
+\item Core modern approach: Dropout
+\begin{items}
+\item (see next slide)
+\end{items}
+
+\item Others:
+\begin{items}
+\item Data Augmentation
+\item Training ensembles, bagging (averaging bootstrapped models)
+\item Additional embedding objectives (e.g.\ semi-supervised embedding)
+\item Early stopping
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Dropout}{
+
+\item What is dropout?
+
+\begin{items}
+\item During both, forward passing and gradient computation, pretend that randomly selected ``neurons'' would not exist
+\item For each entry $i$ in each layer $x_{l,i}$, decide with probability $p$ ($\approx .5$) whether it drops out: set the respective activation $x_{l,i}$, and gradient $\l_{l,i}$, equal to zero
+\item At prediction time, ``average'' dropouts, i.e., multiply each activation $x_{l,i}$ with $p$
+\end{items}
+
+\item Theoretial foundation?
+\begin{items}
+\item Each dropout pattern defines another network. We have a random ensemble of networks, sharing parameters, each of which is trained on the same task. Eventually, we want to average of this ensemble.
+\item \emph{Srivastava et al: Dropout: a simple way to prevent neural networks from overfitting, JMLR 2014.}
+\item ``a way  of  approximately  combining  exponentially  many  different  neural  network architectures efficiently''
+\item ``$p$ can  simply  be  set  at  0.5,  which  seems  to  be  close  to  optimal  for  a  wide  range  ofnetworks and tasks''
+%\item on test/prediction time, take true averages
+\end{items}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \key{data augmentation}
+%% \slide{Data Augmentation}{
+
+%% \item A very interesting form of regularization is to modify the data!
+
+%% \item Generate more data by applying invariances to the given data. The model then learns to generalize as described by these invariances.
+
+%% \item This is a form of regularization that directly incorporates expert knowledge
+
+%% ~
+
+%% \show[.6]{dataAugmentation}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Optimization}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{NN gradient}
+\key{NN back propagation}
+\slide{Computing the gradient}{
+
+\item Recall \textbf{forward propagation} in an $L$-layer NN:
+$$\forall_{l=1,..,L\1}:~ z_l = W_l x_{l\1} + b_l \comma x_l=\s(z_l)$$
+
+\item For a single data point $(x,y^*)$, assume we have a loss $\ell(f(x),y^*)$
+
+We define $\d_L \defeq \frac{d \ell}{d f} = \frac{d \ell}{d z_L} \in\RRR^{1\times M}$ as the gradient (as row vector) w.r.t.\ output values $z_L$.
+
+\item \textbf{Backpropagation:} We can recursivly compute the gradient $\frac{d \ell}{d z_l} \in\RRR^{1\times h_l}$ w.r.t.\ all other layers $z_l$ as:
+\begin{align*}
+\forall_{l=L\1,..,1}:~ \d_l
+&\defeq \frac{d \ell}{d z_l} 
+ = \frac{d \ell}{d z_{l\po}} \frac{\del z_{l\po}}{\del x_l} \frac{\del x_l}{\del z_l}
+ = [\d_{l\po}~ W_{l\po}] \circ [\s'(z_l)]^\T
+\end{align*}
+where $\circ$ is an \emph{element-wise product}. The gradient w.r.t.\ parameters:
+\begin{align*}
+\frac{d \ell}{d W_{l,ij}}
+ &= \frac{d \ell}{d z_{l,i}}~ \frac{\del z_{l,i}}{\del W_{l,ij}}
+  = \d_{l,i}~ x_{l\1,j}\quad \text{or}\quad
+\frac{d \ell}{d W_l}
+  = \d_l^\T x_{l\1}^\T
+\comma   \frac{d \ell}{d b_l} = \d_l^\T
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item This forward and backward computations are done for each data point $(x_i,y_i)$.
+
+\item Since the total loss is the sum $L(\b) = \sum_i \ell(f_\b(x_i), y_i)$, the total gradient is the sum of gradients per data point.
+
+\item Efficient implementations send multiple data points (tensors) simultaneously through the network (fwd and bwd), which speeds up computations.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Optimization}{
+
+\item For small data size:
+
+We can compute the loss and its gradient $\sum_{i=1}^n \nabla_\b \ell(f_\b(x_i), y_i)$.
+\begin{items}
+\item Use classical gradient-based optimization methods
+\item default: L-BFGS, oldish but efficient: Rprop
+\item Called \textbf{batch learning} ~ (in contrast to online learning)
+\end{items}
+
+~
+
+\item For large data size: \quad The $\sum_{i=1}^n$ is highly inefficient!
+\begin{items}
+\item Adapt weights based on much smaller data subsets, \textbf{mini batches}
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Stochastic Gradient Descent}
+\slide{Stochastic Gradient Descent}{
+
+\item Compute the loss and gradient for a mini batch $\hat D \subset D$ of fixed size $k$.
+\begin{align*}
+L(\b,\hat D)
+&= \sum_{i\in\hat D} \ell(f_\b(x_i), y_i) \\
+\nabla_\b L(\b,\hat D)
+&= \sum_{i\in\hat D} \nabla_\b \ell(f_\b(x_i), y_i)
+\end{align*}
+
+~
+
+\item Naive Stochastic Gradient Descent, iterate
+\begin{align*}
+\b &\gets \b - \eta \nabla_\b L(\b,\hat D)
+\end{align*}
+\begin{items}
+\item Choice of learning rate $\eta$ is crucial for convergence!
+\item Exponential cooling: $\eta = \eta_0^t$
+\end{items}
+
+{\tiny Yurii Nesterov (1983): \emph{A method for solving the convex programming problm with convergence rate $O(1/k^2)$}
+
+}
+
+~
+
+\item Modern SGD versions (Adam and Nadam) make this more efficient. See appendix.
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Behavior of Gradient Propagation}{
+
+\item Propagating $\d_l$ back through many layers can lead to problems
+
+\item For the classical sigmoid $\s(z)$, $\s(z)'$ is always $<1$ ~ $\To$ \textbf{vanishing gradient}
+
+$\to$ Modern activations functions (ReLU) reduce this problem
+
+~
+
+\item The initialization of weights is very important!
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{NN initialization}
+\slide{Initialization}{
+
+\item Choose random weights that don't grow or vanish the gradient:
+\begin{items}
+\item E.g., initialize weight vectors in $W_{l,i\cdot}$ with standard deviation $1$, i.e., each entry with sdv $\frac{1}{\sqrt{h_{l\1}}}$
+\item Roughly: If each element of $z_l$ has standard deviation $\epsilon$, the same should be true for $z_{l\po}$.
+\end{items}
+
+~
+
+\item Choose each weight vector $W_{l,i\cdot}$ to point in a uniform random direction $\to$ same as above
+
+~
+
+\item Choose biases $b_{l,i}$ randomly so that the ReLU hinges cover the input well (think of distributing hinge features for continuous piece-wise linear regression)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+Discussion: Why are NNs so successful now?
+
+}
+
+%% \slide{NN model selection}{
+
+%% \item NN have many \textbf{hyper parameters}: The choice of $\l$ as
+%% well as $L$, and $h_l$
+
+%% ~
+
+%% \cen{$\to$~ cross validation}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Historical Discussion**}
+\slide{Historical discussion}{
+
+(This is completely subjective.)
+\anchor{130,-20}{\href{http://link.springer.com/journal/10994/82/3/page/1}{\showh[.15]{ML-25th.jpg}}}
+
+\item Early (from 40ies):
+\begin{items}
+\item McCulloch Pitts, Hebbian learning, Rosenblatt, Werbos (backpropagation)
+\end{items}
+
+\item 80ies:
+\begin{items}
+\item Start of connectionism, NIPS
+\item ML wants to distinguish itself from pure statistics (``machines'', ``agents'')
+\end{items}
+
+\item '90-'10:
+\begin{items}
+\item More theory, better grounded, Statistical Learning theory
+\item Good ML is pure statistics (again) (Frequentists, SVM)
+\item ...or pure Bayesian (Graphical Models, Bayesian X)
+\item sample-efficiency, great generalization, guarantees, theory
+\item Great successes, in applications across disciplines; supervised, unsupervised, structured
+\end{items}
+
+\item '10-:
+\begin{items}
+\item Big Data. NNs. Size matters. GPUs.
+\item Disproportionate focus on images
+\item Software engineering becomes central
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item NNs did not become ``better'' than they were 20y ago. What changed is the metrics by which they're are evaluated:
+
+\pause
+
+\item Old:
+\begin{items}
+\item Sample efficiency \& generalization; get the most from little data
+\item Guarantees (both, w.r.t.\ generalization and optimization)
+\item \textbf{generalize} much better than nearest neighbor
+\end{items}
+
+\item New:
+\begin{items}
+\item Ability to cope with billions of samples
+\item[$\to$] no batch processing, but \textbf{stochastic} optimization (Adam) without monotone convergence
+\item[$\to$] nearest neighbor methods infeasible, \textbf{compress} data into high-capacity NNs
+\end{items}
+
+%% Old:
+%% \begin{items}
+%% \item Sample efficiency \& generalization; get the most from little data
+%% \item Guarantees (both, w.r.t.\ generalization and optimization)
+%% \item Being only as good as a nearest neighbor methods is embarrasing
+%% \end{items}
+
+%% New:
+%% \begin{items}
+%% \item Ability to cope with billions of samples $\to$ no batch processing, but stochastic optimization
+%% \item Happy to end up in some local optimum. (Theory on ``every local optimum of a large deep net is good''.)
+%% \item Stochastic optimization methods (Adam) without monotone convergence
+%% \item Nobody compares to nearest neighbor methods -- nearest neighbor on 1B data points is too expensive anyway. I guess that it'd perform very well (for a descent kernel) and a NN could be glad to perform equally well
+%% \end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{NNs vs.\ nearest neighbor}{
+
+\small
+
+\item Imagine an autonomous car. Instead of carrying a neural net, it carries 1 Petabyte of data (500 hard drives, several billion pictures). In every split second it records an image from a camera and wants to query the database to returen the 100 most similar pictures. Perhaps with a non-trivial similarity metric. That's not reasonable!
+
+\item In that sense, NNs are much better than nearest neighbor. They store/compress/memorize huge amounts of data. Sample efficiency and the precise generalization behavior beome less relevant.
+
+\item That's how the metrics changed from '90-'10 to nowadays
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Images \& Time Series}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Images \& Time Series}{
+
+\item My guess: 90\% of the recent success of NNs is in the areas of images or time series
+
+\item For images, convolutional NNs (CNNs) impose a very sensible prior; the representations that emerge in CNNs are in fact similar to representations in the visual area of our brain.
+
+\item For time series, long-short term memory (LSTM) networks represent long-term dependencies in a way that is well trainable -- something that is hard to do with other model structures.
+
+\item Both these structural priors, combined with huge data and capacity, make these methods very strong.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Convolutional NN}
+\slide{Convolutional NNs}{
+
+\item Standard fully connected layer: full matrix $W_i$ has $h_i h_{i\po}$ parameters
+
+\item Convolutional: Each neuron (entry of $z_{i\po}$) receives input from a square receptive field, with $k\times k$ parameters. All neurons \emph{share} these parameters $\to$ \emph{translation invariance}. The whole layer only has $k^2$ parameters.
+
+\item There are often multiple neurons with the same receitive field (channels), to represent different ``filters''. Stride leads to downsampling. Padding at borders.
+
+~
+
+\item Pooling applies a predefined operation on the receptive field (no parameters): max or average. Typically for downsampling.
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+Learning to read these diagrams...
+
+~
+
+\show[1]{AlexNet}
+\hfill AlexNet
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+\show[.9]{ResNet}
+\hfill ResNet
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+\show{ResNeXt}
+\hfill ResNeXt
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Pretrained networks}{
+
+\item ImageNet5k,  AlexNet, VGG, ResNet, ResNeXt
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{LSTM**}
+\slide{LSTMs}{
+
+\show[1]{LSTM}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{LSTM}{
+
+\item $c$ is a memory signal, that is multiplied with a sigmoid signal $\G_f$. If that is saturated ($\G_f \approx 1$), the memory is preserved; and backpropagation copies gradients back
+
+\item If $\G_i$ is close to 1, a new signal $\tilde c$ is written into memory
+
+\item If $\G_o$ is close to 1, the memory contributes to the normal neural activations $a$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Gated Recurrent Units**}
+\slide{Gated Recurrent Units}{
+
+\item Cleaner and more modern: Gated Recurrent Units
+
+but perhaps just similar performance
+
+~
+
+\item Gated Feedback RNNs
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Deep RL}{
+
+\item Value Network
+\item Advantage Network
+\item Action Network
+\item Experience Replay
+\item Fixed Q-targets
+\item etc, etc
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Conclusions}{\label{lastpage}
+
+\small
+
+\item Conventional feed-forward neural networks are by no means magic. They're a parameterized function, which is fit to data.
+
+\item Convolutional NNs do make strong and good assumptions about how information processing on images should be structured. The results are great and related to some degree to human visual representations. A large part of the success of deep learning is on images.
+
+Also LSTMs make good assumptions about how memory signals help represent time series.
+
+The flexibility of ``clicking together'' network structures and general differentiable computation graphs is great.
+
+All these are innovations w.r.t.\ \emph{formulating structured models} for ML
+
+\item The major strength of NNs is in their capacity and that, using massive parallelized computation, they can be trained on tons of data. Maybe they don't even need to be better than nearest neighbor lookup, but they can be queried much faster.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Appendix}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Computation Graphs}{
+
+~
+
+\begin{items}
+\item A great collateral benefit of NN research!
+\item Perhaps a new paradigm to design large scale systems, beyond what software engineering teaches classically
+\item{} [see section 3.2 in ``Maths'' lecture]
+\end{items}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example}{
+
+\item Three real-valued quantities $x$, $g$ and $f$
+which depend on each other:
+$$f(x,g) = 3x + 2g \quad \text{and}\quad g(x)=2 x ~.$$
+
+What is $\frac{\del}{\del x} f(x,g)$ and what is $\frac{d}{dx} f(x,g)$?
+
+~\pause
+
+\item The \emph{partial} derivative only considers a single function $f(a,b,c,..)$ and asks how the output of this single function varies with one of its arguments.  (Not caring that the arguments might be functions of yet something else).
+
+\item The \emph{total} derivative considers full networks of dependencies between quantities and asks how one quantity varies with some other.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Computation Graph}
+\slide{Computation Graphs}{
+
+\item A \textbf{function network} or \textbf{computation graph} is a DAG of $n$ quantities $x_i$ where
+each quantity is a deterministic function of a set of parents
+$\pi(i)\subset\{1,..,n\}$, that is
+$$x_i = f_i( x_{\pi(i)} ) $$ where $x_{\pi(i)} = (x_j)_{j \in \pi(i)}$
+is the tuple of parent values
+
+\item (This could also be called \emph{deterministic Bayes net}.)
+
+~
+
+\item Total derivative: Given a variation $dx$ of some quantity, how would all child quantities (down the DAG) vary?
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Chain rules}
+\slide{Chain rules}{
+
+\item Forward-version:\anchor{210,-50}{\showh[.1]{chainRule-fwd}} ~ (I use in robotics)
+\begin{align*}
+\frac{df}{dx} &= \sum_{g\in\pi(f)} \frac{\del f}{\del g}~ \frac{dg}{dx}
+\end{align*}
+
+{\tiny
+
+Why ``forward''? You've computed $\frac{dg}{dx}$ already, now you move forward to $\frac{df}{dx}$.
+
+Note: If $x\in\pi(f)$ is also a direct argument to $f$, the sum includes the term $\frac{\del f}{\del x}~ \frac{dx}{dx} \equiv \frac{\del f}{\del x}$. To emphasize this, one could also write
+$\frac{df}{dx} =
+\frac{\del f}{\del x} + \sum_{g\in\pi(f)\atop g \not= x} \frac{\del f}{\del g}~ \frac{dg}{dx}$.
+
+
+}
+
+~
+
+\item Backward-version:\anchor{200,-60}{\showh[.1]{chainRule-bwd}} ~ (used in NNs!)
+\begin{align*}
+\frac{df}{dx}
+&= \sum_{g:x\in\pi(g)} \frac{d f}{d g}~ \frac{\del g}{\del x}
+\end{align*}
+
+{\tiny
+
+Why ``backward''? You've computed $\frac{df}{dg}$ already, now you move backward to $\frac{df}{dx}$.
+
+Note: If $f\in\pi(g)$, the sum includes $\frac{d f}{d f}~ \frac{\del f}{\del x} \equiv \frac{\del f}{\del x}$. We could also write
+$\frac{df}{dx}
+= \frac{\del f}{\del x} + \sum_{g:x\in\pi(g)\atop
+g\not= f} \frac{d f}{d g}~ \frac{\del g}{\del x}$.
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Stochastic Gradient Descent}{
+
+~
+
+\item SGD with momentum:
+\begin{align*}
+\D \b &\gets \alpha \D \b - \eta \nabla_\b L(\b,\hat D) \\
+\b &\gets \b + \D \b
+\end{align*}
+
+~
+
+\item Nesterov Accelerated Gradient (``Nesterov Momentum''):
+\begin{align*}
+\D \b &\gets \a \D \b - \eta  \nabla_\b L(\b+\D\b, \hat D) \\
+\b &\gets \b + \D \b
+\end{align*}
+
+{\tiny Yurii Nesterov (1983): \emph{A method for solving the convex programming problm with convergence rate $O(1/k^2)$}
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Adam}{
+
+\show[.9]{adam}
+{\hfill\tiny arXiv:1412.6980}
+
+{\tiny(all operations interpreted element-wise)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Adam \& Nadam}{
+
+\item Adam interpretations (everything element-wise!):
+\begin{items}
+\item $m_t \approx \<g\>$ the mean gradient in the recent iterations
+\item $v_t \approx \<g^2\>$ the mean gradient-square in the recent iterations
+\item $\hat m_t, \hat v_t$ are bias corrected (check: in first iteration, $t=1$, we have $\hat m_t = g_t$, unbiased, as desired)
+\item $\D \t \approx -\a \frac{\<g\>}{\<g^2\>}$ \emph{would} be a Newton step if $\<g^2\>$ \emph{were} the Hessian...
+\end{items}
+
+~
+
+\item Incorporate Nesterov into Adam: Replace parameter update by
+$$\t_t \gets \t_{t\1} - \a/(\sqrt{\hat v_t}+\e) \cdot (\b_1 \hat m_t + \frac{(1-\b_1)g_t}{1-\b_1^t})$$
+
+{\tiny Dozat: \emph{Incorporating Nesterov Momentum into Adam}, ICLR'16}
+
+}
+
+
+\slidesfoot

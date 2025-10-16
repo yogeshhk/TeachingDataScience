@@ -1,0 +1,1193 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\topic}{Control Theory}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Cart pole example}{
+
+~
+
+\show[.3]{cartPole}
+
+~
+
+\begin{align*}
+\text{state $\vec x$}
+ &= (x,\dot x, \theta,\dot\theta) \\
+\ddot\theta
+ &= \frac{g\sin(\theta) + \cos(\theta)
+         \left[-c_1 u - c_2\dot{\theta}^2\sin(\theta)\right]}
+    {\frac{4}{3}l - c_2\cos^2(\theta)}\\
+\ddot x
+ &= c_1 u
+  + c_2 \left[\dot\theta^2\sin(\theta) - \ddot\theta\cos(\theta)\right]
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Control Theory}{
+
+\item Concerns controlled systems of the form
+$$\dot x = f(x,u) + \text{noise}(x,u)$$
+and a controller of the form
+$$\pi: (x,t)\mapsto u$$
+
+~
+
+\item We'll neglect stochasticity here
+
+~
+
+\item When analyzing a given controller $\pi$, one analyzes
+  \textbf{closed-loop system} as described by the differential
+  equation
+$$\dot x = f(x,\pi(x,t))$$
+
+(E.g., analysis for convergence \& stability)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Topics in control theory}
+\slide{Core topics in Control Theory}{
+
+\item \textbf{Stability*}
+
+{\small
+Analyze the stability of a closed-loop system
+
+$\to$ Eigenvalue analysis or Lyapunov function method 
+
+}
+
+\item \textbf{Controllability*}
+
+{\small
+Analyze which dimensions (DoFs) of the system can actually in
+principle be controlled
+
+}
+
+\item \textbf{Transfer function}
+
+{\small
+Analyze the closed-loop transfer function, i.e., ``how frequencies are
+transmitted through the system''. ($\to$ Laplace transformation)
+
+}
+
+\item \textbf{Controller design}
+
+{\small
+Find a controller with desired stability and/or transfer function
+properties
+
+}
+
+\item \textbf{Optimal control*}
+
+{\small
+Define a cost function on the system behavior. Optimize a controller
+to minimize costs
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Control Theory references}{
+
+~
+
+\item Robert F. Stengel: \emph{Optimal control and estimation}
+
+Online lectures:
+\url{http://www.princeton.edu/~stengel/MAE546Lectures.html}
+(esp. lectures 3,4 and 7-9)
+
+~
+
+\item From robotics lectures:
+
+Stefan Schaal's lecture Introduction to Robotics: \url{http://www-clmc.usc.edu/Teaching/TeachingIntroductionToRoboticsSyllabus}
+
+Drew Bagnell's lecture on Adaptive Control and Reinforcement Learning \url{http://robotwhisperer.org/acrls11/}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Outline}{
+
+\item We'll first consider \emph{optimal control}
+
+{\small
+Goal: understand Algebraic Riccati equation
+
+significance for local neighborhood control
+
+}
+
+~
+
+\item Then controllability \& stability
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Optimal control}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Discrete time finite horizon definition}
+\slide{Optimal control (discrete time)}{
+
+Given a controlled dynamic system
+  $$x_{t\po} = f(x_t,u_t)$$
+we define a cost function
+$$J^\pi = \sum_{t=0}^T c(x_t,u_t) + \phi(x_T) $$
+where $x_0$ and the controller $\pi:(x,t) \mapsto u$ are given, which
+determines $x_{1:T}$ and $u_{0:T}$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Dynamic Programming \& Bellman principle}{
+
+\emph{An optimal policy has the property that whatever the initial
+  state and initial decision are, the remaining decisions must
+  constitute an optimal policy with regard to the state resulting from
+  the first decision.}
+
+~
+
+\show[.6]{bellmanGraph}
+
+~
+
+\cen{``$V(\text{state})
+ = \min_{\text{edge}} [c(\text{edge}) + V(\text{next-state})]$''}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Bellman equation (discrete time)}
+\slide{Bellman equation (discrete time)}{
+
+\item Define the \textbf{value function} or optimal \textbf{cost-to-go
+  function}
+\begin{align*}
+V_t(x)
+% &= \sum_{s=t}^T c(x^*_s,u^*_s) + \phi(x^*_T)
+ &= \min_\pi \[\sum_{s=t}^T c(x_s,u_s) + \phi(x_T) \]_{x_t=x}
+\end{align*}
+
+
+\item Bellman equation
+
+\eqbox{$
+V_t(x)
+ = \min_u \[c(x, u) + V_{t\po}(f(x,u)) \]
+$}
+The $\argmin$ gives the optimal control signal: $\pi^*_t(x)=\argmin_u\[\cdots\]$
+
+~
+
+\tiny
+Derivation:
+\begin{align*}
+V_t(x)
+ &= \min_\pi \[\sum_{s=t}^T c(x_s,u_s) + \phi(x_T) \] \\
+ &= \min_{u_t} \[c(x,u_t) + \min_\pi[\sum_{s=t\po}^T
+    c(x_s,u_s) + \phi(x_T)] \] \\
+ &= \min_{u_t} \[c(x,u_t) + V_{t\po}(f(x,u_t)) \]
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Continuous time finite horizion definition}
+\slide{Optimal Control (continuous time)}{
+
+Given a controlled dynamic system
+$$\dot x = f(x,u)$$
+we define a cost function with horizon $T$
+$$J^\pi = \int_0^T c(x(t),u(t))~ dt + \phi(x(T)) $$
+
+where the start state $x(0)$ and the controller $\pi: (x,t) \mapsto u$
+are given, which determine the
+closed-loop system trajectory $x(t),u(t)$ via $\dot x=f(x,\pi(x,t))$
+and $u(t) = \pi(x(t),t)$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Hamilton-Jacobi-Bellman equation}
+\slide{Hamilton-Jacobi-Bellman equation (continuous time)}{
+
+\item Define the \textbf{value function} or optimal \textbf{cost-to-go
+  function}
+\begin{align*}
+V(x,t)
+% &= \int_t^T c(x^*(s),u^*(s))~ ds + \phi(x^*(T))
+ &= \min_\pi \[\int_t^T c(x(s),u(s))~ ds + \phi(x(T)) \]_{x(t)= x}
+\end{align*}
+
+
+\item Hamilton-Jacobi-Bellman equation
+
+\eqbox{$
+-\frac{\del}{\del t} V(x,t)
+ = \min_u \[c(x, u) + \frac{\del V}{\del x} f(x,u) \]
+$}
+The $\argmin$ gives the optimal control signal: $\pi^*(x)=\argmin_u\[\cdots\]$
+
+~
+
+\tiny
+Derivation: Apply the discrete-time Bellman equation for $V_t$ and $V_{t+dt}$:
+\begin{align*}
+V(x,t)
+% &= \sum_{s=t}^T c(x^*_s,u^*_s) + \phi(x^*_T)
+ &= \min_u \[\int_t^{t+dt} c(x, u)~ dt + V(x(t+dt),t+dt) \] \\
+ &= \min_u \[\int_t^{t+dt} c(x, u)~ dt + V(x,t) + \int_t^{t+dt} \frac{d V(x,t)}{d t}~ dt \] \\
+0
+ &= \min_u \[\int_t^{t+dt} c(x, u) + \frac{\del V}{\del t} + \frac{\del V}{\del x} \dot x~ dt \] \\
+0
+ &= \min_u \[ c(x, u) + \frac{\del V}{\del t} + \frac{\del V}{\del x} f(x,u) \]
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Infinite horizon case}
+\slide{Infinite horizon case}{
+
+$$J^\pi = \int_0^\infty c(x(t),u(t))~ dt$$
+
+\item This cost function is stationary (time-invariant)!
+
+$\to$ the optimal value function is stationary ($V(x,t) = V(x)$)
+
+$\to$ the optimal control signal depends on $x$ but not on $t$
+
+$\to$ the optimal controller $\pi^*$ is stationary
+
+~
+
+\item The HBJ and Bellman equations remain ``the same'' but with the
+  same (stationary) value function independent of $t$:
+\begin{align*}
+0
+ &= \min_u \[c(x, u) + \frac{\del V}{\del x} f(x,u) \]  && \text{(cont.\ time)}\\
+V(x)
+ &= \min_u \[c(x, u) + V(f(x,u)) \] && \text{(discrete time)}
+\end{align*}
+
+The $\argmin$ gives the optimal control signal: $\pi^*(x)=\argmin_u\[\cdots\]$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Infinite horizon examples}{
+
+\item Cart-pole balancing:
+
+{\small
+-- You always want the pole to be upright ($\t\approx 0$)
+
+-- You always want the car to be close to zero ($x\approx 0$)
+
+-- You want to spare energy (apply low torques) ($u\approx 0$)
+
+You might define a cost
+$$J^\pi = \int_0^\infty \norm{\t}^2 + \epsilon \norm{x}^2 + \rho \norm{u}^2$$
+
+}
+
+\item Reference following:
+
+{\small
+-- You always want to stay close to a reference trajectory $r(t)$
+
+Define $\tilde x(t) = x(t)-r(t)$ with dynamics $\dot{\tilde x}(t) =
+f(\tilde x(t)+r(t),u) - \dot r(t)$
+
+Define a cost
+$$J^\pi = \int_0^\infty \norm{\tilde x}^2 + \rho \norm{u}^2$$
+
+}
+
+\item Many many problems in control can be framed this way
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Comments}{
+
+\item The Bellman equation is fundamental in optimal control theory,
+  but also Reinforcement Learning
+
+\item The HJB eq.\ is a differential equation for $V(x,t)$ which is in
+  general hard to solve
+
+\item The (time-discretized) Bellman equation can be solved by Dynamic
+  Programming starting backward:
+\begin{align*}
+V_T(x) &= \phi(x) \comma
+V_{T\1}(x) = \min_u \[c(x, u) + V_T(f(x,u)) \] && \text{etc.}
+\end{align*}
+
+But it might still be hard or infeasible to represent the functions
+$V_t(x)$ over continuous $x$!
+
+~
+
+\item Both become significantly simpler under linear dynamics and
+  quadratic costs:
+
+\cen{$\to$ Riccati equation}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Linear-Quadratic Optimal Control}
+\slide{Linear-Quadratic Optimal Control}{
+
+\textbf{linear dynamics}
+$$\dot x = f(x,u) = A x + B u$$
+
+\textbf{quadratic costs}
+$$c(x,u) = x^\T Q x + u^\T R u \comma \phi(x_T) = x_T^\T F x_T$$
+
+\item Note: Dynamics neglects constant term; costs neglect linear and
+  constant terms. This is because
+
+-- constant costs are irrelevant
+
+-- linear cost terms can be made away by redefining $x$ or $u$
+
+-- constant dynamic term only introduces a constant drift
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Linear-Quadratic Control as Local Approximation}{
+
+\item LQ control is important also to control non-LQ systems in the
+  \textbf{neighborhood} of a desired state!
+
+~
+
+Let $x^*$ be such a desired state (e.g., cart-pole: $x^*=(0,0,0,0)$)
+
+-- linearize the dynamics around $x^*$
+
+-- use 2nd order approximation of the costs around $x^*$
+
+-- control the system \emph{locally} as if it was LQ
+
+-- pray that the system will never leave this neighborhood!
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Riccati differential eq = HJB eq in LQ case}
+\slide{Riccati differential equation = HJB eq.\ in LQ case}{
+
+\item In the Linear-Quadratic (LQ) case, the value function always is
+  a quadratic function of $x$!
+
+~
+
+Let $V(x,t) = x^\T P(t) x$, then the HBJ equation becomes
+\setlength{\jot}{3pt}
+\begin{align*}
+-\frac{\del}{\del t} V(x,t)
+ &= \min_u \[c(x, u) + \frac{\del V}{\del x} f(x,u) \] \\
+-x^\T \dot P(t) x
+ &= \min_u \[x^\T Q x + u^\T R u + 2 x^\T P(t) (Ax + Bu) \]\\
+0
+&= \frac{\del}{\del u} \[x^\T Q x + u^\T R u + 2 x^\T P(t) (Ax + Bu) \] \\
+&= 2 u^\T R + 2 x^\T P(t) B \\
+u^*
+&= -R^\1 B^\T P x
+\end{align*}
+
+$\To$ \textbf{Riccati differential equation}
+
+\eqbox{$-\dot P = A^\T P + P A - P B R^\1 B^\T P + Q$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Riccati differential equation}{
+
+$$-\dot P = A^\T P + P A - P B R^\1 B^\T P + Q$$
+
+\item This is a differential equation for the matrix $P(t)$ describing
+  the quadratic value function. If we solve it with the finite horizon
+  constraint $P(T) = F$ we solved the optimal control problem
+
+~
+
+\item The optimal control $u^*= -R^\1 B^\T P x$ is called
+  \textbf{Linear Quadratic Regulator}
+
+~
+
+Note: If the state is dynamic (e.g., $x=(q,\dot q)$) this control is
+linear in the positions and linear in the velocities and is an
+instance of \textbf{PD control}
+
+The matrix $K=R^\1 B^\T P$ is therefore also called \textbf{gain
+  matrix}
+
+{\small
+For instance, if $x(t)=(q(t)-r(t),\dot q(t)-\dot r(t))$ for a
+reference $r(t)$ and $K=\Mat{cc}{K_p & K_d}$ then
+$$u^* = K_p(r(t)-q(t)) + K_d(\dot r(t)-\dot q(t))$$
+
+}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Algebraic Riccati equation (ARE) for infinite horizion}
+\key{Riccati equations (also discrete time)}
+\slide{Riccati equations}{
+
+\item Finite horizon continuous time
+
+\textbf{Riccati differential equation}
+$$-\dot P = A^\T P + P A - P B R^\1 B^\T P + Q
+\comma P(T)=F$$
+
+~
+
+\item Infinite horizon continuous time
+
+\textbf{Algebraic Riccati equation (ARE)}
+
+\eqbox{$0 = A^\T P + P A - P B R^\1 B^\T P + Q$}
+
+~
+
+\item Finite horizon discrete time ~ ($J^\pi = \sum_{t=0}^T \norm{x_t}_Q^2
+  + \norm{u_t}_R^2 + \norm{x_T}_F^2 $)
+$$P_{t\1} = Q + A^\T[P_t - P_t B (R+B^\T P_t B)^\1 B^\T P_t] A
+\comma P_T=F$$
+
+~
+
+\item Infinite horizon discrete time ~ ($J^\pi = \sum_{t=0}^\infty \norm{x_t}_Q^2
+  + \norm{u_t}_R^2$)
+$$P = Q + A^\T[P - P B (R+B^\T P B)^\1 B^\T P] A$$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: 1D point mass}{
+
+\item Dynamics:
+$$\ddot q(t) = u(t)/m$$
+\begin{align*}
+x=\mat{c}{q \\ \dot q}
+\comma
+\dot x
+&= \mat{c}{\dot q \\ \ddot q}
+= \mat{c}{\dot q \\ u(t)/m}
+= \mat{cc}{0 & 1 \\0 & 0} x + \mat{c}{0 \\ 1/m} u \\
+&= A x + B u
+\comma A=\mat{cc}{0 & 1 \\0 & 0}
+\comma B=\mat{c}{0 \\ 1/m}
+\end{align*}
+
+\item Costs:
+\begin{align*}
+c(x,u) = \e \norm{x}^2 + \r \norm{u}^2
+\comma Q=\e\Id
+\comma R=\r\Id
+\end{align*}
+
+\item Algebraic Riccati equation:
+\begin{align*}
+P
+&=\mat{cc}{a & c\\c & b} \comma
+u^*= -R^\1 B^\T P x = \frac{-1}{\r m}[c q + b \dot q] \\
+0
+&= A^\T P + P A - P B R^\1 B^\T P + Q \\
+&= \mat{cc}{c & b \\0 & 0} + \mat{cc}{0 & a \\ 0 & c}
+ - \frac{1}{\r m^2} \mat{cc}{c^2 & bc \\ bc & b^2} + \e\mat{cc}{1 & 0
+   \\ 0 & 1 }
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: 1D point mass (cont.)}{
+
+\item Algebraic Riccati equation:
+\begin{align*}
+P
+&=\mat{cc}{a & c\\c & b} \comma
+u^*= -R^\1 B^\T P x = \frac{-1}{\r m}[c q + b \dot q] \\
+0
+&= \mat{cc}{c & b \\0 & 0} + \mat{cc}{0 & a \\ 0 & c}
+ - \frac{1}{\r m^2} \mat{cc}{c^2 & bc \\ bc & b^2} + \e\mat{cc}{1 & 0
+   \\ 0 & 1 }
+\end{align*}
+First solve for $c$, then for $b = m \sqrt{\r} \sqrt{c+\e}$.
+Whether the damping ration $\xi = \frac{b}{\sqrt{4m c}}$ depends on
+the choices of $\r$ and $\e$.
+
+~
+
+\item The Algebraic Riccati equation is usually solved
+  numerically. (E.g. \texttt{are}, \texttt{care} or \texttt{dare} in Octave)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Side note: Are optimal cost-to-go finite?}{
+
+%% The Algebraic Riccati equation gives the optimal controller. But are
+%% the infinite-horizon costs-to-go $V(x)=x^\T P x$ under this controller
+%% acutally finite? We test this by plugging in the solution of the optimal
+%% control (Algebraic Riccati equation) back into the original definition
+%% of the cost-to-go function.
+
+%% \item Using the Algebraic Riccati equation we have
+%% \begin{align*}
+%% V(x)
+%% &= x^\T P x \\
+%% 0
+%% &= A^\T P + P A - P B R^\1 B^\T P + Q \\
+%% \pi^*(x)
+%% &= -R^\1 B^\T P x
+%% \end{align*}
+
+%% \item The original definition of the cost-to-go is
+%% \begin{align*}
+%% J^\pi
+%% &= \int_0^T [x^\T Q x + u^\T R u]~ dt \\
+%% J^{\pi^*}
+%% &= \int_0^T [x^\T Q x + x^\T P B R^\1 R R^\1 B^\T P x]~ dt \\
+%% &= \int_0^T x^\T [Q + P B R^\1 B^\T P] x~ dt
+%%  = V(x) = x^\T P x
+%% \end{align*}
+%% (The last equality holds by definition of $V(x)$.)
+
+%% ~
+
+%% \item $P$ and $V(x)$ are finite (bounded) only if
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Optimal control comments}{
+
+\item HJB or Bellman equation are very powerful concepts
+
+~
+
+\item Even if we can solve the HJB eq.\ and have the optimal control,
+  we still don't know how the system really behaves?
+
+-- Will it actually reach a ``desired state''?
+
+-- Will it be stable?
+
+-- It is actually ``controllable'' at all?
+
+~
+
+\small
+
+\item Last note on optimal control:
+
+Formulate as a constrainted optimization problem with objective
+function $J^\pi$ and constraint $\dot x = f(x,u)$. $\l(t)$ are the
+Langrange multipliers. It turns out that $\frac{\del}{\del x}V(x,t) =
+\l(t)$. (See Stengel.)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Relation to other topics}{
+
+%%   \show[.5]{optControl}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Relation to other topics}{
+
+\item Optimal Control:
+$$\min_\pi~ J^\pi = \int_0^T c(x(t),u(t))~ dt + \phi(x(T)) $$
+
+
+\item Inverse Kinematics:
+$$\min_{q}~ f(q)
+ = \norm{q - q_0}_W^2
+ + \norm{\phi(q)-y^*}_C^2
+$$
+
+\item Operational space control:
+$$\min_u~ f(u)
+ = \norm{u}_H^2
+ + \norm{\ddot\phi(q) - \ddot y^*}_C^2
+$$
+
+\item Trajectory Optimization: \hfill {\small (control hard constraints could be included)}
+$$\min_{q_{0:T}}~
+f(q_{0:T})
+ = \sum_{t=0}^T \norm{\Psi_t(q_{t\myminus k},..,q_t)}^2
+ + \sum_{t=0}^T \norm{\Phi_t(q_t)}^2
+$$
+
+\item Reinforcement Learning:
+
+-- Markov Decision Processes $\oto$ discrete time stochastic
+   controlled system $P(x_{t\po} \| u_t, x_t)$
+
+-- Bellman equation $\to$ Basic RL methods (Q-learning, etc)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Controllability}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Controllability}{
+
+\item As a starting point, consider the claim:
+
+\emph{``Intelligence means to gain maximal controllability over all
+degrees of freedom over the environment.''}
+
+~\mypause
+
+Note:
+
+-- controllability (ability to control) $\not=$ control
+
+-- What does controllability mean exactly?
+
+~
+
+\item I think the general idea of \emph{controllability} is really
+interesting
+
+-- Linear control theory provides one specific definition of
+controllability, which we introduce next..
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Controllability}{
+
+\item Consider a linear controlled system
+$$\dot x = Ax +Bu$$
+
+How can we tell from the matrices $A$ and $B$ \emph{whether we
+can control $x$ to eventually reach any desired state?}
+
+~
+
+\item Example: $x$ is 2-dim, $u$ is 1-dim:
+
+$$\mat{c}{\dot x_1\\ \dot x_2}
+ = \mat{cc}{0 & 0 \\ 0 & 0} \mat{c}{x_1 \\x_2}
+  + \mat{c}{1 \\ 0} u$$
+
+Is $x$ ``controllable''?
+
+~\mypause
+
+$$\mat{c}{\dot x_1\\ \dot x_2}
+ = \mat{cc}{0 & 1 \\ 0 & 0} \mat{c}{x_1 \\x_2}
+  + \mat{c}{0 \\ 1} u$$
+
+Is $x$ ``controllable''?
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Definition of controllability}
+\slide{Controllability}{
+
+We consider a linear stationary (=time-invariant) controlled system 
+$$\dot x = Ax + Bu$$
+
+\item \textbf{Complete controllability:} All elements of the state
+can be brought from arbitrary initial conditions to zero in finite
+time
+
+\pause
+
+\item A system is completely controllable iff
+the \textbf{controllability matrix}
+$$ C := \[ B ~~~ AB ~~~ A^2B ~~~ \cdots ~~~ A^{n\1}B\] $$
+has full rank $\dim(x)$ (that is, all rows are linearly independent)
+
+\small~\pause
+
+\item \emph{Meaning of $C$:}
+
+The $i$th row describes how the $i$th element $x_i$ can be influenced by $u$
+
+``$B$'': $\dot x_i$ is directly influenced via $B$
+
+``$AB$'': $\ddot x_i$ is ``indirectly'' influenced via $AB$ ($u$
+   directly influences some $\dot x_j$\\ \qquad  via $B$; the dynamics $A$ then
+   influence $\ddot x_i$ depending on $\dot x_j$)
+
+``$A^2B$'': $\dddot x_i$ is ``double-indirectly'' influenced
+
+etc...
+
+\cen{Note: $\ddot x = A \dot x + B \dot u = A A x + A B u + B \dot u$}
+\cen{$\dddot x = A^3 x + A^2 B u + AB\dot u + B \ddot u$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Controllability}{
+
+\item When all rows of the controllability matrix are linearly
+independent $\To$  $(u,\dot u,\ddot u,...)$ can influence all elements
+of $x$ independently
+
+\item If a row is zero $\to$ this element of $x$ cannot be controlled
+at all
+
+\item If 2 rows are linearly dependent $\to$ these two elements of $x$
+will remain coupled forever
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Controllability examples}{
+
+~
+
+\begin{tabular}{c@{\qquad}c}
+$\mat{c}{\dot x_1\\ \dot x_2}
+ = \mat{cc}{0 & 0 \\ 0 & 0} \mat{c}{x_1 \\x_2}
+  + \mat{c}{1 \\ 1} u$&
+$C=\mat{cc}{1 & 0 \\ 1 & 0}$~ rows linearly dependent \\[3ex]
+$\mat{c}{\dot x_1\\ \dot x_2}
+ = \mat{cc}{0 & 0 \\ 0 & 0} \mat{c}{x_1 \\x_2}
+  + \mat{c}{1 \\ 0} u$&
+$C=\mat{cc}{1 & 0 \\ 0 & 0}$~ 2nd row zero \\[3ex]
+$\mat{c}{\dot x_1\\ \dot x_2}
+ = \mat{cc}{0 & 1 \\ 0 & 0} \mat{c}{x_1 \\x_2}
+  + \mat{c}{0 \\ 1} u$&
+$C=\mat{cc}{0 & 1 \\ 1 & 0}$~ good!
+\end{tabular}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Controllability}{
+
+Why is it important/interesting to analyze controllability?
+
+~
+
+\item The Algebraic Riccati Equation will always return an ``optimal''
+controller -- but controllability tells us whether such a controller
+even has a chance to control $x$
+
+~\pause
+
+\item \emph{``Intelligence means to gain maximal controllability over all
+degrees of freedom over the environment.''}
+
+-- real environments are non-linear
+
+-- ``to have the ability to \emph{gain} controllability over the
+   environment's DoFs''
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Stability}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Stability}{
+
+\item One of the most central topics in control theory
+
+~
+
+\item Instead of designing a controller by first designing a cost
+function and then applying Riccati,
+
+design a controller such that the desired state is provably a stable
+equilibrium point of the closed loop system
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Definition of closed loop system equation}
+\slide{Stability}{
+
+\item Stability is an analysis of the \emph{closed loop} system. That
+is: for this analysis we don't need to distinguish between system and
+ controller explicitly. Both together define the dynamics
+$$\dot x = f(x,\pi(x,t)) =: f(x)$$
+
+\item The following will therefore discuss stability analysis of
+general differential equations $\dot x = f(x)$
+
+~
+
+\item What follows:
+
+-- 3 basic definitions of stability
+
+-- 2 basic methods for analysis by Lyapunov
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\show[.4]{Sergei_Lyapunov}
+\hfill Aleksandr Lyapunov (1857--1918)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Lyapunov and exponential stability}
+\slide{Stability -- 3 definitions}{
+
+$\dot x = F(x)$ with equilibrium point $x=0$
+
+\item $x_0$ is an \textbf{equilibrium point} $\iff f(x_0) = 0$
+
+~\pause
+
+\item \textbf{Lyapunov stable} or \textbf{uniformly stable}
+$\iff$
+$$\forall \e:~ \exists \d ~\text{s.t.}~ \norm{x(0)}\le\d
+~\To~ \forall t:~ \norm{x(t)}\le\e$$
+\anchor{250,0}{\showh[.2]{stableLyap}}
+
+\emph{(when it starts off $\d$-near to $x_0$, it will remain $\e$-near
+forever)}
+
+~\pause
+
+\anchor{250,-10}{\showh[.2]{stableAsymp}}
+\item \textbf{asymtotically stable} $\iff$\\
+\cen{Lyapunov stable and $\lim_{t\to\infty} x(t) = 0$}
+
+~\pause
+
+\anchor{250,-5}{\showh[.2]{stableExp}}
+\item \textbf{exponentially stable} $\iff$\\
+\cen{asymtotically stable and $\exists \a,a$ s.t. $\norm{x(t)} \le a
+e^{-\a t} \norm{x(0)}$~~~~}
+
+\emph{($\to$ the ``error'' time integral $\int_0^\infty \norm{x(t)}
+dt \le \frac{a}{\a} \norm{x(0)}$ is bounded!)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Stability}{
+
+%% \item These are three ``increasingly stronger'' definitions of
+%% stability
+
+%% TODO
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Linear stability analysis using eigenvalues}
+\slide{Linear Stability Analysis}{
+
+(``Linear'' $\oto$ ``local'' for a system linearized at the
+equilibrium point.)
+
+\item Given a linear system
+$$\dot x = A x$$
+Let $\l_i$ be the \textbf{eigenvalues} of $A$
+
+-- The system is \emph{asymptotically stable}
+$\iff \forall_i:~ \real(\l_i)<0$
+
+-- The system is \emph{unstable stable} $\iff \exists_i:~ \real(\l_i)>0$
+
+-- The system is \emph{marginally stable} $\iff \forall_i:~ \real(\l_i) \le 0$
+
+\small~\pause
+
+\item Meaning: An eigenvalue describes how the system behaves along
+one state dimension (along the eigenvector):
+$$\dot x_i = \l_i x_i$$
+As for the 1D point mass the solution is $x_i(t) = a e^{\l_i t}$ and
+
+-- imaginary $\l_i$ $\to$ oscillation
+
+-- negative $\real(\l_i)$ $\to$ exponential decay $\propto e^{-|\l_i|
+t}$
+
+-- positive $\real(\l_i)$ $\to$ exponential explosion $\propto e^{|\l_i|
+t}$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Linear Stability Analysis: Example}{
+
+\item Let's take the 1D point mass $\ddot q = u/m$ in \emph{closed
+loop} with a PD $u = - K_p q - K_d \dot q$
+
+\item Dynamics:
+\begin{align*}
+\dot x
+&= \mat{c}{\dot q \\ \ddot q}
+= \mat{cc}{0 & 1 \\0 & 0} x + 1/m \mat{cc}{0 & 0 \\-K_p & -K_d} x\\
+& A = \mat{cc}{0 & 1 \\-K_p/m & -K_d/m}
+\end{align*}
+
+\item Eigenvalues:
+
+The equation $\l\mat{c}{q\\\dot q} = \mat{cc}{0 & 1\\-K_p/m &
+-K_d/m}\mat{c}{q\\\dot q}$ leads to the equation $\l \dot q = \l^2 q = -K_p/m q
+-K_d/m \l q$ or $m \l^2 + K_d \l + K_p=0$ with solution (compare
+slide 05:10)
+$$\l = \frac{-K_d \pm \sqrt{K_d^2 - 4 m K_p}}{2m}$$
+
+For $K_d^2 - 4 m K_p$ negative, the $\real(\l) = -K_d/2m$
+
+\cen{$\To$ Positive derivative gain $K_d$ makes the system stable.}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Side note: Stability for discrete time systems}{
+
+\item Given a discrete time linear system 
+$$x_{t\po} = A x_t$$
+Let $\l_i$ be the \textbf{eigenvalues} of $A$
+
+-- The system is \emph{asymptotically stable}
+$\iff \forall_i:~ |\l_i|<1$
+
+-- The system is \emph{unstable stable} $\iff \exists_i:~ |\l_i|>1$
+
+-- The system is \emph{marginally stable} $\iff \forall_i:~ |\l_i| \le 1$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Linear Stability Analysis comments}{
+
+\item The same type of analysis can be done locally for non-linear
+systems, as we will do for the cart-pole in the exercises
+
+~
+
+\item We can design a controller that minimizes the (negative)
+eigenvalues of $A$:
+
+$\oto$ controller with fastest asymtopic convergence
+
+~
+
+This is a real alternative to optimal control!
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Definition of Lyapunov function}
+\slide{Lyapunov function method}{
+
+\item A method to analyze/prove stability for general non-linear
+systems is the famous ``Lyapunov's second method''
+
+~
+
+
+Let $D$ be a region around the equilibrium point $x_0$
+
+\item A \textbf{Lyaponov function} $V(x)$ for a system dynamics $\dot
+x=f(x)$ is
+
+-- positive, $V(x) > 0$, everywhere in $D$ except...
+
+~~ at the equilibrium point where $V(x_0)=0$
+
+-- always decreases, $\dot V(x) = \frac{\del V(x)}{\del x} \dot x <
+   0$, in $D$ except...
+
+~~ at the equilibrium point where $f(x)=0$ and therefore $\dot V(x)=0$
+
+~
+
+\item If there exists a $D$ and a Lyapunov function $\To$ the system
+is \emph{asymtotically stable}
+
+~
+
+If $D$ is the whole state space, the system is \emph{globally stable}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Lyapunov function method}{
+
+\item The Lyapunov function method is very general. $V(x)$ could be
+``anything'' (energy, cost-to-go, whatever). Whenever one finds some
+$V(x)$ that decreases, this proves stability
+
+~
+
+\item The problem though is to think of some $V(x)$ given a dynamics!
+
+(In that sense, the Lyapunov function method is rather a method of
+proof than a concrete method for stability analysis.)
+
+~\mypause
+
+\item In standard cases, a good guess for the Lyapunov function is 
+either the energy or the value function
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Energy as Lyapunov function}
+\slide{Lyapunov function method -- Energy Example}{
+
+\item Let's take the 1D point mass $\ddot q = u/m$ in \emph{closed
+loop} with a PD $u = - K_p q - K_d \dot q$, which has the solution
+(slide 05:14):
+$$q(t) = b e^{-\xi/\l~ t}~ e^{i \o_0\sqrt{1-\xi^2}~ t}$$
+
+\item Energy of the 1D point mass: $V(q,\dot q) := \half m \dot q^2$
+$$
+\dot V(x)
+ = e^{-2\xi/\l~ t} V(x(0))
+$$
+(using that the energy of an undamped oscillator is conserved)
+
+\item $V(x)<0 \iff \xi>0 \iff K_d >0$
+
+Same result as for the eigenvalue analysis
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Value as Lyapunov function}
+\slide{Lyapunov function method -- value function Example}{
+
+\item Consider infinite horizon linear-quadratic optimal control. The
+solution of the Algebraic Riccati equation gives the optimal controller.
+
+\item The value function satisfies
+{\small
+\begin{align*}
+V(x)
+ &= x^\T P x \\
+\dot V(x)
+ &= [A x + B u^*]^\T P x + x^\T P [A x + B u^*] \\
+u^*
+ &= -R^\1 B^\T P x = K x\\
+\dot V(x)
+ &= x^\T [ (A + B K)^\T P + P (A + B K)] x \\
+ &= x^\T [ A^\T P + P A + (BK)^\T P + P(BK)] x\\
+0
+ &= A^\T P + P A - P B R^\1 B^\T P + Q \\
+\dot V(x)
+ &= x^\T [P B R^\1 B^\T P - Q + (PBK)^\T + PBK] x\\
+ &= - x^\T [Q + K^\T R K] x
+\end{align*}
+(We could have derived this easier! $x^\T Q x$ are the immediate state costs,
+and $x^\T K^\T R K x = u^\T R u$ are the immediate control
+costs---and $\dot V(x)=-c(x,u^*)$! See slide 11 bottom.)
+
+}
+
+\item That is: $V$ is a Lyapunov function if $Q + K^\T R K$ is positive
+definite!
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\slide{Observability \& Adaptive Control}{\label{lastpage}
+
+
+\item When some state dimensions are not directly observable: analyzing higher
+order derivatives to \emph{infer} them.
+
+Very closely related to controllability: Just like the controllability
+matrix tells whether state dimensions can (indirectly) be controlled;
+an observation matrix tells whether state dimensions can (indirectly)
+be inferred.
+
+~
+
+\item Adaptive Control: When system dynamics $\dot x = f(x,u,\b)$ has
+unknown parameters $\b$.
+
+-- One approach is to estimate $\b$ from the data so far and use
+   optimal control.
+
+-- Another is to design a controller that has an additional internal
+   update equation for an estimate $\hat\b$ and is provably
+   stable. (See Schaal's lecture, for instance.)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%% \slide{Example: Pendulum}{
+
+%% [BILD]
+
+%% \begin{center}
+
+%% ``m a = f''
+
+%% moment of inertia $\cdot$ rotational acceleration = torque
+
+%% $m l^2 \ddot \t = - m g l \sin(\t) + u$
+%% \end{center}
+
+%% $u$ = control torque applied to the pendulum
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot

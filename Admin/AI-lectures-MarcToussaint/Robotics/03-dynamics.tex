@@ -1,0 +1,1228 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\topic}{Dynamics}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Dynamic vs. non-dynamic robots}
+\slide{}{
+
+\hspace*{-12mm}\begin{tabular}{p{.45\columnwidth}@{\qquad}|@{\qquad}p{.45\columnwidth}}
+\cen{\large\textbf{Kinematic}} & \cen{\large\textbf{Dynamic}} \\[2ex]
+ instantly change joint velocities $\dot q$:
+&
+ instantly change joint torques $u$:\\
+\cen{$\d q_t \overset{!}= J^\sharp~ (y^* - \phi(q_t))$}
+&
+\cen{$u \overset{!}=$ ?} \\[2ex]
+
+accounts for kinematic coupling of joints but
+\textbf{ignores inertia, forces, torques}
+&
+accounts for dynamic coupling of joints and full
+Newtonian physics\\[4ex]
+
+gears, \textbf{stiff}, all of industrial robots\newline
+\mov{\show[.15]{kukaStandardRobot.jpg}}{10-RoboticsLecture/11-Honda-All-New-ASIMO-hopping.mp4}
+%\show[.9]{11-Honda-All-New-ASIMO-hopping2}
+&
+future robots, \textbf{compliant}, few research robots\newline
+\show[.25]{barrett}
+
+\end{tabular}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{When velocities cannot be changed/set arbitrarily}{
+
+\item Examples:
+\begin{items}
+\item An air plane flying: You cannot command it to hold still in the
+   air, or to move straight up.
+
+\item A car: you cannot command it to move side-wards.
+
+\item Your arm: you cannot command it to throw a ball with arbitrary
+   speed (force limits).
+
+\item A \emph{torque controlled} robot: You cannot command it to
+   instantly change velocity (infinite acceleration/torque).
+\end{items}
+
+~
+
+\item What all examples have in comment:
+\begin{items}
+\item One can set \textbf{controls} $u_t$ (air plane's control stick,
+car's steering wheel, your muscles activations, torque/voltage/current
+send to a robot's motors)
+
+\item But these controls only indirectly influence the \textbf{dynamics of state}
+\color{red}\Large\vspace*{-1ex}  $$x_{t\po} = f(x_t,u_t)$$
+\end{items}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Definition of a dynamics equation}
+\slide{Dynamics}{
+
+\item The {dynamics} of a system describes how the controls
+$u_t$ influence the change-of-state of the system
+
+\eqbox{ $x_{t\po} = f(x_t,u_t)$ }
+
+~
+
+\begin{items}
+\item The notation $x_t$ refers to the \emph{dynamic state} of the
+   system: e.g., joint positions \emph{and velocities} $x_t =
+   (q_t,\dot q_t)$.
+
+\item $f$ is an arbitrary function, often smooth
+\end{items}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Outline}{
+
+\item We start by discussing a \textbf{1D point mass} for 3 reasons:
+\begin{items}
+\item The most basic force-controlled system with inertia
+\item We can introduce and understand \textbf{PID control}
+\item The behavior of a point mass under PID control is
+a \emph{reference} that we can also follow with arbitrary dynamic
+robots (if the dynamics are known)
+\end{items}
+
+~
+
+\item We discuss computing the dynamics of general robotic systems
+\begin{items}
+\item Euler-Lagrange equations
+\item Euler-Newton method
+\end{items}
+
+\item We derive the dynamic equivalent of inverse kinematics:
+\begin{items}
+\item operational space control
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{PID and a 1D point mass}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{1D point mass}
+\slide{The dynamics of a 1D point mass}{
+
+\item Start with simplest possible example: 1D point mass
+
+(no gravity, no friction, just a single mass)
+
+~
+
+\cen{\includegraphics[width=5cm]{mass-1}}
+
+\item The {state} $x(t) = (q(t),\dot q(t))$ is described by:
+\begin{items}
+\item position $q(t) \in \RRR$
+\item velocity $\dot q(t) \in \RRR$
+\end{items}
+
+~
+
+\item The {controls} $u(t)$ is the force we apply on the mass point
+
+~
+
+\item The {system dynamics} is:
+\begin{align*}
+\ddot q(t) = u(t)/m
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{P gain}
+\slide{1D point mass -- proportional feedback}{
+
+\item Assume current position is $q$.
+
+The goal is to move it to the position $q^*$.
+
+~
+
+What can we do?
+
+~\mypause
+
+\item \textbf{\color{red}Idea 1:}
+
+\emph{``Always pull the mass towards the goal $q^*$:''}
+\begin{align*}
+u = K_p~ (q^* - q)
+\end{align*}
+
+\cen{\includegraphics[width=5cm]{mass-2}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{1D point mass -- proportional feedback}{
+
+\item What's the effect of this control law?
+\begin{align*}
+m~ \ddot q
+ & = u = K_p~ (q^* - q)
+\end{align*}
+
+$q = q(t)$ is a function of time, this is a second order differential equation
+
+\mypause
+
+\item Solution: ~ {\color{blue}assume $q(t) = a + b e^{\o t}$}
+
+(a ``non-imaginary'' alternative would be $q(t) = a + b~ \e^{-\l
+t}~ \cos(\o t)$)
+\mypause%
+\begin{align*}
+&m~ b~ \o^2~ e^{\o t}
+ = K_p~ q^* - K_p~ a - K_p~ b~ e^{\o t} \\
+&(m~ b~ \o^2 + K_p~ b)~ e^{\o t}
+  = K_p~ (q^* - a) \\
+&\To
+  (m~ b~ \o^2 + K_p~ b) = 0 ~\wedge~ (q^*-a) = 0 \\
+& \To ~ \o = i \sqrt{K_p/m} \\
+&q(t)
+  = q^* + b~ e^{i \sqrt{K_p/m}~ t}
+\end{align*}
+
+This is an oscillation around $q^*$ with amplitude $b=q(0)-q^*$ and
+frequency $\sqrt{K_p/m}$!
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{1D point mass -- proportional feedback}{
+
+\begin{align*}
+&m~ \ddot q
+  = u = K_p~ (q^* - q) \\
+&q(t)
+  = q^* + b~ e^{i \sqrt{K_p/m}~ t}
+\end{align*}
+
+Oscillation around $q^*$ with amplitude $b=q(0)-q^*$ and
+frequency $\sqrt{K_p/m}$
+
+~
+
+\cen{\includegraphics[angle=-90,width=8cm]{cosine}}
+
+%set terminal postscript
+%set output 'cosine.eps'
+%set size 1.0,.5
+%plot[0:15][-1.1:1.1] cos(x) lw 3
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{D gain}
+\slide{1D point mass -- derivative feedback}{
+
+\item \textbf{\color{red}Idea 2}
+
+\emph{``Pull less, when we're heading the right direction already:''}
+
+\emph{``Damp the system:''}
+\begin{align*}
+u = K_p (q^* - q) + K_d (\dot q^* - \dot q)
+\end{align*}
+
+$\dot q^*$ is a desired goal velocity
+
+For simplicity we set $\dot q^* = 0$ in the following.
+
+~
+
+~
+
+\cen{\includegraphics[width=5cm]{mass-3}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{1D point mass -- derivative feedback}{
+
+\item What's the effect of this control law?
+\begin{align*}
+m \ddot q
+ & = u
+   = K_p (q^* - q) + K_d (0 - \dot q)
+\end{align*}
+
+\item Solution: ~ {\color{blue}again assume $q(t) = a + b e^{\o t}$}
+\begin{align*}
+&m~ b~ \o^2~ e^{\o t}
+ = K_p~ q^* - K_p~ a - K_p~ b~ e^{\o t} - K_d~ b~ \o e^{\o t}\\
+&(m~ b~ \o^2 + K_d~ b~ \o + K_p~ b)~ e^{\o t}
+ = K_p~ (q^* - a) \\
+&\To (m~ \o^2 + K_d~ \o + K_p) = 0 ~\wedge~ (q^*-a) = 0 \\
+&\To \o = \frac{-K_d \pm \sqrt{K_d^2 - 4 m K_p}}{2m} \\
+&q(t)
+ = q^* + b~ e^{\o~ t}
+\end{align*}
+
+The term $-\frac{K_d}{2m}$ in $\o$ is real ~ $\oto$ ~ exponential decay (damping)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{1D point mass -- derivative feedback}{
+
+$$q(t)
+ = q^* + b~ e^{\o~ t}
+\comma \o = \frac{-K_d \pm \sqrt{K_d^2 - 4 m K_p}}{2m}$$
+
+~
+
+\item Effect of the second term $\sqrt{K_d^2 - 4 m K_p}/2m$ in $\o$:
+
+~
+
+\begin{tabular}{c@{\quad$\To$\quad}p{.7\columnwidth}}
+$K_d^2 < 4 m K_p$
+&
+$\o$ has imaginary part\newline
+oscillating with frequency $\sqrt{K_p/m - K_d^2/4m^2}$\newline
+$q(t) = q^* + b e^{-K_d/2m~ t}~ e^{i \sqrt{K_p/m - K_d^2/4m^2}~ t}$
+\\
+$K_d^2 > 4 m K_p$
+&
+$\o$ real\newline
+strongly damped
+\\
+$K_d^2 = 4 m K_p$
+&
+second term zero\newline
+only exponential decay
+\end{tabular}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{oscillatory-damped, critically damped, over-damped}
+\slide{1D point mass -- derivative feedback}{
+
+\show[.9]{dampenings}
+\hfill{\tiny illustration from O. Brock's lecture}
+
+%% $\xi^2 = \frac{K_d^2}{4m K_p}$
+
+%% $\xi = \frac{K_d}{4\sqrt{m K_p}}$
+
+%% $\xi <1$ $\To$
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Damping ration, wave length}
+\slide{1D point mass -- derivative feedback}{
+
+Alternative parameterization:
+
+Instead of the \emph{gains} $K_p$ and $K_d$ it is sometimes more
+intuitive to set the
+
+~
+
+\item wave length $\l = \frac{1}{\o_0} = \frac{1}{\sqrt{K_p/m}} \comma K_p = m/\l^2$
+
+~
+
+\item damping ratio $\xi
+ = \frac{K_d}{\sqrt{4m K_p}}
+ = \frac{\l K_d}{2m}
+ \comma K_d = 2m\xi/\l$
+
+~
+
+$\xi > 1$: over-damped
+
+$\xi = 1$: critically dampled
+
+$\xi < 1$: oscillatory-damped
+
+$$q(t) = q^* + b e^{-\xi~ t/\l}~ e^{i \sqrt{1-\xi^2}~ t/\l}$$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{I gain}
+\slide{1D point mass -- integral feedback}{
+
+\item \textbf{\color{red}Idea 3}
+
+\emph{``Pull if the position error accumulated large in the past:''}
+
+\begin{align*}
+u = K_p (q^* - q) + K_d (\dot q^* - \dot q) + K_i \int_{s=0}^t (q^*(s) - q(s))~ ds
+\end{align*}
+
+~\tiny
+
+\item This is not a linear ODE w.r.t.\ $x=(q,\dot q)$.
+
+However, when we extend the state to $x=(q,\dot q,e)$ we have the ODE
+\begin{align*}
+\dot q
+ &= \dot q \\
+\ddot q
+ &= u/m = K_p/m (q^* - q) + K_d/m (\dot q^* - \dot q) + K_i/m~ e \\
+\dot e
+ &= q^* - q
+\end{align*}
+
+(no explicit discussion here)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{PID control}
+\slide{1D point mass -- PID control}{
+
+\begin{align*}
+u = K_p (q^* - q) + K_d (\dot q^* - \dot q) + K_i \int_{s=0}^t (q^* - q(s))~ ds
+\end{align*}
+
+~
+
+\item\textbf{PID control}
+
+-- Proportional Control (``Position Control'')
+
+~~ $u \propto K_p (q^* - q)$
+
+~
+
+-- Derivative Control (``Damping'')
+
+~~ $u \propto K_d (\dot q^* - \dot q)$  ~~ ($\dot x^*=0$ $\to$ damping)
+
+~
+
+-- Integral Control (``Steady State Error'')
+
+~~ $u \propto K_i \int_{s=0}^t (q^*(s) - q(s))~ ds$
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Controlling a 1D point mass -- lessons learnt}{
+
+\item Proportional and derivative feedback (PD control) are like
+adding a spring and damper to the point mass
+
+~
+
+\item PD control is a \emph{linear control law}
+
+ $$(q,\dot q) \mapsto u = K_p (q^* - q) + K_d (\dot q^* - \dot
+ q)$$
+
+(linear in the \emph{dynamic system state} $x=(q,\dot q)$)
+
+~
+
+\item With such linear control laws we can design 
+approach trajectories (by tuning the gains)
+
+-- but no optimality principle behind such motions
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Dynamics of mechanical systems}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Two ways to derive dynamics equations for mechanical systems}{
+
+\item The Euler-Lagrange equation, $L=L(t, q(t), \dot q(t))$,
+$$ \frac{d}{dt} \frac{\del L}{\del \dot q} - \frac{\del L}{\del q} = u $$
+{\small Used when you want to derive analytic equations of
+motion (``on paper'')}
+
+~
+
+\item The Newton-Euler recursion ~ (and related algorithms)
+$$f_i = m \dot v_i \comma u_i = I_i \dot w + w\times I w$$ {\small
+Algorithms that ``propagate'' forces through a kinematic tree and
+numerically compute the \emph{inverse} dynamics $u=\text{NE}(q,\dot
+q,\ddot q)$ or \emph{forward} dynamics $\ddot q = f(q,\dot q,u)$.
+
+} 
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Euler-Lagrange equation}
+\slide{The Euler-Lagrange equation}{
+
+$$\frac{d}{dt} \frac{\del L}{\del \dot q} - \frac{\del L}{\del q} = u$$
+
+\item $L(q,\dot q)$ is called \textbf{Lagrangian} and defined as
+$$L = T - U$$
+where $T$=kinetic energy and $U$=potential energy.
+
+\item $q$ is called generalized coordinate -- any coordinates such that
+ $(q,\dot q)$ describes the state of the system. Joint angles in our
+ case.
+
+\item $u$ are external forces
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Pendulum example for Euler-Lagrange}
+\slide{Example: A pendulum}{
+
+\shows[1]{pendulum}
+
+\item Generalized coordinates: angle $q=(\t)$
+
+\item Kinematics:
+\begin{items}
+\item velocity of the mass: $v = (l\dot\t\cos\t, 0, l\dot\t\sin\t)$
+\item angular velocity of the mass: $w = (0, -\dot\t, 0)$
+\end{items}
+
+\item Energies:
+$$T=\half m v^2 + \half w^\T I w = \half (ml^2 + I_2)\dot\t^2\comma U
+= - m g l\cos\t$$
+
+\item Euler-Lagrange equation:
+\begin{align*}
+u
+&=\frac{d}{dt} \frac{\del L}{\del \dot q} - \frac{\del L}{\del q} \\
+&=\frac{d}{dt} (ml^2 + I_2)\dot\t + m g l\sin\t 
+ = (ml^2 + I_2)\ddot\t + m g l\sin\t
+\end{align*}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{General structure of Euler-Lagrange}
+\slide{The Euler-Lagrange equation}{
+
+\small
+
+\item How is this typically done?
+
+\item \textbf{First}, describe the \emph{kinematics and Jacobians} for
+every link $i$:
+$$(q,\dot q)\mapsto \{ T_{W\to i}(q), v_i, w_i \}$$
+
+{\tiny Recall $T_{W\to i}(q)
+ = T_{W\to A}~ {\color{red}T_{A\to A'}(q)}~
+   T_{A'\to B}~ {\color{red}T_{B\to B'}(q)}~
+   \cdots$
+
+Further, we know that a link's velocity $v_i=J_i \dot q$ can be
+described via its position Jacobian.
+
+Similarly we can describe the link's \emph{angular velocity} $w_i = J^w_i \dot q$ as linear in $\dot q$.
+
+}
+
+\item \textbf{Second}, formulate the kinetic energy
+$$T = \sum_i \half m_i v_i^2 + \half w_i^\T I_i w_i
+= \sum_i \half \dot q^\T M_i \dot q
+\comma M_i = \mat{c}{J_i\\J^w_i}^\T \mat{cc}{m_i\Id_3 & 0 \\ 0 & I_i} \mat{c}{J_i\\J^w_i} $$
+where $I_i = R_i \bar I_i R_i^\T$ and $\bar I_i$ the inertia tensor in
+link coordinates
+
+\item \textbf{Third}, formulate the potential energies (typically independent of $\dot q$)
+$$U = g m_i \text{height}(i)$$
+
+\item \textbf{Fourth}, compute the partial derivatives analytically to
+get something like
+\begin{align*}
+\underbrace{u}_\text{control} = \frac{d}{dt} \frac{\del L}{\del \dot q} - \frac{\del L}{\del q} 
+ = \underbrace{M}_\text{inertia} \ddot q + \underbrace{\dot M \dot q
+ - \frac{\del T}{\del q}}_\text{Coriolis} + \underbrace{\frac{\del U}{\del q}}_\text{gravity}
+\end{align*}
+which relates accelerations $\ddot q$ to the forces
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Computing $M$ and $F$}{
+
+%% \cen{$M(q)~ \ddot q + F(q,\dot q) = u$}
+
+%% \item Recall:
+
+%% We have an algorithm to compute all positions and
+%% orientations given $q$:
+
+%% $T_{W\to i}(q)
+%%  = T_{W\to A}~ {\color{red}T_{A\to A'}(q)}~
+%%    T_{A'\to B}~ {\color{red}T_{B\to B'}(q)}~
+%%    T_{B'\to C}~ {\color{red}T_{C\to C'}(q)}~
+%%    T_{C'\to i}$
+
+%% ~\mypause
+
+%% \item This can be extended easily to compute also:
+
+%% -- linear velocities $v_i$
+
+%% -- angular velocities $w_i$
+
+%% -- linear accelerations $\dot v_i$
+
+%% -- angular accelerations $\dot w_i$
+
+%% for any link $i$ in the robot ~ (via forward propagation; see
+%% geometry notes for details).
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Newton-Euler recursion}
+\slide{Newton-Euler recursion}{
+
+\item An algorithm that computes the \emph{inverse dynamics}
+$$u=\text{NE}(q,\dot q,\ddot q^*)$$ by recursively computing force
+balance at each joint:
+\begin{items}
+\item \textbf{Newton's equation} ~ expresses the force acting at the center of mass for an accelerated body:
+$$f_i = m \dot v_i$$
+
+\item \textbf{Euler's equation} ~ expresses the torque (=control) acting on a
+rigid body given an angular velocity and angular acceleration:
+$$u_i = I_i \dot w + w\times I w$$
+\end{items}
+
+~
+
+\item \textbf{Forward recursion:} ($\approx$ kinematics)
+
+Compute (angular) velocities $(v_i, w_i)$ \emph{and} accelerations
+$(\dot v_i,\dot w_i)$ for every link {\tiny(via forward propagation; see
+geometry notes for details)}
+
+~
+
+\item \textbf{Backward recursion:}
+
+For the leaf links, we now know the desired accelerations $q^*$ and can
+compute the necessary joint torques. Recurse backward.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Numeric algorithms for forward and inverse dynamics}{
+
+\item \textbf{Newton-Euler recursion}:~ very fast ($O(n)$) method to compute
+\emph{inverse} dynamics $$u=\text{NE}(q,\dot q,\ddot q^*)$$
+{\tiny Note that we can use this algorithm to also compute
+\begin{items}
+\item gravity terms:~ $u = \text{NE}(q,0,0) = G(q)$ 
+\item Coriolis terms:~ $u = \text{NE}(q,\dot q,0) = C(q,\dot q)~ \dot q + G(q)$
+\item column of Intertia matrix:~ $u = \text{NE}(q,0,e_i) = M(q)~ e_i$
+\end{items}
+}
+
+~
+
+\item \textbf{Articulated-Body-Dynamics}:~ fast method ($O(n)$) to compute \emph{forward}
+dynamics $\ddot q = f(q,\dot q,u)$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Some last practical comments}{
+
+\item \texttt{[demo]}
+
+\item Use \emph{energy conservation} to measure dynamic of physical
+simulation
+
+\item Physical simulation engines (developed for games):
+\begin{items}
+\item ODE (Open Dynamics Engine)
+\item Bullet (originally focussed on collision only)
+\item Physx (Nvidia)
+\end{items}
+
+Differences of these engines to Lagrange, NE or ABD:
+\begin{items}
+\item Game engine can model much more: Contacts, tissues,
+particles, fog, etc
+\item (The way they model contacts looks ok but is somewhat fictional)
+\item On kinematic trees, NE or ABD are much
+more precise than game engines
+\item Game engines do not provide \emph{inverse} dynamics, $u=\text{NE}(q,\dot
+q,\ddot q)$
+\end{items}
+
+~
+
+\item Proper modelling of contacts is really really hard
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Controlling a dynamic robot}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item We previously learnt the effect of PID control on a 1D point
+mass
+
+~
+
+\item Robots are not a 1D point mass
+\begin{items}
+\item Neither is each joint a 1D point mass
+\item Applying separate PD control in each joint neglects force
+coupling
+
+(Poor solution: Apply very high gains separately in each joint $\oto$
+make joints stiff, as with gears.)
+\end{items}
+
+~
+
+\item However, knowing the robot dynamics we can transfer our
+understanding of PID control of a point mass to general systems
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{General structure of robot dynamics}
+\slide{General robot dynamics}{
+
+\item Let $(q, \dot q)$ be the dynamic state and $u\in\RRR^n$ the
+controls (typically joint torques in each
+motor) of a robot
+
+\item Robot dynamics can generally be written as:
+$$
+M(q)~ \ddot q + C(q,\dot q)~ \dot q + G(q) = u
+$$
+{\small\begin{tabular}{cp{.7\columnwidth}}
+$M(q) \in \RRR^{n\times n}$
+& is positive definite intertia matrix\newline (can be inverted $\to$
+forward simulation of dynamics)
+\\
+$C(q,\dot q) \in \RRR^n$
+& are the centripetal and coriolis forces
+\\
+$G(q) \in \RRR^n$
+& are the gravitational forces
+\\
+$u$
+& are the joint torques
+\end{tabular}
+
+}
+
+(cf.\ to the Euler-Lagrange equation on slide 22)
+
+
+\item We often write more compactly:
+
+\eqbox{$M(q)~ \ddot q + F(q,\dot q) = u$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Inverse and forward dynamics}
+\slide{Controlling a general robot}{
+
+\item From now on we just assume that we have algorithms to
+efficiently compute $M(q)$ and $F(q,\dot q)$ for any $(q,\dot q)$
+
+\item \textbf{Inverse dynamics:}~ If we know the desired $\ddot q^*$
+for each joint, 
+$$u = M(q)~ \ddot q^* + F(q,\dot q)$$
+gives the necessary torques
+
+\item \textbf{Forward dynamics:}~ If we know which torques $u$ we
+apply, use
+$$\ddot q^* = M(q)^\1 (u-F(q,\dot q))$$
+to simulate the dynamics of the system (e.g., using Runge-Kutta)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Following a reference trajectory in joint space}
+\slide{Following a reference trajectory in joint space}{
+
+\item Where could we get the desired $\ddot q^*$ from?
+
+Assume we have a nice smooth \textbf{reference trajectory}
+$q_{0:T}^\text{ref}$ (generated with some motion profile or alike), we
+can at each $t$ read off the desired acceleration as
+$$\ddot q_t^\text{ref}
+ := \frac{1}{\tau}[(q_{t\po}-q_t)/\tau - (q_t-q_{t\1})/\tau]
+  = (q_{t\1} + q_{t\po} - 2q_t)/\tau^2$$
+
+However, tiny errors in acceleration will accumulate greatly over
+time! This is Instable!!
+
+\mypause
+
+\item Choose a desired acceleration $\ddot q_t^*$ that implies
+a \emph{PD-like behavior around the reference trajectory}!
+
+\eqbox{$\ddot q_t^* = \ddot q_t^\text{ref} + K_p(q_t^\text{ref} - q_t) + K_d(\dot q_t^\text{ref} - \dot q_t)$}
+
+\small
+This is a standard and very convenient heuristic to track a reference
+trajectory when the robot dynamics are known: \emph{All joints will exactly
+behave like a 1D point particle around the reference trajectory!}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Dynamic reaching}{
+
+%% \item How can we accelerate all joints \emph{to reach an
+%% endeffector target $y^*$}?
+
+%% -- 1D point mass $\to$ PD control can generate approach
+%%    trajectories
+
+%% -- How can we combine things?
+
+%% \mypause
+
+%% \emph{2 ways of thinking:}
+
+%% \item \textbf{Joint space approach:}
+
+%% 1) Compute target joint angles $q^*$ from $y^*$ using inverse
+%% kinematics.
+
+%% 2) Compute $u$ to ``mimick'' PD behavior in all
+%% joints:
+
+%% ~~ $\ddot q^* = K_p(q^* - q) + K_d(0 - \dot q)$
+
+%% ~~ $u = M(q)~ \ddot q^* + F(q,\dot q)$
+
+%% (better than separate PD controllers for each joint! cancels all
+%% natural forces; behaves like an $n$-dimensional point mass)
+
+%% \mypause
+
+%% \item \textbf{Operational space approach:}
+
+%% 1) Compute a desired
+%% effector acceleration $\ddot y^*$ mimicking PD behavior.
+
+%% 2) Translate this ``somehow'' to desired acceleration $\ddot q^*$:
+
+%% $\ddot y^* = K_p(y^* - y) + K_d(0 - \dot y)$
+
+%% $u = \text{function of }(\ddot y^*)$
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Following a reference trajectory in task space}
+\slide{Following a reference trajectory in task space}{
+
+\item Recall the inverse kinematics problem:
+\begin{items}
+\item We know the desired step $\d y^*$ (or velocity $\dot y^*$) of the \emph{endeffector}.
+
+\item Which step $\d q$ (or velocities $\dot q$) should we make in the
+joints?
+\end{items}
+
+~
+
+\item Equivalent dynamic problem:
+\begin{items}
+\item We know how the desired acceleration $\ddot y^*$ of
+   the \emph{endeffector}.
+\item What controls $u$ should we apply?
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Linear(ized) system and linear control}{
+
+%% System state is given as $\bar q_t=\mat{c}{q_t\\ \dot q_t}$
+%% \begin{align}
+%% &P(q_{t\po} \| \dot q_t, q_t)
+%%  = \NN(q_{t\po} \| q_t + u \dot q_{t\po}, W^\1) ~,\\
+%% &P(\dot q_{t\po} \| \dot q_t, u_t)
+%%  = \NN(\dot q_{t\po} \| \dot q_t + u M^\1(u_t+F), Q) ~,\\
+%% %
+%% &\mat{c}{q_{t\po}\\ \dot q_{t\po}}
+%%  = \mat{c@{~}c}{1&u\\0&1}~ \mat{c}{q_t\\ \dot q_t} +
+%%  \mat{c}{u^2\\u} M^\1 (u_t+F) + \xi \comma \<d\xi d\xi^\T\> = \mat{c@{~}c}{W^\1&0\\0&Q} \\
+%% %
+%% & A=\mat{c@{~}c}{1&u\\0&1}
+%%   \comma B=\mat{c}{u^2 M^\1\\u M^\1}
+%%   \comma a=\mat{c}{u^2 M^\1 F\\u M^\1 F}
+%% \end{align}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Operational space control}
+\slide{Operational space control}{
+
+~
+
+\item Inverse kinematics:
+$$q^* = \argmin_q \norm{\phi(q) - y^*}^2_C + \norm{q-q_0}^2_W $$
+
+~
+
+\item Operational space control (one might call it ``Inverse task space dynamics''):
+$$u^* = \argmin_u \norm{\ddot\phi(q) - \ddot y^*}^2_C + \norm{u}^2_H$$
+
+\label{pageObjFunc}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%% ~
+
+%% \item what is actually $\dot y_{t\po}$ and $y_{t\po}$ depending on
+%% $u$?
+
+%% Euler integration:
+%% \begin{align*}
+%% \mat{c}{q_{t\po}\\ \dot q_{t\po}}
+%%  = \mat{c}{q_t + \tau \dot q_t  \\
+%%            \dot q_t + \tau  M^\1 (u-F)}
+%%  = \mat{cc}{1&\tau\\0&1}~ \mat{c}{q_t\\ \dot q_t} +
+%%     \mat{c}{0\\\tau} M^\1 (u-F)
+%% \end{align*}
+
+%% Leap frog integration:
+%% \begin{align*}
+%% \mat{c}{q_{t\po}\\ \dot q_{t\po}}
+%%  = \mat{c}{q_t + \tau \dot q_t + \tau^2/2~ M^\1 (u-F)
+%%            \dot q_t + \tau  M^\1 (u-F)}
+%%   = \mat{cc}{1&\tau\\0&1}~ \mat{c}{q_t\\ \dot q_t} +
+%%     \mat{c}{\tau^2/2\\\tau} M^\1 (u-F)
+%% \end{align*}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Operational space control}{
+
+%% discrete time:
+%% \begin{align*}
+%% f(u)
+%%  &= \norm{u}_{H} \\
+%%  &+ \norm{\dot y^* - J \dot q_t - \tau J M^\1 (u-F)}_{D}
+%%  &+ \norm{y^* - \phi(q_t) - \tau J \dot q_t - \tau^2/2~ J M^\1 (u-F)}_{C}
+%% \end{align*}
+%% (here we approximate $\dot J=0$!)
+
+~
+
+\item We can derive the optimum perfectly analogous to inverse
+kinematics
+
+{\small We identify the minimum of a locally squared potential, using
+the local linearization (and approx. $\ddot J=0$)
+$$
+\ddot \phi(q)
+  = \frac{d}{dt} \dot \phi(q)
+  \approx \frac{d}{dt}(J\dot q+\dot J q)
+  \approx J \ddot q + 2\dot J \dot q
+  = J M^\1 (u-F) + 2\dot J \dot q
+$$
+
+}
+
+We get
+\begin{align*}
+u^*
+ &= T^\sharp (\ddot y^* - 2\dot J \dot q + T F)\\
+% &= T^\sharp (\dot y^* - J \dot q_t + \tau T F)\\
+ &\text{ with } T = J M^\1 \comma T^\sharp = (T^\T C T + H)^\1 T^\T C
+\end{align*}
+($C\to\infty ~\To~ T^\sharp = H^\1 T^\T (T H^\1 T^\T)^\1$)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Controlling a robot -- operational space approach}{
+
+\item Where could we get the desired $\ddot y^*$ from?
+
+-- \textbf{Reference trajectory} $y_{0:T}^\text{ref}$ in operational space
+
+-- \textbf{PD-like behavior} in each operational space:
+
+\cen{$\ddot y_t^* = \ddot y_t^\text{ref} + K_p(y_t^\text{ref} - y_t) + K_d(\dot y_t^\text{ref} - \dot y_t)$}
+
+~
+
+\show[.8]{jointSpace-operationalSpace}
+\hfill{\tiny illustration from O. Brock's lecture}
+
+~
+
+\item Operational space control: \emph{Let the system behave as if we could directly
+``apply a 1D point mass behavior'' to the endeffector}
+
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Summary}{
+
+%% \renewcommand{\arraystretch}{1.8}
+
+%% \hspace*{-5mm}\begin{tabular}{|p{.27\columnwidth}|c|c|c|}
+%% \hline
+%% & State & Controls & Dynamics \\
+%% %\hline
+%% general notation
+%% & $x$
+%% & $u$
+%% & $\dot x = f(x,u)$ \\
+%% \hline
+%% \hline
+%% Kinematic control
+%% & $x=q$
+%% & $u=\dot q$
+%% & $\dot q = u$ (can be \emph{set}) \\
+%% \hline
+%% 1D Point mass
+%% & $x = \mat{c}{q \\ \dot q}$
+%% & $u = \text{force}$
+%% & $\dot x = \mat{c}{\dot q \\
+%% u/m}$ \\
+%% \hline
+%% General dynamic\newline system
+%% & $x = \mat{c}{q \\ \dot q}$
+%% & $u = \text{torque}$
+%% & $\dot x = \mat{c}{\dot q \\ M^\1(u-F)}$ \\
+%% \hline
+%% Car
+%% & $q = \mat{c}{x \\ y \\ \t}$
+%% & $u = \mat{c}{v \\ \varphi}$
+%% & $\dot q = \mat{c}{v~ \cos \t \\ v~ \sin \t \\ (v/L)~ \tan \varphi }$\\
+%% \hline
+%% \end{tabular}
+
+%% ~
+
+%% Only kinematic control has $\dim(u)=\dim(x)$, all others $\dim(u)<\dim(x)$
+
+%% }
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% \slide{Analogies:~ motion rate and dynamic control}{
+
+
+%% \small
+%% \hspace*{-11mm}\begin{tabular}{|p{.19\columnwidth}|p{.26\columnwidth}|p{.5\columnwidth}|}
+%% \hline
+%% & motion rate control
+%% & dynamic control \\
+%% \hline
+%% control interface
+%% & can set \emph{velocities} $\dot q$ of servo motors
+%% & can set \emph{torques} $u$ for each
+%% joint  (or other \emph{control signals} $u$)\\
+%% \hline
+%% effect after a\newline time step $\tau$
+%% & a step $\d q = \tau \dot q$ in joint angles
+%% & a change $\d \dot q = \tau \ddot q$ in velocity \\
+%% \hline
+%% system\newline equation %$x_{t\po} = f(x_t,u)$
+%% & $q_{t\po} = q_t + \tau \dot q$
+%% & $M(q)~ \ddot q + F(q,\dot q) = u$ \newline
+%%   $\mat{c}{q_{t\po}\\ \dot q_{t\po}}
+%%   = \mat{c@{~}c}{1&\tau\\0&1}~ \mat{c}{q_t\\ \dot q_t} +
+%%     \mat{c}{\tau^2/2\\\tau} M^\1 (u-F)$ \\
+%% \hline
+%% optimality: & & \\
+%% 1) lazyness
+%% & %$\norm{\dot q}_{W}^2$ \newline
+%%   $\norm{q_{t\po} - q_t}_{W}^2$
+%% & $\norm{u}_{H}^2$ \\
+%% 2) task
+%% & %$\norm{\dot y^* - J \dot q}_{C}^2$ \newline
+%%   $\norm{\phi(q_{t\po}) - y^*}_{C}^2$
+%% & $\norm{J M^\1 (u-F) + \dot J\dot q - \ddot y^*}_{C}^2$ \\
+%% \hline
+%% optimal solution
+%% & %$\dot q = J^\sharp~ \dot y^*$ \newline
+%%   $\d q = J^\sharp~ (y^* - \phi(q_t))$
+%% & $u = T^\sharp (\ddot y^* - \dot J \dot q + T F)$\\
+%% \hline
+%% \end{tabular}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Multiple tasks}
+\slide{Multiple tasks}{
+
+\item Recall trick last time: we defined a ``big kinematic map'' $\Phi(q)$ such
+that 
+$$ q^* = \argmin_q \norm{q-q_0}_W^2 + \norm{\Phi(q)}^2 $$
+
+~
+
+\item Works analogously in the dynamic case:
+$$ u^* = \argmin_u \norm{u}_H^2  + \norm{\Phi(q)}^2 $$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{What have we learned? What not?}{\label{lastpage}
+
+\item More theory
+\begin{items}
+\item Contacts $\to$ Inequality constraints on the dynamics
+\item Switching dynamics ~ (e.g.\ for walking)
+\item Controllling contact forces
+\end{items}
+
+~
+
+\item \textbf{Hardware limits}
+\begin{items}
+\item I think: the current success stories on highly dynamic robots
+are all anchored in novel hardware approaches
+\end{items}
+
+}
+
+%% \slide{}{
+
+%% \item more on dynamics:
+
+%% -- big field, e.g.\ see Stefan Schaal's lecture
+
+%% -- biological motor control research (e.g.\ google Daniel Wolpert)%
+%% \anchor{-0,-100}{\includegraphics[width=2cm]{bioMotorNoise}}
+
+%% ~~ Wolpert DM & Flanagan JR (2010):\\
+%% ~~ \emph{Q&A: Robotics as a tool to understand the brain}
+
+%% -- recall big dog!! ~ (there is a lot more to say about dynamics)
+
+%% ~
+
+%% \item contacts:
+
+%% -- difficult to model ~ (think of time scale of physics!)
+
+%% -- really dynamic contacts $\to$ require compliant hardware
+
+%% ~
+
+%% \item more on kinematics:
+
+%% -- non-redundant kinematics $\to$ direct analytic
+%%    inverse kinematics
+
+%% -- closed loop kinematics (as in walking)
+
+%% -- Denavit-Hartenberg conventions:\\
+%% ~~ special 4D-parameterization of
+%%    transformations $T_{A\to B}$
+
+%% ~
+
+%% \item etc.\
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Vocabulary}{
+
+%% \item \textbf{Linear controller (control law)}
+
+%% $\pi: x \mapsto u$ maps the state ($(q,\dot q)$ or $q$)
+%% linearly to controls ($u$ or $\dot q$)
+
+%% \item \textbf{Closed loop, open loop}
+%% \begin{items}
+%% \item Closed loop control: $u = \pi(x,t)$ (depends on current state $x$, also called feedback control)
+%% \item Open loop control: $u = \pi(t)$ ~~ (independent of current
+%% state $x$, \emph{we didn't discuss this here})
+%% \end{items}
+
+%% \item \textbf{PD control, gains, stiffness}
+
+%% $\ddot y^* = K_p(y^*-y) + K_d(\dot y^* - \dot y)$ \qquad (here in operational space)
+
+%% $K_p$ = position gain, $K_d$ = velocity gain
+
+%% stiffness = high $K_p$
+
+%% \item \textbf{Damping}
+
+%% $K_d$ is damping the system, $\xi<1$ = oscillatory-damped
+%% (``overshooting'')
+
+%% $\xi=1$ critically damped, $\xi>1$ over-damped
+
+%% }
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot
+

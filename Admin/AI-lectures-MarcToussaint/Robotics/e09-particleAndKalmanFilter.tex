@@ -1,0 +1,84 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\exnum}{9}
+
+\exercises
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Particle Filtering the location of a car}
+
+Start from the code in @RoboticsCourse/05-car@.
+
+The @CarSimulator@ simulates a car exactly as described on slide 04:48
+(using Euler integration with step size 1sec). At each time step a
+control signal $u=(v,\phi)$ moves the car a bit and Gaussian noise
+with standard deviation $\s_\text{dynamics}=.03$ is added to $x$, $y$
+and $\theta$. Then, in each step, the car meassures the relative
+positions of $m$ landmark points, resulting in an observation $y_t \in\RRR^
+{m\times 2}$; these observations are Gaussian-noisy with standard
+deviation $\s_\text{observation}=.5$. In the current implementation the
+control signal $u_t=(.1,.2)$ is fixed (roughly driving circles).
+
+a) Odometry (dead reckoning): First write a particle filter (with
+$N=100$ particles) that ignores the observations. For this you need to
+use the cars system dynamics (described on 04:48) to propagate each
+particle, and add some noise $\s_\text{dynamics}$ to each particle
+(step 3 on slide 07:22). Draw the particles (their $x,y$ component)
+into the display. Expected is that the particle cloud becomes larger
+and larger.
+
+b) Next implement the likelihood weights $w_i \propto P(y_t | x^i_t) =
+\NN(y_t | y(x_t^i), \s) \propto e^{-\half (y_t - y(x_t^i))^2/\s^2}$
+where $y(x_t^i)$ is the (ideal) observation the car would have if it
+were in the particle possition $x_t^i$. Since $\sum_i w_i = 1$,
+normalize the weights after this computation.
+
+c) Test the full particle filter including the likelihood weights
+(step 4) and resampling (step 2). Test using a larger
+($10\s_\text{observation}$) and smaller ($\s_\text{observation}/10$)
+variance in the computation of the likelihood.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\exsection{Kalman filter}
+
+We consider the same car example as above, but track the car using a Kalman filter.
+
+a) To apply a Kalman filter (slide 07:27) we need Gaussian models for
+$P(x_t \| x_{t\1}, u_{t\1})$ as well as $P(y_t | x_t)$.  We assume
+that the dynamics model is given as a local Gaussian of the form
+\begin{align*}
+P(x_{t\po} \| x_t, u_t) = \NN(x_{t\po} | x_t + B(x_t) u_t, \s_\text{dynamics} )
+\end{align*}
+where the matrix $B(x_t) = \frac{\del x_{t\po}(x_t,u_t)}{\del u_t}$
+gives the local linearization of the deterministic discrete time car dynamics
+$$x_{t\po}(x,u) = x + \tau \mat{c}{u_1 \cos x_3 \\ u_1 \sin x_3 \\ (u_1/L) \tan u_2}$$
+What is $B(x_t)$ for the car dynamics?
+
+b) Concerning the observation likelihood $P(y_t | x_t)$ we assume
+\begin{align*}
+P(y_t | x_t, \t_{1:N}) = \NN(y_t \| C(x_t) x_t + c(x_t), \s_\text{observation})
+\end{align*}
+What is the matrix $C(x_t)$ (the Jacobian of the landmark positions
+w.r.t.\ the car state) in our example?
+
+c) Start with the code in @RoboticsCourse/06-kalmanSLAM@.
+
+Write a Kalman filter to track the car. You can use the
+routine @getObservationJacobianAtState@ to
+access $C(x_t)=\frac{\del y}{\del x}$. Note that $c(x_t) = \hat y_t
+- C(x_t) x_t$, where $\hat y_t$ is the mean observation in state
+$x_t$ (there is another routine for this).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exerfoot
+
+
+
