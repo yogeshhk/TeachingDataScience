@@ -32,7 +32,12 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Semantic Fragmentation: Naive Chunking}
-\begin{lstlisting}[language=Python]
+\begin{itemize}
+\item Fixed-size segmentation breaks logical units
+\item Context loss across chunk boundaries
+\item Impossible to maintain semantic coherence
+\end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 # Traditional approach - ignores boundaries
 def naive_chunking(text, chunk_size=512):
     chunks = []
@@ -42,11 +47,7 @@ def naive_chunking(text, chunk_size=512):
 # Result: Tables, code blocks, images 
 # are fragmented and lose context
 \end{lstlisting}
-\begin{itemize}
-\item Fixed-size segmentation breaks logical units
-\item Context loss across chunk boundaries
-\item Impossible to maintain semantic coherence
-\end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,29 +76,57 @@ def naive_chunking(text, chunk_size=512):
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Chunk Type Taxonomy: Pydantic Models}
-\begin{lstlisting}[language=Python]
-class ChunkType(Enum):
+\begin{itemize}
+\item Type-safe hierarchical chunk architecture
+\item Each chunk extends base with modality-specific fields
+\end{itemize}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from pydantic import BaseModel, Field, validator
+from typing import Optional, List, Dict
+from enum import Enum
+
+class ChunkType(str, Enum):  # Inherit from str for better JSON serialization
     TEXT = "text"
     TABLE = "table"
     IMAGE = "image"
     CODE = "code"
 
-class BaseChunk(BaseModel):
-    chunk_id: str
-    chunk_type: ChunkType
-    description: str  # AI-generated
-    source_page: Optional[int]
-    bbox: Optional[Dict[str, float]]
 \end{lstlisting}
-\begin{itemize}
-\item Type-safe hierarchical chunk architecture
-\item Each chunk extends base with modality-specific fields
-\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunk Type Taxonomy: Pydantic Models}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class BaseChunk(BaseModel):
+    chunk_id: str = Field(..., description="Unique identifier")
+    chunk_type: ChunkType
+    description: str = Field(..., min_length=10)
+    source_page: Optional[int] = Field(None, ge=1)
+    bbox: Optional[Dict[str, float]] = None
+    confidence_score: Optional[float] = Field(None, ge=0.0, le=1.0)  # ADD THIS
+    
+    @validator('chunk_id')
+    def validate_chunk_id(cls, v):
+        if not v.startswith('chunk_'):
+            raise ValueError('chunk_id must start with chunk_')
+        return v
+\end{lstlisting}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Specialized Chunk Types: Table Example}
-\begin{lstlisting}[language=Python]
+
+\begin{itemize}
+\item Preserves structured data relationships
+\item Maintains schema information for query processing
+\item Enables text-to-SQL conversion capabilities
+\end{itemize}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 class TableChunk(BaseChunk):
     table_data: List[List[str]]
     headers: List[str]
@@ -106,37 +135,62 @@ class TableChunk(BaseChunk):
     num_rows: Optional[int]
     num_cols: Optional[int]
 \end{lstlisting}
-\begin{itemize}
-\item Preserves structured data relationships
-\item Maintains schema information for query processing
-\item Enables text-to-SQL conversion capabilities
-\end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Document Parsing with Docling Integration}
-\begin{lstlisting}[language=Python]
+Docling maintains semantic boundaries during extraction
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+
 class DoclingParser:
-    def parse_document(self, path):
-        result = self.converter.convert(path)
-        document = result.document
+    def __init__(self):
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.do_ocr = True
+        pipeline_options.do_table_structure = True
         
-        chunks = []
-        chunks.extend(self._extract_text_chunks())
-        chunks.extend(self._extract_table_chunks())
-        chunks.extend(self._extract_image_chunks())
-        chunks.extend(self._extract_code_chunks())
-        
-        return self._generate_descriptions(chunks)
+        self.converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_options=pipeline_options
+                )
+            }
+        )
+    
 \end{lstlisting}
-\begin{itemize}
-\item Docling maintains semantic boundaries during extraction
-\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Parsing with Docling Integration}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+    def parse_document(self, path: str):
+        result = self.converter.convert(path)
+        doc = result.document
+        
+        chunks = []
+        # Use Docling's native item iteration
+        for item, level in doc.iterate_items():
+            if item.label == DocItemLabel.TEXT:
+                chunks.extend(self._extract_text_chunks(item))
+            elif item.label == DocItemLabel.TABLE:
+                chunks.extend(self._extract_table_chunks(item))
+            # ... etc
+        
+        return self._generate_descriptions(chunks)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{AI-Powered Description Generation}
-\begin{lstlisting}[language=Python]
+
+Modality-specific description generation
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 def _generate_descriptions(self, chunks):
     for chunk in chunks:
         if isinstance(chunk, TextChunk):
@@ -150,14 +204,19 @@ def _generate_descriptions(self, chunks):
                 self._generate_image_description()
     return chunks
 \end{lstlisting}
-\begin{itemize}
-\item Modality-specific description generation
-\end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Table Description: Structural Analysis}
-\begin{lstlisting}[language=Python]
+
+\begin{itemize}
+\item Captures schema and sample data in description
+\item Enables semantic search on table content
+\end{itemize}
+
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 def _generate_table_description(self, chunk):
     headers = ", ".join(chunk.headers)
     desc = f"Table with {chunk.num_rows} rows"
@@ -170,15 +229,12 @@ def _generate_table_description(self, chunk):
     
     return desc
 \end{lstlisting}
-\begin{itemize}
-\item Captures schema and sample data in description
-\item Enables semantic search on table content
-\end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Vector-Based Retrieval with Metadata}
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 def ingest_chunks(self, chunks):
     documents = []
     for chunk in chunks:
@@ -211,7 +267,7 @@ def ingest_chunks(self, chunks):
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Modality-Specific Query Processing}
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 def _process_retrieved_node(self, node, query):
     chunk_type = node.metadata['chunk_type']
     content = node.metadata['content']
@@ -230,7 +286,13 @@ def _process_retrieved_node(self, node, query):
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Text-to-SQL Agent for Table Queries}
-\begin{lstlisting}[language=Python]
+
+\begin{itemize}
+\item Converts natural language to SQL queries
+\item Executes on in-memory SQLite database
+\end{itemize}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 class TableQueryAgent:
     def query_table(self, table_chunk, query):
         # Create temporary SQLite database
@@ -244,15 +306,15 @@ class TableQueryAgent:
         result = self._execute_sql_query(sql)
         return result
 \end{lstlisting}
-\begin{itemize}
-\item Converts natural language to SQL queries
-\item Executes on in-memory SQLite database
-\end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{SQL Generation from Natural Language}
-\begin{lstlisting}[language=Python]
+
+LLM-powered SQL generation from schema and query-description
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 def _generate_sql_query(self, chunk, query):
     schema = f"Schema: {', '.join(chunk.headers)}"
     prompt = f"""Convert to SQL:
@@ -266,14 +328,11 @@ SQL:"""
     sql = self.tokenizer.decode(outputs)
     return sql.strip()
 \end{lstlisting}
-\begin{itemize}
-\item LLM-powered SQL generation from schema and query
-\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Response Generation with Context}
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 def _generate_response(self, query, context):
     prompt = f"""Based on context, answer:
 
@@ -290,12 +349,14 @@ Answer:"""
     
     response = self.tokenizer.decode(outputs)
     return response[len(prompt):].strip()
-\end{lstlisting>
+\end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{System Usage: Basic Pipeline}
-\begin{lstlisting}[language=Python]
+Simple API for end-to-end document processing
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 from llamaindex_rag import RAGPipeline
 
 # Initialize pipeline
@@ -311,14 +372,17 @@ stats = pipeline.process_document("report.pdf")
 response = pipeline.query_document(
     "What was the average performance?")
 \end{lstlisting}
-\begin{itemize}
-\item Simple API for end-to-end document processing
-\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Advanced Configuration Options}
-\begin{lstlisting}[language=Python]
+
+\begin{itemize}
+\item Flexible model selection for different use cases
+\item GPU acceleration support for production deployment
+\end{itemize}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 # Custom parser configuration
 parser = DoclingParser(
     text_model_name="DialoGPT-medium",
@@ -333,10 +397,7 @@ rag = MultiModalRAG(
     device="cuda"
 )
 \end{lstlisting}
-\begin{itemize}
-\item Flexible model selection for different use cases
-\item GPU acceleration support for production deployment
-\end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

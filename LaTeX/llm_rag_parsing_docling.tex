@@ -35,6 +35,115 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Installation and System Requirements}
+      \begin{itemize}
+        \item \textbf{Python Version:}
+        \begin{itemize}
+            \item Python 3.10 or higher required
+            \item Python 3.11 recommended for optimal performance
+        \end{itemize}
+        \item \textbf{Core Dependencies:}
+        \begin{itemize}
+            \item docling-core $>=$ 1.0.0
+            \item pydantic $>=$ 2.0
+            \item PyTorch $>=$ 2.0 (for advanced features)
+        \end{itemize}		
+        \item \textbf{Installation Methods:}
+      \end{itemize}
+      
+\begin{lstlisting}[language=bash, basicstyle=\tiny]
+# Basic installation
+pip install docling
+
+# With OCR support (recommended)
+pip install docling[ocr]
+
+# Full installation with all features
+pip install docling[all]
+
+# From source (for development)
+git clone https://github.com/DS4SD/docling.git
+cd docling
+pip install -e ".[dev]"
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{System Requirements and Hardware Recommendations}
+      \begin{itemize}
+        \item \textbf{Minimum Requirements:}
+        \begin{itemize}
+            \item CPU: 2 cores, 2.0 GHz
+            \item RAM: 4 GB
+            \item Disk: 2 GB free space
+            \item OS: Linux, macOS, Windows 10+
+        \end{itemize}
+        \item \textbf{Recommended for Production:}
+        \begin{itemize}
+            \item CPU: 8+ cores, 3.0+ GHz
+            \item RAM: 16 GB
+            \item GPU: NVIDIA GPU with 8GB+ VRAM (optional, for acceleration)
+            \item Disk: 10 GB free space (for models and cache)
+        \end{itemize}
+        \item \textbf{GPU Acceleration:}
+        \begin{itemize}
+            \item CUDA 11.8+ or 12.x
+            \item cuDNN 8.x
+            \item 3-5x speedup for layout analysis and OCR
+        \end{itemize}
+        \item \textbf{Docker Support:}
+        \begin{itemize}
+            \item Official Docker images available
+            \item Includes all dependencies and models
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Version Information and Feature Timeline}
+      \begin{itemize}
+        \item \textbf{Current Stable Version: 2.x.x (as of October 2024)}
+        \item \textbf{Major Version History:}
+      \end{itemize}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{|l|l|p{6cm}|}
+\hline
+\textbf{Version} & \textbf{Release} & \textbf{Key Features} \\
+\hline
+1.0.0 & Q2 2024 & Initial release, basic PDF parsing \\
+\hline
+1.5.0 & Q3 2024 & OCR support, table extraction \\
+\hline
+2.0.0 & Q4 2024 & Unified document model, VLM support \\
+\hline
+2.1.0 & Current & Plugin system, confidence scores \\
+\hline
+\end{tabular}
+\end{table}
+
+      \begin{itemize}
+        \item \textbf{Features Covered in This Presentation:}
+        \begin{itemize}
+            \item All features from version 2.1.0+
+            \item DoclingDocument structure (v2.0+)
+            \item Confidence scoring (v2.1+)
+            \item Plugin architecture (v2.1+)
+        \end{itemize}
+        \item \textbf{Check Your Version:}
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+python -c "import docling; print(docling.__version__)"
+\end{lstlisting}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Architecture Overview}
 \begin{columns}
     \begin{column}[T]{0.4\linewidth}
@@ -122,6 +231,255 @@
 		\includegraphics[width=0.8\linewidth,keepaspectratio]{docling3}
 		\end{center}	
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Table Extraction with Docling's Table Transformer}
+      \begin{itemize}
+          \item Docling uses specialized Table Transformer models for accurate table structure recognition
+          \item Detects table boundaries, rows, columns, and cell relationships
+          \item Preserves complex table features: merged cells, nested tables, headers
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python, basicstyle=\tiny, basicstyle=\tiny]
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions, TableFormerMode
+
+# Configure table extraction
+pipeline_options = PdfPipelineOptions()
+pipeline_options.do_table_structure = True
+pipeline_options.table_structure_options.mode = TableFormerMode.ACCURATE
+# Options: FAST, ACCURATE
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+
+result = converter.convert("document.pdf")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Table Extraction with Docling's Table Transformer}
+
+      
+\begin{lstlisting}[language=Python, basicstyle=\tiny, basicstyle=\tiny]
+
+# Access extracted tables
+for item, level in result.document.iterate_items():
+    if item.label == DocItemLabel.TABLE:
+        print(f"Table on page {item.prov[0].page_no}")
+        print(f"Rows: {len(item.data)}, Columns: {len(item.data[0])}")
+        # Export as markdown, HTML, or JSON
+        table_md = item.export_to_markdown()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{OCR Engine Options and Configuration}
+      \begin{itemize}
+          \item Docling supports multiple OCR engines: EasyOCR, Tesseract, RapidOCR
+          \item Choose based on accuracy needs, speed requirements, and language support
+          \item Tesseract: Fast, good for English; EasyOCR: Better for non-Latin scripts
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling.datamodel.pipeline_options import PdfPipelineOptions, OcrOptions
+from docling.backend.docling_parse_backend import OcrEngine
+
+# Option 1: Tesseract OCR (default, fastest)
+pipeline_options = PdfPipelineOptions()
+pipeline_options.do_ocr = True
+pipeline_options.ocr_options = OcrOptions(
+    engine=OcrEngine.TESSERACT,
+    lang="eng",  # Language code
+    psm=3  # Page segmentation mode
+)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{OCR Engine Options and Configuration}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Option 2: EasyOCR (better accuracy, slower)
+pipeline_options.ocr_options = OcrOptions(
+    engine=OcrEngine.EASYOCR,
+    lang=["en", "ch_sim"],  # Multiple languages
+    gpu=True  # Use GPU acceleration
+)
+
+# Option 3: RapidOCR (balanced speed/accuracy)
+pipeline_options.ocr_options = OcrOptions(
+    engine=OcrEngine.RAPIDOCR
+)
+
+converter = DocumentConverter(
+    format_options={InputFormat.PDF: PdfFormatOption(pipeline_options)}
+)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pipeline Customization: Advanced Configuration}
+      \begin{itemize}
+          \item Customize pipeline for specific document types and use cases
+          \item Enable/disable features based on performance vs accuracy tradeoffs
+          \item Configure models, thresholds, and processing strategies
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions, TableFormerMode, EasyOcrOptions
+)
+
+# Custom pipeline for technical documents with tables and formulas
+pipeline_options = PdfPipelineOptions()
+
+# Layout and structure
+pipeline_options.do_ocr = False  # Digital PDF, no OCR needed
+pipeline_options.generate_page_images = False  # Save memory
+pipeline_options.generate_picture_images = True  # Extract diagrams
+
+# Table extraction
+pipeline_options.do_table_structure = True
+pipeline_options.table_structure_options.mode = TableFormerMode.ACCURATE
+pipeline_options.table_structure_options.min_confidence = 0.8
+
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pipeline Customization: Advanced Configuration}
+      
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Formula extraction
+pipeline_options.do_formula = True
+
+# Apply custom pipeline
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+
+result = converter.convert("technical_report.pdf")
+
+# Custom export with specific elements
+markdown = result.document.export_to_markdown(
+    include_tables=True,
+    include_images=True,
+    image_placeholder="[Image: {caption}]"
+)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Image Export and Processing}
+      \begin{itemize}
+          \item Extract embedded images from documents with metadata
+          \item Save images separately or embed as base64
+          \item Access image properties: size, format, bounding box, page location
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from pathlib import Path
+from docling.datamodel.base_models import DocItemLabel
+
+# Convert document and extract images
+result = converter.convert("document.pdf")
+doc = result.document
+
+# Create output directory for images
+image_dir = Path("extracted_images")
+image_dir.mkdir(exist_ok=True)
+\end{lstlisting}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Image Export and Processing}
+      
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Iterate through all picture items
+for idx, (item, level) in enumerate(doc.iterate_items()):
+    if item.label == DocItemLabel.PICTURE:
+        # Access image metadata
+        page_no = item.prov[0].page_no
+        bbox = item.prov[0].bbox  # Bounding box coordinates
+        
+        # Get image data
+        if hasattr(item, 'image'):
+            # Save image to disk
+            image_path = image_dir / f"page_{page_no}_img_{idx}.png"
+            item.image.pil_image.save(image_path)
+            
+            print(f"Extracted image: {image_path}")
+            print(f"  Size: {item.image.size}")
+            print(f"  Location: page {page_no}, bbox {bbox}")
+            
+            # Get caption if available
+            if item.caption:
+                print(f"  Caption: {item.caption}")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Metadata Preservation and Provenance}
+      \begin{itemize}
+          \item Docling maintains complete provenance information for all extracted elements
+          \item Track source page, coordinates, hierarchy, and parent relationships
+          \item Essential for citations, source attribution, and document traceability
+      \end{itemize}
+      
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling.document_converter import DocumentConverter
+
+result = converter.convert("research_paper.pdf")
+doc = result.document
+
+# Access document-level metadata
+print(f"Title: {doc.name}")
+print(f"Total Pages: {len(doc.pages)}")
+print(f"Confidence Score: {result.confidence.mean_grade}")
+
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Metadata Preservation and Provenance}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Iterate through elements with provenance
+for item, level in doc.iterate_items():
+    # Get provenance information
+    prov = item.prov[0]  # First provenance entry
+    
+    print(f"\nElement: {item.label}")
+    print(f"  Page: {prov.page_no}")
+    print(f"  Bounding Box: {prov.bbox}")  # (x0, y0, x1, y1)
+    print(f"  Hierarchy Level: {level}")
+    
+    # Parent-child relationships via JSON pointers
+    if item.parent:
+        print(f"  Parent: {item.parent}")
+    
+    # Export with metadata preserved
+    item_dict = item.dict()
+    print(f"  Full Metadata: {item_dict.keys()}")
+
+# Export with provenance
+json_output = doc.export_to_json(indent=2)
+# JSON includes all provenance and metadata
+\end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -224,7 +582,7 @@
 	\end{itemize}
 	  \end{itemize}
 	  
-\begin{lstlisting}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 from docling.document_converter import DocumentConverter
 from docling.chunking import HybridChunker
 
@@ -246,7 +604,7 @@ for i, chunk in enumerate(chunk_iter):
 Inspect the first chunk containing a table — using the default serialization strategy (first example)
 
 	  
-\begin{lstlisting}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 chunker = HybridChunker(tokenizer=tokenizer)
 
 chunk_iter = chunker.chunk(dl_doc=doc)
@@ -265,7 +623,7 @@ print_chunk(
 \begin{frame}[fragile]\frametitle{Advanced Table Serialization}
 Specify a different table serializer that serializes tables to Markdown instead of the triplet notation used by default:
 	  
-\begin{lstlisting}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 from docling_core.transforms.chunker.hierarchical_chunker import (
     ChunkingDocSerializer,
     ChunkingSerializerProvider,
@@ -313,7 +671,7 @@ print_chunk(chunks=chunks,chunk_pos=i,)
 	\item CLI commands for plugin discovery and usage
 	\end{itemize}
 	  
-\begin{lstlisting}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 pyproject.toml:
 [project.entry-points."docling"]
 your_plugin_name = "your_package.module"
@@ -335,7 +693,7 @@ def ocr_engines():
 	\item CLI usage with external plugins:
 	\end{itemize}
 	
-\begin{lstlisting}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 pipeline_options = PdfPipelineOptions()
 pipeline_options.allow_external_plugins = True
 pipeline_options.ocr_options = YourOptions
@@ -365,12 +723,13 @@ docling --allow-external-plugins --ocr-engine=NAME
 	\item Automatic format detection and processing
 	  \end{itemize}
 	  
-\begin{lstlisting}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 from docling.document_converter import DocumentConverter
 
 source = "https://arxiv.org/pdf/2408.09869"
 converter = DocumentConverter()
-doc = converter.convert(source).document
+result = converter.convert(source)  # Returns ConversionResult
+doc = result.document
 print(doc.export_to_markdown())
 \end{lstlisting}	  
 \end{frame}

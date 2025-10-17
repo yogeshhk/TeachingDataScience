@@ -28,7 +28,7 @@
           \item Import specialized readers and parsers for document processing
       \end{itemize}
       
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 import os
 from pathlib import Path
 from tempfile import mkdtemp
@@ -57,9 +57,11 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
           \item The embedding model is crucial for the retrieval component of RAG
       \end{itemize}
       
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 EMBED_MODEL = HuggingFaceEmbedding(
-    model_name="BAAI/bge-small-en-v1.5"
+    model_name="BAAI/bge-small-en-v1.5",  # 384-dim
+    # Consider: "sentence-transformers/all-MiniLM-L6-v2" (384-dim)
+    # or "BAAI/bge-base-en-v1.5" (768-dim, better quality)
 )
 \end{lstlisting}
 \end{frame}
@@ -74,20 +76,20 @@ EMBED_MODEL = HuggingFaceEmbedding(
           \item Padding configuration ensures proper token handling during generation
       \end{itemize}
       
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from llama_index.llms.huggingface import HuggingFaceLLM
+
 GEN_MODEL = HuggingFaceLLM(
-    model_name="microsoft/DialoGPT-small",
-    tokenizer_name="microsoft/DialoGPT-small",
-    context_window=1024,
-    max_new_tokens=256,
+    model_name="meta-llama/Llama-3.2-3B-Instruct",  # or "microsoft/phi-3-mini-4k-instruct"
+    tokenizer_name="meta-llama/Llama-3.2-3B-Instruct",
+    context_window=4096,  # Updated
+    max_new_tokens=512,
     model_kwargs={
-        "torch_dtype": torch.float32,
-        "do_sample": True,
-        "temperature": 0.7,
-        "top_p": 0.9,
-        "pad_token_id": 50256,    },
-    tokenizer_kwargs={"padding_side": "left"},
-    device_map="cpu",)
+        "torch_dtype": torch.bfloat16,  # Better than float32
+        "trust_remote_code": True
+    },
+    device_map="auto",  # Better than "cpu"
+)
 \end{lstlisting}
 \end{frame}
 
@@ -102,7 +104,7 @@ GEN_MODEL = HuggingFaceLLM(
           \item The system will retrieve relevant sections and generate comprehensive answers
       \end{itemize}
       
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 SOURCE = "data/NVIDIAAn.pdf"  # Docling Technical Report
 QUERY = "What is NVIDIA's outlook for the first quarter of fiscal 2026?"
 \end{lstlisting}
@@ -119,7 +121,7 @@ QUERY = "What is NVIDIA's outlook for the first quarter of fiscal 2026?"
           \item This preprocessing step is crucial for effective information retrieval
       \end{itemize}
       
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 reader = DoclingReader()
 node_parser = MarkdownNodeParser()
 \end{lstlisting}
@@ -136,14 +138,18 @@ node_parser = MarkdownNodeParser()
           \item In-memory storage is suitable for development and small-scale applications
       \end{itemize}
       
-\begin{lstlisting}[language=Python]
-# EphemeralClient operates in-memory
-chroma_client = chromadb.EphemeralClient()
-chroma_collection = chroma_client.create_collection("quickstart")
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Add persistent storage option
+import chromadb
+from chromadb.config import Settings
 
-# Construct vector store for LlamaIndex
-vector_store = ChromaVectorStore(
-    chroma_collection=chroma_collection,
+# Option 1: In-memory (existing)
+chroma_client = chromadb.EphemeralClient()
+
+# Option 2: Persistent storage (ADD THIS)
+chroma_client = chromadb.PersistentClient(
+    path="./chroma_db",
+    settings=Settings(anonymized_telemetry=False)
 )
 \end{lstlisting}
 \end{frame}
@@ -159,7 +165,7 @@ vector_store = ChromaVectorStore(
           \item This step builds the searchable knowledge base for the RAG system
       \end{itemize}
       
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 index = VectorStoreIndex.from_documents(
     documents=reader.load_data(SOURCE),
     transformations=[node_parser],
@@ -182,7 +188,7 @@ index = VectorStoreIndex.from_documents(
           \item Source nodes show which parts of the document informed the answer
       \end{itemize}
       
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
 result = index.as_query_engine(llm=GEN_MODEL).query(QUERY)
 
 print(f"Q: {QUERY}")

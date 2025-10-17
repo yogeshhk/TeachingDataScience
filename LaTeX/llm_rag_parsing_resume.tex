@@ -65,21 +65,23 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Code: Docling Parser}
-    \begin{lstlisting}[language=Python, caption={llm\_parsing\_docling.py}]
-import os
-from docling import Docling
+    \begin{lstlisting}[language=Python, basicstyle=\tiny, caption={llm\_parsing\_docling.py}]
+from docling.document_converter import DocumentConverter
 
 class DoclingResumeParser:
-    def __init__(self, api_key: str):
-        self.client = Docling(api_key=api_key)
-
+    def __init__(self):
+        self.converter = DocumentConverter()
+    
     def parse_resume(self, file_path: str):
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File not found: {file_path}")
+        result = self.converter.convert(file_path)
+        doc = result.document
         
-        with open(file_path, "rb") as f:
-            response = self.client.document_and_entity.upload(file=f)
-        return response
+        # Extract structured information
+        return {
+            "text": doc.export_to_markdown(),
+            "tables": [item for item in doc.tables],
+            "metadata": doc.metadata
+        }
     \end{lstlisting}
 \end{frame}
 
@@ -101,29 +103,49 @@ class DoclingResumeParser:
     \end{itemize}
 \end{frame}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Code: Groq Parser}
-    \begin{lstlisting}[language=Python, caption={llm\_parsing\_groq.py}]
+    \begin{lstlisting}[language=Python, basicstyle=\tiny, caption={llm\_parsing\_groq.py}]
 from groq import Groq
 import json
 
 class GroqResumeParser:
     def __init__(self, api_key: str):
         self.client = Groq(api_key=api_key)
-        self.model = "gemma-7b-it"
-
+        self.model = "llama-3.2-90b-text-preview"  # Updated model
+    
     def parse_resume_text(self, text: str):
-        prompt = f"""
-        Extract entities from the following resume...
-        Return the output as clean JSON.
-        Resume: {text}
-        """
-        chat_completion = self.client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
+        prompt = """Extract the following information from this resume:
+        - name, email, phone, location
+        - education (degree, institution, year)
+        - work_experience (company, title, dates, description)
+        - skills (categorized: technical, soft, languages)
+        - certifications
+        
+        Return valid JSON with these exact keys.
+        
+        Resume:
+        {text}
+        
+        JSON Output:"""
+
+    \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code: Groq Parser}
+    \begin{lstlisting}[language=Python, basicstyle=\tiny, caption={llm\_parsing\_groq.py}]
+        response = self.client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You are a resume parsing expert. Output only valid JSON."},
+                {"role": "user", "content": prompt.format(text=text)}
+            ],
             model=self.model,
             response_format={"type": "json_object"},
+            temperature=0.1  # Lower for more consistent parsing
         )
-        return json.loads(chat_completion.choices[0].message.content)
+        return json.loads(response.choices[0].message.content)
     \end{lstlisting}
 \end{frame}
 
@@ -149,32 +171,59 @@ class GroqResumeParser:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Code: RAG Indexing}
-    \begin{lstlisting}[language=Python, caption={llm\_llamaindex\_rag.py - Building the Index}]
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+    \begin{lstlisting}[language=Python, basicstyle=\tiny, caption={llm\_llamaindex\_rag.py - Building the Index}]
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.core.node_parser import SemanticSplitterNodeParser
 from llama_index.vector_stores.faiss import FaissVectorStore
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 import faiss
 
-# Load documents
-documents = SimpleDirectoryReader("data").load_data()
+# Configure globally
+Settings.embed_model = HuggingFaceEmbedding(
+    model_name="BAAI/bge-small-en-v1.5"
+)
 
-# Semantic chunking
-splitter = SemanticSplitterNodeParser(embed_model=self.embed_model)
-nodes = splitter.get_nodes_from_documents(documents)
+# Load and process documents
+documents = SimpleDirectoryReader(
+    "data",
+    file_extractor={
+        ".pdf": "PDFReader",  # Specify reader types
+        ".docx": "DocxReader",
+        ".txt": "TextReader"
+    }
+).load_data()
 
-# FAISS vector store setup
-d = 384 # Embedding dimension
-faiss_index = faiss.IndexFlatL2(d)
-vector_store = FaissVectorStore(faiss_index=faiss_index)
-
-# Create the index
-index = VectorStoreIndex(nodes, vector_store=vector_store)
     \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code: RAG Indexing}
+    \begin{lstlisting}[language=Python, basicstyle=\tiny, caption={llm\_llamaindex\_rag.py - Building the Index}]
+
+# Semantic chunking with proper configuration
+splitter = SemanticSplitterNodeParser(
+    buffer_size=1,
+    breakpoint_percentile_threshold=95,
+    embed_model=Settings.embed_model
+)
+nodes = splitter.get_nodes_from_documents(documents)
+
+# FAISS setup with proper dimension
+d = 384  # Match embedding model dimension
+faiss_index = faiss.IndexFlatL2(d)
+vector_store = FaissVectorStore(faiss_index=faiss_index)
+
+# Build index with storage context
+from llama_index.core import StorageContext
+storage_context = StorageContext.from_defaults(vector_store=vector_store)
+index = VectorStoreIndex(nodes, storage_context=storage_context)
+    \end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Code: RAG Querying}
-    \begin{lstlisting}[language=Python, caption={llm\_llamaindex\_rag.py - Querying}]
+    \begin{lstlisting}[language=Python, basicstyle=\tiny, caption={llm\_llamaindex\_rag.py - Querying}]
 from llama_index.llms.groq import Groq
 from llama_index.core import Settings
 
@@ -213,7 +262,7 @@ class ResumeRAG:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Code: Streamlit UI}
-    \begin{lstlisting}[language=Python, caption={streamlit\_main.py}]
+    \begin{lstlisting}[language=Python, basicstyle=\tiny, caption={streamlit\_main.py}]
 import streamlit as st
 
 st.title("AI-Powered Resume Assistant")

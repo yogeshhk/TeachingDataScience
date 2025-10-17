@@ -96,66 +96,7 @@
       \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Introduction to LangGraph Message Graphs}
-      \begin{itemize}
-	\item MessageGraph orchestrates message flow between different nodes in a workflow
-	\item Use MessageGraph for simple routing decisions and basic chatbot conversation flows
-	\item Each node receives full list of previous messages as input
-	\item Nodes can append new messages and return updated message list to next node
-	\item Alternative StateGraph available for complex state management requirements
-	\item MessageGraph maintains single shared message history across all chain operations
-	\item System messages remain separate for each chain while sharing message history
-	\item Perfect for reflection agent patterns where AI generates and critiques iteratively
-	  \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Building Graph Nodes and Structure}
-      \begin{itemize}
-	\item Create MessageGraph instance and define node constants (GENERATE, REFLECT)
-	\item Generate node invokes generation chain with existing message state
-	\item Reflect node uses reflection chain to critique previous AI responses
-	\item Optional: Return human messages for reflection to improve readability and tracing
-	\item Add nodes to graph using \texttt{graph.add\_node(name, function)}
-	\item Set entry point explicitly - typically the generate node for first execution
-	\item Should\_continue function controls iteration cycles based on message count
-	\item Return 'END' when maximum iterations reached, otherwise continue to reflect
-	\item Use conditional edges for branching logic (generate → should\_continue)
-	\item Use simple edges for direct connections (reflect → generate)
-	  \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Basic Reflection Agents}
-
-Define two chains first, then add them to graph
-
-{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
-
-\begin{lstlisting}[basicstyle=\scriptsize\ttfamily]
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_openai import ChatOpenAI
-
-generation_prompt = ChatPromptTemplate.from_messages([("system",
-            "You are a twitter techie influencer assistant tasked with writing excellent twitter posts.Generate the best twitter post possible for the user's request. If the user provides critique, respond with a revised version of your previous attempts.",),
-        MessagesPlaceholder(variable_name="messages"),])
-
-reflection_prompt = ChatPromptTemplate.from_messages([("system",
-            "You are a viral twitter influencer grading a tweet. Generate critique and recommendations for the user's tweet. Always provide detailed recommendations, including requests for length, virality, style, etc.",),
-		MessagesPlaceholder(variable_name="messages"), ])
-
-llm = ChatOpenAI(model="gpt-4o")
-generation_chain = generation_prompt | llm
-reflection_chain = reflection_prompt | llm
-  \end{lstlisting}
-  
-  
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Basic Reflection Agents}
 
 Adding to graph
@@ -164,35 +105,29 @@ Adding to graph
 
 \begin{lstlisting}[basicstyle=\scriptsize\ttfamily]
 from typing import List, Sequence
-from dotenv import load_dotenv
 from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.graph import END, MessageGraph
+from langgraph.graph import END, StateGraph
+from typing_extensions import TypedDict, Annotated
+from langgraph.graph.message import add_messages
 from chains import generation_chain, reflection_chain
 
-load_dotenv()
+# Define the state for our graph
+class AgentState(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]
 
-REFLECT = "reflect"
-GENERATE = "generate"
-graph = MessageGraph()
+def generate_node(state: AgentState):
+    return {"messages": generation_chain.invoke({"messages": state["messages"]})}
 
-def generate_node(state):
-    return generation_chain.invoke({
-        "messages": state })
+def reflect_node(state: AgentState):
+    response = reflection_chain.invoke({"messages": state["messages"]})
+    return {"messages": [HumanMessage(content=response.content)]}
 
-def reflect_node(messages):
-    response = reflection_chain.invoke({
-        "messages": messages})
-    return [HumanMessage(content=response.content)]
-
-graph.add_node(GENERATE, generate_node)
-graph.add_node(REFLECT, reflect_node)
-graph.set_entry_point(GENERATE)
+graph_builder = StateGraph(AgentState)
+graph_builder.add_node("generate", generate_node)
+graph_builder.add_node("reflect", reflect_node)
+graph_builder.set_entry_point("generate")
 \end{lstlisting}
-  
-  
-
 \end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Basic Reflection Agents}
@@ -202,28 +137,25 @@ Adding to graph
 {\tiny (Ref: LangGraph Crash Course - Harish Neel)}
 
 \begin{lstlisting}[basicstyle=\scriptsize\ttfamily]
-def should_continue(state):
-    if (len(state) > 6):
+def should_continue(state: AgentState):
+    if len(state['messages']) > 6:
+        # End the loop after 3 iterations (1 initial + 2 reflections)
         return END 
-    return REFLECT
+    return "reflect"
 
+graph_builder.add_conditional_edges("generate", should_continue)
+graph_builder.add_edge("reflect", "generate")
 
-graph.add_conditional_edges(GENERATE, should_continue)
-graph.add_edge(REFLECT, GENERATE)
+app = graph_builder.compile()
 
-app = graph.compile()
+# Visualize the graph
+print(app.get_graph().draw_ascii())
 
-print(app.get_graph().draw_mermaid())
-app.get_graph().print_ascii()
+# Invoke the graph
+response = app.invoke({"messages": [HumanMessage(content="AI Agents taking over content creation")]})
 
-response = app.invoke(HumanMessage(content="AI Agents taking over content creation"))
-
-print(response)
-
-  \end{lstlisting}
-  
-  
-
+print(response['messages'][-1].content)
+\end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -287,6 +219,38 @@ class Country(BaseModel):
 
 structured_llm = model.with_structured_output(Country)
 response = structured_llm.invoke("Tell me about France")
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Modern Tool Binding with \texttt{.bind\_tools()}}
+      \begin{itemize}
+        \item While \texttt{with\_structured\_output} is good for forcing a single schema, the modern approach for general tool use is \texttt{.bind\_tools()}.
+        \item This method attaches one or more tools (Pydantic models or functions) to an LLM.
+        \item The model can then decide which tool to call, if any, based on the input prompt. This is the foundation of most agentic behavior.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain_openai import ChatOpenAI
+from langchain_core.pydantic_v1 import BaseModel, Field
+
+# Define a tool schema
+class GetWeather(BaseModel):
+    """Get the current weather in a given location"""
+    location: str = Field(description="The city and state, e.g. San Francisco, CA")
+
+# Initialize the model
+llm = ChatOpenAI(model="gpt-4o")
+
+# Bind the tool to the model
+llm_with_tools = llm.bind_tools([GetWeather])
+
+# Invoke the model
+ai_msg = llm_with_tools.invoke("what is the weather in Boston?")
+
+# The output contains a `tool_calls` attribute
+print(ai_msg.tool_calls)
+# > [{'name': 'GetWeather', 'args': {'location': 'Boston'}, 'id': '...'}]]
 \end{lstlisting}
 \end{frame}
 
@@ -493,6 +457,67 @@ graph = graph_builder.compile(checkpointer=memory)
       \end{lstlisting}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced State Management: Checkpointing}
+      \begin{itemize}
+        \item \textbf{Checkpointing} is the mechanism for saving the state of a graph at each step. It is the foundation for persistence, resilience, and human-in-the-loop interactions.
+        \item \textbf{Benefits}:
+        \begin{itemize}
+            \item \textbf{Persistence}: Stop and resume long-running workflows across sessions.
+            \item \textbf{Resilience}: Recover from failures without losing progress.
+            \item \textbf{Debugging}: "Time-travel" by rolling back to a previous state to inspect it.
+            \item \textbf{Human-in-the-Loop}: Pause the graph, await human input, and then resume.
+        \end{itemize}
+        \item \textbf{Backends}: LangGraph supports various storage backends for checkpoints.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.checkpoint.sqlite import SqliteSaver
+
+# In-memory saver for development (not persistent)
+# memory = MemorySaver()
+
+# SQLite saver for local persistence
+memory = SqliteSaver.from_conn_string("my_agent_state.db")
+
+# Compile the graph with the checkpointer
+# A unique thread_id is used to track conversations
+config = {"configurable": {"thread_id": "user-123"}}
+app = graph.compile(checkpointer=memory)
+
+# Run the graph - state is saved automatically
+app.invoke({"messages": [("human", "Hi!")]}, config)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Interacting with Checkpoints}
+      \begin{itemize}
+        \item Once a checkpointer is configured, you can interact with the state of any conversation (thread).
+        \item This allows you to inspect, modify, and travel through the history of a workflow.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# The config identifies which conversation thread to interact with
+config = {"configurable": {"thread_id": "user-123"}}
+
+# Get the latest state of the conversation
+current_state = app.get_state(config)
+print(current_state)
+# -> {'messages': [HumanMessage(...), AIMessage(...)]}
+
+# Get the entire history of states (snapshots after each step)
+history = app.get_state_history(config)
+print(f"History has {len(history)} steps.")
+
+# Update the state directly (e.g., to inject a correction)
+app.update_state(
+    config,
+    {"messages": [("user", "Actually, I have a different question.")]}
+)
+
+# You can also roll back to a previous state by passing a specific checkpoint
+# from the `get_state_history` call to `update_state`.
+\end{lstlisting}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Error handling}
@@ -504,7 +529,50 @@ LangGraph also provides mechanisms for error handling:
       \end{itemize}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error Handling Patterns}
+      \begin{itemize}
+        \item \textbf{Robust agents must handle unexpected failures}, like API errors or invalid LLM outputs.
+        \item \textbf{Pattern 1: Try/Except in Nodes}: The simplest method is to wrap node logic in a \texttt{try...except} block. The node can then return an error message in the state.
+        \item \textbf{Pattern 2: Fallback Edges}: Use conditional edges to create dedicated error-handling paths. If a node fails, it can update the state with an 'ERROR' status, which a router function can use to divert the flow to a recovery or reporting node.
+        \item \textbf{State Tracking}: Use the state to track error counts. After a certain number of retries, the graph can route to a final failure node.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+def tool_node(state):
+    try:
+        # ... call an external API ...
+        result = ...
+        return {"result": result, "status": "SUCCESS"}
+    except Exception as e:
+        # On failure, update state with error info
+        return {"error_message": str(e), "status": "ERROR"}
 
+def router(state):
+    if state.get("status") == "ERROR":
+        return "error_handler_node"
+    return "next_step_node"
+
+workflow.add_conditional_edges("tool_node", router)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Testing LangGraph Applications}
+      \begin{itemize}
+        \item \textbf{Unit Testing Nodes}:
+        \begin{itemize}
+            \item Nodes are just Python functions. You can test them in isolation by creating a sample input state and asserting the output dictionary is correct.
+            \item This allows you to verify the logic of each step independently.
+        \end{itemize}
+        \item \textbf{Integration Testing the Graph}:
+        \begin{itemize}
+            \item Test the compiled graph (\texttt{app}) by invoking it with a representative input.
+            \item Assert that the final state is what you expect. This tests the interaction between nodes and the correctness of the routing logic.
+            \item Use \texttt{app.stream()} to check the state at intermediate steps.
+        \end{itemize}
+        \item \textbf{Mocking}: Use mocking libraries (like \texttt{unittest.mock}) to replace external dependencies like LLMs or APIs during tests. This makes tests faster, cheaper, and more predictable.
+      \end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Parallel Execution in LangGraph}
