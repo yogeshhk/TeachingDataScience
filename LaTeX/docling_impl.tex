@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Parsing for RAG with LLamaIndex}
+{\Large Building a Production RAG Pipeline with Docling}
 
 \end{center}
 \end{frame}
@@ -50,7 +50,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 \begin{frame}[fragile]\frametitle{Embedding Model Configuration}
       \begin{itemize}
           \item Configure HuggingFace embedding model for converting text to vector representations
-          \item BAAI/bge-small-en-v1.5 is a popular choice for semantic similarity tasks
+          \item BAAI/bge-m3 is a popular choice for semantic similarity tasks, supports multi-linguality and multi-modality
           \item Small model size balances performance with resource requirements
           \item Embeddings enable semantic search by measuring similarity in vector space
           \item This model supports English text and produces 384-dimensional vectors
@@ -59,7 +59,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
       
 \begin{lstlisting}[language=Python, basicstyle=\tiny]
 EMBED_MODEL = HuggingFaceEmbedding(
-    model_name="BAAI/bge-small-en-v1.5",  # 384-dim
+    model_name="BAAI/bge-m3",  # 384-dim
     # Consider: "sentence-transformers/all-MiniLM-L6-v2" (384-dim)
     # or "BAAI/bge-base-en-v1.5" (768-dim, better quality)
 )
@@ -80,12 +80,12 @@ EMBED_MODEL = HuggingFaceEmbedding(
 from llama_index.llms.huggingface import HuggingFaceLLM
 
 GEN_MODEL = HuggingFaceLLM(
-    model_name="meta-llama/Llama-3.2-3B-Instruct",  # or "microsoft/phi-3-mini-4k-instruct"
-    tokenizer_name="meta-llama/Llama-3.2-3B-Instruct",
-    context_window=4096,  # Updated
+    model_name="google/gemma-2-9b-it",  # or "microsoft/phi-3-mini-4k-instruct"
+    tokenizer_name="google/gemma-2-9b-it",
+    context_window=8192,  # Updated
     max_new_tokens=512,
     model_kwargs={
-        "torch_dtype": torch.bfloat16,  # Better than float32
+        "torch_dtype": torch.bfloat16,  # Use bfloat16 for better performance on modern GPUs
         "trust_remote_code": True
     },
     device_map="auto",  # Better than "cpu"
@@ -114,7 +114,7 @@ QUERY = "What is NVIDIA's outlook for the first quarter of fiscal 2026?"
 \begin{frame}[fragile]\frametitle{Document Processing Components}
       \begin{itemize}
           \item Initialize DoclingReader for intelligent PDF parsing and content extraction
-          \item MarkdownNodeParser converts document structure into processable nodes
+          \item SemanticSplitterNodeParser converts document structure into processable nodes
           \item Docling preserves document layout, tables, and hierarchical structure
           \item Node parsing breaks documents into semantic chunks for better retrieval
           \item Each node contains text content plus metadata about source location
@@ -123,7 +123,7 @@ QUERY = "What is NVIDIA's outlook for the first quarter of fiscal 2026?"
       
 \begin{lstlisting}[language=Python, basicstyle=\tiny]
 reader = DoclingReader()
-node_parser = MarkdownNodeParser()
+node_parser = SemanticSplitterNodeParser()
 \end{lstlisting}
 \end{frame}
 
@@ -159,7 +159,7 @@ chroma_client = chromadb.PersistentClient(
       \begin{itemize}
           \item Create VectorStoreIndex from documents using the configured components
           \item DoclingReader loads and parses the PDF while preserving structure
-          \item MarkdownNodeParser transforms content into searchable nodes
+          \item SemanticSplitterNodeParser transforms content into searchable nodes
           \item StorageContext integrates the ChromaDB vector store
           \item Embedding model converts text chunks into vector representations
           \item This step builds the searchable knowledge base for the RAG system
@@ -202,7 +202,7 @@ print([(n.text, n.metadata) for n in result.source_nodes])
 \begin{frame}[fragile]\frametitle{RAG Pipeline Architecture Summary}
       \begin{itemize}
           \item Document Processing: Docling extracts and structures PDF content
-          \item Chunking: MarkdownNodeParser creates semantic text segments
+          \item Chunking: SemanticSplitterNodeParser creates semantic text segments
           \item Embedding: HuggingFace model converts chunks to vector representations
           \item Storage: ChromaDB stores vectors for efficient similarity search
           \item Retrieval: Query embeddings find most relevant document chunks

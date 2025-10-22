@@ -6,8 +6,7 @@
 \end{center}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Introduction
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Introduction to Resume Parsing}
     \begin{itemize}
@@ -43,8 +42,7 @@
     \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Implementation Approaches
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Implementation: Specialized API (Docling)}
     \begin{itemize}
@@ -113,7 +111,7 @@ import json
 class GroqResumeParser:
     def __init__(self, api_key: str):
         self.client = Groq(api_key=api_key)
-        self.model = "llama-3.2-90b-text-preview"  # Updated model
+        self.model = "google/gemma-2-9b-it"  # Updated model
     
     def parse_resume_text(self, text: str):
         prompt = """Extract the following information from this resume:
@@ -142,15 +140,14 @@ class GroqResumeParser:
                 {"role": "user", "content": prompt.format(text=text)}
             ],
             model=self.model,
-            response_format={"type": "json_object"},
+            response_format={"type": "json_object"}, # critical
             temperature=0.1  # Lower for more consistent parsing
         )
         return json.loads(response.choices[0].message.content)
     \end{lstlisting}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RAG Implementation
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Building a Resume RAG System}
     \begin{itemize}
@@ -162,7 +159,7 @@ class GroqResumeParser:
         \item \textbf{Our RAG Pipeline:}
         \begin{itemize}
             \item \textbf{Load}: Read resume files (txt, pdf, docx).
-            \item \textbf{Chunk}: Split documents semantically using `SemanticSplitterNodeParser`.
+            \item \textbf{Chunk}: Split documents semantically using `SemanticSplitterNodeParser`. This parser uses the embedding model itself to find semantic boundaries between sentences, keeping related concepts together in the same chunk
             \item \textbf{Embed \& Store}: Convert chunks to vectors (`bge-small-en-v1.5`) and store in a FAISS index.
             \item \textbf{Query}: Use Groq's Llama 3 to generate answers based on retrieved context.
         \end{itemize}

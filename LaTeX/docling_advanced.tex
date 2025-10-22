@@ -1,0 +1,392 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Advanced Docling}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error Handling Patterns: Basic Error Handling}
+      \begin{itemize}
+        \item \textbf{Common Error Scenarios:}
+        \begin{itemize}
+            \item Corrupted or password-protected PDFs
+            \item Unsupported file formats
+            \item Out of memory errors for large documents
+            \item Model loading failures
+        \end{itemize}
+      \end{itemize}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling.document_converter import DocumentConverter
+from docling.exceptions import ConversionError
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error Handling Patterns: Basic Error Handling}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+
+def safe_convert(source: str) -> Optional[DoclingDocument]:
+    converter = DocumentConverter()
+    
+    try:
+        result = converter.convert(source)
+        
+        # Check conversion quality
+        if result.confidence.mean_grade < 0.5:
+            logger.warning(f"Low quality conversion: {source}")
+            
+        return result.document
+        
+    except ConversionError as e:
+        logger.error(f"Conversion failed for {source}: {e}")
+        return None
+    except MemoryError:
+        logger.error(f"Out of memory processing: {source}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error for {source}: {e}")
+        return None
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error Handling: Advanced Retry Logic}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from tenacity import retry, stop_after_attempt, wait_exponential
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+
+class RobustDoclingConverter:
+    def __init__(self):
+        self.converter = DocumentConverter()
+        
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10)
+    )
+    def convert_with_retry(self, source: str):
+        return self.converter.convert(source)
+    
+    def convert_with_fallback(self, source: str):
+        # Try with full pipeline first
+        try:
+            return self.convert_with_retry(source)
+        except Exception as e:
+            logger.warning(f"Full pipeline failed, trying simplified: {e}")
+            
+            # Fallback: disable expensive features
+            options = PdfPipelineOptions()
+            options.do_ocr = False
+            options.do_table_structure = False
+            
+            converter = DocumentConverter(
+                format_options={InputFormat.PDF: PdfFormatOption(options)}
+            )
+            return converter.convert(source)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error Handling: Quality-Based Filtering}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing import List, Tuple
+from docling.datamodel.document import DoclingDocument
+
+class QualityFilteredConverter:
+    def __init__(self, min_confidence: float = 0.7):
+        self.converter = DocumentConverter()
+        self.min_confidence = min_confidence
+        
+    def convert_and_filter(self, sources: List[str]) -> Tuple[List, List]:
+        successful = []
+        failed = []
+        
+        for source in sources:
+            try:
+                result = self.converter.convert(source)
+                
+                # Check confidence score
+                if result.confidence.mean_grade >= self.min_confidence:
+                    successful.append({
+                        'source': source, 'document': result.document,
+                        'confidence': result.confidence.mean_grade })
+                else:
+                    failed.append({
+                        'source': source,'reason': 'low_confidence',
+                        'confidence': result.confidence.mean_grade })
+                    
+            except Exception as e:
+                failed.append({'source': source,
+                    'reason': str(e), 'confidence': 0.0 })
+        
+        return successful, failed
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Batch Processing: Basic Batch Conversion}
+
+        \begin{itemize}
+            \item Initial document corpus ingestion
+            \item Periodic document updates
+            \item Large-scale document digitization
+        \end{itemize}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class BatchDoclingProcessor:
+    def __init__(self):
+        self.converter = DocumentConverter()
+        
+    def process_directory(self, input_dir: str, output_dir: str):
+        input_path = Path(input_dir)
+        output_path = Path(output_dir)
+        output_path.mkdir(exist_ok=True)
+
+        files = list(input_path.glob("**/*.pdf"))
+        files.extend(input_path.glob("**/*.docx"))
+        files.extend(input_path.glob("**/*.pptx"))
+        
+        results = []
+        for file in tqdm(files, desc="Processing documents"):
+            try:
+                result = self.converter.convert(str(file))
+                output_file = output_path / f"{file.stem}.md"
+                output_file.write_text(result.document.export_to_markdown())
+                results.append({'file': file, 'status': 'success'})
+            except Exception as e:
+                results.append({'file': file, 'status': 'failed', 'error': str(e)})
+        
+        return results
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Batch Processing: Parallel Processing}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import cpu_count
+import os
+
+class ParallelBatchProcessor:
+    def __init__(self, max_workers: int = None):
+        self.max_workers = max_workers or max(1, cpu_count() - 1)
+        
+    def process_single(self, file_path: str) -> dict:
+        """Process single file - called in separate process"""
+        converter = DocumentConverter()
+        try:
+            result = converter.convert(file_path)
+            return {
+                'file': file_path,
+                'status': 'success',
+                'pages': len(result.document.pages),
+                'confidence': result.confidence.mean_grade
+            }
+        except Exception as e:
+            return {'file': file_path, 'status': 'failed', 'error': str(e)}
+    
+    def process_batch(self, file_paths: List[str]) -> List[dict]:
+        results = []
+        with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = {executor.submit(self.process_single, fp): fp 
+                      for fp in file_paths}
+            
+            for future in tqdm(as_completed(futures), total=len(file_paths)):
+                results.append(future.result())
+        
+        return results
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Batch Processing: Best Practices}
+      \begin{itemize}
+        \item \textbf{1. Resource Management}
+        \begin{itemize}
+            \item Limit concurrent processes to avoid memory exhaustion
+            \item Use process pool (not thread pool) to avoid GIL
+            \item Monitor memory usage: \texttt{psutil.virtual\_memory()}
+            \item Implement back-pressure mechanisms for large batches
+        \end{itemize}
+        \item \textbf{2. Progress Tracking and Logging}
+        \begin{itemize}
+            \item Use tqdm for progress bars
+            \item Log all failures with traceback for debugging
+            \item Save intermediate results periodically
+            \item Generate summary reports (success rate, avg time, errors)
+        \end{itemize}
+        \item \textbf{3. Fault Tolerance}
+        \begin{itemize}
+            \item Implement checkpointing to resume failed batches
+            \item Skip already processed files (check output directory)
+            \item Separate retry queue for failed documents
+            \item Use exponential backoff for transient errors
+        \end{itemize}
+        \item \textbf{4. Output Management}
+        \begin{itemize}
+            \item Use consistent naming conventions
+            \item Preserve directory structure in output
+            \item Store metadata alongside converted documents
+            \item Implement cleanup for failed conversions
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Batch Processing: Production Pipeline Example}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class ProductionBatchPipeline:
+    def __init__(self, config: dict):
+        self.converter = DocumentConverter()
+        self.checkpoint_file = config.get('checkpoint', 'progress.json')
+        self.max_retries = config.get('max_retries', 3)
+        
+    def load_checkpoint(self) -> set:
+        if Path(self.checkpoint_file).exists():
+            with open(self.checkpoint_file) as f:
+                return set(json.load(f))
+        return set()
+    
+    def save_checkpoint(self, processed: set):
+        with open(self.checkpoint_file, 'w') as f:
+            json.dump(list(processed), f)
+    
+    def process_with_monitoring(self, files: List[str]):
+        processed = self.load_checkpoint()
+        remaining = [f for f in files if f not in processed]
+        
+        stats = {'success': 0, 'failed': 0, 'skipped': len(processed)}
+        
+        for file in tqdm(remaining):
+            result = self._process_with_retry(file)
+            if result['status'] == 'success':
+                stats['success'] += 1
+                processed.add(file)
+                self.save_checkpoint(processed)
+            else:
+                stats['failed'] += 1
+                
+        return stats
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Performance Optimization Tips}
+      \begin{itemize}
+        \item \textbf{1. Model Loading Optimization}
+        \begin{itemize}
+            \item Load models once, reuse DocumentConverter instance
+            \item Pre-load models at startup: reduces first-document latency
+            \item Use model caching for repeated conversions
+        \end{itemize}
+        \item \textbf{2. Memory Optimization}
+        \begin{itemize}
+            \item Process documents in streaming mode for large files
+            \item Clear document cache after processing: \texttt{del result}
+            \item Use garbage collection: \texttt{gc.collect()} between batches
+            \item Limit image resolution for OCR when high quality not needed
+        \end{itemize}
+        \item \textbf{3. Speed Optimization}
+        \begin{itemize}
+            \item Disable unnecessary features (OCR, table extraction)
+            \item Use GPU acceleration when available
+            \item Batch similar documents together for better caching
+            \item Pre-filter documents by type before processing
+        \end{itemize}
+        \item \textbf{4. Quality vs Performance Tradeoff}
+        \begin{itemize}
+            \item Use confidence scores to determine processing depth
+            \item Implement fast-path for high-quality digital PDFs
+            \item Reserve expensive processing for low-confidence documents
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Monitoring and Observability}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from dataclasses import dataclass
+from datetime import datetime
+import json
+
+@dataclass
+class ConversionMetrics:
+    file_path: str
+    start_time: datetime
+    end_time: datetime
+    duration_seconds: float
+    pages: int
+    confidence_score: float
+    memory_peak_mb: float
+    status: str
+    error: str = None
+
+class MonitoredConverter:
+    def __init__(self):
+        self.converter = DocumentConverter()
+        self.metrics = []
+        
+    def convert_with_metrics(self, source: str) -> ConversionMetrics:
+        import psutil
+        import tracemalloc
+        
+        tracemalloc.start()
+        process = psutil.Process()
+        start_time = datetime.now()
+        
+		:
+        )
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Monitoring and Observability}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+
+class MonitoredConverter:
+        
+    def convert_with_metrics(self, source: str) -> ConversionMetrics:
+        :
+		
+        try:
+            result = self.converter.convert(source)
+            status = 'success'
+            confidence = result.confidence.mean_grade
+            pages = len(result.document.pages)
+            error = None
+        except Exception as e:
+            status = 'failed'
+            confidence = 0.0
+            pages = 0
+            error = str(e)
+        
+        current, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+        
+        end_time = datetime.now()
+        
+        return ConversionMetrics(
+            file_path=source, start_time=start_time, end_time=end_time,
+            duration_seconds=(end_time - start_time).total_seconds(),
+            pages=pages, confidence_score=confidence,
+            memory_peak_mb=peak / 1024 / 1024, status=status, error=error
+        )
+\end{lstlisting}
+\end{frame}
+
