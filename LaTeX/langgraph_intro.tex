@@ -226,8 +226,36 @@ controlled by the llm hence it is called an agent.
 		\item Think of it like building a flowchart for your AI to follow.
       \end{itemize}
  
-
 \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Introduction to LangGraph}
+    \begin{itemize}
+        \item LangGraph extends LangChain for complex, stateful workflows.
+        \item Uses \textbf{State Graphs} with nodes (tasks) and edges (flow logic).
+        \item Enables loops, conditional branching, and persistent state memory.
+        \item Ideal for multi-step, research-style assistants beyond chatbots.
+        \item Each node handles a specific subtask (search, scrape, evaluate, report).
+        \item Shared state retains context like URLs, content, scores, and facts.
+        \item Simplifies orchestration — LangGraph manages task sequencing.
+        \item Focus shifts from coding logic to workflow architecture.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LangGraph in Practice}
+    \begin{itemize}
+        \item Nodes: search, scrape, evaluate trust, extract facts, generate report.
+        \item State persists across nodes — similar to long-term memory.
+        \item Conditional edges allow adaptive decision-making in workflows.
+        \item Loops enable iterative improvement of research quality.
+        \item Tool nodes integrate external data sources (e.g., DuckDuckGo).
+        \item Memory nodes accumulate knowledge and generate comprehensive reports.
+        \item Demonstrates scalable, intelligent workflow automation for enterprises.
+    \end{itemize}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Why LangGraph? - The Comprehensive Pitch}
@@ -263,6 +291,20 @@ controlled by the llm hence it is called an agent.
 \includegraphics[width=\linewidth,keepaspectratio]{langgraph15}
 \end{center}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Introduction to Agents and Runtime}
+      \begin{itemize}
+        \item Agent: LLM-powered action taker that performs reasoning and tool invocation.
+        \item Agent runtime: Loop that manages agent execution and interactions.
+        \item In LangChain: Runtime handled by \texttt{AgentExecutor} running a fixed execution loop.
+        \item Tools and reasoning executed sequentially in a single loop.
+        \item In LangGraph: Runtime redesigned as a flexible graph-based executor.
+        \item Supports cycles, branching, and dynamic decision-making.
+        \item Each node represents a logical step (tool call, reasoning, or condition).
+        \item Enables more control and reusability across complex workflows.
+      \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -526,6 +568,48 @@ controlled by the llm hence it is called an agent.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conditional Edges in LangGraph}
+      \begin{itemize}
+        \item Conditional edges enable branching logic within the graph.
+        \item After a node executes, a function decides the next path.
+        \item Typically implemented using a \texttt{should\_continue} function.
+        \item The function returns a key such as “continue” or “end”.
+        \item The returned key maps to the next node in the graph.
+        \item “continue” → proceed to the next action node.
+        \item “end” → trigger the built-in end node and stop execution.
+        \item Enables dynamic control flow based on runtime data.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Conditional Edge Implementation}
+\begin{itemize}
+  \item Function evaluates the state to decide the next node.
+  \item Mapping links output labels to subsequent graph nodes.
+  \item Allows looping or early termination based on conditions.
+  \item Useful for iterative reasoning or bounded task execution.
+\end{itemize}
+
+\begin{lstlisting}[language=Python]
+def should_continue(state):
+    if state["iteration"] < 3:
+        return "continue"
+    return "end"
+
+graph.add_conditional_edges(
+    "agent_node",
+    should_continue,
+    {
+        "continue": "action_node",
+        "end": END
+    }
+)
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Core Components: State}
       \begin{itemize}
 	    \item A central object updated over time by the nodes in the graph
@@ -538,6 +622,38 @@ controlled by the llm hence it is called an agent.
       \end{itemize}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{State Management in LangGraph}
+      \begin{itemize}
+        \item State: Shared memory object accessible across graph nodes.
+        \item Schema defines all possible fields before runtime.
+        \item No new fields can be added at runtime — schema is fixed.
+        \item Each node can push updates to the state dynamically.
+        \item Updates modify existing fields via reducer functions.
+        \item Default update behavior: overwrite existing field values.
+        \item Can also accumulate data (e.g., append to lists).
+        \item Encourages structured and predictable data flow across nodes.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Defining and Updating State}
+\begin{lstlisting}[language=Python]
+from langgraph.graph import State
+
+class AgentState(State):
+    messages: list = []
+    summary: str = ""
+    iteration: int = 0
+\end{lstlisting}
+
+\begin{itemize}
+  \item Example schema defines all possible fields: messages, summary, iteration.
+  \item Fields can hold dynamic types like lists or dicts for flexibility.
+  \item Nodes push updates instead of passing full state objects.
+  \item Ensures efficient and isolated state transitions.
+\end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{LangGraph Key Features}
