@@ -1,2 +1,2 @@
 @echo off
-for /r %%i in (Main_Seminar_*LLM_Agents*.tex) do texify -cp %%i
+for /r %%i in (Main_Agenda_RAG_*.tex) do texify -cp %%i
