@@ -50,8 +50,8 @@ Days 11-15: Building RAG
 - Multi-format document parsing with Docling (PDF/DOCX/PPTX)  
 - LangChain framework: chains, vector stores, and retrieval systems  
 - Interactive user interfaces with Streamlit  
-- End-to-end integration and deployment strategies  
-- **Deliverables**: Individual components projects \+ 1 end-to-end capstone
+- Cloud deployment: AWS Bedrock or Microsoft Azure AI services
+- **Deliverables**: Individual components projects focusing on production deployment
 
 ### **DAILY STRUCTURE**
 
@@ -66,8 +66,10 @@ Days 11-15: Building RAG
 * Saturday Week 1: Week 1 recap \+ Week 2 preview \+ Q\&A (2 hours)   
 * Week 2 (Days 6-10): NLP \+ ML \+ Embeddings   
 * Saturday Week 2: Week 2 recap \+ Week 3 preview \+ Q\&A (2 hours)   
-* Week 3 (Days 11-15): RAG Systems \+ Production Integration   
-* Final Saturday: Capstone presentations \+ Final Q\&A (4 hours)
+* Week 3 (Days 11-15): RAG Systems + Cloud Deployment   
+* Final Saturday: Week 3 recap + Capstone kickoff (2 hours)
+* Week 4 (Capstone Week): Independent capstone project development
+* Capstone Presentation Day: Final presentations + Q&A (4 hours)
 
 ### **TOOLS & TECHNOLOGIES**
 
