@@ -1,0 +1,593 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- INTRODUCTORY SLIDE ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Introduction}
+\begin{columns}
+  \begin{column}[T]{0.5\linewidth}
+    \begin{itemize}
+      \item Natural Language Processing (NLP) and Machine Learning (ML) form the foundation for modern intelligent systems.
+      \item Retrieval Augmented Generation (RAG) leverages NLP pipelines, embeddings, and ML for knowledge-grounded responses.
+      \item This presentation explores:
+        \begin{itemize}
+          \item Text preprocessing and representation
+          \item spaCy-based NLP components
+          \item ML techniques for classification and clustering
+          \item Embedding-based search and semantic understanding
+          \item Sentiment analysis applications
+        \end{itemize}
+      % \item NLP models convert human language into structured representations enabling tasks like search, summarization, and question answering.
+      % \item RAG connects these representations with external knowledge to produce accurate, contextually relevant outputs.
+    \end{itemize}
+  \end{column}
+  \begin{column}[T]{0.5\linewidth}
+    \begin{center}
+    \includegraphics[width=\linewidth,keepaspectratio]{nlp_overview}
+    {\tiny (Ref: Stanford NLP Group)}
+    \end{center}
+  \end{column}
+\end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- TEXT PROCESSING FUNDAMENTALS ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Text Preprocessing}
+
+    \begin{itemize}
+      \item Clean and normalize raw text data for consistent downstream analysis.
+      \item Common steps include lowercasing, punctuation \& digit removal, and whitespace normalization.
+      \item Ensures reliable tokenization and model training.
+      \item Helps retain semantic integrity by focusing on meaningful linguistic content.
+    \end{itemize}
+
+  		\begin{center}
+		\includegraphics[width=\linewidth]{text_cleaning}
+		{\tiny (Ref: Text Cleaning Steps ResearchGate )}
+		\end{center}
+
+    % \begin{lstlisting}[language=python]
+% def basic_clean(text):
+    % text = text.lower()
+    % text = re.sub(r"[^a-z\s]", "", text)
+    % text = re.sub(r"\s+", " ", text).strip()
+    % return text
+
+% sample = "NLP in 2025: Transforming AI-powered communication!"
+% print(basic_clean(sample))
+    % \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tokenization}
+
+    \begin{itemize}
+      \item Tokenization splits text into smaller linguistic units (words, subwords, or sentences).
+      \item spaCy provides efficient rule-based and statistical tokenizers.
+      \item Basis for vectorization, tagging, and parsing.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+import spacy
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("Retrieval-Augmented Generation is powerful!")
+tokens = [token.text for token in doc]
+print(tokens)
+# ['Retrieval', '-', 'Augmented', 'Generation', 'is', 'powerful', '!']
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Lowercasing \& Cleaning}
+
+    \begin{itemize}
+      \item Lowercasing removes case sensitivity in NLP models.
+      \item Cleaning eliminates noise: URLs, HTML tags, punctuation, numbers.
+      \item Helps search and RAG systems achieve higher recall and consistency.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+import re
+text = "Visit https://openai.com for <b>AI Research!</b>"
+cleaned = re.sub(r"http\S+|<.*?>", "", text).lower()
+print(cleaned)
+# 'visit  for ai research!'
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Stop Word Removal}
+
+    \begin{itemize}
+      \item Removes high-frequency words that add little meaning.
+      \item Reduces dimensionality and improves efficiency of embeddings.
+      \item Example stop words: “the”, “is”, “in”, “on”.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+from spacy.lang.en.stop_words import STOP_WORDS
+tokens = ["Retrieval", "Augmented", "Generation", "is", "powerful"]
+filtered = [w for w in tokens if w.lower() not in STOP_WORDS]
+print(filtered)
+# ['Retrieval', 'Augmented', 'Generation', 'powerful']
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Stemming \& Lemmatization}
+
+    \begin{itemize}
+      \item Stemming removes suffixes using heuristic rules.
+      \item Lemmatization uses grammar-based transformations to return dictionary form.
+      \item Reduces vocabulary size and enhances text matching in retrieval.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+from nltk.stem import WordNetLemmatizer
+lem = WordNetLemmatizer()
+print(lem.lemmatize("running", "v"))  # 'run'
+print(lem.lemmatize("better", "a"))   # 'good'
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Regular Expressions}
+
+    \begin{itemize}
+      \item Enable pattern-based extraction from text.
+      \item Examples: extract emails, phone numbers, or URLs.
+      \item Essential for data cleaning, anonymization, and text mining.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+import re
+text = "Contact us at info@company.com or sales@domain.org"
+emails = re.findall(r"\b[A-Za-z0-9._%+-]+@[A-Za-z]+\.[A-Z|a-z]{2,}\b", text)
+print(emails)
+# ['info@company.com', 'sales@domain.org']
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project: Text Preprocessing Pipeline}
+
+    \begin{itemize}
+      \item Modular preprocessing pipeline for flexible text workflows.
+      \item Each function handles one cleaning step.
+      \item Easily extendable for lemmatization, stemming, or entity masking.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+class TextPipeline:
+    def __init__(self, steps):
+        self.steps = steps  # list of functions
+
+    def run(self, text):
+        for fn in self.steps:
+            text = fn(text)
+        return text
+
+pipeline = TextPipeline([basic_clean])
+print(pipeline.run("Hello World! This is 2025."))
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project: Document Cleaner}
+
+    \begin{itemize}
+      \item Extracts text from PDFs, HTML, and Word documents.
+      \item Normalizes whitespace, removes headers/footers, handles encoding.
+      \item Outputs clean text ready for embedding or indexing.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+from bs4 import BeautifulSoup
+from PyPDF2 import PdfReader
+
+def clean_document(path):
+    if path.endswith(".pdf"):
+        text = "".join([page.extract_text() for page in PdfReader(path).pages])
+    elif path.endswith(".html"):
+        html = open(path).read()
+        text = BeautifulSoup(html, "html.parser").get_text()
+    else:
+        text = open(path).read()
+    return re.sub(r"\s+", " ", text.strip())
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- NLP with spaCy ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]\frametitle{spaCy Pipeline Basics}
+
+    \begin{itemize}
+      \item spaCy’s pipeline includes tokenization, tagging, parsing, and entity recognition.
+      \item Designed for efficiency and extensibility.
+      \item Supports custom components for preprocessing and postprocessing.
+    \end{itemize}
+
+  	\begin{center}
+    \includegraphics[width=\linewidth]{spacy_pipeline}
+    {\tiny (Ref: spaCy Docs)}
+	\end{center}
+		
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Part-of-Speech Tagging}
+
+    \begin{itemize}
+      \item Assigns syntactic roles: noun, verb, adjective, etc.
+      \item Enables grammar-aware retrieval, information extraction, and text summarization.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+doc = nlp("NLP models enhance communication.")
+for token in doc:
+    print(token.text, token.pos_)
+# Output: NLP NOUN, models NOUN, enhance VERB, communication NOUN
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Named Entity Recognition (NER)}
+
+    \begin{itemize}
+      \item Identifies named entities: PERSON, ORG, LOC, DATE, MONEY, etc.
+      \item Crucial for knowledge extraction and linking to external databases.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+doc = nlp("OpenAI was founded in San Francisco in 2015.")
+for ent in doc.ents:
+    print(ent.text, ent.label_)
+# OpenAI ORG, San Francisco GPE, 2015 DATE
+    \end{lstlisting}
+ 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Dependency Parsing}
+
+    \begin{itemize}
+      \item Analyzes grammatical structure of sentences.
+      \item Reveals subject-object relationships.
+      \item Basis for relation extraction and semantic role labeling.
+    \end{itemize}
+
+	\begin{center}
+    \includegraphics[width=\linewidth]{dep_parse}
+    {\tiny (Ref: Dependency Parsing with NLTK - GeeksforGeeks)}
+	\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Text Similarity}
+
+    \begin{itemize}
+      \item Measures semantic closeness between two texts.
+      \item Useful in RAG for ranking documents by contextual relevance.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+doc1 = nlp("AI improves healthcare")
+doc2 = nlp("Artificial intelligence helps medicine")
+print(doc1.similarity(doc2))
+# Output: similarity score ~0.85
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project: Named Entity Extractor}
+
+    \begin{itemize}
+      \item Extracts and exports named entities from text.
+      \item Can be integrated with visualization tools or stored in databases.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+def extract_entities(text):
+    nlp = spacy.load("en_core_web_sm")
+    doc = nlp(text)
+    return {ent.text: ent.label_ for ent in doc.ents}
+
+print(extract_entities("Elon Musk leads SpaceX and Tesla."))
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project: Text Similarity Engine}
+
+    \begin{itemize}
+      \item Uses embeddings to compute cosine similarity between texts.
+      \item Enables semantic document search and clustering.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+from sklearn.metrics.pairwise import cosine_similarity
+
+def rank_docs(query, docs, model):
+    q_vec = model.encode([query])
+    d_vecs = model.encode(docs)
+    scores = cosine_similarity(q_vec, d_vecs)[0]
+    ranked = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
+    return ranked[:3]
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- MACHINE LEARNING OVERVIEW ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Types of Machine Learning}
+
+    \begin{itemize}
+      \item \textbf{Supervised}: learns from labeled data (e.g., text classification).
+      \item \textbf{Unsupervised}: discovers hidden structure (e.g., clustering).
+      \item \textbf{Reinforcement}: learns from feedback/reward.
+      \item NLP tasks map naturally to these paradigms.
+    \end{itemize}
+
+  	\begin{center}
+    \includegraphics[width=\linewidth]{ml_types}
+	{\tiny (Ref: https://www.studytrigger.com/article/types-of-learning-in-machine-learning/)}
+  	\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Classification}
+
+    \begin{itemize}
+      \item Predicts categorical labels (spam, positive/negative sentiment).
+      \item Logistic Regression is a strong baseline for text classification.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+
+vec = TfidfVectorizer()
+X_train = vec.fit_transform(train_texts)
+model = LogisticRegression(max_iter=200)
+model.fit(X_train, y_train)
+preds = model.predict(vec.transform(test_texts))
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Clustering}
+
+    \begin{itemize}
+      \item Groups similar documents based on content.
+      \item Common methods: KMeans, DBSCAN, Agglomerative.
+      \item Supports topic discovery and unsupervised organization.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
+km = KMeans(n_clusters=5, random_state=42)
+km.fit(embeddings)
+labels = km.labels_
+
+pca = PCA(n_components=2)
+reduced = pca.fit_transform(embeddings)
+plt.scatter(reduced[:,0], reduced[:,1], c=labels)
+plt.show()
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project: Iris Flower Classifier}
+
+    \begin{itemize}
+      \item Classic ML dataset demonstration.
+      \item Illustrates feature scaling, model training, and evaluation.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
+X, y = load_iris(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+model = LogisticRegression(max_iter=300)
+model.fit(X_train, y_train)
+print("Accuracy:", accuracy_score(y_test, model.predict(X_test)))
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project: Document Clusterer}
+
+    \begin{itemize}
+      \item Embeds documents using spaCy or sentence-transformers.
+      \item Applies KMeans for unsupervised grouping.
+      \item Visualizes using t-SNE or PCA for semantic clusters.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+import spacy
+from sklearn.cluster import KMeans
+nlp = spacy.load("en_core_web_md")
+
+docs = ["AI in healthcare", "Quantum computing basics", "AI in finance"]
+vectors = [nlp(d).vector for d in docs]
+labels = KMeans(n_clusters=2).fit_predict(vectors)
+print(list(zip(docs, labels)))
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- WORD EMBEDDINGS ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Word Embeddings Concepts}
+
+    \begin{itemize}
+      \item Represent words as dense numerical vectors capturing context.
+      \item Models: Word2Vec, GloVe, FastText, Transformer embeddings.
+      \item Enable semantic understanding and transfer learning.
+    \end{itemize}
+
+  	\begin{center}
+    \includegraphics[width=\linewidth]{embeddings_space}
+	{\tiny (Ref: https://mlpills.substack.com/p/issue-58-embeddings-in-nlp)}
+  	\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project: Semantic Search Engine}
+
+    \begin{itemize}
+      \item Retrieve documents semantically, not just by keyword match.
+      \item Uses embedding models and cosine similarity for ranking.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+from sentence_transformers import SentenceTransformer, util
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+def semantic_search(query, docs):
+    q_emb = model.encode(query, convert_to_tensor=True)
+    d_emb = model.encode(docs, convert_to_tensor=True)
+    scores = util.cos_sim(q_emb, d_emb)
+    return sorted(zip(docs, scores[0]), key=lambda x: float(x[1]), reverse=True)[:3]
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project: Word Analogy Solver}
+
+    \begin{itemize}
+      \item Demonstrates vector arithmetic: $king - man + woman \approx queen$
+      \item Captures latent gender, tense, and semantic relations.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+from gensim.models import KeyedVectors
+model = KeyedVectors.load_word2vec_format("GoogleNews-vectors.bin", binary=True)
+result = model.most_similar(positive=["king", "woman"], negative=["man"], topn=1)
+print(result)  # [('queen', 0.75)]
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- SENTIMENT ANALYSIS ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sentiment Analysis Basics}
+
+    \begin{itemize}
+      \item Detects emotional polarity (positive, neutral, negative).
+      \item Used in reviews, feedback, and social media monitoring.
+      \item Can be rule-based, ML-based, or transformer-based.
+    \end{itemize}
+
+  	\begin{center}
+    \includegraphics[width=\linewidth]{sentiment_analysis}
+	{\tiny (Ref: Sentiment Analysis | Engati)}
+  	\end{center}  
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project: Review Sentiment Analyzer}
+
+    \begin{itemize}
+      \item Train a sentiment classifier using Naive Bayes.
+      \item Vectorize text with TF-IDF.
+      \item Evaluate accuracy using test set.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score
+
+X = vec.fit_transform(reviews)
+model = MultinomialNB()
+model.fit(X, labels)
+preds = model.predict(vec.transform(test_reviews))
+print("Accuracy:", accuracy_score(test_labels, preds))
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project: Tweet Sentiment Dashboard}
+
+    \begin{itemize}
+      \item Streams tweets and classifies their sentiment in real-time.
+      \item Visualizes sentiment trends dynamically using dashboards.
+    \end{itemize}
+
+    \begin{lstlisting}[language=python]
+import tweepy, pandas as pd
+from textblob import TextBlob
+
+def classify_sentiment(text):
+    polarity = TextBlob(text).sentiment.polarity
+    return "positive" if polarity > 0 else "negative" if polarity < 0 else "neutral"
+
+# TODO: integrate with dashboard for visualization
+    \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- CONCLUSIONS SLIDE ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conclusions}
+
+    \begin{itemize}
+      \item Robust NLP preprocessing and embeddings are critical for effective information retrieval.
+      \item spaCy and scikit-learn streamline NLP + ML workflows.
+      \item Vector-based understanding enables semantic and contextual search.
+      \item Combining these components forms the backbone of Retrieval-Augmented Generation.
+      \item Future directions:
+        \begin{itemize}
+          \item Fine-tuning LLMs for domain tasks
+          \item Efficient vector database retrieval (FAISS, Milvus)
+          \item Integrating sentiment and entity-level reasoning
+        \end{itemize}
+    \end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- REFERENCES SLIDE ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{References}
+\begin{itemize}
+  \item Explosion AI, \textit{spaCy Documentation}, \url{https://spacy.io/}
+  \item Pedregosa et al., \textit{Scikit-learn: Machine Learning in Python}, JMLR, 2011.
+  \item Mikolov et al., \textit{Efficient Estimation of Word Representations in Vector Space}, arXiv, 2013.
+  \item Bird et al., \textit{Natural Language Processing with Python}, O’Reilly, 2009.
+  \item OpenAI, \textit{Retrieval-Augmented Generation (RAG) Overview}, 2024.
+  \item Manning \& Schütze, \textit{Foundations of Statistical Natural Language Processing}, MIT Press.
+  \item Jurafsky \& Martin, \textit{Speech and Language Processing}, 3rd Ed. Draft, 2023.
+\end{itemize}
+\end{frame}
