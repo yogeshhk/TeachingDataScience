@@ -18,6 +18,21 @@
 	  \end{itemize}
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling: Development and Community}
+      \begin{itemize}
+        \item Developed by IBM Research Zurich.
+        \item Released under MIT license (fully open-source).
+        \item Hosted within LF AI \& Data Foundation.
+        \item Active community development and contributions.
+        \item Regular updates and model improvements.
+        \item Comprehensive documentation and examples.
+        \item Integration with major AI frameworks.
+        \item Production-ready with enterprise backing.
+      \end{itemize}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Key Features}
       \begin{itemize}
@@ -33,6 +48,540 @@
 	\item Simple command-line interface
 	  \end{itemize}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Overview}
+      \begin{itemize}
+        \item Developed by IBM Research Zurich, open-source under MIT license.
+        \item Converts documents into AI-ready structured formats.
+        \item Processes ~1.26 seconds per page on average.
+        \item Supports 15+ formats: PDF, DOCX, PPTX, HTML, images, etc.
+        \item Fully local execution, ensuring privacy.
+        \item Integrates with LangChain, LlamaIndex, CrewAI, Haystack.
+        \item Includes OCR engines: EasyOCR, Tesseract, RapidOCR.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Architecture}
+      \begin{itemize}
+        \item Architecture built around modular pipelines.
+        \item Core flow: Document Input → Backend → Pipeline → DoclingDocument → Output.
+        \item Parser backends extract raw text and coordinates.
+        \item Pipelines orchestrate AI models for layout, tables, and enrichment.
+        \item DoclingDocument acts as a unified data model.
+        \item Enables chunking and export into multiple formats.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parser Backends}
+      \begin{itemize}
+        \item Handle extraction from different formats (PDF, Word, HTML, Images).
+        \item PDF backend built on qpdf; supports reliable text extraction and rendering.
+        \item Markup-based backends retain semantic structures.
+        \item Image parser uses OCR when needed.
+        \item Backends extract both text coordinates and visual representations.
+        \item Enable consistent data for downstream AI models.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Processing Pipelines}
+      \begin{itemize}
+        \item Orchestrate sequence of AI models for each document type.
+        \item StandardPdfPipeline applies layout, table, and enrichment models.
+        \item SimplePipeline handles markup formats with minimal processing.
+        \item Users can subclass pipelines for customization.
+        \item Supports addition of custom enrichment models or parameters.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Layout Analysis Models}
+      \begin{itemize}
+        \item Heron and EGRET family based on RT-DETRv2 Transformer.
+        \item Detect 13 element classes (text, title, table, figure, formula, etc.).
+        \item Trained on DocLayNet (150k+ docs) and proprietary datasets.
+        \item heron-101 achieves highest accuracy (0.78 mAP).
+        \item egret-m offers fastest inference for limited hardware.
+        \item GPU use improves speed up to 33× vs CPU.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Table Structure Recognition – TableFormer}
+      \begin{itemize}
+        \item Transformer-based model for table structure understanding.
+        \item Trained on PubTabNet, FinTabNet, and TableBank datasets.
+        \item Recognizes cell boundaries, merges, and headers.
+        \item Handles multi-page tables and preserves logical hierarchy.
+        \item Outputs structured, embedding-ready table data.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Vision-Language Model – Granite-Docling}
+      \begin{itemize}
+        \item 258M parameter Vision-Language Model for end-to-end parsing.
+        \item Uses SigLIP2 visual encoder and Granite 3 language backbone.
+        \item Handles multi-page documents and complex layouts.
+        \item Reduces hallucinations and improves stability.
+        \item Slower than modular pipelines but simpler to use.
+        \item Ideal for full-page document understanding.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{DoclingDocument: Unified Data Model}
+      \begin{itemize}
+        \item Central data representation built on Pydantic models.
+        \item Stores texts, tables, images, metadata, and structure.
+        \item Organizes content into body, furniture, and groups.
+        \item Tracks provenance and spatial info for traceability.
+        \item Enables hierarchy-aware chunking and export.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{DoclingDocument Structure}
+      \begin{itemize}
+        \item Content items: TextItem, TableItem, PictureItem, KeyValueItem.
+        \item Structural organization: Body (main), Furniture (headers/footers), Groups (containers).
+        \item Each item labeled (HEADING, TABLE, PICTURE, etc.).
+        \item Supports nested hierarchy and cross-page references.
+        \item Enables accurate source mapping for retrieval.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{DoclingDocument: Core Attributes Deep Dive}
+      \begin{itemize}
+        \item \textbf{Identity:} Unique UID per item, label (semantic type).
+        \item \textbf{Spatial:} BoundingBox with coordinates (x0, y0, x1, y1).
+        \item \textbf{Hierarchy:} Parent (JSON pointer), children (list of pointers).
+        \item \textbf{Provenance:} Source page, coordinates, document origin.
+        \item \textbf{Content Layer:} BODY (main) vs FURNITURE (headers/footers).
+        \item All attributes preserved through export for traceability.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{TextItem vs TableItem vs PictureItem}
+\begin{columns}
+    \begin{column}[T]{0.33\linewidth}
+      \textbf{TextItem:}
+      \begin{itemize}
+        \item text: content
+        \item orig: pre-normalized
+        \item formatting
+        \item hyperlink
+        \item level (for headings)
+        \item type (LATEX, etc.)
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.33\linewidth}
+      \textbf{TableItem:}
+      \begin{itemize}
+        \item data: TableData
+        \item cells: boundaries
+        \item labels: header/body
+        \item bbox: table region
+        \item Preserves structure
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.33\linewidth}
+      \textbf{PictureItem:}
+      \begin{itemize}
+        \item image\_ref
+        \item classification
+        \item captions (list)
+        \item bbox
+        \item Linked context
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reading Order Algorithm: Four-Stage Process}
+      \begin{itemize}
+        \item \textbf{Stage 1 - Recursive Grouping:}
+        \begin{itemize}
+          \item Analyze element positions, identify natural groupings.
+          \item Create hierarchical groups (columns, sections, regions).
+        \end{itemize}
+        \item \textbf{Stage 2 - Within-Group Ordering:}
+        \begin{itemize}
+          \item Sort top-to-bottom (primary), left-to-right (secondary).
+          \item Apply column-awareness for multi-column layouts.
+        \end{itemize}
+        \item \textbf{Stage 3 - Visual Cue Integration:}
+        \begin{itemize}
+          \item Leverage headers, footers, titles for segmentation.
+        \end{itemize}
+        \item \textbf{Stage 4 - Cross-Page Assembly:}
+        \begin{itemize}
+          \item Connect multi-page tables, figures, references.
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Export Formats: Lossless vs Lossy}
+      \begin{itemize}
+        \item \textbf{Lossless Exports:}
+        \begin{itemize}
+          \item JSON: Full fidelity (metadata, structure, spatial info, provenance).
+          \item DocTags: Preserves complex elements (code, formulas, tables).
+          \item Use for: archival, further processing, validation.
+        \end{itemize}
+        \item \textbf{Lossy Exports:}
+        \begin{itemize}
+          \item Markdown: Clean, LLM-friendly; loses precise bounding boxes.
+          \item HTML: Web-ready with styling; loses internal structure.
+          \item Text: Plain text extraction only.
+          \item Use for: RAG pipelines, human readability, web display.
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunking: BaseChunker Abstraction}
+      \begin{itemize}
+        \item Chunker operates directly on DoclingDocument (not post-export text).
+        \item Returns iterator of Chunk objects with text + metadata.
+        \item \textbf{Chunk Structure:}
+        \begin{itemize}
+          \item text: segment content
+          \item metadata: page, section, provenance, headers
+        \end{itemize}
+        \item Enables structure-aware segmentation.
+        \item Compatible with LangChain, LlamaIndex via wrappers.
+        \item Custom chunkers can extend BaseChunker interface.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Advantages: Structural Fidelity}
+      \begin{itemize}
+        \item Preserves document hierarchy (sections, subsections).
+        \item Maintains element relationships (captions tied to figures).
+        \item Retains spatial information (coordinates per element).
+        \item Distinguishes content types (tables vs paragraphs).
+        \item \textbf{RAG Benefits:}
+        \begin{itemize}
+          \item Context maintained through relationships.
+          \item Intelligent, structure-aware chunking.
+          \item Precise source references for citations.
+          \item Appropriate handling of diverse elements.
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Limitations: Accuracy Edge Cases}
+      \begin{itemize}
+        \item \textbf{Complex Layouts:} Artistic designs, non-traditional structures.
+        \item \textbf{Low-Quality Scans:} OCR degrades with poor quality, handwriting.
+        \item \textbf{Specialized Content:} Medical tables, chemical formulas, music notation.
+        \item \textbf{Table Extraction:} Deeply nested or unconventional tables.
+        \item \textbf{Reading Order:} Unusual layouts with floating elements, watermarks.
+        \item May require custom models or fine-tuning for edge cases.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Resource Requirements and Optimization}
+      \begin{itemize}
+        \item \textbf{GPU Dependency:} High-accuracy models need significant VRAM.
+        \begin{itemize}
+          \item heron-101: ~17.7 GB VRAM
+          \item egret-m: ~5.8 GB VRAM (faster, lower accuracy)
+        \end{itemize}
+        \item \textbf{Processing Time:} 1.26 sec/page average (varies by complexity).
+        \item \textbf{CPU vs GPU:} 3-33x speedup with GPU acceleration.
+        \item \textbf{Model Download:} Multi-GB weights (one-time download).
+        \item \textbf{Scalability:} Parallel processing for batch operations.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Performance Benchmarks: Layout Models}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Model} & \textbf{mAP} & \textbf{Speed (GPU)} & \textbf{VRAM} \\
+\hline
+egret-m & 0.59 & 0.024 sec & 5.8 GB \\
+egret-l & 0.59 & 0.027 sec & 8 GB \\
+heron & 0.61 & 0.030 sec & 12 GB \\
+heron-101 & 0.78 & 0.028 sec & 17.7 GB \\
+\hline
+\end{tabular}
+\end{table}
+      \begin{itemize}
+        \item heron-101: Best accuracy (78\% on DocLayNet).
+        \item egret-m: Fastest for resource-constrained environments.
+        \item Choose based on accuracy vs speed requirements.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{TableFormer: Training and Capabilities}
+      \begin{itemize}
+        \item \textbf{Training Datasets:}
+        \begin{itemize}
+          \item PubTabNet: 516k+ heterogeneous tables (PubMed Central).
+          \item FinTabNet: 112k+ financial tables with precise annotations.
+          \item TableBank: 417k labeled tables (Word, LaTeX).
+        \end{itemize}
+        \item \textbf{Capabilities:}
+        \begin{itemize}
+          \item Row/column boundary detection.
+          \item Merged cell recognition.
+          \item Multi-page table handling.
+          \item Cell relationship preservation.
+        \end{itemize}
+        \item State-of-the-art transformer-based architecture.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Granite-Docling: Vision-Language Model Alternative}
+      \begin{itemize}
+        \item 258M parameter VLM (ultra-compact).
+        \item Visual encoder: SigLIP2; Language: Granite 3.
+        \item \textbf{Advantages:}
+        \begin{itemize}
+          \item End-to-end page processing (no pipeline).
+          \item Improved stability (no token repetition loops).
+          \item Better complex layout handling.
+        \end{itemize}
+        \item \textbf{Trade-offs:}
+        \begin{itemize}
+          \item Slower than modular pipelines.
+          \item Higher VRAM requirements.
+          \item Alternative when simplicity > speed.
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Item Attributes and Provenance}
+      \begin{itemize}
+        \item Each item has unique ID, bounding box, and parent-child hierarchy.
+        \item Tracks origin: page number, coordinates, source document.
+        \item Maintains formatting (fonts, links, levels).
+        \item Tables store structured cell data with boundaries.
+        \item Pictures include image references and captions.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Content Layers and Provenance}
+      \begin{itemize}
+        \item Two content layers: BODY and FURNITURE.
+        \item BODY = main content; FURNITURE = headers/footers.
+        \item Enables selective processing (ignore headers).
+        \item Provenance enables back-tracing extracted info to page source.
+        \item Supports validation and citation in downstream systems.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Models and Integration}
+      \begin{itemize}
+        \item Models include layout, table, enrichment, VLM, and OCR components.
+        \item Each model wrapped as a pipeline stage.
+        \item Base interfaces: BaseLayoutModel, BaseTableStructureModel, etc.
+        \item Models can be swapped, fine-tuned, or disabled.
+        \item Supports ensemble or specialized pipelines.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pipeline Lifecycle Overview}
+      \begin{itemize}
+        \item Input document → backend selection → pipeline execution.
+        \item Each page processed for layout, tables, and grouping.
+        \item Post-processing merges pages and corrects reading order.
+        \item Final output: DoclingDocument with complete structure.
+        \item Enables accurate downstream export and chunking.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pipeline Configuration Options}
+      \begin{itemize}
+        \item Enable or disable OCR, table recognition, formula detection.
+        \item Choose OCR engine: EasyOCR, Tesseract, or RapidOCR.
+        \item Configure table structure mode: ACCURATE or FAST.
+        \item Select layout model type (heron, egret-m, etc.).
+        \item Control picture classification and image scaling.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom Pipeline Development}
+      \begin{itemize}
+        \item Subclass existing pipelines to add custom stages.
+        \item Replace or add models (layout, OCR, enrichment).
+        \item Configure via pipeline options.
+        \item Modify post-processing (caption matching, metadata).
+        \item Extend for domain-specific document formats.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reading Order Algorithm}
+      \begin{itemize}
+        \item Reconstructs logical flow from spatial layout predictions.
+        \item Uses recursive grouping and top-bottom, left-right ordering.
+        \item Integrates visual cues (headers, footers, columns).
+        \item Handles multi-page and multi-column documents.
+        \item Ensures semantic coherence for downstream chunking.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Export and Serialization}
+      \begin{itemize}
+        \item Exports DoclingDocument to JSON, Markdown, HTML, or plain text.
+        \item JSON and DocTags retain full fidelity.
+        \item Markdown ideal for LLM-based RAG pipelines.
+        \item Enables web-ready or text-only representations.
+        \item Provides high control over structure and metadata.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunking in Docling}
+      \begin{itemize}
+        \item Operates on DoclingDocument objects directly.
+        \item Supports structural, item-based, size-constrained, and semantic chunking.
+        \item Preserves hierarchy and context boundaries.
+        \item Integrates with LangChain and LlamaIndex.
+        \item Provides metadata-rich chunks for RAG embeddings.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Advantages}
+      \begin{itemize}
+        \item Preserves structural fidelity and spatial context.
+        \item Fast processing (1.26 sec/page, scalable on GPU).
+        \item Fully local for privacy and compliance.
+        \item Open, extensible, and auditable.
+        \item Deep integration with RAG frameworks.
+        \item Multi-format, multilingual, and multimodal support.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Limitations and Challenges}
+      \begin{itemize}
+        \item Complex or artistic layouts may confuse layout models.
+        \item OCR struggles with poor scan quality or handwriting.
+        \item GPU-heavy for high-accuracy models (heron-101).
+        \item Customization requires deep architectural knowledge.
+        \item Edge cases in reading order and multilingual support.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Use Cases and Integrations}
+      \begin{itemize}
+        \item Ideal for RAG applications with structured documents.
+        \item Used in legal, financial, academic, and research contexts.
+        \item Integrates with LangChain and LlamaIndex pipelines.
+        \item Exports to Markdown or JSON for embeddings.
+        \item Flexible APIs, CLI tools, and MCP server integration.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Basic Usage Pattern}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item Configure pipeline options (OCR, tables, images).
+        \item Create a DocumentConverter for PDFs.
+        \item Convert document and export structured outputs.
+        \item Save as JSON or Markdown for further processing.
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}
+from docling.document_converter import DocumentConverter
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+
+options = PdfPipelineOptions()
+options.do_ocr = True
+converter = DocumentConverter(
+    format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
+)
+result = converter.convert_single("document.pdf")
+doc = result.document
+doc.save_as_markdown("out.md")
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunking for RAG}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item HierarchicalChunker creates semantically coherent segments.
+        \item Each chunk contains text and provenance metadata.
+        \item Enables embeddings and vector storage for retrieval.
+        \item Integrates easily with any RAG backend.
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}
+from docling_core.chunking import HierarchicalChunker
+
+chunker = HierarchicalChunker(max_tokens=1024)
+chunks = chunker.chunk(doc)
+
+for chunk in chunks:
+    embedding = embed_model.embed(chunk.text)
+    vector_db.store(chunk.text, embedding, metadata=chunk.metadata)
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Integration with LangChain}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item DoclingLoader converts parsed documents to LangChain objects.
+        \item Enables seamless embedding and retrieval integration.
+        \item Works with FAISS, Chroma, or any vector store.
+        \item Ideal for building end-to-end RAG workflows.
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}
+from langchain.document_loaders import DoclingLoader
+loader = DoclingLoader(file_path="document.pdf")
+docs = loader.load()
+
+embeddings = OpenAIEmbeddings()
+vector_store = FAISS.from_documents(docs, embeddings)
+retriever = vector_store.as_retriever()
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Installation and System Requirements}
@@ -145,8 +694,8 @@ python -c "import docling; print(docling.__version__)"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Architecture Overview}
-\begin{columns}
-    \begin{column}[T]{0.4\linewidth}
+% \begin{columns}
+    % \begin{column}[T]{0.4\linewidth}
       \begin{itemize}
 		\item Document converter selects format-specific backend
 		\item Pipeline orchestrates execution with relevant options
@@ -156,13 +705,13 @@ python -c "import docling; print(docling.__version__)"
 		\item Chunkers enable document segmentation
 	  \end{itemize}
 
-    \end{column}
-    \begin{column}[T]{0.6\linewidth}
+    % \end{column}
+    % \begin{column}[T]{0.6\linewidth}
 		\begin{center}
 		\includegraphics[width=\linewidth,keepaspectratio]{docling1}
 		\end{center}	
-    \end{column}
-  \end{columns}
+    % \end{column}
+  % \end{columns}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -760,4 +1309,175 @@ print(doc.export_to_markdown())
 	\item Comprehensive format support reduces tool complexity
 	\item Confidence scoring enables quality-based workflows
 	  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Comparative Analysis: Docling vs. Alternatives}
+      \begin{itemize}
+        \item Evaluated alongside Unstructured.io, Marker, PyMuPDF, and LlamaParse.
+        \item Docling provides full structural reconstruction, not just text extraction.
+        \item Marker focuses on OCR-heavy pipelines but lacks metadata fidelity.
+        \item Unstructured.io integrates easily with LangChain but is cloud-biased.
+        \item Docling offers open-source transparency and enterprise-grade accuracy.
+        \item LlamaParse provides cloud performance, but limited customization.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Performance Comparison}
+      \begin{itemize}
+        \item Docling: 1.26 sec/page average (CPU); 0.04 sec/page (GPU T4).
+        \item Marker: 3.7 sec/page average; slower on complex layouts.
+        \item Unstructured.io: depends on API latency and batch size.
+        \item LlamaParse: GPU-optimized cloud models, but cost per token.
+        \item Docling shows best balance between fidelity and runtime.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Accuracy Comparison}
+      \begin{itemize}
+        \item Docling (heron-101): 78% mAP on DocLayNet.
+        \item Marker (via PaddleOCR + LayoutLMv3): 65–70%.
+        \item Unstructured.io: approx. 72% for layout fidelity.
+        \item LlamaParse (VLM): ~74% but higher hallucination rate.
+        \item Docling excels in table detection and reading order.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feature Comparison Matrix}
+      \begin{itemize}
+        \item \textbf{Docling:} Open, modular, accurate, supports 15+ formats.
+        \item \textbf{Marker:} Focused on OCR text extraction.
+        \item \textbf{Unstructured.io:} Cloud-first integration tool.
+        \item \textbf{LlamaParse:} Fast VLM-based cloud parser.
+        \item \textbf{PyMuPDF:} Lightweight library for plain PDF text.
+        \item Docling = best for hybrid local AI and enterprise RAG systems.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Enterprise Integration Considerations}
+      \begin{itemize}
+        \item Docling supports full offline operation → ideal for secure data.
+        \item Modular APIs enable integration into existing ETL workflows.
+        \item Supports CLI batch processing for large-scale document ingestion.
+        \item JSON and Markdown exports fit RAG pipelines directly.
+        \item Docker images and MCP servers simplify deployment.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Use Case: RAG System Deployment}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item Parse docs → Chunk → Embed → Index → Retrieve → Generate.
+        \item Docling handles the “Parse → Chunk” steps.
+        \item Embeddings and vector storage handled by LangChain/LlamaIndex.
+        \item Downstream model uses parsed context for accurate answers.
+        \item Fully local RAG achievable with no cloud dependence.
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}
+from docling.document_converter import DocumentConverter
+from docling_core.chunking import HierarchicalChunker
+from langchain.vectorstores import FAISS
+
+doc = DocumentConverter().convert_single("report.pdf").document
+chunks = HierarchicalChunker(max_tokens=1024).chunk(doc)
+vector_db = FAISS.from_texts(
+    [c.text for c in chunks], embedding_function
+)
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Impact of Parsing Quality}
+      \begin{itemize}
+        \item Accurate structure improves embedding relevance.
+        \item Preserves semantic boundaries → better contextual retrieval.
+        \item Reduces LLM hallucinations from fragmented chunks.
+        \item Improves citation and traceability via metadata.
+        \item Parsing is a key determinant of RAG accuracy.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Strengths Summary}
+      \begin{itemize}
+        \item Structural accuracy and provenance tracking.
+        \item Fully open source and local deployment.
+        \item Integrates natively with AI and RAG frameworks.
+        \item Excellent performance on tables and layouts.
+        \item Modular, customizable, and future-proof.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Areas for Future Improvement}
+      \begin{itemize}
+        \item Enhance multi-language and RTL support.
+        \item Optimize OCR handling for low-quality scans.
+        \item Simplify custom pipeline configuration.
+        \item Expand VLM coverage for complex documents.
+        \item Build real-time streaming conversion for interactive RAG.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Recommended Docling Pipeline Setup}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item Use \texttt{StandardPdfPipeline} for most PDFs.
+        \item Enable OCR only if source is scanned.
+        \item Use \texttt{heron-101} for accuracy; \texttt{egret-m} for speed.
+        \item Activate table structure mode = \texttt{ACCURATE}.
+        \item Export Markdown for embedding and RAG.
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+
+options = PdfPipelineOptions()
+options.do_ocr = False
+options.table_structure_recognition = "ACCURATE"
+options.do_picture_classification = True
+converter = DocumentConverter(
+    format_options={InputFormat.PDF: PdfFormatOption(
+        pipeline_options=options)}
+)
+result = converter.convert_single("whitepaper.pdf")
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conclusion}
+      \begin{itemize}
+        \item Document parsing is crucial for RAG system quality.
+        \item Docling sets a new benchmark for open-source parsers.
+        \item Combines speed, accuracy, and modularity.
+        \item Ideal for enterprise AI and local privacy contexts.
+        \item Open ecosystem encourages collaboration and innovation.
+        \item Parsing fidelity directly amplifies retrieval and generation accuracy.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Key Takeaways}
+      \begin{itemize}
+        \item Parsing is the foundation of RAG intelligence.
+        \item Docling achieves best-in-class accuracy with open tools.
+        \item Integration with LangChain simplifies deployment.
+        \item Hybrid pipelines balance speed and semantic depth.
+        \item Future work: domain fine-tuning and adaptive chunking.
+      \end{itemize}
 \end{frame}

@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from enum import Enum
 import base64
 from io import BytesIO
+import json
+import pandas as pd
 
 from pydantic import BaseModel, Field
 from docling.document_converter import DocumentConverter
@@ -19,6 +21,8 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor, AutoModelForVision2Seq
 import torch
+from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem, TextItem, TableItem
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,8 +43,8 @@ class BaseChunk(BaseModel):
     chunk_type: ChunkType = Field(description="Type of content chunk")
     description: str = Field(default="", description="AI-generated description of the chunk content")
     source_page: Optional[int] = Field(default=None, description="Source page number")
-    bbox: Optional[Dict[str, float]] = Field(default=None, description="Bounding box coordinates")
-
+    # bbox: Optional[Dict[str, float]] = Field(default=None, description="Bounding box coordinates")
+    parent_heading: Optional[str] = Field(default=None, description="Text of the current section heading")
 
 class TextChunk(BaseChunk):
     """Chunk containing text content."""
@@ -128,6 +132,112 @@ class DoclingParser:
             return "cuda" if torch.cuda.is_available() else "cpu"
         return device
     
+    def _is_heading(self, item: NodeItem) -> bool:
+            """
+            Check if a Docling NodeItem is a document heading.
+            
+            This check often relies on the label attribute of the node.
+            """
+            # docling headers often have a specific label like DocItemLabel.HEADER
+            # or DocItemLabel.TITLE. We'll use a pragmatic approach based on common
+            # docling labels for structure.
+            heading_bool = (hasattr(item, 'label') and 
+                    item.label in [DocItemLabel.SECTION_HEADER, DocItemLabel.TITLE] and 
+                    isinstance(item, TextItem))
+            return heading_bool
+            
+    
+    def populate_chunks_with_parents(self, document_path: str) -> List[Union[TextChunk, TableChunk, ImageChunk, CodeChunk]]:
+            """
+            Parse a document, extract all content modalities, and assign a hierarchical
+            parent (section heading text) to each chunk based on reading order.
+            
+            Args:
+                document_path: Path to the document file
+                
+            Returns:
+                List of parsed chunks with parent heading assigned
+            """
+            logger.info(f"Starting document parsing: {document_path}")
+            
+            # Convert document using docling
+            try:
+                result: ConversionResult = self.converter.convert(document_path)
+                document: DoclingDocument = result.document
+                logger.info("Document conversion successful")
+            except Exception as e:
+                logger.error(f"Document conversion failed: {e}")
+                raise
+            
+            chunks = []
+            current_heading_text: Optional[str] = None
+            chunk_counter = 0
+
+            # Iterate the elements in reading order, including hierarchy level:
+            for item, level in document.iterate_items():
+                
+                # 1. Check if the item is a new section header
+                if self._is_heading(item):
+                    if isinstance(item, TextItem) and item.text:
+                        # Reset the current heading to the text of the new header
+                        # TODO: no level wise consideration, as stack based push and pop logic needs to be considered
+                        current_heading_text = item.text
+                        logger.debug(f"New section heading detected (Level {level}): {current_heading_text}")
+                    continue # Do not add the header itself to the chunks list
+
+                # 2. Extract content chunks and assign the current_heading_text as parent
+                chunk: Optional[BaseChunk] = None
+                source_page = item.prov[0].page_no if item.prov else None
+                # bbox = item.bbox.to_dict() if item.bbox else None
+                
+                if isinstance(item, TextItem):
+                    # Ensure it's not a heading we missed or a very small artifact
+                    if item.text and len(item.text.split()) > 1: 
+                        chunk = TextChunk(
+                            chunk_id=f"text_{chunk_counter}",
+                            text_content=item.text,
+                            word_count=len(item.text.split()),
+                            source_page=source_page,
+                            # bbox=bbox,
+                            parent_heading=current_heading_text
+                        )
+                
+                elif isinstance(item, TableItem):
+                    # Using logic similar to _extract_table_chunks for data extraction
+                    table_data = item.export_to_dataframe().values.tolist()
+                    headers = list(item.export_to_dataframe().columns)
+                    rows = table_data
+                    
+                    chunk = TableChunk(
+                        chunk_id=f"table_{chunk_counter}",
+                        table_data=rows,
+                        headers=headers,
+                        table_html=getattr(item, 'html', None),
+                        num_rows=len(rows),
+                        num_cols=len(headers),
+                        source_page=source_page,
+                        # bbox=bbox,
+                        parent_heading=current_heading_text
+                    )
+
+                # NOTE: For images and code, the docling iteration may yield a NodeItem that
+                # only *references* the actual image/code element stored in document.images/document.codes.
+                # A full implementation would need to look up the item.ref in the respective list.
+                # For simplicity in this structure, we'll continue with the Text/Table focus.
+                
+                if chunk:
+                    # Assign the current heading text to the chunk (requires BaseChunk modification)
+                    # chunk.parent_heading = current_heading_text 
+                    chunks.append(chunk)
+                    chunk_counter += 1
+            
+            logger.info(f"Extracted {len(chunks)} content chunks with hierarchical parent assignment.")
+            
+            # NOTE: Uncomment the description generation below for the full pipeline
+            # chunks_with_descriptions = self._generate_descriptions(chunks)
+            # return chunks_with_descriptions
+            return chunks
+    
     def parse_document(self, document_path: str) -> List[Union[TextChunk, TableChunk, ImageChunk, CodeChunk]]:
         """
         Parse a document and extract all content modalities.
@@ -149,23 +259,42 @@ class DoclingParser:
             logger.error(f"Document conversion failed: {e}")
             raise
         
-        chunks = []
+
+        # for table_ix, table in enumerate(document.tables):
+        #     page_number = table.prov[0].page_no if table.prov else "Unknown"
+        #     table_df: pd.DataFrame = table.export_to_dataframe()
+        #     print(f"## Table {table_ix} (Page {page_number})")
+        #     print(table_df.to_markdown())
+
+        # document.print_element_tree()
+
+        # ## Iterate the elements in reading order, including hierarchy level:
+        # for item, level in document.iterate_items():
+        #     if isinstance(item, TextItem):
+        #         print(item.text)
+        #     elif isinstance(item, TableItem):
+        #         table_df: pd.DataFrame = item.export_to_dataframe()
+        #         print(table_df.to_markdown())
         
-        # Extract text chunks
-        text_chunks = self._extract_text_chunks(document)
-        chunks.extend(text_chunks)
+        chunks = self.populate_chunks_with_parents(document_path)
+
+    
+        # # Extract text chunks
+        # text_chunks = self._extract_text_chunks(document)
+        # chunks.extend(text_chunks)
         
-        # Extract table chunks
-        table_chunks = self._extract_table_chunks(document)
-        chunks.extend(table_chunks)
         
-        # Extract image chunks
-        image_chunks = self._extract_image_chunks(document)
-        chunks.extend(image_chunks)
+        # # Extract table chunks
+        # table_chunks = self._extract_table_chunks(document)
+        # chunks.extend(table_chunks)
         
-        # Extract code chunks
-        code_chunks = self._extract_code_chunks(document)
-        chunks.extend(code_chunks)
+        # # Extract image chunks
+        # image_chunks = self._extract_image_chunks(document)
+        # chunks.extend(image_chunks)
+        
+        # # Extract code chunks
+        # code_chunks = self._extract_code_chunks(document)
+        # chunks.extend(code_chunks)
         
         # Generate descriptions for all chunks
         chunks_with_descriptions = self._generate_descriptions(chunks)
@@ -185,7 +314,7 @@ class DoclingParser:
                     text_content=text_elem.text,
                     word_count=len(text_elem.text.split()),
                     source_page=getattr(text_elem, 'page', None),
-                    bbox=getattr(text_elem, 'bbox', None)
+                    # bbox=getattr(text_elem, 'bbox', None)
                 )
                 text_chunks.append(chunk)
             
@@ -220,7 +349,7 @@ class DoclingParser:
                     num_rows=len(rows),
                     num_cols=len(headers),
                     source_page=getattr(table_elem, 'page', None),
-                    bbox=getattr(table_elem, 'bbox', None)
+                    # bbox=getattr(table_elem, 'bbox', None)
                 )
                 table_chunks.append(chunk)
             
@@ -258,7 +387,7 @@ class DoclingParser:
                     width=getattr(image_elem, 'width', None),
                     height=getattr(image_elem, 'height', None),
                     source_page=getattr(image_elem, 'page', None),
-                    bbox=getattr(image_elem, 'bbox', None)
+                    # bbox=getattr(image_elem, 'bbox', None)
                 )
                 image_chunks.append(chunk)
             
@@ -281,7 +410,7 @@ class DoclingParser:
                     programming_language=getattr(code_elem, 'language', None),
                     line_count=len(code_elem.text.splitlines()),
                     source_page=getattr(code_elem, 'page', None),
-                    bbox=getattr(code_elem, 'bbox', None)
+                    # bbox=getattr(code_elem, 'bbox', None)
                 )
                 code_chunks.append(chunk)
             
@@ -306,6 +435,9 @@ class DoclingParser:
                 elif isinstance(chunk, CodeChunk):
                     chunk.description = self._generate_code_description(chunk.code_content, chunk.programming_language)
                     
+                # for all chunks add their location ie parent heading in front so that it gets embedded also
+                chunk.description = chunk.parent_heading + " : " + chunk.description
+                
             except Exception as e:
                 logger.warning(f"Failed to generate description for chunk {chunk.chunk_id}: {e}")
                 chunk.description = f"Content chunk of type {chunk.chunk_type.value}"
@@ -425,6 +557,7 @@ if __name__ == "__main__":
         print(f"Parsed {len(chunks)} chunks:")
         for chunk in chunks:
             print(f"- {chunk.chunk_type.value.title()} Chunk: {chunk.description[:100]}...")
+
             
     except FileNotFoundError:
         print("Please provide a valid document path for testing.")

@@ -37,9 +37,9 @@ Days 6-10: Language Processing
 
 - Text preprocessing, tokenization, and normalization pipelines  
 - Natural language processing with spaCy: NER, POS tagging, parsing  
-- Text vectorization techniques: TF-IDF and feature extraction  
-- Sentiment analysis with machine learning classifiers  
+- Machine Learning techniques: Supervised, Unsupervised, classification 
 - Word embeddings: Word2Vec, semantic similarity, and vector operations  
+- Sentiment analysis with machine learning classifiers  
 - **Deliverables**: NLP projects including ML models
 
 #### PHASE 3: RAG SYSTEMS & PRODUCTION (1 week)

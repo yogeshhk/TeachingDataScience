@@ -7,6 +7,2366 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Architecture: Three Foundational Components}
+\begin{columns}
+    \begin{column}[T]{0.6\linewidth}
+      \begin{itemize}
+        \item \textbf{1. Format-Specific Backends:}
+        \begin{itemize}
+          \item Handle initial content extraction
+          \item Support 15+ formats
+        \end{itemize}
+        \item \textbf{2. Processing Pipelines:}
+        \begin{itemize}
+          \item Orchestrate AI model application
+          \item Customizable and extensible
+        \end{itemize}
+        \item \textbf{3. DoclingDocument:}
+        \begin{itemize}
+          \item Unified data representation
+          \item Format-agnostic structure
+        \end{itemize}
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.4\linewidth}
+% \begin{verbatim}
+% Document Input
+    % ↓
+% [Backend]
+    % ↓
+% [Pipeline]
+    % ↓
+% [DoclingDocument]
+    % ↓
+% [Export/Chunk]
+% \end{verbatim}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{PDF Backend: Dual Extraction Strategy}
+      \begin{itemize}
+        \item \textbf{Custom Docling Parser (Default):}
+        \begin{itemize}
+          \item Built on qpdf library
+          \item Reliable text token extraction with coordinates
+          \item Page rendering for visual models
+        \end{itemize}
+        \item \textbf{PyPDFium Backend (Alternative):}
+        \begin{itemize}
+          \item For specific font encoding scenarios
+          \item Better handling of certain PDF specifications
+        \end{itemize}
+        \item \textbf{Dual Function:}
+        \begin{itemize}
+          \item Extract programmatic text with geometric data
+          \item Render bitmap representations for AI models
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Markup-Based Backends}
+      \begin{itemize}
+        \item \textbf{Word/Office Parser:}
+        \begin{itemize}
+          \item Handles DOCX, PPTX, XLSX
+          \item Preserves semantic structure from markup
+          \item Direct access to document object model
+        \end{itemize}
+        \item \textbf{HTML Parser:}
+        \begin{itemize}
+          \item Processes web content and HTML documents
+          \item Maintains DOM hierarchy
+        \end{itemize}
+        \item \textbf{Image Parser:}
+        \begin{itemize}
+          \item Handles PNG, TIFF, JPEG
+          \item Applies OCR when needed
+        \end{itemize}
+        \item Markup formats bypass layout detection (structure explicit).
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{StandardPdfPipeline: Detailed Flow}
+      \begin{itemize}
+        \item \textbf{Step 1:} Backend parsing (text tokens + page bitmap).
+        \item \textbf{Step 2:} Layout analysis (Heron/EGRET detects elements).
+        \item \textbf{Step 3:} Table structure recognition (TableFormer).
+        \item \textbf{Step 4:} Text grouping (cluster tokens by layout).
+        \item \textbf{Step 5:} Content assembly (build DoclingDocument).
+        \item \textbf{Step 6:} Post-processing:
+        \begin{itemize}
+          \item Reading order correction
+          \item Caption-to-figure matching
+          \item Language detection
+          \item Metadata labeling (title, authors, references)
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{SimplePipeline: Markup Document Flow}
+      \begin{itemize}
+        \item Designed for DOCX, HTML, XLSX, PPTX.
+        \item \textbf{Step 1:} Parse semantic markup directly into DoclingDocument.
+        \item \textbf{Step 2:} Apply enrichment models if configured.
+        \item \textbf{Step 3:} Preserve original structure without layout detection.
+        \item No visual analysis required (structure from markup).
+        \item Faster processing than PDF pipeline.
+        \item Maintains formatting information from source.
+        \item Optional: formula detection, image classification.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pipeline Customization: Implementation}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+
+class CustomPipelineOptions(PdfPipelineOptions):
+    do_custom_processing: bool = True
+    custom_threshold: float = 0.85
+
+class CustomPipeline(StandardPdfPipeline):
+    def __init__(self, options: CustomPipelineOptions):
+        super().__init__(options)
+        # Add custom enrichment stages
+        self.custom_model = YourCustomModel()
+        
+    def __call__(self, docs):
+        # Apply standard stages
+        result = super().__call__(docs)
+        
+        # Add custom processing
+        if self.options.do_custom_processing:
+            result = self.custom_model.process(result)
+            
+        return result
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Model Integration: Callable Interface}
+      \begin{itemize}
+        \item Models must satisfy Python's Callable interface.
+        \item \textbf{Input Contract:} Receive page objects with text/images.
+        \item \textbf{Output Contract:} Return predictions with bounding boxes and labels.
+        \item \textbf{Base Interfaces:}
+        \begin{itemize}
+          \item BaseLayoutModel: For element detection
+          \item BaseTableStructureModel: For table recognition
+          \item BaseItemAndImageEnrichmentModel: For enrichment
+        \end{itemize}
+        \item Custom models can extend these bases.
+        \item Enables model substitution without pipeline changes.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Layout Models: Training Data}
+      \begin{itemize}
+        \item \textbf{DocLayNet Dataset:}
+        \begin{itemize}
+          \item 150,000+ diverse documents
+          \item Human-annotated bounding boxes
+          \item 13 element classes
+          \item Multi-domain coverage
+        \end{itemize}
+        \item \textbf{Proprietary Datasets:}
+        \begin{itemize}
+          \item IBM internal document collections
+          \item Specialized domain content
+          \item Enhanced edge case coverage
+        \end{itemize}
+        \item Models trained on combined datasets.
+        \item Regular updates with new training data.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Layout Model: 13 Element Classes}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item \textbf{Structural:}
+        \begin{itemize}
+          \item Text (body paragraphs)
+          \item Title (document title)
+          \item Section-header
+          \item Page-header
+          \item Page-footer
+        \end{itemize}
+        \item \textbf{Content Types:}
+        \begin{itemize}
+          \item Table
+          \item Picture
+          \item Formula
+        \end{itemize}
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item \textbf{Semantic:}
+        \begin{itemize}
+          \item Paragraph
+          \item List-item
+          \item Caption
+          \item Footnote
+          \item Code
+        \end{itemize}
+        \item Each class trained separately.
+        \item Post-processing removes overlaps.
+        \item Confidence scores per prediction.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Post-Processing: Overlap Removal}
+      \begin{itemize}
+        \item Layout models produce overlapping predictions.
+        \item \textbf{Resolution Strategy:}
+        \begin{itemize}
+          \item Calculate overlap ratio (IoU - Intersection over Union)
+          \item Keep prediction with highest confidence
+          \item Remove smaller/lower-confidence overlaps
+          \item Preserve spatial relationships
+        \end{itemize}
+        \item \textbf{Text Token Intersection:}
+        \begin{itemize}
+          \item Match predictions with extracted text tokens
+          \item Create complete units (paragraphs with text)
+          \item Associate captions with correct elements
+        \end{itemize}
+        \item Ensures clean, non-redundant output.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{TableFormer: Output Structure}
+      \begin{itemize}
+        \item \textbf{Predictions Include:}
+        \begin{itemize}
+          \item Row and column boundaries (coordinates)
+          \item Cell content locations (bounding boxes)
+          \item Table headers and footers (classification)
+          \item Cell merging patterns (spanning cells)
+          \item Logical table hierarchy (nested structures)
+        \end{itemize}
+        \item \textbf{Output Format:} TableData structure
+        \begin{itemize}
+          \item Grid representation with cells
+          \item Each cell: row/col index, bbox, text, label
+          \item Preserves relationships for embedding
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Granite-Docling: Architecture Details}
+      \begin{itemize}
+        \item \textbf{Visual Encoder - SigLIP2:}
+        \begin{itemize}
+          \item Contrastive language-image pre-training
+          \item Efficient visual feature extraction
+          \item Handles high-resolution document images
+        \end{itemize}
+        \item \textbf{Language Backbone - Granite 3:}
+        \begin{itemize}
+          \item 258M parameters (ultra-compact)
+          \item Purpose-built for document understanding
+          \item Trained on diverse document types
+        \end{itemize}
+        \item \textbf{Training Approach:}
+        \begin{itemize}
+          \item End-to-end on document conversion tasks
+          \item Eliminates token repetition issues
+          \item Improved stability over SmolDocling
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{DoclingDocument: Pydantic Foundation}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from pydantic import BaseModel
+from typing import List, Optional
+
+class DoclingDocument(BaseModel):
+    # Content items - actual document content
+    texts: List[TextItem]              # All text
+    tables: List[TableItem]            # All tables
+    pictures: List[PictureItem]        # All images
+    key_value_items: List[KeyValueItem] # Metadata pairs
+    
+    # Content structure - hierarchical organization
+    body: NodeItem                     # Main content tree
+    furniture: NodeItem                # Headers/footers tree
+    groups: List[GroupItem]            # Container groups
+    
+    # Document metadata
+    pages: List[PageItem]              # Page-level info
+    origin: Optional[DocumentOrigin]   # Source metadata
+    
+    # Reading order encapsulated in body tree
+    # Parent-child relationships via JSON pointers
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{DocItemLabel: Complete Enumeration}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \textbf{Text-Based Items:}
+\begin{lstlisting}[basicstyle=\tiny]
+PARAGRAPH
+HEADING
+TITLE
+LIST_ITEM
+FOOTNOTE
+FORMULA
+CODE
+CAPTION
+\end{lstlisting}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \textbf{Structural/Special:}
+\begin{lstlisting}[basicstyle=\tiny]
+FORM
+SECTION_HEADER
+PAGE_HEADER
+PAGE_FOOTER
+TABLE
+PICTURE
+CHECKBOX
+GROUP
+LIST
+\end{lstlisting}
+    \end{column}
+  \end{columns}
+      \begin{itemize}
+        \item Every content item has exactly one label.
+        \item Labels enable type-specific processing.
+        \item Used for filtering, routing, and rendering.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{DocItem: Base Class Attributes}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from pydantic import BaseModel
+from typing import Optional, List
+
+class DocItem(BaseModel):
+    # Identity and classification
+    uid: str                              # Unique identifier
+    label: DocItemLabel                  # Semantic type
+    
+    # Spatial information
+    bbox: Optional[BoundingBox]          # (x0, y0, x1, y1)
+    
+    # Hierarchy (JSON pointers)
+    parent: Optional[str]                # Parent item reference
+    children: List[str]                  # Child item references
+    
+    # Provenance tracking
+    prov: Optional[List[ProvenanceItem]] # Source pages/coords
+    
+    # Content organization
+    content_layer: Optional[ContentLayer] # BODY or FURNITURE
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{TextItem: Extended Attributes}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class TextItem(DocItem):
+    # Primary content
+    text: str                            # Main text content
+    orig: Optional[str]                  # Pre-normalized original
+    
+    # Formatting and links
+    formatting: Optional[Formatting]     # Font, style, emphasis
+    hyperlink: Optional[Union[AnyUrl, Path]]  # Link target
+    
+    # Structural metadata
+    level: Optional[int]                 # Heading level (1-6)
+    
+    # Specialized content types
+    type: Optional[str]                  # LATEX, MATHML, or language
+    
+# Example usage:
+heading = TextItem(
+    uid="h1",
+    label=DocItemLabel.HEADING,
+    text="Introduction",
+    level=1,
+    bbox=BoundingBox(x0=50, y0=100, x1=200, y1=120)
+)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{TableItem and TableCell Structure}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class TableCell(BaseModel):
+    rc: Tuple[int, int]                  # (row, column) index
+    bbox: Optional[BoundingBox]          # Cell boundaries
+    text: Optional[str]                  # Cell text content
+    label: Optional[TableCellLabel]      # HEADER, BODY, etc.
+
+class TableItem(DocItem):
+    data: TableData                      # Complete cell grid
+    bbox: Optional[BoundingBox]          # Table region
+    cells: List[TableCell]               # Individual cells
+    
+# Example: 3x3 table
+table = TableItem(
+    uid="t1",
+    label=DocItemLabel.TABLE,
+    cells=[
+        TableCell(rc=(0,0), text="Header1", label="HEADER"),
+        TableCell(rc=(0,1), text="Header2", label="HEADER"),
+        TableCell(rc=(1,0), text="Data1", label="BODY"),
+        # ... more cells
+    ]
+)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{PictureItem: Image Handling}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class PictureItem(DocItem):
+    # Image reference
+    image_ref: Optional[ImageRef]        # Reference to image data
+    
+    # Classification (optional enrichment)
+    classification: Optional[PictureClassificationData]
+    # Types: photo, diagram, chart, logo, etc.
+    
+    # Associated text
+    captions: List[str]                  # Caption UIDs
+    
+# ImageRef points to actual image data
+class ImageRef(BaseModel):
+    mimetype: str                        # image/png, image/jpeg
+    dpi: int                             # Resolution
+    size: Tuple[int, int]                # (width, height)
+    uri: Optional[str]                   # Data URI or file path
+    pil_image: Optional[PILImage]        # PIL Image object
+
+# Access image:
+picture = doc.pictures[0]
+if picture.image_ref:
+    img = picture.image_ref.pil_image
+    img.save("extracted_image.png")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{ProvenanceItem: Traceability}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class ProvenanceItem(BaseModel):
+    page_number: int                     # Source page (1-indexed)
+    bbox: BoundingBox                    # Coordinates on page
+    origin: Optional[str]                # Document identifier
+
+# Every DocItem can have multiple provenance entries
+# (e.g., for elements spanning pages)
+
+# Example: Track paragraph origin
+paragraph = TextItem(
+    uid="p1",
+    text="This paragraph spans two pages...",
+    prov=[
+        ProvenanceItem(page_number=5, bbox=BoundingBox(...)),
+        ProvenanceItem(page_number=6, bbox=BoundingBox(...))
+    ]
+)
+
+# Use provenance for:
+# - Citation generation
+# - Source navigation
+# - Extraction validation
+# - Audit trails
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Content Layers: BODY vs FURNITURE}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from enum import Enum
+
+class ContentLayer(Enum):
+    BODY = "body"           # Main document content
+    FURNITURE = "furniture" # Headers, footers, page numbers
+
+# Separation enables:
+# 1. Excluding headers/footers during RAG processing
+# 2. Different styling for body vs furniture
+# 3. Preserving document structure precisely
+
+# Filter body content only:
+for item, level in doc.iterate_items():
+    if item.content_layer == ContentLayer.BODY:
+        # Process only main content
+        process_for_rag(item)
+
+# Export body only:
+markdown = doc.export_to_markdown(
+    body_only=True  # Exclude furniture
+)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Element Flow Through Architecture}
+\begin{columns}
+    \begin{column}[T]{0.45\linewidth}
+      \begin{itemize}
+        \item Page rendered as image
+        \item Layout model detects boxes + labels
+        \item Elements classified by type
+        \item Routing to specialized models:
+        \begin{itemize}
+          \item Tables → TableFormer
+          \item Images → Classifier
+          \item Text → Grouping
+        \end{itemize}
+        \item Assembly into DoclingDocument
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.55\linewidth}
+% \begin{verbatim}
+% Document Page (Image)
+    % ↓
+% [Layout Model]
+% ├─ Text regions
+% ├─ Table regions
+% ├─ Picture regions
+% └─ Formula regions
+    % ↓
+% [Model Selection]
+% ├─ Text → TextItem
+% ├─ Table → [TableFormer]
+% │         └→ TableItem
+% ├─ Picture → [Classifier]
+% │           └→ PictureItem
+% └─ Formula → TextItem (type=LATEX)
+    % ↓
+% [Assembly]
+% └─ DoclingDocument
+% \end{verbatim}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reading Order: Recursive Grouping Algorithm}
+      \begin{itemize}
+        \item \textbf{Stage 1 - Initial Grouping:}
+        \begin{itemize}
+          \item Analyze vertical and horizontal spacing
+          \item Identify column boundaries via clustering
+          \item Detect visual separators (lines, whitespace)
+          \item Group aligned elements
+        \end{itemize}
+        \item \textbf{Recursive Subdivision:}
+        \begin{itemize}
+          \item Within each group, identify sub-groups
+          \item Continue until atomic elements reached
+          \item Build hierarchical tree structure
+        \end{itemize}
+        \item \textbf{Result:} Nested groups representing logical flow.
+      \end{itemize}
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Reading Order: Multi-Column Handling}
+% \begin{verbatim}
+% Two-Column Academic Paper:
+
+% ┌──────────────────────────────────┐
+% │  [Title - spans both columns]   │
+% │  [Authors - spans both columns] │
+% ├────────────────┬─────────────────┤
+% │  Abstract      │                 │
+% │  (full width)  │                 │
+% ├────────────────┼─────────────────┤
+% │  Column 1      │  Column 2       │
+% │  Para 1        │  Para 4         │
+% │  Para 2        │  Para 5         │
+% │  Figure 1      │  Para 6         │
+% │  Caption       │  Table 1        │
+% │  Para 3        │  Caption        │
+% └────────────└────────────────┴─────────────────┘
+
+% Algorithm detects:
+% 1. Full-width elements (title, abstract)
+% 2. Column boundary at x-coordinate
+% 3. Sequences within each column
+% 4. Cross-column elements (figures, tables)
+
+% Reading Order Output:
+% 1. Title
+% 2. Authors
+% 3. Abstract
+% 4. Column 1: Para 1, Para 2, Figure 1, Caption, Para 3
+% 5. Column 2: Para 4, Para 5, Para 6, Table 1, Caption
+% \end{verbatim}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Post-Processing: Caption Matching}
+      \begin{itemize}
+        \item \textbf{Challenge:} Captions detected separately from figures/tables.
+        \item \textbf{Matching Algorithm:}
+        \begin{itemize}
+          \item Identify caption elements (label = CAPTION)
+          \item Find nearest figure/table within proximity threshold
+          \item Check vertical alignment and spacing
+          \item Match based on typical patterns ("Figure 1:", "Table 2:")
+          \item Associate caption UID with parent element
+        \end{itemize}
+        \item \textbf{Result:} PictureItem.captions and TableItem.captions populated.
+        \item Enables contextual retrieval of figures with descriptions.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Post-Processing: Metadata Extraction}
+      \begin{itemize}
+        \item \textbf{Title Detection:}
+        \begin{itemize}
+          \item Identify largest text on first page
+          \item Check positioning (typically top-center)
+          \item Verify font size and styling
+        \end{itemize}
+        \item \textbf{Author Extraction:}
+        \begin{itemize}
+          \item Text following title with specific patterns
+          \item Comma-separated names
+          \item Affiliation matching
+        \end{itemize}
+        \item \textbf{References:}
+        \begin{itemize}
+          \item Detect "References" section header
+          \item Extract numbered/bulleted bibliography
+        \end{itemize}
+        \item \textbf{Language Detection:} Apply language identification on text samples.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Export: JSON Format}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Export to JSON (lossless)
+doc.save_as_json("output.json")
+
+# JSON structure preserves:
+{
+  "texts": [...],           # All TextItem objects
+  "tables": [...],          # All TableItem objects
+  "pictures": [...],        # All PictureItem objects
+  "body": {                 # Hierarchical tree
+    "uid": "body-root",
+    "children": ["p1", "h1", "t1", ...]
+  },
+  "furniture": {...},       # Headers/footers tree
+  "pages": [                # Page-level metadata
+    {
+      "page_no": 1,
+      "size": {"width": 612, "height": 792},
+      "confidence": {...}
+    }
+  ],
+  "origin": {               # Document metadata
+    "filename": "document.pdf",
+    "binary_hash": "abc123..."
+  }
+}
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Export: Markdown Format}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Export to Markdown (lossy but LLM-friendly)
+markdown_text = doc.export_to_markdown()
+
+# Example output:
+"""
+# Document Title
+
+## Section 1
+
+This is a paragraph with **emphasis** and a [link](url).
+
+### Subsection 1.1
+
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+
+![Figure 1: Caption text](image_reference)
+
+## Section 2
+
+More content...
+"""
+
+# Markdown loses:
+# - Exact bounding boxes
+# - Provenance information
+# - Detailed formatting metadata
+
+# But gains:
+# - Clean, readable format
+# - LLM-compatible structure
+# - Easy embedding generation
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Export: DocTags Format}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# DocTags: Structured format preserving complex elements
+doctags_text = doc.export_to_doctags()
+
+# Example output with preserved structure:
+"""
+<document>
+  <title>Document Title</title>
+  
+  <section>
+    <heading level="1">Section 1</heading>
+    <paragraph>Text content...</paragraph>
+    
+    <table>
+      <row><cell>Header 1</cell><cell>Header 2</cell></row>
+      <row><cell>Data 1</cell><cell>Data 2</cell></row>
+    </table>
+    
+    <code language="python">
+def example():
+    return "preserved formatting"
+    </code>
+    
+    <formula type="latex">
+\int_{0}^{\infty} x^2 dx
+    </formula>
+  </section>
+</document>
+"""
+# Preserves: code blocks, formulas, nested structures
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunking: Structural Strategy}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling_core.chunking import HierarchicalChunker
+
+# Structural chunking respects document hierarchy
+chunker = HierarchicalChunker(
+    max_tokens=1024,           # Maximum chunk size
+    merge_peers=True,          # Merge same-level items
+    include_headers=True       # Prepend section headers
+)
+
+chunks = list(chunker.chunk(doc))
+
+# Example chunks:
+# Chunk 1: "## Section 1\nIntroduction paragraph..."
+# Chunk 2: "## Section 1\n### Subsection 1.1\nContent..."
+# Chunk 3: "## Section 2\nNew section content..."
+
+# Each chunk includes:
+for chunk in chunks:
+    print(f"Text: {chunk.text[:100]}...")
+    print(f"Metadata: {chunk.metadata}")
+    # metadata = {
+    #   "page": [1, 2],
+    #   "section": "Section 1",
+    #   "headings": ["Section 1", "Subsection 1.1"],
+    #   "doc_id": "abc123"
+    # }
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunking: Item-Based Strategy}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling_core.chunking import BaseChunker
+
+# Custom item-based chunker
+class ItemChunker(BaseChunker):
+    def chunk(self, doc: DoclingDocument):
+        for item, level in doc.iterate_items():
+            # One chunk per item
+            if item.label in [DocItemLabel.PARAGRAPH, 
+                            DocItemLabel.HEADING]:
+                yield Chunk(
+                    text=item.text,
+                    metadata={
+                        "item_id": item.uid,
+                        "label": item.label.value,
+                        "page": item.prov[0].page_number if item.prov else None,
+                        "level": level
+                    }
+                )
+            elif item.label == DocItemLabel.TABLE:
+                # Keep table intact as single chunk
+                yield Chunk(
+                    text=item.export_to_markdown(),
+                    metadata={"item_id": item.uid, "type": "table"}
+                )
+
+# Ensures semantic boundaries preserved
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunking: Size-Constrained Strategy}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling_core.chunking import HybridChunker
+
+# Hybrid: respects structure but enforces size limits
+chunker = HybridChunker(
+    tokenizer=tokenizer,           # Tokenizer for counting
+    max_tokens=512,                # Hard limit
+    min_tokens=100,                # Minimum chunk size
+    merge_peers=True,              # Merge small chunks
+    split_oversized=True           # Split large chunks
+)
+
+# Behavior:
+# 1. Start with structural chunks (sections)
+# 2. If chunk > 512 tokens: split at sentence boundaries
+# 3. If chunk < 100 tokens: merge with next same-level chunk
+# 4. Preserve tables as atomic units (don't split)
+
+chunks = chunker.chunk(doc)
+
+# Result: Balanced chunks with semantic coherence
+# - No orphaned sentences
+# - No excessively large contexts
+# - Tables remain intact
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunking: Semantic Strategy}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Semantic chunking via LangChain integration
+from langchain.text_splitter import SemanticChunker
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from docling_core.chunking import HierarchicalChunker
+
+# Step 1: Generate initial structural chunks
+base_chunker = HierarchicalChunker(max_tokens=2048)
+base_chunks = list(base_chunker.chunk(doc))
+
+# Step 2: Apply semantic splitting
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+semantic_splitter = SemanticChunker(
+    embeddings=embeddings,
+    breakpoint_threshold_type="percentile",  # or "standard_deviation"
+    breakpoint_threshold_amount=0.8
+)
+
+# Step 3: Split based on embedding similarity
+final_chunks = []
+for base_chunk in base_chunks:
+    semantic_chunks = semantic_splitter.split_text(base_chunk.text)
+    for sc in semantic_chunks:
+        final_chunks.append(Chunk(text=sc, metadata=base_chunk.metadata))
+
+# Groups semantically related sentences
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LangChain Integration: Complete Example}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain_community.document_loaders import DoclingLoader
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain.chains import RetrievalQA
+from langchain_openai import ChatOpenAI
+
+# Step 1: Load and parse document
+loader = DoclingLoader(
+    file_path="technical_manual.pdf",
+    pipeline_options={
+        "do_ocr": False,
+        "do_table_structure": True,
+        "generate_picture_images": True
+    }
+)
+documents = loader.load()  # Returns LangChain Document objects
+
+# Step 2: Create embeddings and vector store
+embeddings = OpenAIEmbeddings()
+vectorstore = FAISS.from_documents(documents, embeddings)
+
+# Step 3: Create retriever
+retriever = vectorstore.as_retriever(
+    search_type="similarity",
+    search_kwargs={"k": 5}  # Top 5 chunks
+)
+
+# Step 4: Build RAG chain
+llm = ChatOpenAI(model="gpt-4", temperature=0)
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=retriever,
+    return_source_documents=True
+)
+
+# Step 5: Query
+result = qa_chain.invoke({"query": "What are the safety procedures?"})
+print(result["result"])
+for doc in result["source_documents"]:
+    print(f"Source: Page {doc.metadata['page']}")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LlamaIndex Integration: Complete Example}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from llama_index.core import VectorStoreIndex, Document
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
+from docling.document_converter import DocumentConverter
+from docling_core.chunking import HierarchicalChunker
+
+# Step 1: Parse with Docling
+converter = DocumentConverter()
+result = converter.convert("research_paper.pdf")
+doc = result.document
+
+# Step 2: Chunk document
+chunker = HierarchicalChunker(max_tokens=1024)
+chunks = chunker.chunk(doc)
+
+# Step 3: Create LlamaIndex documents
+documents = []
+for chunk in chunks:
+    documents.append(
+        Document(
+            text=chunk.text,
+            metadata={
+                "page": chunk.metadata.get("page"),
+                "section": chunk.metadata.get("section"),
+                "source": "research_paper.pdf"
+            }
+        )
+    )
+
+# Step 4: Build index
+embed_model = OpenAIEmbedding()
+index = VectorStoreIndex.from_documents(
+    documents,
+    embed_model=embed_model
+)
+
+# Step 5: Query
+llm = OpenAI(model="gpt-4")
+query_engine = index.as_query_engine(llm=llm)
+response = query_engine.query("Summarize the methodology section")
+print(response)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Privacy Features}
+      \begin{itemize}
+        \item \textbf{Air-Gapped Deployment:}
+        \begin{itemize}
+          \item No internet connectivity required after model download
+          \item All processing happens locally
+          \item Suitable for classified environments
+        \end{itemize}
+        \item \textbf{Data Sovereignty:}
+        \begin{itemize}
+          \item Documents never leave organization
+          \item No third-party data transmission
+          \item Full control over processing pipeline
+        \end{itemize}
+        \item \textbf{Compliance Support:}
+        \begin{itemize}
+          \item HIPAA: Medical record processing
+          \item GDPR: Personal data handling
+          \item SOX: Financial document compliance
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Performance Metrics}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Metric} & \textbf{Value} & \textbf{Notes} \\
+\hline
+Avg. Processing Time & 1.26 sec/page & Mixed documents \\
+GPU Speedup & 3-33x & vs CPU \\
+Layout Accuracy & 78\% mAP & heron-101 \\
+Table Extraction & State-of-art & TableFormer \\
+Supported Formats & 15+ & PDF, DOCX, etc. \\
+Parallel Processing & Yes & Batch operations \\
+\hline
+\end{tabular}
+\end{table}
+      \begin{itemize}
+        \item Scales from single documents to millions of pages.
+        \item Performance tunable via model selection.
+        \item Production-ready throughput.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Integration Ecosystem: MCP Server}
+      \begin{itemize}
+        \item \textbf{Model Context Protocol (MCP):}
+        \begin{itemize}
+          \item Enables agentic AI applications
+          \item Claude Desktop integration
+          \item Tool-based document parsing
+        \end{itemize}
+        \item \textbf{Setup:}
+\begin{lstlisting}[language=bash, basicstyle=\tiny]
+# Install MCP server
+pip install docling-mcp-server
+
+# Configure Claude Desktop (claude_desktop_config.json)
+{
+  "mcpServers": {
+    "docling": {
+      "command": "docling-mcp-server",
+      "args": ["--workspace", "/path/to/docs"]
+    }
+  }
+}
+\end{lstlisting}
+        \item \textbf{Usage:} AI agents can parse documents on-demand.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CLI Usage: Batch Processing}
+\begin{lstlisting}[language=bash, basicstyle=\tiny]
+# Basic conversion
+docling input.pdf output.md
+
+# Batch conversion with options
+docling \
+  --input-dir ./documents \
+  --output-dir ./parsed \
+  --format markdown \
+  --ocr \
+  --table-structure ACCURATE \
+  --parallel 4
+
+# Export multiple formats
+docling input.pdf \
+  --export-json output.json \
+  --export-markdown output.md \
+  --export-html output.html
+
+# With custom pipeline
+docling input.pdf output.md \
+  --layout-model heron-101 \
+  --ocr-engine tesseract \
+  --ocr-lang eng+deu \
+  --generate-pictures
+
+# List external plugins
+docling --show-external-plugins
+
+# Use external plugin
+docling --allow-external-plugins \
+  --ocr-engine CustomOCR \
+  input.pdf output.md
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Usage: Multi-Format Processing}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling.document_converter import DocumentConverter, PdfFormatOption, \
+    DocxFormatOption, HtmlFormatOption
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+
+# Configure different pipelines per format
+pdf_options = PdfPipelineOptions()
+pdf_options.do_ocr = True
+pdf_options.do_table_structure = True
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(
+            pipeline_options=pdf_options
+        ),
+        InputFormat.DOCX: DocxFormatOption(),
+        InputFormat.HTML: HtmlFormatOption()
+    }
+)
+
+# Process mixed format batch
+sources = [
+    "document1.pdf",
+    "document2.docx",
+    "document3.html",
+    "document4.pptx"
+]
+
+for source in sources:
+    result = converter.convert(source)
+    doc = result.document
+    
+    # Unified processing regardless of source format
+    doc.save_as_markdown(f"{source}.md")
+    doc.save_as_json(f"{source}.json")
+\end{lstlisting}
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Advanced Usage: Custom Enrichment Model}
+% \begin{lstlisting}[language=Python, basicstyle=\tiny]
+% from docling.pipeline.base import BaseEnrichmentModel
+% from docling.datamodel.base_models import DoclingDocument
+
+% class CustomFormulaEnricher(BaseEnrichmentModel):
+    % """Custom model to enhance formula detection"""
+    
+    % def __init__(self, confidence_threshold=0.85):
+        % self.threshold = confidence_threshold
+        % self.formula_detector = YourCustomModel()
+    
+    % def __call__(self, doc: DoclingDocument) -> DoclingDocument:
+        % # Iterate through text items
+        % for item in doc.texts:
+            % if self._might_contain_formula(item.text):
+                % # Apply custom detection
+                % formula_data = self.formula_detector.detect(item.text)
+                
+                % if formula_data.confidence > self.threshold:
+                    % # Update item with formula metadata
+                    % item.type = "LATEX"
+                    % item.metadata["formula_confidence"] = formula_data.confidence
+                    % item.metadata["formula_type"] = formula_data.type
+        
+        % return doc
+    
+    % def _might_contain_formula(self, text):
+        % # Heuristic check for formula indicators
+        % return any(char in text for char in ['∫', '∑', '√', '$'])
+
+% # Use in custom pipeline
+% class EnrichedPipeline(StandardPdfPipeline):
+    % def __init__(self, options):
+        % super().__init__(options)
+        % self.formula_enricher = CustomFormulaEnricher()
+    
+    % def __call__(self, docs):
+        % result = super().__call__(docs)
+        % return self.formula_enricher(result)
+% \end{lstlisting}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Confidence Scores: Quality Assessment}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling.document_converter import DocumentConverter
+
+converter = DocumentConverter()
+result = converter.convert("document.pdf")
+
+# Access confidence scores
+confidence = result.confidence
+
+print(f"Overall Quality: {confidence.mean_grade}")  # EXCELLENT, GOOD, FAIR, POOR
+print(f"Mean Score: {confidence.mean_score:.3f}")    # 0.0 - 1.0
+print(f"Worst Areas: {confidence.low_grade}")        # 5th percentile
+
+# Component scores
+print(f"Layout Detection: {confidence.layout_score:.3f}")
+print(f"OCR Quality: {confidence.ocr_score:.3f}")
+print(f"Parse Quality: {confidence.parse_score:.3f}")
+print(f"Table Quality: {confidence.table_score:.3f}")
+
+# Page-level scores
+for page in result.document.pages:
+    page_conf = page.confidence
+    print(f"Page {page.page_no}: {page_conf.mean_grade}")
+    
+    if page_conf.mean_score < 0.7:
+        print(f"  Low quality page - may need manual review")
+
+# Use for filtering
+high_quality_pages = [
+    p for p in result.document.pages 
+    if p.confidence.mean_score > 0.8
+]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Confidence Grades: Thresholds}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Grade} & \textbf{Score Range} & \textbf{Interpretation} \\
+\hline
+EXCELLENT & 0.90 - 1.00 & High confidence, minimal review \\
+GOOD & 0.75 - 0.89 & Acceptable quality, spot check \\
+FAIR & 0.60 - 0.74 & Moderate quality, verify critical sections \\
+POOR & 0.00 - 0.59 & Low confidence, manual review required \\
+\hline
+\end{tabular}
+\end{table}
+      \begin{itemize}
+        \item Use grades for automated quality control.
+        \item Route low-confidence documents to human review.
+        \item Adjust pipeline settings based on scores.
+        \item Track quality metrics over document corpus.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Serialization Framework: Custom Serializers}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling_core.transforms.serializer import BaseDocSerializer, \
+    BaseTableSerializer, BaseTextSerializer
+
+class CustomMarkdownSerializer(BaseDocSerializer):
+    """Custom serializer with enhanced formatting"""
+    
+    def __init__(self, doc):
+        super().__init__(doc)
+        self.table_serializer = CustomTableSerializer()
+    
+    def serialize_item(self, item, level):
+        if item.label == DocItemLabel.TABLE:
+            # Custom table formatting
+            return self.table_serializer.serialize(item)
+        elif item.label == DocItemLabel.CODE:
+            # Syntax-highlighted code blocks
+            return f"```{item.type}\n{item.text}\n```"
+        elif item.label == DocItemLabel.FORMULA:
+            # LaTeX formula rendering
+            return f"$$\n{item.text}\n$$"
+        else:
+            # Default text handling
+            return item.text
+
+class CustomTableSerializer(BaseTableSerializer):
+    def serialize(self, table: TableItem):
+        # Generate markdown table with custom styling
+        rows = []
+        for row_idx in range(table.num_rows):
+            cells = [table.get_cell(row_idx, col_idx).text 
+                    for col_idx in range(table.num_cols)]
+            rows.append("| " + " | ".join(cells) + " |")
+            
+            # Header separator
+            if row_idx == 0:
+                rows.append("|" + "|".join(["---"] * table.num_cols) + "|")
+        
+        return "\n".join(rows)
+
+# Use custom serializer
+serializer = CustomMarkdownSerializer(doc)
+custom_markdown = serializer.serialize()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Plugin System: Creating Custom OCR Plugin}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# my_ocr_plugin/ocr_model.py
+from docling.backend.docling_parse_backend import BaseOcrModel, OcrOptions
+from pydantic import BaseModel
+
+class MyCustomOcrOptions(OcrOptions):
+    custom_param: str = "default"
+    confidence_threshold: float = 0.8
+
+class MyCustomOcrModel(BaseOcrModel):
+    def __init__(self, options: MyCustomOcrOptions):
+        self.options = options
+        self.model = self._load_model()
+    
+    def _load_model(self):
+        # Load your custom OCR model
+        return YourOCRModel(config=self.options.custom_param)
+    
+    def __call__(self, page_batch):
+        results = []
+        for page in page_batch:
+            # Apply OCR to page image
+            ocr_result = self.model.process(page.image)
+            
+            # Filter by confidence
+            filtered_words = [
+                word for word in ocr_result.words
+                if word.confidence > self.options.confidence_threshold
+            ]
+            
+            results.append({
+                "words": filtered_words,
+                "confidence": ocr_result.mean_confidence
+            })
+        
+        return results
+
+# my_ocr_plugin/__init__.py
+def ocr_engines():
+    return {
+        "ocr_engines": [MyCustomOcrModel]
+    }
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Plugin System: Registration and Usage}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# pyproject.toml
+[project.entry-points."docling"]
+my_custom_ocr = "my_ocr_plugin:ocr_engines"
+
+[project]
+name = "my-ocr-plugin"
+version = "1.0.0"
+dependencies = ["docling>=2.0.0"]
+
+# Install plugin
+# pip install -e .
+
+# Use plugin in code
+from my_ocr_plugin.ocr_model import MyCustomOcrModel, MyCustomOcrOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+
+# Configure with custom OCR
+pipeline_options = PdfPipelineOptions()
+pipeline_options.allow_external_plugins = True
+pipeline_options.ocr_options = MyCustomOcrOptions(
+    custom_param="optimized",
+    confidence_threshold=0.85
+)
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+
+result = converter.convert("document.pdf")
+
+# CLI usage
+# docling --allow-external-plugins --ocr-engine=MyCustomOcrModel input.pdf
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Complete RAG Pipeline: End-to-End Example}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling_core.chunking import HybridChunker
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_openai import ChatOpenAI
+from langchain.chains import RetrievalQA
+
+# Step 1: Configure high-quality parsing
+pipeline_options = PdfPipelineOptions()
+pipeline_options.do_table_structure = True
+pipeline_options.table_structure_options.mode = TableFormerMode.ACCURATE
+pipeline_options.generate_picture_images = True
+pipeline_options.do_ocr = False  # Digital PDFs
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+
+# Step 2: Parse document corpus
+documents = []
+for pdf_path in ["doc1.pdf", "doc2.pdf", "doc3.pdf"]:
+    result = converter.convert(pdf_path)
+    
+    # Quality check
+    if result.confidence.mean_score < 0.7:
+        print(f"Low quality: {pdf_path}")
+        continue
+    
+    documents.append(result.document)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Complete RAG Pipeline: End-to-End Example (cont.)}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Step 3: Chunk with structure preservation
+chunker = HybridChunker(max_tokens=512, merge_peers=True)
+all_chunks = []
+
+for doc in documents:
+    chunks = chunker.chunk(doc)
+    for chunk in chunks:
+        # Enrich chunk metadata
+        chunk.metadata["source"] = doc.origin.filename
+        chunk.metadata["confidence"] = result.confidence.mean_score
+        all_chunks.append(chunk)
+
+# Step 4: Create embeddings
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+texts = [c.text for c in all_chunks]
+metadatas = [c.metadata for c in all_chunks]
+
+vectorstore = Chroma.from_texts(
+    texts=texts,
+    embedding=embeddings,
+    metadatas=metadatas,
+    persist_directory="./chroma_db"
+)
+
+# Step 5: Create retriever with filtering
+retriever = vectorstore.as_retriever(
+    search_type="similarity",
+    search_kwargs={
+        "k": 5,
+        "filter": {"confidence": {"$gt": 0.75}}  # High-quality chunks only
+    }
+)
+
+# Step 6: Build QA chain
+llm = ChatOpenAI(model="gpt-4", temperature=0)
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=retriever,
+    return_source_documents=True
+)
+
+# Step 7: Query with provenance tracking
+query = "What are the key findings about climate change impacts?"
+result = qa_chain.invoke({"query": query})
+
+print(f"Answer: {result['result']}")
+print("\nSources:")
+for doc in result['source_documents']:
+    print(f"- {doc.metadata['source']}, Page {doc.metadata.get('page', 'N/A')}")
+    print(f"  Confidence: {doc.metadata['confidence']:.2f}")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Production Deployment: Docker Setup}
+\begin{lstlisting}[basicstyle=\tiny]
+# Dockerfile
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Docling with all features
+RUN pip install --no-cache-dir \
+    docling[all] \
+    langchain \
+    chromadb \
+    sentence-transformers
+
+# Copy application code
+WORKDIR /app
+COPY . /app
+
+# Download models at build time
+RUN python -c "from docling.document_converter import DocumentConverter; \
+    DocumentConverter()"
+
+# Set environment variables
+ENV DOCLING_CACHE_DIR=/app/cache
+ENV DOCLING_MODEL_DIR=/app/models
+
+# Expose API port
+EXPOSE 8000
+
+# Run FastAPI server
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Production Deployment: FastAPI Service}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# api.py
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import JSONResponse
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling_core.chunking import HybridChunker
+import tempfile
+import os
+
+app = FastAPI(title="Docling Parsing API")
+
+# Initialize converter (reuse across requests)
+pipeline_options = PdfPipelineOptions()
+pipeline_options.do_table_structure = True
+pipeline_options.generate_picture_images = True
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+
+chunker = HybridChunker(max_tokens=512)
+
+@app.post("/parse")
+async def parse_document(file: UploadFile = File(...)):
+    """Parse uploaded document and return structured output"""
+    
+    # Validate file type
+    if not file.filename.endswith(('.pdf', '.docx', '.pptx')):
+        raise HTTPException(400, "Unsupported file format")
+    
+    # Save to temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+    
+    try:
+        # Convert document
+        result = converter.convert(tmp_path)
+        doc = result.document
+        
+        # Generate chunks
+        chunks = list(chunker.chunk(doc))
+        
+        response = {
+            "filename": file.filename,
+            "confidence": {
+                "mean_score": result.confidence.mean_score,
+                "mean_grade": result.confidence.mean_grade,
+                "layout_score": result.confidence.layout_score,
+                "ocr_score": result.confidence.ocr_score
+            },
+            "pages": len(doc.pages),
+            "chunks": [
+                {
+                    "text": chunk.text,
+                    "metadata": chunk.metadata
+                }
+                for chunk in chunks
+            ],
+            "markdown": doc.export_to_markdown()
+        }
+        
+        return JSONResponse(content=response)
+    
+    except Exception as e:
+        raise HTTPException(500, f"Processing error: {str(e)}")
+    
+    finally:
+        # Cleanup
+        os.unlink(tmp_path)
+
+@app.post("/parse/markdown")
+async def parse_to_markdown(file: UploadFile = File(...)):
+    """Parse document and return Markdown only"""
+    
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+    
+    try:
+        result = converter.convert(tmp_path)
+        return {"markdown": result.document.export_to_markdown()}
+    finally:
+        os.unlink(tmp_path)
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "docling-parser"}
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Production Deployment: Kubernetes}
+\begin{lstlisting}[basicstyle=\tiny]
+# kubernetes/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docling-parser
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: docling-parser
+  template:
+    metadata:
+      labels:
+        app: docling-parser
+    spec:
+      containers:
+      - name: parser
+        image: myregistry/docling-parser:latest
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"
+          limits:
+            memory: "8Gi"
+            cpu: "4"
+            nvidia.com/gpu: "1"  # Optional GPU
+        env:
+        - name: DOCLING_CACHE_DIR
+          value: "/cache"
+        - name: MAX_WORKERS
+          value: "4"
+        volumeMounts:
+        - name: cache
+          mountPath: /cache
+        - name: models
+          mountPath: /models
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: cache
+        emptyDir: {}
+      - name: models
+        persistentVolumeClaim:
+          claimName: models-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docling-parser-service
+spec:
+  selector:
+    app: docling-parser
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: LoadBalancer
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Monitoring and Observability}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# monitoring.py - Add to FastAPI service
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
+from fastapi import Response
+import time
+
+# Metrics
+parse_requests_total = Counter(
+    'docling_parse_requests_total',
+    'Total parsing requests',
+    ['status', 'file_type']
+)
+
+parse_duration_seconds = Histogram(
+    'docling_parse_duration_seconds',
+    'Document parsing duration',
+    ['file_type']
+)
+
+parse_confidence_score = Gauge(
+    'docling_parse_confidence_score',
+    'Average confidence score',
+    ['file_type']
+)
+
+pages_processed_total = Counter(
+    'docling_pages_processed_total',
+    'Total pages processed'
+)
+
+@app.post("/parse")
+async def parse_document_monitored(file: UploadFile = File(...)):
+    start_time = time.time()
+    file_type = os.path.splitext(file.filename)[1]
+    
+    try:
+        result = converter.convert(tmp_path)
+        
+        # Record metrics
+        duration = time.time() - start_time
+        parse_duration_seconds.labels(file_type=file_type).observe(duration)
+        parse_confidence_score.labels(file_type=file_type).set(
+            result.confidence.mean_score
+        )
+        pages_processed_total.inc(len(result.document.pages))
+        parse_requests_total.labels(status='success', file_type=file_type).inc()
+        
+        return response
+    
+    except Exception as e:
+        parse_requests_total.labels(status='error', file_type=file_type).inc()
+        raise
+
+@app.get("/metrics")
+async def metrics():
+    return Response(content=generate_latest(), media_type="text/plain")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error Handling and Retry Logic}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import logging
+
+logger = logging.getLogger(__name__)
+
+class DocumentParsingError(Exception):
+    """Custom exception for parsing failures"""
+    pass
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type(DocumentParsingError),
+    reraise=True
+)
+def parse_with_retry(file_path: str, converter: DocumentConverter):
+    """Parse document with automatic retry on transient failures"""
+    
+    try:
+        result = converter.convert(file_path)
+        
+        # Validate result quality
+        if result.confidence.mean_score < 0.5:
+            logger.warning(f"Low confidence score: {result.confidence.mean_score}")
+            # Could trigger retry with different settings
+            raise DocumentParsingError("Quality threshold not met")
+        
+        return result
+    
+    except MemoryError:
+        # Try with lower resolution
+        logger.error("Memory error, retrying with reduced settings")
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.images_scale = 0.5  # Reduce image resolution
+        
+        converter_lowres = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+            }
+        )
+        return converter_lowres.convert(file_path)
+    
+    except Exception as e:
+        logger.error(f"Parsing failed: {str(e)}")
+        raise DocumentParsingError(f"Failed to parse document: {str(e)}")
+
+# Usage
+try:
+    result = parse_with_retry("document.pdf", converter)
+except DocumentParsingError as e:
+    # Handle final failure
+    logger.error(f"All retry attempts failed: {e}")
+    # Send to manual review queue
+    send_to_manual_review("document.pdf")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Batch Processing with Progress Tracking}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from tqdm import tqdm
+from pathlib import Path
+import multiprocessing
+
+def process_single_document(file_path: Path, output_dir: Path):
+    """Process a single document (runs in separate process)"""
+    try:
+        # Each process gets its own converter
+        converter = DocumentConverter()
+        result = converter.convert(str(file_path))
+        
+        # Save outputs
+        output_base = output_dir / file_path.stem
+        result.document.save_as_markdown(f"{output_base}.md")
+        result.document.save_as_json(f"{output_base}.json")
+        
+        return {
+            "file": file_path.name,
+            "status": "success",
+            "pages": len(result.document.pages),
+            "confidence": result.confidence.mean_score
+        }
+    
+    except Exception as e:
+        return {
+            "file": file_path.name,
+            "status": "error",
+            "error": str(e)
+        }
+
+def batch_process_documents(input_dir: Path, output_dir: Path, max_workers: int = None):
+    """Process all documents in directory with parallel processing"""
+    
+    if max_workers is None:
+        max_workers = multiprocessing.cpu_count()
+    
+    # Find all documents
+    pdf_files = list(input_dir.glob("*.pdf"))
+    docx_files = list(input_dir.glob("*.docx"))
+    all_files = pdf_files + docx_files
+    
+    output_dir.mkdir(exist_ok=True)
+    
+    results = []
+    
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        futures = {
+            executor.submit(process_single_document, file, output_dir): file
+            for file in all_files
+        }
+        
+        # Process with progress bar
+        with tqdm(total=len(all_files), desc="Processing documents") as pbar:
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                
+                # Update progress bar with status
+                status_emoji = "tick" if result["status"] == "success" else "No"
+                pbar.set_postfix_str(f"{status_emoji} {result['file']}")
+                pbar.update(1)
+    
+    # Summary statistics
+    successful = sum(1 for r in results if r["status"] == "success")
+    failed = len(results) - successful
+    avg_confidence = sum(r.get("confidence", 0) for r in results if r["status"] == "success") / max(successful, 1)
+    
+    print(f"\nProcessing Summary:")
+    print(f"   Total: {len(results)}")
+    print(f"   Successful: {successful}")
+    print(f"   Failed: {failed}")
+    print(f"   Avg Confidence: {avg_confidence:.2%}")
+    
+    return results
+
+# Usage
+input_directory = Path("./documents")
+output_directory = Path("./parsed")
+results = batch_process_documents(input_directory, output_directory, max_workers=4)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quality Control and Validation}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing import List, Dict
+from dataclasses import dataclass
+
+@dataclass
+class ValidationResult:
+    passed: bool
+    issues: List[str]
+    score: float
+
+class DocumentValidator:
+    """Validate parsed document quality"""
+    
+    def __init__(self, min_confidence=0.7, min_text_ratio=0.1):
+        self.min_confidence = min_confidence
+        self.min_text_ratio = min_text_ratio
+    
+    def validate(self, result, original_file_size: int) -> ValidationResult:
+        issues = []
+        doc = result.document
+        
+        # Check confidence score
+        if result.confidence.mean_score < self.min_confidence:
+            issues.append(f"Low confidence: {result.confidence.mean_score:.2f}")
+        
+        # Check for empty pages
+        empty_pages = sum(1 for p in doc.pages if not p.text)
+        if empty_pages > 0:
+            issues.append(f"{empty_pages} empty pages detected")
+        
+        # Check text extraction ratio
+        total_text = sum(len(item.text) for item in doc.texts)
+        text_ratio = total_text / max(original_file_size, 1)
+        if text_ratio < self.min_text_ratio:
+            issues.append(f"Low text extraction ratio: {text_ratio:.2%}")
+        
+        # Check for tables if expected
+        if "table" in original_file_size.lower() and len(doc.tables) == 0:
+            issues.append("Expected tables not found")
+        
+        # Check reading order coherence
+        if not self._check_reading_order(doc):
+            issues.append("Reading order appears incoherent")
+        
+        # Calculate overall score
+        score = result.confidence.mean_score
+        if issues:
+            score *= 0.8  # Penalize for issues
+        
+        return ValidationResult(
+            passed=len(issues) == 0,
+            issues=issues,
+            score=score
+        )
+    
+    def _check_reading_order(self, doc) -> bool:
+        """Basic check for reading order coherence"""
+        # Check if sections follow logical progression
+        heading_levels = []
+        for item, level in doc.iterate_items():
+            if item.label == DocItemLabel.HEADING:
+                heading_levels.append(item.level or 1)
+        
+        # Ensure no drastic level jumps
+        for i in range(1, len(heading_levels)):
+            if heading_levels[i] - heading_levels[i-1] > 2:
+                return False
+        
+        return True
+
+# Usage with validation
+validator = DocumentValidator(min_confidence=0.75)
+
+result = converter.convert("document.pdf")
+validation = validator.validate(result, os.path.getsize("document.pdf"))
+
+if validation.passed:
+    print("Document validation passed")
+    # Proceed with processing
+else:
+    print("Validation issues detected:")
+    for issue in validation.issues:
+        print(f"  - {issue}")
+    
+    # Route to manual review
+    if validation.score < 0.6:
+        send_to_manual_review("document.pdf", validation.issues)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Caching and Performance Optimization}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from functools import lru_cache
+import hashlib
+import pickle
+from pathlib import Path
+
+class DocumentCache:
+    """Cache parsed documents to avoid reprocessing"""
+    
+    def __init__(self, cache_dir: Path):
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(exist_ok=True)
+    
+    def _get_file_hash(self, file_path: str) -> str:
+        """Generate hash of file content"""
+        hasher = hashlib.sha256()
+        with open(file_path, 'rb') as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hasher.update(chunk)
+        return hasher.hexdigest()
+    
+    def get(self, file_path: str):
+        """Retrieve cached result if available"""
+        file_hash = self._get_file_hash(file_path)
+        cache_file = self.cache_dir / f"{file_hash}.pkl"
+        
+        if cache_file.exists():
+            with open(cache_file, 'rb') as f:
+                return pickle.load(f)
+        
+        return None
+    
+    def set(self, file_path: str, result):
+        """Cache parsing result"""
+        file_hash = self._get_file_hash(file_path)
+        cache_file = self.cache_dir / f"{file_hash}.pkl"
+        
+        with open(cache_file, 'wb') as f:
+            pickle.dump(result, f)
+    
+    def clear(self):
+        """Clear entire cache"""
+        for cache_file in self.cache_dir.glob("*.pkl"):
+            cache_file.unlink()
+
+# Cached conversion function
+cache = DocumentCache(cache_dir="./docling_cache")
+
+def convert_with_cache(file_path: str, converter: DocumentConverter):
+    """Convert document with caching"""
+    
+    # Check cache first
+    cached_result = cache.get(file_path)
+    if cached_result:
+        print(f"Using cached result for {file_path}")
+        return cached_result
+    
+    # Parse and cache
+    print(f"Parsing {file_path}")
+    result = converter.convert(file_path)
+    cache.set(file_path, result)
+    
+    return result
+
+# Usage
+converter = DocumentConverter()
+
+# First call: parses and caches
+result1 = convert_with_cache("document.pdf", converter)
+
+# Second call: uses cache (instant)
+result2 = convert_with_cache("document.pdf", converter)
+
+# Clear cache when needed
+# cache.clear()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom Document Type Handler}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing import Protocol
+
+class DocumentTypeHandler(Protocol):
+    """Protocol for custom document type handlers"""
+    
+    def can_handle(self, file_path: str) -> bool:
+        """Check if handler can process this file"""
+        ...
+    
+    def parse(self, file_path: str) -> DoclingDocument:
+        """Parse document and return DoclingDocument"""
+        ...
+
+class TechnicalManualHandler:
+    """Specialized handler for technical manuals"""
+    
+    def can_handle(self, file_path: str) -> bool:
+        # Check if file is a technical manual based on metadata or filename
+        return "technical" in file_path.lower() or "manual" in file_path.lower()
+    
+    def parse(self, file_path: str) -> DoclingDocument:
+        # Custom pipeline for technical documents
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.do_table_structure = True
+        pipeline_options.table_structure_options.mode = TableFormerMode.ACCURATE
+        pipeline_options.do_formula = True
+        pipeline_options.generate_picture_images = True
+        
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+            }
+        )
+        
+        result = converter.convert(file_path)
+        
+        # Post-process: extract code blocks
+        self._extract_code_blocks(result.document)
+        
+        return result.document
+    
+    def _extract_code_blocks(self, doc: DoclingDocument):
+        """Identify and label code blocks"""
+        for item in doc.texts:
+            if self._looks_like_code(item.text):
+                item.label = DocItemLabel.CODE
+                item.type = self._detect_language(item.text)
+    
+    def _looks_like_code(self, text: str) -> bool:
+        # Heuristics for code detection
+        code_indicators = ['def ', 'function ', 'class ', 'import ', '<?', '{}']
+        return any(indicator in text for indicator in code_indicators)
+    
+    def _detect_language(self, text: str) -> str:
+        if 'def ' in text or 'import ' in text:
+            return 'python'
+        elif 'function ' in text or 'const ' in text:
+            return 'javascript'
+        return 'unknown'
+
+class LegalDocumentHandler:
+    """Specialized handler for legal documents"""
+    
+    def can_handle(self, file_path: str) -> bool:
+        return "contract" in file_path.lower() or "legal" in file_path.lower()
+    
+    def parse(self, file_path: str) -> DoclingDocument:
+        # High-accuracy settings for legal documents
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.layout_model_kind = "heron-101"  # Highest accuracy
+        pipeline_options.do_ocr = True  # Handle scanned contracts
+        
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+            }
+        )
+        
+        result = converter.convert(file_path)
+        
+        # Post-process: identify clauses, parties, dates
+        self._extract_legal_entities(result.document)
+        
+        return result.document
+    
+    def _extract_legal_entities(self, doc: DoclingDocument):
+        """Extract legal-specific entities"""
+        # Could use NER or pattern matching
+        pass
+
+# Document router
+class DocumentRouter:
+    """Route documents to appropriate handlers"""
+    
+    def __init__(self):
+        self.handlers = [
+            TechnicalManualHandler(),
+            LegalDocumentHandler()
+        ]
+        self.default_handler = self._create_default_handler()
+    
+    def _create_default_handler(self):
+        class DefaultHandler:
+            def can_handle(self, _):
+                return True
+            
+            def parse(self, file_path):
+                converter = DocumentConverter()
+                return converter.convert(file_path).document
+        
+        return DefaultHandler()
+    
+    def parse(self, file_path: str) -> DoclingDocument:
+        """Route to appropriate handler"""
+        for handler in self.handlers:
+            if handler.can_handle(file_path):
+                print(f"Using {handler.__class__.__name__} for {file_path}")
+                return handler.parse(file_path)
+        
+        print(f"Using default handler for {file_path}")
+        return self.default_handler.parse(file_path)
+
+# Usage
+router = DocumentRouter()
+
+doc1 = router.parse("technical_manual.pdf")  # Uses TechnicalManualHandler
+doc2 = router.parse("contract_agreement.pdf")  # Uses LegalDocumentHandler
+doc3 = router.parse("regular_document.pdf")  # Uses DefaultHandler
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Integration with Vector Databases}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
+from sentence_transformers import SentenceTransformer
+
+class DoclingQdrantIndexer:
+    """Index parsed documents in Qdrant vector database"""
+    
+    def __init__(self, collection_name="documents", embedding_model="all-MiniLM-L6-v2"):
+        self.client = QdrantClient(host="localhost", port=6333)
+        self.collection_name = collection_name
+        self.encoder = SentenceTransformer(embedding_model)
+        self.embedding_dim = self.encoder.get_sentence_embedding_dimension()
+        
+        # Create collection if not exists
+        try:
+            self.client.get_collection(collection_name)
+        except:
+            self.client.create_collection(
+                collection_name=collection_name,
+                vectors_config=VectorParams(
+                    size=self.embedding_dim,
+                    distance=Distance.COSINE
+                )
+            )
+    
+    def index_document(self, doc: DoclingDocument, source_file: str):
+        """Index all chunks from a document"""
+        
+        chunker = HybridChunker(max_tokens=512)
+        chunks = list(chunker.chunk(doc))
+        
+        points = []
+        for idx, chunk in enumerate(chunks):
+            # Generate embedding
+            embedding = self.encoder.encode(chunk.text).tolist()
+            
+            # Create point with rich metadata
+            point = PointStruct(
+                id=f"{source_file}_{idx}",
+                vector=embedding,
+                payload={
+                    "text": chunk.text,
+                    "source": source_file,
+                    "page": chunk.metadata.get("page"),
+                    "section": chunk.metadata.get("section"),
+                    "chunk_index": idx,
+                    "total_chunks": len(chunks),
+                    # Include provenance if available
+                    "bbox": chunk.metadata.get("bbox"),
+                    "confidence": chunk.metadata.get("confidence")
+                }
+            )
+            points.append(point)
+        
+        # Batch upload
+        self.client.upsert(
+            collection_name=self.collection_name,
+            points=points
+        )
+        
+        print(f"Indexed {len(points)} chunks from {source_file}")
+    
+    def search(self, query: str, top_k=5, min_confidence=0.7):
+        """Search indexed documents"""
+        
+        # Generate query embedding
+        query_vector = self.encoder.encode(query).tolist()
+        
+        # Search with filtering
+        results = self.client.search(
+            collection_name=self.collection_name,
+            query_vector=query_vector,
+            limit=top_k,
+            query_filter={
+                "must": [
+                    {
+                        "key": "confidence",
+                        "range": {"gte": min_confidence}
+                    }
+                ]
+            }
+        )
+        
+        return [
+            {
+                "text": hit.payload["text"],
+                "source": hit.payload["source"],
+                "page": hit.payload["page"],
+                "score": hit.score
+            }
+            for hit in results
+        ]
+
+# Usage
+indexer = DoclingQdrantIndexer()
+
+# Index documents
+converter = DocumentConverter()
+for pdf_file in ["doc1.pdf", "doc2.pdf", "doc3.pdf"]:
+    result = converter.convert(pdf_file)
+    indexer.index_document(result.document, pdf_file)
+
+# Search
+results = indexer.search("What are the safety procedures?", top_k=5)
+for result in results:
+    print(f"Score: {result['score']:.3f}")
+    print(f"Source: {result['source']}, Page: {result['page']}")
+    print(f"Text: {result['text'][:200]}...\n")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practices Summary}
+      \begin{itemize}
+        \item \textbf{Model Selection:}
+        \begin{itemize}
+          \item Use heron-101 for highest accuracy on complex documents
+          \item Use egret-m for speed-critical applications
+          \item Enable GPU acceleration for production workloads
+        \end{itemize}
+        \item \textbf{Quality Control:}
+        \begin{itemize}
+          \item Always check confidence scores
+          \item Validate critical documents manually
+          \item Route low-confidence documents to review queue
+        \end{itemize}
+        \item \textbf{Performance:}
+        \begin{itemize}
+          \item Cache parsed results to avoid reprocessing
+          \item Use parallel processing for batch operations
+          \item Implement retry logic for transient failures
+        \end{itemize}
+        \item \textbf{Integration:}
+        \begin{itemize}
+          \item Choose chunking strategy based on use case
+          \item Preserve metadata for traceability
+          \item Monitor parsing metrics in production
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Error Handling Patterns: Basic Error Handling}
       \begin{itemize}
         \item \textbf{Common Error Scenarios:}
