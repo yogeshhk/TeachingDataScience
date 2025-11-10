@@ -12,7 +12,8 @@ from dataclasses import dataclass
 from enum import Enum
 import base64
 from io import BytesIO
-import json
+import json # Ensure this is present
+from pathlib import Path # ADD THIS IMPORT
 import pandas as pd
 
 from pydantic import BaseModel, Field
@@ -237,6 +238,57 @@ class DoclingParser:
             # chunks_with_descriptions = self._generate_descriptions(chunks)
             # return chunks_with_descriptions
             return chunks
+        
+    def _load_chunks(self, chunks_cache_path: str) -> List[Union[TextChunk, TableChunk, ImageChunk, CodeChunk]]:
+        try:
+            logger.info(f"Loading chunks from cache: {chunks_cache_path}")
+            with open(chunks_cache_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+                chunks = []
+                for item in data:
+                    # Deserialize using Pydantic model_validate based on chunk_type
+                    chunk_type_enum = ChunkType(item['chunk_type'])
+                    
+                    # Use a robust switch for model validation
+                    if chunk_type_enum == ChunkType.TEXT:
+                        chunks.append(TextChunk.model_validate(item))
+                    elif chunk_type_enum == ChunkType.TABLE:
+                        chunks.append(TableChunk.model_validate(item))
+                    elif chunk_type_enum == ChunkType.IMAGE:
+                        chunks.append(ImageChunk.model_validate(item))
+                    elif chunk_type_enum == ChunkType.CODE:
+                        chunks.append(CodeChunk.model_validate(item))
+                    # Ignore unknown chunk types for forward compatibility
+                
+                logger.info(f"Successfully loaded {len(chunks)} chunks from cache. Skipping fresh parsing.")
+                return chunks
+
+        except Exception as e:
+            # Catches JSONDecodeError (like "Expecting value") or Pydantic validation errors
+            logger.error(f"Failed to load chunks from cache: {e}. Proceeding with fresh parsing.")
+            # IMPORTANT: We fall through to the fresh parsing logic below instead of returning.
+                
+    def _save_chunks(self, chunks: List[Union[TextChunk, TableChunk, ImageChunk, CodeChunk]]):
+        try:
+            # Define the cache directory and file path
+            data_dir = Path("data")
+            data_dir.mkdir(exist_ok=True)
+            chunks_cache_path = data_dir / "chunks.json"
+
+            # Serialize all chunks into a list of dictionaries using Pydantic's model_dump()
+            serialized_chunks = [chunk.model_dump() for chunk in chunks]
+
+            # Write the data to the JSON file
+            with open(chunks_cache_path, 'w', encoding='utf-8') as f:
+                json.dump(serialized_chunks, f, indent=4)
+                
+            logger.info(f"Successfully saved {len(chunks)} chunks to cache: {chunks_cache_path}")
+            
+        except Exception as e:
+            logger.error(f"Failed to save chunks to cache: {e}")
+
+        return chunks
     
     def parse_document(self, document_path: str) -> List[Union[TextChunk, TableChunk, ImageChunk, CodeChunk]]:
         """
@@ -248,6 +300,11 @@ class DoclingParser:
         Returns:
             List of parsed chunks with descriptions
         """
+        data_dir = Path("data")
+        chunks_cache_path = data_dir / "chunks.json"
+        if chunks_cache_path.exists():
+            return self._load_chunks(chunks_cache_path)
+            
         logger.info(f"Starting document parsing: {document_path}")
         
         # Convert document using docling
@@ -298,6 +355,8 @@ class DoclingParser:
         
         # Generate descriptions for all chunks
         chunks_with_descriptions = self._generate_descriptions(chunks)
+                
+        self._save_chunks(chunks_with_descriptions)
         
         logger.info(f"Document parsing completed. Total chunks: {len(chunks_with_descriptions)}")
         return chunks_with_descriptions

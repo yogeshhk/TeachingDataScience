@@ -278,7 +278,7 @@ class MultiModalRAG:
                     'chunk_id': chunk.chunk_id,
                     'chunk_type': chunk.chunk_type.value,
                     'source_page': chunk.source_page,
-                    'bbox': chunk.bbox,
+                    # 'bbox': chunk.bbox,
                     # Store actual content based on chunk type
                     'content': self._serialize_chunk_content(chunk)
                 }
@@ -421,7 +421,7 @@ class MultiModalRAG:
             num_rows=len(content.get('table_data', [])),
             num_cols=len(content.get('headers', [])),
             source_page=metadata.get('source_page'),
-            bbox=metadata.get('bbox')
+            # bbox=metadata.get('bbox')
         )
     
     def _generate_response(self, query: str, context: str) -> str:
