@@ -15,6 +15,8 @@ import sqlite3
 import tempfile
 from typing import List, Dict, Any, Optional, Union, Tuple
 from pathlib import Path
+# Add this import at the top
+from langchain_groq import ChatGroq
 
 import pandas as pd
 import torch
@@ -57,13 +59,24 @@ class TableQueryAgent:
         
         # Initialize LLM for SQL generation
         try:
+            api_key = os.getenv("GROQ_API_KEY")
+            if not api_key:
+                logger.warning("No Groq API key provided. Table agent will use fallback.")
+                self.llm = None
+            else:
+                self.llm = ChatGroq(
+                    model=llm_model_name,
+                    api_key=api_key,
+                    temperature=0.1,  # Lower temperature for SQL generation
+                    max_tokens=200
+                )            
             self.tokenizer = AutoTokenizer.from_pretrained(llm_model_name)
-            self.model = AutoModelForCausalLM.from_pretrained(llm_model_name)
+            # self.model = AutoModelForCausalLM.from_pretrained(llm_model_name)
             logger.info(f"Table agent initialized with model: {llm_model_name}")
         except Exception as e:
             logger.warning(f"Failed to load LLM for table agent: {e}")
             self.tokenizer = None
-            self.model = None
+            self.llm = None
     
     # ... (Rest of TableQueryAgent methods: query_table, _create_temp_table,
     # _generate_sql_query, _execute_sql_query, _get_table_summary, _cleanup_temp_db)
@@ -80,8 +93,36 @@ class TableQueryAgent:
         pass # Placeholder for actual implementation
     
     def _generate_sql_query(self, table_chunk: TableChunk, query: str) -> str:
-        pass # Placeholder for actual implementation
-    
+        """Generate SQL query from natural language using ChatGroq."""
+        if not self.llm:
+            return f"SELECT * FROM data LIMIT 5"  # Fallback
+        
+        try:
+            headers_str = ", ".join(table_chunk.headers)
+            sample_data = table_chunk.table_data[:3] if table_chunk.table_data else []
+            
+            prompt = f"""Given a table with the following structure:
+                Table name: data
+                Columns: {headers_str}
+                Sample rows: {sample_data}
+
+                Generate a SQLite query to answer this question: {query}
+
+                Return ONLY the SQL query, no explanation. Use SELECT statements only."""
+            
+            response = self.llm.invoke(prompt)
+            sql_query = response.content.strip()
+            
+            # Clean up the response
+            sql_query = sql_query.replace("```sql", "").replace("```", "").strip()
+            
+            logger.info(f"Generated SQL: {sql_query}")
+            return sql_query
+            
+        except Exception as e:
+            logger.error(f"SQL generation failed: {e}")
+            return f"SELECT * FROM data LIMIT 5"
+        
     def _execute_sql_query(self, sql_query: str) -> str:
         pass # Placeholder for actual implementation
     
@@ -98,7 +139,7 @@ class MultiModalRAG:
     
     def __init__(self, 
                  embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
-                 llm_model_name: str = "microsoft/DialoGPT-small",
+                 llm_model_name: str = "gemma2-9b-it", # "microsoft/DialoGPT-small",
                  device: str = "auto"):
         """
         Initialize the Multi-modal RAG system.
@@ -115,22 +156,34 @@ class MultiModalRAG:
         
         # 2. Initialize LLM for response generation
         try:
-            tokenizer = AutoTokenizer.from_pretrained(llm_model_name)
-            model = AutoModelForCausalLM.from_pretrained(llm_model_name).to(self.device)
-            # Wrap Hugging Face model in LangChain's HuggingFacePipeline
-            self.llm = HuggingFacePipeline(
-                pipeline=pipeline(
-                    "text-generation",
-                    model=model,
-                    tokenizer=tokenizer,
-                    max_new_tokens=200,
-                    pad_token_id=tokenizer.eos_token_id,
-                    temperature=0.7,
-                    repetition_penalty=1.1,
-                    device=0 if self.device == 'cuda' else -1 # 0 for GPU, -1 for CPU
-                )
+            api_key = os.getenv("GROQ_API_KEY")
+            if not api_key:
+                raise ValueError("Groq API key not found. Set GROQ_API_KEY environment variable.")
+            
+            self.llm = ChatGroq(
+                model=llm_model_name,
+                api_key=api_key,
+                temperature=0.3,
+                max_tokens=500
             )
-            logger.info(f"Loaded LLM pipeline: {llm_model_name}")
+            logger.info(f"Loaded ChatGroq LLM: {llm_model_name}")
+            
+            tokenizer = AutoTokenizer.from_pretrained(llm_model_name)
+            # model = AutoModelForCausalLM.from_pretrained(llm_model_name).to(self.device)
+            # Wrap Hugging Face model in LangChain's HuggingFacePipeline
+            # self.llm = HuggingFacePipeline(
+            #     pipeline=pipeline(
+            #         "text-generation",
+            #         model=model,
+            #         tokenizer=tokenizer,
+            #         max_new_tokens=200,
+            #         pad_token_id=tokenizer.eos_token_id,
+            #         temperature=0.7,
+            #         repetition_penalty=1.1,
+            #         device=0 if self.device == 'cuda' else -1 # 0 for GPU, -1 for CPU
+            #     )
+            # )
+            # logger.info(f"Loaded LLM pipeline: {llm_model_name}")
         except Exception as e:
             logger.error(f"Failed to load LLM pipeline: {e}")
             raise
@@ -344,7 +397,7 @@ class RAGPipeline:
     
     def __init__(self, 
                  embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
-                 llm_model: str = "microsoft/DialoGPT-small"):
+                 llm_model: str = "gemma2-9b-it"):
         """
         Initialize the complete RAG pipeline.
         """

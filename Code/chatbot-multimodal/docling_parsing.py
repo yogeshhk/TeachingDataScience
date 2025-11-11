@@ -15,6 +15,8 @@ from io import BytesIO
 import json # Ensure this is present
 from pathlib import Path # ADD THIS IMPORT
 import pandas as pd
+from langchain_groq import ChatGroq
+import os
 
 from pydantic import BaseModel, Field
 from docling.document_converter import DocumentConverter
@@ -91,7 +93,7 @@ class DoclingParser:
     """
     
     def __init__(self, 
-                 text_model_name: str = "microsoft/DialoGPT-small",
+                 text_model_name: str = "gemma2-9b-it",  # Good for summarization, not "microsoft/DialoGPT-small",
                  vision_model_name: str = "microsoft/git-base",
                  device: str = "auto"):
         """
@@ -108,9 +110,20 @@ class DoclingParser:
         # Initialize text generation model
         try:
             self.text_tokenizer = AutoTokenizer.from_pretrained(text_model_name)
-            self.text_model = AutoModelForCausalLM.from_pretrained(text_model_name)
-            self.text_model.to(self.device)
-            logger.info(f"Loaded text model: {text_model_name}")
+            # self.text_model = AutoModelForCausalLM.from_pretrained(text_model_name)
+            api_key = os.getenv("GROQ_API_KEY")
+            if not api_key:
+                logger.warning("No Groq API key provided. Text descriptions will use fallback.")
+                self.text_model = None            
+            else:
+                self.text_model = ChatGroq(
+                    model=text_model_name,
+                    api_key=api_key,
+                    temperature=0.3,
+                    max_tokens=150
+                )
+                self.text_model.to(self.device)
+                logger.info(f"Loaded text model: {text_model_name}")
         except Exception as e:
             logger.warning(f"Failed to load text model: {e}. Using fallback.")
             self.text_tokenizer = None
@@ -277,7 +290,8 @@ class DoclingParser:
             chunks_cache_path = data_dir / "chunks.json"
 
             # Serialize all chunks into a list of dictionaries using Pydantic's model_dump()
-            serialized_chunks = [chunk.model_dump() for chunk in chunks]
+            # Use mode='json' to properly serialize Enums and other non-standard types
+            serialized_chunks = [chunk.model_dump(mode='json') for chunk in chunks]
 
             # Write the data to the JSON file
             with open(chunks_cache_path, 'w', encoding='utf-8') as f:
@@ -504,6 +518,37 @@ class DoclingParser:
         return chunks
     
     def _generate_text_description(self, text_content: str) -> str:
+        """Generate description for text content using ChatGroq."""
+        if not self.text_model:
+            # Fallback: simple text summarization
+            sentences = text_content.split('.')[:2]
+            summary = ' '.join(sentences)
+            return f"{summary[:150]}..." if len(summary) > 150 else summary
+        
+        try:
+            # Truncate text if too long
+            text_sample = text_content[:1000]
+            
+            prompt = f"""Summarize the following text in 1-2 concise sentences. Focus on the main topic and key points.
+                        Text: {text_sample}
+                        Summary:"""
+            
+            response = self.text_model.invoke(prompt)
+            summary = response.content.strip()
+            
+            # Clean up the summary
+            if summary:
+                return summary
+            else:
+                raise ValueError("Empty response from model")
+                
+        except Exception as e:
+            logger.warning(f"ChatGroq text description failed: {e}")
+            # Fallback to first 150 characters
+            words = text_content.split()[:25]
+            return f"{' '.join(words)}..."
+            
+    def _generate_text_description_old(self, text_content: str) -> str:
         """Generate description for text content using LLM."""
         if not self.text_model or not self.text_tokenizer:
             # Fallback: simple text summarization
