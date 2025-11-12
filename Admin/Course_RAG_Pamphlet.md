@@ -42,9 +42,9 @@ Master the complete journey from Python fundamentals to end-to-end Retrieval-Aug
 
 **Days/Weeks 1-4: Building the Core**
 - Day/Week 1: Python fundamentals and object-oriented programming  
-- Day/Week 2: Advanced file handling, decorators, and context managers  
-- Day/Week 3: Asynchronous programming with asyncio for concurrent operations  
-- Day/Week 4: Data structures, algorithms, and computational complexity  
+- Day/Week 2: File handling, Pandas, NumPy, Hugging Face Transformers, Flask  
+- Day/Week 3: Asynchronous asyncio, Matplotlib, BeautifulSoup, OpenCV  
+- Day/Week 4: Data structures, algorithms, and computational complexity 
 
 **Day/Week 5: (Optional) Advanced Topics**
 - System design patterns: scalability, caching, and load balancing  
