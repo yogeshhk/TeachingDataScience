@@ -70,7 +70,7 @@ Master the complete journey from Python fundamentals to end-to-end Retrieval-Aug
 #### **PHASE 3: RAG SYSTEMS & PRODUCTION** (Week 3 / Month 3)
 
 **Days/Weeks 11-14: Building RAG**
-- Day/Week 11: RAG architecture: chunking, embeddings, retrieval, and generation  
+- Day/Week 11: RAG architecture: chunking, embeddings, retrieval, generation and evaluation  
 - Day/Week 12: Multi-format document parsing with Docling (PDF/DOCX/PPTX)  
 - Day/Week 13: LangChain framework: chains, vector stores, and retrieval systems  
 - Day/Week 14: Interactive user interfaces with Streamlit  
