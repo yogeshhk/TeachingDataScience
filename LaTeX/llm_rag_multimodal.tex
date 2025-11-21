@@ -1,0 +1,648 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Multi-modal RAG using Docling}
+
+{\tiny (Ref: Docling: A Step-by-Step Guide to Building a Document Intelligence App - Datacamp - Bex Tuychiev, Github: https://github.com/BexTuychiev/docling-demo-project )}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Introduction: Traditional PDF Extraction Problems}
+      \begin{itemize}
+        \item Traditional tools (pypdf, PDFMiner) extract raw text but lose document structure
+        \item Tables become jumbled text, headers mix with body content
+        \item Images disappear completely from extraction
+        \item Poor retrieval quality in RAG systems leads to unreliable answers
+        \item Messy, unstructured data reduces semantic understanding
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling: IBM's Open-Source Solution}
+      \begin{itemize}
+        \item Computer vision models understand document layouts intelligently
+        \item Preserves tables, images, headings, and hierarchical structure
+        \item Processes documents 30x faster than traditional OCR methods
+        \item Runs locally on commodity hardware (no API costs)
+        \item Handles multi-format documents: PDF, DOCX, PPTX, XLSX, HTML, images
+        \item Exports to Markdown, JSON, and DocTags formats
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tutorial Goal: Document Intelligence Assistant}
+      \begin{itemize}
+        \item Build Streamlit web app for document processing and Q\&A
+        \item Upload documents and visualize their structure
+        \item Extract and display tables as interactive DataFrames
+        \item Display actual images with captions from documents
+        \item Build vector store with ChromaDB for retrieval
+        \item Create conversational RAG agent with LangGraph
+        \item Enable intelligent question-answering with source citations
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Prerequisites: Technical Skills}
+      \begin{itemize}
+        \item Python classes, decorators, type hints, context managers
+        \item Async operations and factory patterns
+        \item Understanding of LLMs: prompts, tokens, embeddings
+        \item Familiarity with RAG systems and vector databases (helpful)
+        \item Python 3.10+ with pip package management
+        \item OpenAI API key from platform.openai.com
+        \item Processing cost: approximately \$0.10–\$0.20 per document
+        \item Time commitment: 60–90 minutes for complete tutorial
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Architecture: AI Models}
+
+
+
+      \begin{itemize}
+	  \item Docling uses computer vision models to understand document structure the way a human would.
+	  \item When you feed a document into Docling, two AI models analyze it:
+	        \begin{itemize}
+			\item \textbf{Layout Analysis Model}: Trained on DocLayNet dataset
+			\item Identifies headers, body text, tables, images by analyzing layouts
+			\item \textbf{TableFormer Model}: Specialized for table structure recognition
+			\item Converts tabular data into structured formats (DataFrames)
+	        \end{itemize}
+        \item Models understand hierarchy, relationships, and document meaning
+        \item Structure preservation critical for RAG retrieval accuracy
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Docling Features and Capabilities}
+      \begin{itemize}
+        \item Multi-format support: PDF, DOCX, PPTX, XLSX, HTML, images
+        \item Optional OCR with EasyOCR, Tesseract, or RapidOCR
+        \item Export formats: Markdown (LLM-friendly), JSON, DocTags
+        \item Image extraction with configurable resolution (2x scaling)
+        \item Local processing on commodity hardware (no cloud dependency)
+        \item Granite-Docling: 258M parameter vision-language model
+        \item Experimental multilingual support (Arabic, Chinese, Japanese)
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project Setup: Directory Structure}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item Create project directory: docling-demo
+        \item Initialize src/ package with \_\_init\_\_.py
+        \item Main application file: app.py
+        \item Environment variables in .env file
+        \item Gitignore for sensitive data
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+		\begin{center}
+		\includegraphics[width=\linewidth,keepaspectratio]{rag88}
+		\end{center}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Dependencies Installation}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item Core: docling, langchain-docling
+        \item LLM: langchain-openai, langgraph
+        \item Vector store: langchain-chroma, chromadb
+        \item UI: streamlit, streamlit-extras
+        \item Utils: python-dotenv, pandas
+        \item Note: numpy<2 constraint for TensorFlow compatibility
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}[language=bash, basicstyle=\tiny]
+docling>=2.55.0
+langchain-docling>=0.1.0
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langgraph>=0.2.0
+langchain-chroma>=0.1.0
+streamlit>=1.28.0
+streamlit-extras>=0.7.0
+python-dotenv>=1.0.0
+chromadb>=0.4.22
+tiktoken>=0.5.0
+pandas>=2.0.0
+numpy<2
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Processor: Pipeline Configuration}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item Configure PdfPipelineOptions
+        \item Enable OCR for scanned documents
+        \item Activate table structure recognition
+        \item Extract images as PIL objects
+        \item Set image resolution scale (2.0x)
+        \item Initialize DocumentConverter
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}[language=python, basicstyle=\tiny]
+pipeline_options = PdfPipelineOptions()
+pipeline_options.do_ocr = True
+pipeline_options.do_table_structure = True
+pipeline_options.generate_picture_images = True
+pipeline_options.images_scale = 2.0
+
+self.converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(
+            pipeline_options=pipeline_options
+        )
+    }
+)
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Processing Workflow}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item Save Streamlit uploaded files to temporary directory
+        \item Run Docling conversion (20-60 seconds processing time)
+        \item Export to Markdown for LLM-friendly text format
+        \item Create LangChain Document with metadata (filename, type)
+        \item Store original Docling document for structure visualization
+        \item Return tuple: (LangChain docs, Docling docs)
+        \item Clean up temporary files in finally block
+        \item Dual representation enables both RAG and visualization
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}[language=python, basicstyle=\tiny]
+# Process the document with Docling
+result = self.converter.convert(temp_file_path)
+          
+# Export to markdown
+markdown_content = result.document.export_to_markdown()
+	  
+# Create LangChain document
+doc = Document(
+    page_content=markdown_content,
+    metadata={
+        "filename": uploaded_file.name,
+        "file_type": uploaded_file.type,
+        "source": uploaded_file.name,
+    }
+)
+
+documents.append(doc)
+
+# Store the Docling document for structure visualization
+docling_docs.append({
+    "filename": uploaded_file.name,
+    "doc": result.document
+})
+      \end{lstlisting}
+    \end{column}
+  \end{columns}	  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Structure Visualizer: Document Hierarchy}
+\begin{columns}
+    \begin{column}[T]{0.55\linewidth}
+      \begin{itemize}
+	  \item Create a class that provides methods for extracting different structural elements
+        \item Extract headings from doc.texts attribute
+        \item Filter items with 'header' in label
+        \item Capture text, page number, label type
+        \item Infer hierarchy level from label
+        \item Map: title→1, section→2, subsection→3
+      \end{itemize}
+	  
+      \begin{lstlisting}[language=python, basicstyle=\tiny]
+def _infer_heading_level(self, label: str) -> int:
+    if "title" in label.lower():
+        return 1
+    elif "section" in label.lower():
+        return 2
+    elif "subsection" in label.lower():
+        return 3
+    else:
+        return 4	
+      \end{lstlisting}	  
+    \end{column}
+    \begin{column}[T]{0.45\linewidth}
+      \begin{lstlisting}[language=python, basicstyle=\tiny]
+from typing import List, Dict, Any
+import pandas as pd
+from docling_core.types.doc import DoclingDocument
+
+class DocumentStructureVisualizer:
+    def __init__(self, docling_document: DoclingDocument):
+        self.doc = docling_document
+	  
+def get_document_hierarchy(self) -> List[Dict[str, Any]]:
+    hierarchy = []
+
+    if not hasattr(self.doc, "texts") or not self.doc.texts:
+        return hierarchy
+
+    for item in self.doc.texts:
+        label = getattr(item, "label", None)
+
+        if label and "header" in label.lower():
+            text = getattr(item, "text", "")
+            prov = getattr(item, "prov", [])
+            page_no = prov[0].page_no if prov else None
+
+            hierarchy.append({
+                "type": label,
+                "text": text,
+                "page": page_no,
+                "level": self._infer_heading_level(label)
+            })
+
+    return hierarchy
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Table Extraction and DataFrame Conversion}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item Iterate through doc.tables collection
+        \item Export each table to pandas DataFrame
+        \item Extract caption text and page number
+        \item Capture table shape and empty status
+        \item Handle extraction errors gracefully
+        \item Preserve tabular structure for display
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}[language=python, basicstyle=\tiny]
+def get_tables_info(self) -> List[Dict[str, Any]]:
+    tables_info = []
+
+    if not hasattr(self.doc, "tables") or not self.doc.tables:
+        return tables_info
+
+    for i, table in enumerate(self.doc.tables, 1):
+        try:
+            df = table.export_to_dataframe(doc=self.doc)
+
+            prov = getattr(table, "prov", [])
+            page_no = prov[0].page_no if prov else None
+
+            caption_text = getattr(table, "caption_text", None)
+            caption = caption_text if caption_text and not callable(caption_text) else None
+
+            tables_info.append({
+                "table_number": i,
+                "page": page_no,
+                "caption": caption,
+                "dataframe": df,
+                "shape": df.shape,
+                "is_empty": df.empty
+            })
+        except Exception as e:
+            print(f"Warning: Could not process table {i}: {e}")
+            continue
+
+    return tables_info
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Image Extraction with PIL}
+\begin{columns}
+    \begin{column}[T]{0.45\linewidth}
+      \begin{itemize}
+        \item Access doc.pictures collection
+        \item Extract PIL image objects
+        \item Capture bounding box coordinates
+        \item Store caption and page information
+        \item Handle missing image data gracefully
+        \item Enable direct Streamlit display
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.55\linewidth}
+      \begin{lstlisting}[language=python, basicstyle=\tiny]
+def get_pictures_info(self) -> List[Dict[str, Any]]:
+    pictures_info = []
+
+    for i, pic in enumerate(self.doc.pictures, 1):
+        prov = getattr(pic, "prov", [])
+
+        if prov:
+            page_no = prov[0].page_no
+            bbox = prov[0].bbox
+
+            caption_text = getattr(pic, "caption_text", None)
+            caption = caption_text if caption_text and not callable(caption_text) else None
+
+            pil_image = None
+            try:
+                if hasattr(pic, "image") and pic.image is not None:
+                    if hasattr(pic.image, "pil_image"):
+                        pil_image = pic.image.pil_image
+            except Exception as e:
+                print(f"Warning: Could not extract image {i}: {e}")
+			pictures_info.append({
+					"picture_number": i,"page": page_no,
+					"caption": caption,"pil_image": pil_image,
+					"bounding_box": {
+						"left": bbox.l,"top": bbox.t,
+						"right": bbox.r,"bottom": bbox.b
+					} if bbox else None
+				})
+
+    return pictures_info
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Streamlit Visualization Interface}
+
+      \begin{itemize}
+        \item Four-tab interface: Summary, Hierarchy, Tables, Images
+        \item \textbf{Summary}: Metrics showing pages, tables, images, text counts
+        \item \textbf{Hierarchy}: Indented outline of document structure
+        \item \textbf{Tables}: Interactive DataFrames with captions and page numbers
+        \item \textbf{Images}: Rendered PIL images with position details
+        \item Document selector dropdown for multiple files
+        \item Real-time structure visualization after processing
+      \end{itemize}
+
+		\begin{center}
+		\includegraphics[width=0.7\linewidth,keepaspectratio]{rag89}
+		\end{center}
+ 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Vector Store Setup}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item OpenAI embeddings: text-embedding-3-small
+        \item RecursiveCharacterTextSplitter configuration
+        \item Chunk size: 1000 characters
+        \item Chunk overlap: 100 characters
+        \item ChromaDB for vector storage
+        \item Metadata preservation during chunking
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}[language=python, basicstyle=\tiny]
+class VectorStoreManager:
+    def __init__(self):
+        self.embeddings = OpenAIEmbeddings(
+            model="text-embedding-3-small"
+        )
+        self.text_splitter = 
+            RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=100,
+                length_function=len
+            )
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Chunking Strategy}
+      \begin{itemize}
+        \item Why 1000 characters? Balances precision and context
+        \item Smaller chunks: precise retrieval, lose context
+        \item Larger chunks: preserve context, dilute relevance
+        \item 100-char overlap prevents information loss at boundaries
+        \item Metadata automatically preserved from source documents
+        \item Each chunk knows origin file for source citations
+        \item Splitter handles paragraph and sentence boundaries intelligently
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Search Tool Implementation}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item Factory function with closure pattern
+        \item @tool decorator for LangChain integration
+        \item Similarity search retrieves k=8 chunks
+        \item Format results with source citations
+        \item Return structured context to agent
+        \item Error handling for failed searches
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{lstlisting}[language=python, basicstyle=\tiny]
+@tool
+def search_documents(query: str) -> str:
+    """Search uploaded documents"""
+    results = vectorstore.similarity_search(
+        query, k=8
+    )
+    
+    context_parts = []
+    for i, doc in enumerate(results):
+        source = doc.metadata.get("filename")
+        context_parts.append(
+            f"[Source {i}: {source}]\n"
+            f"Content: {doc.page_content}\n"
+        )
+    return "\n---\n".join(context_parts)
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LangGraph Agent Architecture}
+\begin{columns}
+    \begin{column}[T]{0.45\linewidth}
+      \begin{itemize}
+        \item ReAct pattern: Reasoning + Acting
+        \item ChatOpenAI with gpt-4o-mini model
+        \item Temperature=0 for consistent responses
+        \item MemorySaver for conversation history
+        \item System prompt guides agent behavior
+        \item Tool integration for document search
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.55\linewidth}
+      \begin{lstlisting}[language=python, basicstyle=\tiny]
+SYSTEM_PROMPT = """You are a helpful document intelligence assistant. You have access to documents that have been uploaded and processed.
+
+GUIDELINES:
+- Use the search_documents tool to find relevant information
+- Keep it simple: one well-crafted search is usually sufficient
+- Only search again if the first results are clearly incomplete
+- Provide clear, accurate answers based on the document contents
+- Always cite your sources with filenames
+- If information isn't found, say so clearly
+- Be concise but thorough
+
+When answering:
+1. Search the documents with a focused query
+2. Synthesize a clear answer from the results
+3. Include source citations (filenames)
+4. Only search again if absolutely necessary
+"""
+def create_documentation_agent(tools: List[BaseTool], model_name: str = "gpt-4o-mini"):
+    """Create a document intelligence assistant agent using LangGraph."""
+    llm = ChatOpenAI(model=model_name, temperature=0)
+    memory = MemorySaver()
+    
+    agent = create_react_agent(
+        llm, tools=tools,
+        prompt=SYSTEM_PROMPT,
+        checkpointer=memory
+    )
+    return agent
+      \end{lstlisting}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Agent System Prompt Guidelines}
+      \begin{itemize}
+        \item Use search\_documents tool for relevant information
+        \item One well-crafted search usually sufficient
+        \item Only search again if results clearly incomplete
+        \item Provide clear, accurate answers from document contents
+        \item Always cite sources with filenames
+        \item Clearly state when information not found
+        \item Be concise but thorough in responses
+        \item Synthesize clear answers from search results
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Streaming Response Implementation}
+      \begin{itemize}
+        \item Real-time progress indicators prevent blank screen waiting
+        \item Status transitions: "Thinking..." → "Searching..." → "Generating..."
+        \item stream\_mode="messages" for token-level streaming
+        \item Detect tool calls vs final answer generation
+        \item Yield content tokens as they arrive from LLM
+        \item st.write\_stream() handles token accumulation
+        \item Smooth typing effect improves user experience
+        \item Save complete response to conversation history
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Testing: Document Processing Pipeline}
+      \begin{itemize}
+        \item Upload PDF with tables, images, and clear headings
+        \item Verify processing indicators show progress
+        \item Processing time: 20–60 seconds depending on size
+        \item Check "Ready to chat!" status appears after completion
+        \item Validate chunking and vector store creation messages
+        \item First run downloads ~500MB of AI models (cached locally)
+        \item Subsequent runs much faster with cached models
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Testing: Structure Visualization}
+      \begin{itemize}
+        \item \textbf{Summary tab}: Verify counts match document (pages, tables, images)
+        \item \textbf{Hierarchy tab}: Check headings appear with proper indentation
+        \item \textbf{Tables tab}: Confirm DataFrames render, not jumbled text
+        \item \textbf{Images tab}: Verify images display correctly with captions
+        \item Empty tables/missing images indicate pipeline option issues
+        \item Check do\_table\_structure=True and generate\_picture\_images=True
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Testing: Q\&A System}
+      \begin{itemize}
+        \item \textbf{Starting questions}: "What is this document about?", "Summarize main topics"
+        \item \textbf{Document-specific}: "What data is in Table 1?", "Explain methodology"
+        \item \textbf{Follow-up questions}: Test conversation memory with contextual queries
+        \item \textbf{Expected behavior}: Direct answers with source citations
+        \item \textbf{Red flags}: Generic responses, missing citations, errors
+        \item Verify smooth streaming with status indicators
+        \item Check agent retrieves relevant chunks from vector store
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Common Issues and Fixes}
+      \begin{itemize}
+        \item \textbf{"No module named 'docling'"}: pip install all requirements
+        \item \textbf{"OpenAI API key not found"}: Check .env file, restart Streamlit
+        \item \textbf{Slow processing (>60s)}: Normal for first run or large documents
+        \item \textbf{Agent gives generic answers}: Verify vector store created, ask specific questions
+        \item \textbf{Empty DataFrames}: Confirm do\_table\_structure=True enabled
+        \item \textbf{Missing images}: Check generate\_picture\_images=True in pipeline
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Key Achievements and Benefits}
+      \begin{itemize}
+        \item Structure-aware processing preserves document semantics
+        \item Interactive visualization builds user confidence
+        \item RAG system provides conversational Q\&A with citations
+        \item Real-time streaming improves user experience
+        \item Multi-format support (PDF, DOCX, PPTX, XLSX, HTML)
+        \item Local processing eliminates API costs and privacy concerns
+        \item 30x faster than traditional OCR-based methods
+        \item Better retrieval quality compared to basic text extraction
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Extension Opportunities}
+      \begin{itemize}
+        \item Add batch processing for multiple documents
+        \item Implement persistent vector storage (save/load databases)
+        \item Enable OCR with different engines (EasyOCR, Tesseract)
+        \item Deploy to Streamlit Cloud or containerize with Docker
+        \item Integrate vision-language models for chart analysis
+        \item Build domain-specific extraction rules
+        \item Add export functionality (PDF reports, summaries)
+        \item Enhance with document comparison capabilities
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conclusion and Resources}
+      \begin{itemize}
+        \item Working Document Intelligence Assistant with full RAG pipeline
+        \item Demonstrated structure-aware processing advantages
+        \item Complete source code available on GitHub repository
+        \item Foundation for advanced document AI applications
+        \item Applicable to technical docs, research papers, business reports
+        \item Explore AI Engineering track for deeper RAG system knowledge
+        \item IBM's Granite-Docling model for complex layouts
+        \item Active development: multilingual support, performance improvements
+      \end{itemize}
+\end{frame}
