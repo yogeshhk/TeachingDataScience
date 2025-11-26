@@ -17,7 +17,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 # 1. Define the LLM
-model = ChatGroq(model_name="gemma-7b-it", temperature=0)
+model = ChatGroq(model_name="gemma2-9b-it", temperature=0)
 
 # 2. Create a prompt template
 prompt = ChatPromptTemplate.from_template(
@@ -49,23 +49,49 @@ print(sentiment)
 
 Named Entity Recognition is the process of identifying and categorizing named entities such as people, places, organizations, and dates in text data.
 
-{\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
+% {\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
 
 \begin{lstlisting}
-from langchain import LangChain
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
-# Initialize LangChain object
-lc = LangChain()
+# 1. Setup Model
+model = ChatGroq(model="gemma2-9b-it")
 
-# Define input text
+# 2. Create Prompt for NER extraction
+template = """
+Identify the named entities (Person, Organization, Amount) in the text.
+Format the output as a bulleted list.
+
+Text: {text}
+"""
+prompt = ChatPromptTemplate.from_template(template)
+
+# 3. Build Chain
+chain = prompt | model | StrOutputParser()
+
+# 4. Invoke
 input_text = "Microsoft is acquiring Nuance Communications for $19.7 billion."
-
-# Perform NER
-entities = lc.ner(input_text)
-
-# Print the entities
+entities = chain.invoke({"text": input_text})
 print(entities)
-\end{lstlisting}	  
+\end{lstlisting}
+
+% \begin{lstlisting}
+% from langchain import LangChain
+
+% # Initialize LangChain object
+% lc = LangChain()
+
+% # Define input text
+% input_text = "Microsoft is acquiring Nuance Communications for $19.7 billion."
+
+% # Perform NER
+% entities = lc.ner(input_text)
+
+% # Print the entities
+% print(entities)
+% \end{lstlisting}	  
 
 \end{frame}
 
@@ -90,8 +116,11 @@ print(entities)
 
 % \end{frame}
 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Text Summarization}
-Text summarization reduces a document to a shorter version while retaining key information. [cite: 55]
+
+Text summarization reduces a document to a shorter version while retaining key information. 
+
 \begin{lstlisting}[language=python, basicstyle=\tiny]
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
@@ -123,23 +152,45 @@ print(summary)
 
 Part-of-Speech (POS) Tagging is the process of identifying and tagging the part of speech of each word in a sentence. 
 
-{\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
+% {\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
+
 
 \begin{lstlisting}
-from langchain import LangChain
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
-# Initialize LangChain object
-lc = LangChain()
+model = ChatGroq(model="gemma2-9b-it")
 
-# Define input text
+# Define prompt to act as a POS tagger
+prompt = ChatPromptTemplate.from_template(
+    "Identify the Part-of-Speech for every word in the following sentence:\n{text}"
+)
+
+chain = prompt | model | StrOutputParser()
+
 input_text = "I am learning natural language processing using LangChain."
+pos_tags = chain.invoke({"text": input_text})
 
-# Perform POS tagging
-pos_tags = lc.pos_tag(input_text)
+print(pos_tags)
+\end{lstlisting}	
 
-# Print the POS tags
-print(pos_tags))
-\end{lstlisting}	  
+
+% \begin{lstlisting}
+% from langchain import LangChain
+
+% # Initialize LangChain object
+% lc = LangChain()
+
+% # Define input text
+% input_text = "I am learning natural language processing using LangChain."
+
+% # Perform POS tagging
+% pos_tags = lc.pos_tag(input_text)
+
+% # Print the POS tags
+% print(pos_tags))
+% \end{lstlisting}	  
 
 \end{frame}
 
@@ -148,24 +199,46 @@ print(pos_tags))
 
 Text similarity is the process of measuring how similar two pieces of text are to each other.
 
-{\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
+% {\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
 
 \begin{lstlisting}
-from langchain import LangChain
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.utils.math import cosine_similarity
 
-# Initialize LangChain object
-lc = LangChain()
+# 1. Initialize Embedding Model
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-# Define two input texts
-input_text1 = "I love playing basketball."
-input_text2 = "Basketball is my favorite sport."
+# 2. Define Inputs
+text1 = "I love playing basketball."
+text2 = "Basketball is my favorite sport."
 
-# Compute text similarity
-similarity = lc.text_similarity(input_text1, input_text2)
+# 3. Generate Embeddings
+emb1 = embeddings.embed_query(text1)
+emb2 = embeddings.embed_query(text2)
 
-# Print the similarity score
-print(similarity)
-\end{lstlisting}	  
+# 4. Calculate Cosine Similarity
+similarity = cosine_similarity([emb1], [emb2])
+
+print(f"Similarity Score: {similarity[0][0]:.4f}")
+\end{lstlisting}
+
+
+% \begin{lstlisting}
+% from langchain import LangChain
+
+% # Initialize LangChain object
+% lc = LangChain()
+
+% # Define two input texts
+% input_text1 = "I love playing basketball."
+% input_text2 = "Basketball is my favorite sport."
+
+% # Compute text similarity
+% similarity = lc.text_similarity(input_text1, input_text2)
+
+% # Print the similarity score
+% print(similarity)
+% \end{lstlisting}	  
 
 \end{frame}
 
@@ -174,23 +247,43 @@ print(similarity)
 
 Language detection is the process of identifying the language of a given text.
 
-{\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
+% {\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
+
+% \begin{lstlisting}
+% from langchain import LangChain
+
+% # Initialize LangChain object
+% lc = LangChain()
+
+% # Define input text
+% input_text = "Bonjour, comment ca va?"
+
+% # Perform language detection
+% language = lc.detect_language(input_text)
+
+% # Print the detected language
+% print(language)
+% \end{lstlisting}	  
 
 \begin{lstlisting}
-from langchain import LangChain
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
-# Initialize LangChain object
-lc = LangChain()
+model = ChatGroq(model="gemma2-9b-it")
 
-# Define input text
+prompt = ChatPromptTemplate.from_template(
+    "Detect the language of the following text. Return only the language name.\nText: {text}"
+)
+
+chain = prompt | model | StrOutputParser()
+
 input_text = "Bonjour, comment ca va?"
+language = chain.invoke({"text": input_text})
 
-# Perform language detection
-language = lc.detect_language(input_text)
-
-# Print the detected language
 print(language)
 \end{lstlisting}	  
+
 
 \end{frame}
 
@@ -199,58 +292,99 @@ print(language)
 
 Text generation is the process of generating new text based on a given input or context. 
 
-{\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
+% {\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
+
+% \begin{lstlisting}
+% from langchain import LangChain
+
+% # Initialize LangChain object
+% lc = LangChain()
+
+% # Define input context
+% input_context = "The quick brown fox jumps over the"
+
+% # Generate new text
+% generated_text = lc.generate_text(input_context, length=50)
+
+% # Print the generated text
+% print(generated_text)
+% \end{lstlisting}	
 
 \begin{lstlisting}
-from langchain import LangChain
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
-# Initialize LangChain object
-lc = LangChain()
+model = ChatGroq(model="gemma2-9b-it")
 
-# Define input context
-input_context = "The quick brown fox jumps over the"
+# Standard Completion Prompt
+prompt = ChatPromptTemplate.from_template(
+    "Complete the following sentence: {text}"
+)
 
-# Generate new text
-generated_text = lc.generate_text(input_context, length=50)
+chain = prompt | model | StrOutputParser()
 
-# Print the generated text
+input_text = "The quick brown fox jumps over the"
+generated_text = chain.invoke({"text": input_text})
+
 print(generated_text)
 \end{lstlisting}	  
 
 \end{frame}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Exercise}
 
- Building a Q\&A system
- 
-  \begin{itemize}
-    \item \textbf{Objective}: Create a Q\&A system for official holidays in the UAE.
-    \item \textbf{Components Overview}:
-      \begin{enumerate}
-        \item \textbf{Prompt}: Define queries related to UAE holidays.
-        \item \textbf{Agents}: Utilize agents for tasks like language understanding and information retrieval.
-        \item \textbf{Tools}: Leverage tools for data manipulation and processing.
-        \item \textbf{Memory}: Implement memory for context retention and follow-up interactions.
-      \end{enumerate}
-    \item \textbf{Schema Development}:
-      \begin{itemize}
-        \item Visual representation of components interconnection.
-      \end{itemize}
-    \item \textbf{Schema Components}:
-      \begin{enumerate}
-        \item \textbf{Prompt Handling}: Formulate questions about UAE holidays.
-        \item \textbf{Agent Integration}: Connect language understanding agents.
-        \item \textbf{Tool Application}: Employ tools for data manipulation.
-        \item \textbf{Memory Usage}: Implement memory for context retention.
-      \end{enumerate}
-  \end{itemize}
+Building a Q\&A system with Groq
 
-Build your own solution, prep a short demo reel, post on LinkedIn and tag me!!
+\begin{itemize}
+  \item \textbf{Objective}: Create a Q\&A system for UAE holidays using Groq for inference
+  \item \textbf{Model Selection}: Use \texttt{gemma2-9b-it} for fast responses
+  \item \textbf{Components}:
+    \begin{enumerate}
+      \item Prompt templates for structured queries
+      \item Memory for conversation context
+      \item (Optional) Vector store for document retrieval
+      \item Groq ChatGroq model for generation
+    \end{enumerate}
+  \item \textbf{Bonus}: Compare response times vs other providers
+  \item \textbf{Share}: Build, demo, post on LinkedIn and tag the instructor
+\end{itemize}
 
 {\tiny Ready solution: https://colab.research.google.com/drive/1svn1BPfIiUL-82P4Rv\_smoTPPyoeuWfa\#scrollTo=gXypMluAjBME}
 \end{frame}
+
+% \begin{frame}[fragile]\frametitle{Exercise}
+
+ % Building a Q\&A system
+ 
+  % \begin{itemize}
+    % \item \textbf{Objective}: Create a Q\&A system for official holidays in the UAE.
+    % \item \textbf{Components Overview}:
+      % \begin{enumerate}
+        % \item \textbf{Prompt}: Define queries related to UAE holidays.
+        % \item \textbf{Agents}: Utilize agents for tasks like language understanding and information retrieval.
+        % \item \textbf{Tools}: Leverage tools for data manipulation and processing.
+        % \item \textbf{Memory}: Implement memory for context retention and follow-up interactions.
+      % \end{enumerate}
+    % \item \textbf{Schema Development}:
+      % \begin{itemize}
+        % \item Visual representation of components interconnection.
+      % \end{itemize}
+    % \item \textbf{Schema Components}:
+      % \begin{enumerate}
+        % \item \textbf{Prompt Handling}: Formulate questions about UAE holidays.
+        % \item \textbf{Agent Integration}: Connect language understanding agents.
+        % \item \textbf{Tool Application}: Employ tools for data manipulation.
+        % \item \textbf{Memory Usage}: Implement memory for context retention.
+      % \end{enumerate}
+  % \end{itemize}
+
+% Build your own solution, prep a short demo reel, post on LinkedIn and tag me!!
+
+% {\tiny Ready solution: https://colab.research.google.com/drive/1svn1BPfIiUL-82P4Rv\_smoTPPyoeuWfa\#scrollTo=gXypMluAjBME}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Architecture}

@@ -42,7 +42,7 @@
     \begin{itemize}
     \item Input: String (prompt)
     \item Output: String (completion)
-    \item Examples: GPT-4, Claude, Llama
+    \item Examples: GPT-4, Claude, Gemma, Llama 3, Mixtral.
     \item Use case: Text generation, completion
     \end{itemize}
 
@@ -50,7 +50,7 @@
     \begin{itemize}
     \item Input: List of messages
     \item Output: Chat message
-    \item Examples: ChatGPT, Claude Chat
+    \item Examples: ChatGPT, Claude Chat, ChatGroq
     \item Use case: Conversational AI
     \end{itemize}
 
@@ -58,7 +58,7 @@
     \begin{itemize}
     \item Input: Text
     \item Output: Vector (list of floats)
-    \item Examples: OpenAI Embeddings, Sentence Transformers
+    \item Examples: OpenAI Embeddings, HuggingFace, Sentence Transformers
     \item Use case: Semantic search, similarity
     \end{itemize}
 \end{itemize}
@@ -100,34 +100,61 @@ result = chain.invoke({"topic": "blockchain"})
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Alternative Model Providers}
 
-
 \begin{lstlisting}[language=python, basicstyle=\tiny]
-//Groq:
+// Groq (Recommended for Fast Inference):
 from langchain_groq import ChatGroq
-llm = ChatGroq(model_name="gemma-7b-it", temperature=0.7)
+
+# Gemma 2 - Very fast, efficient
+llm = ChatGroq(model_name="gemma2-9b-it", temperature=0.7)
 response = llm.invoke("What is the Groq LPU?")
 
-//Hugging Face:
-from langchain_huggingface import HuggingFaceEndpoint
+# Llama 3 - Balanced performance
+llm = ChatGroq(model_name="llama3-70b-8192", temperature=0.7)
 
+// Hugging Face (Self-hosted):
+from langchain_huggingface import HuggingFaceEndpoint
 llm = HuggingFaceEndpoint(
     repo_id="mistralai/Mistral-7B-Instruct-v0.2",
     temperature=0.7
 )
-response = llm.invoke("What is AI?")
 
-//Google Gemini:
+// Google Gemini (Multimodal):
 from langchain_google_genai import ChatGoogleGenerativeAI
-
 llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7)
-response = llm.invoke("Explain neural networks")
 
-// Anthropic Claude:
+// Anthropic Claude (Reasoning):
 from langchain_anthropic import ChatAnthropic
-
-llm = ChatAnthropic(model="claude-3-opus-20240229")
-response = llm.invoke("What is machine learning?")
+llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
 \end{lstlisting}
+
+
+% \begin{lstlisting}[language=python, basicstyle=\tiny]
+% //Groq:
+% from langchain_groq import ChatGroq
+% llm = ChatGroq(model_name="gemma-7b-it", temperature=0.7)
+% response = llm.invoke("What is the Groq LPU?")
+
+% //Hugging Face:
+% from langchain_huggingface import HuggingFaceEndpoint
+
+% llm = HuggingFaceEndpoint(
+    % repo_id="mistralai/Mistral-7B-Instruct-v0.2",
+    % temperature=0.7
+% )
+% response = llm.invoke("What is AI?")
+
+% //Google Gemini:
+% from langchain_google_genai import ChatGoogleGenerativeAI
+
+% llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7)
+% response = llm.invoke("Explain neural networks")
+
+% // Anthropic Claude:
+% from langchain_anthropic import ChatAnthropic
+
+% llm = ChatAnthropic(model="claude-3-opus-20240229")
+% response = llm.invoke("What is machine learning?")
+% \end{lstlisting}
 
 \end{frame}
 
@@ -311,7 +338,7 @@ chain = (
         history=lambda x: memory.load_memory_variables({})["history"]
     )
     | prompt
-    | ChatGroq(model_name="llama3-8b-8192")
+    | ChatGroq(model_name="gemma2-9b-it")
 )
 
 # Use the chain
@@ -372,22 +399,76 @@ print(f"Stored messages: {len(history['history'])}")  # Will be 6 (3 pairs)
 \end{itemize}
 
 \textbf{Token Counting Example:}
+
 \begin{lstlisting}[language=python, basicstyle=\tiny]
-import tiktoken
+# Note: Groq API does not charge by token (currently), but limits apply.
+# For exact counts with Gemma, use HuggingFace tokenizers.
 
-def count_tokens(text, model="gpt-3.5-turbo"):
-    encoding = tiktoken.encoding_for_model(model)
-    return len(encoding.encode(text))
+from transformers import AutoTokenizer
 
-# Example
+# Load tokenizer for Gemma
+tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b-it")
+
 text = "Your conversation history..."
-tokens = count_tokens(text)
-print(f"Token count: {tokens}")
 
-# GPT-3.5-turbo: 4,096 tokens max (16,385 for newer versions)
-# GPT-4: 8,192 tokens max (32,768/128,000 for GPT-4 Turbo)
-if tokens > 3000:
-    print("Warning: Approaching token limit!")
+# Count tokens
+tokens = tokenizer.encode(text)
+token_count = len(tokens)
+
+print(f"Token count: {token_count}")
+
+# Gemma context window is typically 8192
+if token_count > 8000:
+    print("Warning: Approaching context limit!")
+\end{lstlisting}
+
+
+
+% \begin{lstlisting}[language=python, basicstyle=\tiny]
+% import tiktoken
+
+% def count_tokens(text, model="gpt-3.5-turbo"):
+    % encoding = tiktoken.encoding_for_model(model)
+    % return len(encoding.encode(text))
+
+% # Example
+% text = "Your conversation history..."
+% tokens = count_tokens(text)
+% print(f"Token count: {tokens}")
+
+% # GPT-3.5-turbo: 4,096 tokens max (16,385 for newer versions)
+% # GPT-4: 8,192 tokens max (32,768/128,000 for GPT-4 Turbo)
+% if tokens > 3000:
+    % print("Warning: Approaching token limit!")
+% \end{lstlisting}
+
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Memory: Modern Approaches with Groq}
+
+\textbf{Groq-Specific Considerations:}
+\begin{itemize}
+\item Groq offers extremely fast token processing
+\item Context windows: Llama 3 (8K/128K), Gemma 2 (8K)
+\item No token-based pricing, but rate limits apply
+\item Ideal for high-throughput conversational applications
+\end{itemize}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain_groq import ChatGroq
+from langchain.memory import ConversationBufferWindowMemory
+
+# Fast model for conversation
+chat = ChatGroq(model_name="gemma2-9b-it", temperature=0.7)
+
+# Keep last 5 exchanges (10 messages)
+memory = ConversationBufferWindowMemory(
+    k=5,
+    return_messages=True,
+    memory_key="chat_history"
+)
+
+# Groq's speed allows for larger context windows without latency issues
 \end{lstlisting}
 
 \end{frame}
@@ -444,9 +525,10 @@ chunks = splitter.split_documents(documents)
 \item \textbf{LanceDB}: Serverless, embedded option
 \end{itemize}
 
-\textbf{Complete Example with Chroma & HuggingFace Embeddings:}
+\textbf{Complete Example with Chroma \& HuggingFace Embeddings:}
 \begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain_community.embeddings import HuggingFaceEmbeddings
+# from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
@@ -744,8 +826,8 @@ async for event in chain.astream_events({"topic": "AI"}, version="v1"):
 
 \textbf{Modern Agent Types (2024):}
 \begin{itemize}
-\item \textbf{OpenAI Functions Agent}: Uses function calling (recommended)
-\item \textbf{Tool Calling Agent}: Generic tool calling interface
+\item \textbf{Tool Calling Agent}: Uses function calling (recommended)
+\item \textbf{JSON Chat Agent}: Output formatting based on Json
 \item \textbf{Structured Chat Agent}: For multi-input tools
 \item \textbf{ReAct Agent}: Reasoning and acting pattern
 \end{itemize}
@@ -1217,39 +1299,71 @@ except Exception as e:
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Best Practices: Token Management}
-Use Appropriate Models:
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practices: Token Management with Groq}
+
+\textbf{Groq Models - Fast and Free Tier:}
 \begin{itemize}
-\item gemma-7b-it: Very fast, general purpose
-\item llama3-8b-8192: Good balance of speed and capability
-\item llama3-70b-8192: High quality, more powerful
-\item Groq is billed by time, not tokens, but token limits still apply.
+\item gemma2-9b-it: Ultra-fast, 8K context, great for chat
+\item llama3-8b-8192: Balanced, 8K context, general purpose
+\item llama3-70b-8192: Most capable, 8K context, complex tasks
+\item llama-3.1-8b-instant: Fastest, optimized for low latency
+\item Groq billed by requests/day on free tier, not tokens
 \end{itemize}
 
 \begin{lstlisting}[language=python, basicstyle=\tiny]
 from langchain_groq import ChatGroq
 
-// 1. Monitor Token Usage (Manually):
-# Groq does not have a direct cost callback like OpenAI.
-# Monitor usage in your Groq Console dashboard.
-# You can use tiktoken to estimate input tokens before sending.
-
-// 2. Set Token Limits:
-llm = ChatGroq(
-    model_name="gemma-7b-it",
-    max_tokens=500,  # Limit output tokens
-    temperature=0.7
+# Choose model based on needs
+llm_fast = ChatGroq(
+    model_name="gemma2-9b-it",
+    max_tokens=500,
+    temperature=0.7,
+    max_retries=2
 )
 
-// 3. Implement Caching:
-from langchain.cache import InMemoryCache
-from langchain.globals import set_llm_cache
+# Monitor context length manually
+from transformers import AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-9b-it")
+token_count = len(tokenizer.encode(text))
 
-set_llm_cache(InMemoryCache())  # Cache identical requests
+# Groq's speed allows batch processing without latency concerns
 \end{lstlisting}
 
 \end{frame}
+
+% \begin{frame}[fragile]\frametitle{Best Practices: Token Management}
+% Use Appropriate Models:
+% \begin{itemize}
+% \item gemma2-9b-it: Very fast, general purpose
+% \item llama3-8b-8192: Good balance of speed and capability
+% \item llama3-70b-8192: High quality, more powerful
+% \item Groq is billed by time, not tokens, but token limits still apply.
+% \end{itemize}
+
+% \begin{lstlisting}[language=python, basicstyle=\tiny]
+% from langchain_groq import ChatGroq
+
+% // 1. Monitor Token Usage (Manually):
+% # Groq does not have a direct cost callback like OpenAI.
+% # Monitor usage in your Groq Console dashboard.
+% # You can use tiktoken to estimate input tokens before sending.
+
+% // 2. Set Token Limits:
+% llm = ChatGroq(
+    % model_name="gemma2-9b-it",
+    % max_tokens=500,  # Limit output tokens
+    % temperature=0.7
+% )
+
+% // 3. Implement Caching:
+% from langchain.cache import InMemoryCache
+% from langchain.globals import set_llm_cache
+
+% set_llm_cache(InMemoryCache())  # Cache identical requests
+% \end{lstlisting}
+
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Best Practices: Security \& Privacy}
@@ -1285,6 +1399,42 @@ def validate_input(user_input: str) -> str:
         raise ValueError("Input too long for the model context.")
     # Remove potential injection attempts
     return user_input.strip()
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practices: Choosing the Right Model}
+
+\textbf{Groq Model Selection Guide:}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Use Case} & \textbf{Model} & \textbf{Why} \\
+\hline
+Chatbots & gemma2-9b-it & Fast, efficient, good reasoning \\
+\hline
+Summarization & llama3-8b-8192 & Balanced speed/quality \\
+\hline
+Complex reasoning & llama3-70b-8192 & Most capable \\
+\hline
+Ultra-low latency & llama-3.1-8b-instant & Optimized for speed \\
+\hline
+Code generation & llama3-70b-8192 & Better instruction following \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+# Pattern: Start with fast model, fallback to capable model
+from langchain_groq import ChatGroq
+
+primary = ChatGroq(model_name="gemma2-9b-it", temperature=0.7)
+fallback = ChatGroq(model_name="llama3-70b-8192", temperature=0.7)
+
+chain = prompt | primary.with_fallbacks([fallback]) | parser
 \end{lstlisting}
 
 \end{frame}
