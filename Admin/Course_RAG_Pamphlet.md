@@ -36,6 +36,19 @@ Master the complete journey from Python fundamentals to end-to-end Retrieval-Aug
 - **Milestones**: End-of-phase assessments
 - **Final Presentation**: Capstone demos + technical Q&A
 
+<!-- ### **DAILY/WEEKLY STRUCTURE**
+
+#### **Full-Time Mode**
+- **09:00-13:00**: Learning (tutorials + documentation)  
+- **14:00-18:00**: Coding (choose 1 of 2 project options)
+- **Saturdays**: Pre-week overview sessions + Q&A (2 hours)
+
+#### **Part-Time Mode**
+- **Pre-week**: Online overview session + Q&A for upcoming topics
+- **During Week**: Self-paced tutorials and hands-on implementation
+- **Weekends**: Optional Q&A sessions, progress check-ins
+- **Flexibility**: Complete at your own pace within the monthly structure -->
+
 ### **LEARNING PHASES**
 
 #### **PHASE 1: PYTHON FOUNDATIONS** (Week 1 / Month 1)
@@ -100,20 +113,9 @@ Master the complete journey from Python fundamentals to end-to-end Retrieval-Aug
 - Code walkthrough (5 mins)
 - Q&A (2 mins)
 
-### **DAILY/WEEKLY STRUCTURE**
 
-#### **Full-Time Mode**
-- **09:00-13:00**: Learning (tutorials + documentation)  
-- **14:00-18:00**: Coding (choose 1 of 2 project options)
-- **Saturdays**: Pre-week overview sessions + Q&A (2 hours)
 
-#### **Part-Time Mode**
-- **Pre-week**: Online overview session + Q&A for upcoming topics
-- **During Week**: Self-paced tutorials and hands-on implementation
-- **Weekends**: Optional Q&A sessions, progress check-ins
-- **Flexibility**: Complete at your own pace within the monthly structure
-
-### **ASSESSMENT & EVALUATION**
+<!-- ### **ASSESSMENT & EVALUATION**
 
 **Project Evaluation (100 points)**:
 - Functionality (50 pts): All features working correctly
@@ -170,6 +172,6 @@ Master the complete journey from Python fundamentals to end-to-end Retrieval-Aug
 ✓ **Project-Based**: 15+ hands-on projects (choose 1 per day/week)  
 ✓ **Industry-Relevant**: Build production-ready RAG systems  
 ✓ **Portfolio Building**: GitHub-ready projects and capstone  
-✓ **Career Support**: Technical guidance and pathway recommendations  
+✓ **Career Support**: Technical guidance and pathway recommendations   -->
 
 **From Zero to Hero to Riches – Master RAG in Your Own Time!**
