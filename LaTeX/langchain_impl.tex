@@ -1,9 +1,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Applications}
+{\Large Implementations}
 \end{center}
 \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Use as LLM}
+\end{center}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Sentiment Analysis: Zero Shot}
@@ -459,4 +468,235 @@ print(entities)
 % \end{frame}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Use as Chains}
+\end{center}
+\end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LCEL: Basic Example}
+
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+// Old Pattern (Deprecated):
+from langchain.llms import OpenAI
+from langchain.chains import LLMChain
+
+llm = OpenAI()
+chain = LLMChain(llm=llm, prompt=prompt)
+result = chain.run("input")
+
+// Modern LCEL Pattern with Groq:
+
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# Set up Groq model, e.g., Gemma or Llama 3
+llm = ChatGroq(model_name="gemma-7b-it")
+prompt = ChatPromptTemplate.from_template("Tell me about {topic}")
+output_parser = StrOutputParser()
+
+# Build chain with pipe operator
+chain = prompt | llm | output_parser
+
+# Invoke the chain
+result = chain.invoke({"topic": "LangChain"})
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LCEL: Advanced Features}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+// Streaming Support:
+
+chain = prompt | llm | output_parser
+
+# Stream tokens as they're generated
+for chunk in chain.stream({"topic": "AI"}):
+    print(chunk, end="", flush=True)
+
+// Async Execution:
+# Async invocation
+result = await chain.ainvoke({"topic": "AI"})
+
+# Async streaming
+async for chunk in chain.astream({"topic": "AI"}):
+    print(chunk, end="", flush=True)
+
+// Batch Processing:
+# Process multiple inputs in parallel
+results = chain.batch([
+    {"topic": "AI"},
+    {"topic": "ML"},
+    {"topic": "LangChain"}
+])
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LCEL: Complex Chains}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+// Multi-step Chain with RunnablePassthrough:
+from langchain_core.runnables import RunnablePassthrough
+
+chain = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | output_parser
+)
+
+result = chain.invoke("What is LangChain?")
+
+// Parallel Execution with RunnableParallel:
+
+from langchain_core.runnables import RunnableParallel
+
+chain = RunnableParallel(
+    summary=prompt1 | llm | output_parser,
+    keywords=prompt2 | llm | output_parser
+)
+
+result = chain.invoke({"text": "Long document..."})
+# Returns: {"summary": "...", "keywords": "..."}
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Model Integration: Modern Approach}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+Updated Import Structure:
+
+# OpenAI models
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
+# Hugging Face models
+from langchain_huggingface import HuggingFaceEndpoint
+
+# Google models (Gemini)
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+# Anthropic models
+from langchain_anthropic import ChatAnthropic
+
+// Example Usage:
+from langchain_groq import ChatGroq
+from langchain_core.messages import HumanMessage, SystemMessage
+
+# Initialize Groq with Gemma
+chat = ChatGroq(model="gemma2-9b-it", temperature=0.7)
+
+messages = [
+    SystemMessage(content="You are a helpful assistant"),
+    HumanMessage(content="Explain LangChain in 2 sentences")
+]
+
+response = chat.invoke(messages)
+print(response.content)
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Use as RAG}
+\end{center}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Complete RAG Application: A Quick Start Example}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain_groq import ChatGroq
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.document_loaders import WebBaseLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+
+# Load and process documents
+loader = WebBaseLoader("https://example.com/doc")
+docs = loader.load()
+splitter = RecursiveCharacterTextSplitter(chunk_size=1000)
+splits = splitter.split_documents(docs)
+
+embeddings = HuggingFaceEmbeddings()
+vectorstore = Chroma.from_documents(splits, embeddings)
+retriever = vectorstore.as_retriever()
+
+prompt = ChatPromptTemplate.from_template("""
+Answer based on context: {context}
+Question: {question}""")
+
+model = ChatGroq(model_name="llama3-8b-8192")
+
+# RunnablePassthrough => "context": retriever("What is the main topic?"),
+chain = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | prompt | model | StrOutputParser())
+
+response = chain.invoke("What is the main topic?")
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Use as Agent}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Defining a Simple Agent in LangChain 1.0}
+\begin{lstlisting}[language=Python]
+#  https://docs.langchain.com/oss/python/langchain/overview
+
+# pip install -qU langchain langchain-groq
+from langchain_groq import ChatGroq
+from langchain.agents import create_agent
+from langchain.tools import tool
+from langchain.messages import ToolMessage
+
+@tool
+def get_weather(city: str) -> str:
+    """Get weather for a given city."""
+    return f"It's always sunny in {city}!"
+
+# Initialize Groq LLM (ensure GROQ_API_KEY is set in your environment)
+llm = ChatGroq(model="llama-3.3-70b-versatile")  # https://console.groq.com/docs/models
+
+agent = create_agent(
+    model= llm,
+    tools=[get_weather],
+    system_prompt="You are a helpful assistant. When you call a tool, its output IS the final answer. Do not respond after tool output. Do not explain.",
+)
+
+# Run the agent
+response = agent.invoke(
+    {"messages": [{"role": "user", "content": "what is the weather in Pune"}]},
+     return_intermediate_steps=True
+)
+
+tool_output = next(
+    m.content for m in response["messages"] if isinstance(m, ToolMessage)
+)
+
+print(tool_output)
+\end{lstlisting}
+\end{frame}
