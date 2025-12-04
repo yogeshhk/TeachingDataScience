@@ -66,97 +66,138 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Models Functionality}
+
+
+\begin{itemize}
+\item  Tool calling: calling external tools (like databases queries or API calls) and use results in their responses.
+\item  Structured output: where the model’s response is constrained to follow a defined format.
+\item  Multimodality: process and return data other than text, such as images, audio, and video.
+\item  Reasoning: models perform multi-step reasoning to arrive at a conclusion.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Models Usage}
+
+
+\begin{itemize}
+\item  With agents: Models can be dynamically specified when creating an agent.
+\item  Standalone: Models can be called directly (outside of the agent loop) for tasks like text generation, classification, or extraction without the need for an agent framework.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Model Integration: Modern Syntax}
 
+For standalone model \lstinline|init_chat_model|
+
 \begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain.chat_models import init_chat_model  # Still valid in v1
+# OR use provider-specific import (recommended)
 from langchain_groq import ChatGroq
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.output_parsers import StrOutputParser
+from langchain.messages import HumanMessage, AIMessage, SystemMessage
 
-# Chat Model with Groq
-chat = ChatGroq(model_name="llama3-8b-8192", temperature=0.7)
 
-messages = [
-    SystemMessage(content="You are a helpful assistant"),
-    HumanMessage(content="Explain quantum computing briefly")
+# Initialize Groq LLM (ensure GROQ_API_KEY is set in your environment)
+model = ChatGroq(model="llama-3.3-70b-versatile")  # https://console.groq.com/docs/models
+
+# # or assuming os.environ["ANTHROPIC_API_KEY"] = "sk-..."
+# model = init_chat_model(
+#     "claude-sonnet-4-5-20250929",
+#     # Kwargs passed to the model:
+#     temperature=0.7,
+#     timeout=30,
+#     max_tokens=1000,
+# )
+
+conversation = [
+    SystemMessage("You are a helpful assistant that translates English to French."),
+    HumanMessage("Translate: I love programming."),
+    AIMessage("J'adore la programmation."),
+    HumanMessage("Translate: I love building applications.")
 ]
-response = chat.invoke(messages)
 
-# Embedding Model (from Hugging Face)
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-vector = embeddings.embed_query("Machine learning is...")
+response = model.invoke(conversation)
+print(response)  # AIMessage("J'adore creer des applications.")
 
-# Using with LCEL
-from langchain_core.prompts import ChatPromptTemplate
+\end{lstlisting}
 
-prompt = ChatPromptTemplate.from_template("Explain {topic}")
-chain = prompt | chat | StrOutputParser()
-result = chain.invoke({"topic": "blockchain"})
+
+% # Embedding Model (from Hugging Face)
+% embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+% vector = embeddings.embed_query("Machine learning is...")
+
+% # Using with LCEL
+% from langchain_core.prompts import ChatPromptTemplate
+
+% prompt = ChatPromptTemplate.from_template("Explain {topic}")
+% chain = prompt | chat | StrOutputParser()
+% result = chain.invoke({"topic": "blockchain"})
+
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Tool calling}
+
+% \begin{lstlisting}[language=python, basicstyle=\tiny]
+% from langchain.tools import tool
+
+% @tool
+% def get_weather(location: str) -> str:
+    % """Get the weather at a location."""
+    % return f"It's sunny in {location}."
+
+
+% model_with_tools = model.bind_tools([get_weather])  
+
+% response = model_with_tools.invoke("What's the weather like in Boston?")
+% for tool_call in response.tool_calls:
+    % # View tool calls made by the model
+    % print(f"Tool: {tool_call['name']}")
+    % print(f"Args: {tool_call['args']}")
+% \end{lstlisting}
+
+% \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multimodal}
+
+Certain models can process and return non-textual data such as images, audio, and video. You can pass non-textual data to a model by providing content blocks.
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+response = model.invoke("Create a picture of a cat")
+print(response.content_blocks)
+# [
+#     {"type": "text", "text": "Here's a picture of a cat"},
+#     {"type": "image", "base64": "...", "mime_type": "image/jpeg"},
+# ]
 \end{lstlisting}
 
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Alternative Model Providers}
+\begin{frame}[fragile]\frametitle{Reasoning}
+
+Many models are capable of performing multi-step reasoning to arrive at a conclusion.
 
 \begin{lstlisting}[language=python, basicstyle=\tiny]
-// Groq (Recommended for Fast Inference):
-from langchain_groq import ChatGroq
-
-# Gemma 2 - Very fast, efficient
-llm = ChatGroq(model_name="gemma2-9b-it", temperature=0.7)
-response = llm.invoke("What is the Groq LPU?")
-
-# Llama 3 - Balanced performance
-llm = ChatGroq(model_name="llama3-70b-8192", temperature=0.7)
-
-// Hugging Face (Self-hosted):
-from langchain_huggingface import HuggingFaceEndpoint
-llm = HuggingFaceEndpoint(
-    repo_id="mistralai/Mistral-7B-Instruct-v0.2",
-    temperature=0.7
-)
-
-// Google Gemini (Multimodal):
-from langchain_google_genai import ChatGoogleGenerativeAI
-llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7)
-
-// Anthropic Claude (Reasoning):
-from langchain_anthropic import ChatAnthropic
-llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
+## Streaming
+for chunk in model.stream("Why do parrots have colorful feathers?"):
+    reasoning_steps = [r for r in chunk.content_blocks if r["type"] == "reasoning"]
+    print(reasoning_steps if reasoning_steps else chunk.text)
+	
+## Complete Output
+response = model.invoke("Why do parrots have colorful feathers?")
+reasoning_steps = [b for b in response.content_blocks if b["type"] == "reasoning"]
+print(" ".join(step["reasoning"] for step in reasoning_steps))
 \end{lstlisting}
 
-
-% \begin{lstlisting}[language=python, basicstyle=\tiny]
-% //Groq:
-% from langchain_groq import ChatGroq
-% llm = ChatGroq(model_name="gemma-7b-it", temperature=0.7)
-% response = llm.invoke("What is the Groq LPU?")
-
-% //Hugging Face:
-% from langchain_huggingface import HuggingFaceEndpoint
-
-% llm = HuggingFaceEndpoint(
-    % repo_id="mistralai/Mistral-7B-Instruct-v0.2",
-    % temperature=0.7
-% )
-% response = llm.invoke("What is AI?")
-
-% //Google Gemini:
-% from langchain_google_genai import ChatGoogleGenerativeAI
-
-% llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7)
-% response = llm.invoke("Explain neural networks")
-
-% // Anthropic Claude:
-% from langchain_anthropic import ChatAnthropic
-
-% llm = ChatAnthropic(model="claude-3-opus-20240229")
-% response = llm.invoke("What is machine learning?")
-% \end{lstlisting}
-
 \end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
@@ -202,6 +243,10 @@ llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
 \begin{lstlisting}[language=python, basicstyle=\tiny]
 from langchain_core.prompts import PromptTemplate
 
+# Use in chain with Groq
+from langchain_groq import ChatGroq
+from langchain_core.output_parsers import StrOutputParser
+
 template = """You are a {role} assistant.
 Task: {task}
 Context: {context}
@@ -219,7 +264,26 @@ formatted = prompt.format(
     format="simple"
 )
 
-// Chat Prompt Template:
+chain = prompt | ChatGroq(model="llama-3.3-70b-versatile") | StrOutputParser()
+result = chain.invoke({
+    "role": "helpful",
+    "task": "explain quantum computing",
+    "context": "for beginners",
+    "format": "simple"
+})
+
+print(result)
+
+
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chat Prompting}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+# Chat Prompt Template:
 from langchain_core.prompts import ChatPromptTemplate
 
 prompt = ChatPromptTemplate.from_messages([
@@ -228,250 +292,18 @@ prompt = ChatPromptTemplate.from_messages([
     ("ai", "I understand. Let me help with that."),
     ("human", "{follow_up}")
 ])
+
+chain = prompt | ChatGroq(model="llama-3.3-70b-versatile") | StrOutputParser()
+result = chain.invoke({
+    "role": "helpful",
+    "input": "Explain quantum computing",
+    "follow_up": "Make it simpler"
+})
+print(result)
 \end{lstlisting}
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Few-Shot Prompting}
-
-\begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
-
-# Define examples
-examples = [
-    {"input": "happy", "output": "joyful, cheerful, delighted"},
-    {"input": "sad", "output": "unhappy, sorrowful, dejected"},
-]
-
-# Example template
-example_prompt = PromptTemplate(
-    input_variables=["input", "output"],
-    template="Input: {input}\nSynonyms: {output}"
-)
-
-# Few-shot template
-few_shot_prompt = FewShotPromptTemplate(
-    examples=examples,
-    example_prompt=example_prompt,
-    prefix="Provide synonyms for the following word:",
-    suffix="Input: {word}\nSynonyms:",
-    input_variables=["word"]
-)
-
-# Use in chain with Groq
-from langchain_groq import ChatGroq
-from langchain_core.output_parsers import StrOutputParser
-
-chain = few_shot_prompt | ChatGroq(model_name="gemma-7b-it") | StrOutputParser()
-result = chain.invoke({"word": "angry"})
-\end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large Memory}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\frametitle{Memory in LangChain}
-
-\textbf{Why Memory?}
-\begin{itemize}
-\item LLMs are stateless by default
-\item Chatbots need conversation context
-\item Memory stores and retrieves conversation history
-\end{itemize}
-
-\textbf{Memory Types (Consolidated):}
-\begin{itemize}
-\item \textbf{ConversationBufferMemory}:
-    \begin{itemize}
-    \item Stores entire conversation history
-    \item Simple but can exceed token limits
-    \item Best for: Short conversations
-    \end{itemize}
-
-\item \textbf{ConversationBufferWindowMemory}:
-    \begin{itemize}
-    \item Keeps only last K interactions
-    \item Prevents token overflow
-    \item Best for: Longer conversations with recent context
-    \end{itemize}
-
-\item \textbf{ConversationSummaryMemory}:
-    \begin{itemize}
-    \item Summarizes old messages
-    \item Reduces token usage
-    \item Best for: Very long conversations
-    \end{itemize}
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Memory: Implementation Examples}
-
-\textbf{Buffer Memory (Stores Everything):}
-\begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain.memory import ConversationBufferMemory
-from langchain_groq import ChatGroq
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables import RunnablePassthrough
-
-memory = ConversationBufferMemory(
-    return_messages=True,
-    memory_key="history"
-)
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant"),
-    MessagesPlaceholder(variable_name="history"),
-    ("human", "{input}")
-])
-
-chain = (
-    RunnablePassthrough.assign(
-        history=lambda x: memory.load_memory_variables({})["history"]
-    )
-    | prompt
-    | ChatGroq(model_name="gemma2-9b-it")
-)
-
-# Use the chain
-response = chain.invoke({"input": "Hi, I'm Alice"})
-memory.save_context({"input": "Hi, I'm Alice"}, {"output": response.content})
-\end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Memory: Window Memory}
-\textbf{Benefits:}
-\begin{itemize}
-\item Fixed memory footprint
-\item Maintains recent context
-\item Prevents token limit issues
-\end{itemize}
-
-\textbf{Buffer Window Memory (Keeps Last K):}
-\begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain.memory import ConversationBufferWindowMemory
-
-memory = ConversationBufferWindowMemory(
-    k=3, # Only keeps last 3 interactions
-    return_messages=True,
-    memory_key="history"
-)
-
-conversations = [ # Add conversations
-    ("Tell me about Python", "Python is a versatile language..."),
-    ("What makes it popular?", "Its simplicity and libraries..."),
-    ("Give an example", "Like NumPy for computing..."),
-    ("What about AI?", "Python excels in AI with TensorFlow...")
-]
-
-for input_text, output_text in conversations:
-    memory.save_context({"input": input_text}, {"output": output_text})
-
-# Retrieves only last 3 interactions
-history = memory.load_memory_variables({})
-print(f"Stored messages: {len(history['history'])}")  # Will be 6 (3 pairs)
-\end{lstlisting}
-
-
-
-\end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{Token Management Best Practices}
-
-% \textbf{Strategies to Manage Token Limits:}
-% \begin{itemize}
-% \item \textbf{Monitor token count}: Use tiktoken library
-% \item \textbf{Set limits}: Configure max\_tokens in memory
-% \item \textbf{Use window memory}: Keep only recent messages
-% \item \textbf{Summarize old context}: Use ConversationSummaryMemory
-% \item \textbf{Truncate intelligently}: Remove less important messages
-% \end{itemize}
-
-% \textbf{Token Counting Example:}
-
-% \begin{lstlisting}[language=python, basicstyle=\tiny]
-% # Note: Groq API does not charge by token (currently), but limits apply.
-% # For exact counts with Gemma, use HuggingFace tokenizers.
-
-% from transformers import AutoTokenizer
-
-% # Load tokenizer for Gemma
-% tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b-it")
-
-% text = "Your conversation history..."
-
-% # Count tokens
-% tokens = tokenizer.encode(text)
-% token_count = len(tokens)
-
-% print(f"Token count: {token_count}")
-
-% # Gemma context window is typically 8192
-% if token_count > 8000:
-    % print("Warning: Approaching context limit!")
-% \end{lstlisting}
-
-
-
-% % \begin{lstlisting}[language=python, basicstyle=\tiny]
-% % import tiktoken
-
-% % def count_tokens(text, model="gpt-3.5-turbo"):
-    % % encoding = tiktoken.encoding_for_model(model)
-    % % return len(encoding.encode(text))
-
-% % # Example
-% % text = "Your conversation history..."
-% % tokens = count_tokens(text)
-% % print(f"Token count: {tokens}")
-
-% % # GPT-3.5-turbo: 4,096 tokens max (16,385 for newer versions)
-% % # GPT-4: 8,192 tokens max (32,768/128,000 for GPT-4 Turbo)
-% % if tokens > 3000:
-    % % print("Warning: Approaching token limit!")
-% % \end{lstlisting}
-
-% \end{frame}
-
-% \begin{frame}[fragile]\frametitle{Memory: Modern Approaches with Groq}
-
-% \textbf{Groq-Specific Considerations:}
-% \begin{itemize}
-% \item Groq offers extremely fast token processing
-% \item Context windows: Llama 3 (8K/128K), Gemma 2 (8K)
-% \item No token-based pricing, but rate limits apply
-% \item Ideal for high-throughput conversational applications
-% \end{itemize}
-
-% \begin{lstlisting}[language=python, basicstyle=\tiny]
-% from langchain_groq import ChatGroq
-% from langchain.memory import ConversationBufferWindowMemory
-
-% # Fast model for conversation
-% chat = ChatGroq(model_name="gemma2-9b-it", temperature=0.7)
-
-% # Keep last 5 exchanges (10 messages)
-% memory = ConversationBufferWindowMemory(
-    % k=5,
-    % return_messages=True,
-    % memory_key="chat_history"
-% )
-
-% # Groq's speed allows for larger context windows without latency issues
-% \end{lstlisting}
-
-% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
@@ -816,6 +648,132 @@ async for event in chain.astream_events({"topic": "AI"}, version="v1"):
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
+{\Large Memory}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{Memory in LangChain}
+
+\textbf{Why Memory?}
+\begin{itemize}
+\item LLMs are stateless by default
+\item Chatbots need conversation context
+\item Memory stores and retrieves conversation history
+\end{itemize}
+
+\textbf{Memory Types (Consolidated):}
+\begin{itemize}
+\item \textbf{ConversationBufferMemory}:
+    \begin{itemize}
+    \item Stores entire conversation history
+    \item Simple but can exceed token limits
+    \item Best for: Short conversations
+    \end{itemize}
+
+\item \textbf{ConversationBufferWindowMemory}:
+    \begin{itemize}
+    \item Keeps only last K interactions
+    \item Prevents token overflow
+    \item Best for: Longer conversations with recent context
+    \end{itemize}
+
+\item \textbf{ConversationSummaryMemory}:
+    \begin{itemize}
+    \item Summarizes old messages
+    \item Reduces token usage
+    \item Best for: Very long conversations
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Memory: Implementation Examples}
+
+\begin{block}{Important Note}
+In LangChain v1, memory classes have moved to \texttt{langchain-classic}. For new projects, consider using LangGraph's built-in persistence or custom state management.
+\end{block}
+
+\textbf{Buffer Memory (Stores Everything):}
+\textbf{Note:} Memory classes require langchain-classic in v1: \lstinline|pip install langchain-classic|
+
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain_classic.memory import ConversationBufferMemory
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnablePassthrough
+
+memory = ConversationBufferMemory(
+    return_messages=True,
+    memory_key="history"
+)
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant"),
+    MessagesPlaceholder(variable_name="history"),
+    ("human", "{input}")
+])
+
+chain = (
+    RunnablePassthrough.assign(
+        history=lambda x: memory.load_memory_variables({})["history"]
+    )
+    | prompt
+    | ChatGroq(model_name="gemma2-9b-it")
+)
+
+# Use the chain
+response = chain.invoke({"input": "Hi, I'm Alice"})
+memory.save_context({"input": "Hi, I'm Alice"}, {"output": response.content})
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Memory: Window Memory}
+\textbf{Benefits:}
+\begin{itemize}
+\item Fixed memory footprint
+\item Maintains recent context
+\item Prevents token limit issues
+\end{itemize}
+
+\textbf{Buffer Window Memory (Keeps Last K):}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain.memory import ConversationBufferWindowMemory
+
+memory = ConversationBufferWindowMemory(
+    k=3, # Only keeps last 3 interactions
+    return_messages=True,
+    memory_key="history"
+)
+
+conversations = [ # Add conversations
+    ("Tell me about Python", "Python is a versatile language..."),
+    ("What makes it popular?", "Its simplicity and libraries..."),
+    ("Give an example", "Like NumPy for computing..."),
+    ("What about AI?", "Python excels in AI with TensorFlow...")
+]
+
+for input_text, output_text in conversations:
+    memory.save_context({"input": input_text}, {"output": output_text})
+
+# Retrieves only last 3 interactions
+history = memory.load_memory_variables({})
+print(f"Stored messages: {len(history['history'])}")  # Will be 6 (3 pairs)
+\end{lstlisting}
+
+
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
 {\Large Agents \& Tools}
 \end{center}
 \end{frame}
@@ -831,19 +789,17 @@ async for event in chain.astream_events({"topic": "AI"}, version="v1"):
 \item Best for complex, multi-step tasks
 \end{itemize}
 
-\textbf{Modern Agent Types :}
+\textbf{Modern Agent Types (LangChain v1):}
 \begin{itemize}
-\item \textbf{Tool Calling Agent}: Uses function calling (recommended)
-\item \textbf{JSON Chat Agent}: Output formatting based on Json
-\item \textbf{Structured Chat Agent}: For multi-input tools
-\item \textbf{ReAct Agent}: Reasoning and acting pattern
+\item \textbf{create\_agent}: Primary method, uses ReAct pattern
+\item \textbf{create\_deep\_agent}: For complex, long-running tasks
 \end{itemize}
 
-\textbf{Deprecated (Don't Use):}
+\textbf{When to Use:}
 \begin{itemize}
-\item ~~zero-shot-react-description~~
-\item ~~conversational-react-description~~
-\item ~~self-ask-with-search~~
+\item \textbf{create\_agent}: Simple chatbots, Q\&A, tool calling
+\item \textbf{create\_deep\_agent}: Research, multi-step planning, file-system access
+\item \textbf{LangGraph}: Custom workflows requiring fine-grained control
 \end{itemize}
 
 {\tiny (Ref: LangChain Agents Documentation)}
@@ -851,6 +807,13 @@ async for event in chain.astream_events({"topic": "AI"}, version="v1"):
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Creating Tools: Modern Approach}
+
+\textbf{Tool Requirements:}
+\begin{itemize}
+\item Must have a docstring (used by LLM to understand tool purpose)
+\item Type hints are required for parameters
+\item Return type should be string or JSON-serializable
+\end{itemize}
 
 \begin{lstlisting}[language=python, basicstyle=\tiny]
 // Method 1: Using @tool Decorator:
@@ -890,43 +853,87 @@ weather_tool = Tool.from_function(
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Tool Calling Agent Example}
+\begin{frame}[fragile]\frametitle{Modern Agent: create\_agent()}
 
-% \textbf{Complete Agent Setup with Groq:}
+\textbf{The New Standard for Building Agents. Key Features:}
+\begin{itemize}
+\item Built on LangGraph (durable execution)
+\item Automatic tool calling loop
+\item Simple, unified API
+\end{itemize}
+
 \begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain_groq import ChatGroq
-from langchain.agents import create_tool_calling_agent, AgentExecutor
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.agents import create_agent
 from langchain_core.tools import tool
+from langchain_groq import ChatGroq
+
+@tool
+def get_weather(city: str) -> str:
+    """Get weather for a given city."""
+    return f"It's sunny in {city}!"
 
 @tool
 def search_wikipedia(query: str) -> str:
-    """Search Wikipedia for a topic."""
-    # Dummy implementation
-    return f"Results for {query} from Wikipedia."
+    """Search Wikipedia for information."""
+    return f"Wikipedia results for: {query}"
 
-@tool
-def calculate(expression: str) -> str:
-    """Evaluate a mathematical expression."""
-    return str(eval(expression))
+# Create agent with tools
+agent = create_agent(
+    model="llama-3.3-70b-versatile",  # Can use model string or ChatGroq object
+    tools=[get_weather, search_wikipedia],
+    system_prompt="You are a helpful assistant that can check weather and search Wikipedia."
+)
 
-tools = [search_wikipedia, calculate]
+# Run the agent
+response = agent.invoke({
+    "messages": [{"role": "user", "content": "What's the weather in Paris?"}]
+})
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant"),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad")
-])
-
-llm = ChatGroq(model_name="llama3-70b-8192", temperature=0)
-agent = create_tool_calling_agent(llm, tools, prompt)
-
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-
-result = agent_executor.invoke({"input": "What is the capital of France?"})
+print(response["messages"][-1].content)
 \end{lstlisting}
 
+
+
 \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Tool Calling Agent Example}
+
+% % \textbf{Complete Agent Setup with Groq:}
+% \begin{lstlisting}[language=python, basicstyle=\tiny]
+% from langchain_groq import ChatGroq
+% from langchain.agents import create_tool_calling_agent, AgentExecutor
+% from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+% from langchain_core.tools import tool
+
+% @tool
+% def search_wikipedia(query: str) -> str:
+    % """Search Wikipedia for a topic."""
+    % # Dummy implementation
+    % return f"Results for {query} from Wikipedia."
+
+% @tool
+% def calculate(expression: str) -> str:
+    % """Evaluate a mathematical expression."""
+    % return str(eval(expression))
+
+% tools = [search_wikipedia, calculate]
+
+% prompt = ChatPromptTemplate.from_messages([
+    % ("system", "You are a helpful assistant"),
+    % ("human", "{input}"),
+    % MessagesPlaceholder(variable_name="agent_scratchpad")
+% ])
+
+% llm = ChatGroq(model_name="llama3-70b-8192", temperature=0)
+% agent = create_tool_calling_agent(llm, tools, prompt)
+
+% agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+% result = agent_executor.invoke({"input": "What is the capital of France?"})
+% \end{lstlisting}
+
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Modern Approach with bind\_tools}
@@ -958,6 +965,44 @@ if response.tool_calls:
     print(f"Tool: {tool_call['name']}")
     print(f"Args: {tool_call['args']}")
 \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Agent Middleware}
+
+\textbf{Extend Agent Behavior Without Modifying Core Logic:}
+
+\begin{itemize}
+\item \textbf{Human-in-the-loop}: Approve tool calls before execution
+\item \textbf{Conversation compression}: Summarize long conversations
+\item \textbf{PII redaction}: Remove sensitive data
+\item \textbf{Rate limiting}: Control API usage
+\item \textbf{Error handling}: Retry failed operations
+\end{itemize}
+
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain.agents import create_agent
+from langchain.agents.middleware import AgentMiddleware
+
+# Example: Logging middleware
+class LoggingMiddleware(AgentMiddleware):
+    async def on_agent_start(self, state, context):
+        print(f"Agent started with input: {state['messages'][-1].content}")
+        
+    async def on_agent_end(self, state, context):
+        print(f"Agent completed with output: {state['messages'][-1].content}")
+
+# Create agent with middleware
+agent = create_agent(
+    model="llama-3.3-70b-versatile",
+    tools=[get_weather],
+    middleware=[LoggingMiddleware()]
+)
+\end{lstlisting}
+
+
 
 \end{frame}
 

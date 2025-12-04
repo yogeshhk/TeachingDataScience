@@ -1,36 +1,79 @@
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Installation \& Imports}
+% \begin{lstlisting}[language=python,basicstyle=\tiny]
+% # Installation (recommended current packages)
+% pip install langchain langchain-core langchain-openai langchain-community
+% pip install langchain-anthropic langchain-google-genai
+
+% # Core Imports (modern runnable-style usage)
+% from langchain.chat_models import ChatOpenAI
+% from langchain.prompts import PromptTemplate, ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
+% from langchain.schema import HumanMessage, SystemMessage, AIMessage
+
+% # Runnables & Output Parsers (core)
+% from langchain_core.runnables import RunnableSequence  # for explicit sequences if needed
+% from langchain_core.output_parsers import StrOutputParser, StructuredOutputParser, PydanticOutputParser
+
+% # Agents / Tools (new helpers)
+% from langchain.agents import create_react_agent, AgentExecutor
+% from langchain.tools import Tool, create_retriever_tool
+
+% # Memory (same import path)
+% from langchain.memory import ConversationBufferMemory
+
+% # Community connectors (example)
+% from langchain_community.embeddings import HuggingFaceEmbeddings
+% \end{lstlisting}
+% \end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Installation \& Imports}
-\begin{lstlisting}[language=python,basicstyle=\tiny]
-# Installation (recommended current packages)
-pip install langchain langchain-core langchain-openai langchain-community
-pip install langchain-anthropic langchain-google-genai
+\begin{frame}[fragile]\frametitle{Installation \& Imports (LangChain v1)}
+\begin{lstlisting}[language=bash,basicstyle=\tiny]
+# Core packages (v1.0+)
+pip install langchain langchain-core
+pip install langchain-groq  # or langchain-openai, langchain-anthropic
 
-# Core Imports (modern runnable-style usage)
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts import PromptTemplate, ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
-from langchain.schema import HumanMessage, SystemMessage, AIMessage
+# For document processing
+pip install langchain-community langchain-text-splitters
 
-# Runnables & Output Parsers (core)
-from langchain_core.runnables import RunnableSequence  # for explicit sequences if needed
-from langchain_core.output_parsers import StrOutputParser, StructuredOutputParser, PydanticOutputParser
+# For embeddings
+pip install langchain-huggingface
 
-# Agents / Tools (new helpers)
-from langchain.agents import create_react_agent, AgentExecutor
-from langchain.tools import Tool, create_retriever_tool
-
-# Memory (same import path)
-from langchain.memory import ConversationBufferMemory
-
-# Community connectors (example)
-from langchain_community.embeddings import HuggingFaceEmbeddings
+# For legacy features (Memory, old chains)
+pip install langchain-classic
 \end{lstlisting}
+
+\begin{lstlisting}[language=python,basicstyle=\tiny]
+# Core Imports (v1 modern syntax)
+from langchain_groq import ChatGroq  # Provider-specific imports
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain_core.output_parsers import StrOutputParser, PydanticOutputParser
+
+# Agents (NEW in v1)
+from langchain.agents import create_agent
+from langchain_core.tools import tool
+
+# Memory (moved to langchain-classic)
+from langchain_classic.memory import ConversationBufferMemory
+
+# Community connectors
+from langchain_community.document_loaders import WebBaseLoader
+from langchain_huggingface import HuggingFaceEmbeddings
+\end{lstlisting}
+
+\textbf{Key Changes in v1:}
+\begin{itemize}
+\item \texttt{create\_agent} replaces \texttt{create\_react\_agent}
+\item Memory moved to \texttt{langchain-classic}
+\item Provider-specific imports (e.g., \texttt{langchain\_groq})
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Message Types \& Chat}
 \begin{lstlisting}[language=python,basicstyle=\tiny]
-# Message Schema (unchanged)
-from langchain.schema import HumanMessage, SystemMessage, AIMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
 messages = [
     SystemMessage(content="You are a helpful AI assistant"),
@@ -39,12 +82,14 @@ messages = [
 ]
 
 # Chat prompt templates (runnable-friendly)
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 human = HumanMessagePromptTemplate.from_template("{question}")
 chat_prompt = ChatPromptTemplate.from_messages([human])
 
-llm = ChatOpenAI(temperature=0.0)
+from langchain_groq import ChatGroq
+llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.0)
+
 # Use pipe operator to run prompt -> llm
 chain = chat_prompt | llm
 # invoke with a dict containing prompt variables
@@ -56,7 +101,7 @@ print(resp)  # raw LLM response
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Prompt Templates \& Output Parsers}
 \begin{lstlisting}[language=python,basicstyle=\tiny]
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser, StructuredOutputParser
 from pydantic import BaseModel, Field
 
@@ -67,8 +112,8 @@ prompt = PromptTemplate(
 )
 
 # Example of piping prompt -> llm and parsing to string
-from langchain.chat_models import ChatOpenAI
-llm = ChatOpenAI(temperature=0.2)
+from langchain_groq import ChatGroq
+llm = ChatGroq(model="gemma2-9b-it", temperature=0.2)
 chain = prompt | llm | StrOutputParser()
 out = chain.invoke({"text": "Hello", "language": "French"})
 print(out)  # plain string
@@ -100,27 +145,27 @@ parsed = parser.parse(result)
 \begin{frame}[fragile]\frametitle{Loaders \& Documents (unchanged interfaces)}
 \begin{lstlisting}[language=python,basicstyle=\tiny]
 # Text file loader
-from langchain.document_loaders import TextLoader
+from langchain_community.document_loaders import TextLoader
 loader = TextLoader("file.txt")
 docs = loader.load()
 
 # CSV Loader
-from langchain.document_loaders import CSVLoader
+from langchain_community.document_loaders import CSVLoader
 loader = CSVLoader("data.csv")
 docs = loader.load()
 
 # Web Page Loader
-from langchain.document_loaders import WebBaseLoader
+from langchain_community.document_loaders import WebBaseLoader
 loader = WebBaseLoader("https://example.com")
 docs = loader.load()
 
 # Directory Loader
-from langchain.document_loaders import DirectoryLoader
+from langchain_community.document_loaders import DirectoryLoader
 loader = DirectoryLoader("./docs", glob="**/*.txt")
 docs = loader.load()
 
 # Unstructured Loader (docx/pdf)
-from langchain.document_loaders import UnstructuredFileLoader
+from langchain_community.document_loaders import UnstructuredFileLoader
 loader = UnstructuredFileLoader("file.docx")
 docs = loader.load()
 \end{lstlisting}
@@ -129,15 +174,15 @@ docs = loader.load()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Text Splitters \& Embeddings}
 \begin{lstlisting}[language=python,basicstyle=\tiny]
-from langchain.text_splitter import CharacterTextSplitter
+from langchain_text_splitters  import CharacterTextSplitter
 splitter = CharacterTextSplitter(separator="\n\n", chunk_size=1000, chunk_overlap=200)
 chunks = splitter.split_text(long_text)
 
 # Example: embeddings -> vectorstore
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
-embeddings = OpenAIEmbeddings()
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 vectors = FAISS.from_documents(chunks, embeddings)
 \end{lstlisting}
 \end{frame}
@@ -150,11 +195,12 @@ vectors = FAISS.from_documents(chunks, embeddings)
 # out = chain.run("input")
 
 # Modern (runnable/LCEL) pattern:
-from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain_groq import ChatGroq
+
 
 prompt = PromptTemplate(input_variables=["name"], template="Say hello to {name}.")
-llm = ChatOpenAI(temperature=0.0)
+llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.0)
 
 # Compose with | (prompt -> llm)
 pipeline = prompt | llm
@@ -186,8 +232,8 @@ print(out)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Callbacks \& Tracing (same handlers, new manager)}
 \begin{lstlisting}[language=python,basicstyle=\tiny]
-from langchain.callbacks.base import BaseCallbackHandler
-from langchain.callbacks.manager import CallbackManager
+from langchain_core.callbacks.base import BaseCallbackHandler
+from langchain_core.callbacks.manager import CallbackManager
 
 class MyCallback(BaseCallbackHandler):
     def on_llm_start(self, serialized, prompts, **kwargs):
@@ -202,10 +248,10 @@ llm = ChatOpenAI(callback_manager=cb_manager)
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Local \& HF Models (examples kept)]
+\begin{frame}[fragile]\frametitle{Local \& HF Models (examples kept)}
 \begin{lstlisting}[language=python,basicstyle=\tiny]
 # HuggingFace Pipeline (local)
-from langchain.llms import HuggingFacePipeline
+from langchain_community.llms import HuggingFacePipeline
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 
 model_id = "gpt2"
@@ -220,78 +266,191 @@ resp = (prompt | llm_local).invoke({"q": "Write a haiku about code."})
 \end{lstlisting}
 \end{frame}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Retrieval \& RAG (Replacing RetrievalQA)}
 \begin{lstlisting}[language=python,basicstyle=\tiny]
-# Legacy: qa = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
-# Modern: use create_retrieval_chain or build a retriever tool
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 
-from langchain.chains import create_retrieval_chain
+# Assume vectorstore is already created
+retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
 
-retriever = vectorstore.as_retriever(search_kwargs={"k":4})
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
 
-# create_retrieval_chain returns a runnable LCEL-style chain
-rag_chain = create_retrieval_chain(llm=llm, retriever=retriever, chain_type="stuff")
-# invoke using {"query": ...}
-ans = rag_chain.invoke({"query": "What is the capital of France?"})
-print(ans)
+prompt = ChatPromptTemplate.from_template("""
+Answer based on context:
 
-# Alternatively: create a retriever-based tool for agents
-retriever_tool = create_retriever_tool(retriever=retriever, name="docs", description="Useful for answering questions from the docs")
+Context: {context}
+Question: {question}
+""")
+
+# Modern RAG chain with LCEL
+rag_chain = (
+    {
+        "context": retriever | format_docs,
+        "question": RunnablePassthrough()
+    }
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+answer = rag_chain.invoke("What is the capital of France?")
 \end{lstlisting}
 \end{frame}
 
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Retrieval \& RAG (Replacing RetrievalQA)}
+% \begin{lstlisting}[language=python,basicstyle=\tiny]
+% # Legacy: qa = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+% # Modern: use create_retrieval_chain or build a retriever tool
+
+% from langchain.chains import create_retrieval_chain
+
+% retriever = vectorstore.as_retriever(search_kwargs={"k":4})
+
+% # create_retrieval_chain returns a runnable LCEL-style chain
+% rag_chain = create_retrieval_chain(llm=llm, retriever=retriever, chain_type="stuff")
+% # invoke using {"query": ...}
+% ans = rag_chain.invoke({"query": "What is the capital of France?"})
+% print(ans)
+
+% # Alternatively: create a retriever-based tool for agents
+% retriever_tool = create_retriever_tool(retriever=retriever, name="docs", description="Useful for answering questions from the docs")
+% \end{lstlisting}
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Agents \& Tools (Replacing initialize\_agent)}
+% \begin{lstlisting}[language=python,basicstyle=\tiny]
+% # Legacy:
+% # agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)
+
+% # Modern: use create_react_agent (or other create_* agents) + AgentExecutor
+% from langchain.agents import create_react_agent, AgentExecutor
+
+% # Build Tool objects (example)
+% from langchain.tools import Tool
+
+% def calc_func(arg: str) -> str:
+    % # local tool example
+    % return str(eval(arg))
+
+% calculator_tool = Tool.from_function(fn=calc_func, name="calc", description="Evaluate math expressions")
+% # include retriever_tool from above for docs lookup
+% tools = [calculator_tool, retriever_tool]
+
+% # create a React-style agent and wrap in executor
+% agent = create_react_agent(llm=llm, tools=tools)
+% agent_executor = AgentExecutor(agent=agent, tools=tools)
+
+% # Run the agent:
+% response = agent_executor.run("What's 2**10 and also: what is the summary of the docs about deployment?")
+% print(response)
+
+% # For advanced workflows consider LangGraph for agent graphs (see docs)
+% \end{lstlisting}
+% \end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Agents \& Tools (Replacing initialize_agent)}
+\begin{frame}[fragile]\frametitle{Agents \& Tools (v1 Modern Approach)}
 \begin{lstlisting}[language=python,basicstyle=\tiny]
-# Legacy:
-# agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)
+# Modern v1 approach: use create_agent (NOT create_react_agent)
+from langchain.agents import create_agent
+from langchain_core.tools import tool
 
-# Modern: use create_react_agent (or other create_* agents) + AgentExecutor
-from langchain.agents import create_react_agent, AgentExecutor
+# Define tools using @tool decorator
+@tool
+def calculate(expression: str) -> str:
+    """Evaluate a mathematical expression."""
+    try:
+        return str(eval(expression))
+    except:
+        return "Invalid expression"
 
-# Build Tool objects (example)
-from langchain.tools import Tool
+@tool
+def search_docs(query: str) -> str:
+    """Search documentation for information."""
+    # Use retriever here if needed
+    return f"Results for: {query}"
 
-def calc_func(arg: str) -> str:
-    # local tool example
-    return str(eval(arg))
+# Create agent with tools (simple, clean API)
+agent = create_agent(
+    model="llama-3.3-70b-versatile",  # Can use model string or ChatGroq object
+    tools=[calculate, search_docs],
+    system_prompt="You are a helpful assistant with access to tools."
+)
 
-calculator_tool = Tool.from_function(fn=calc_func, name="calc", description="Evaluate math expressions")
-# include retriever_tool from above for docs lookup
-tools = [calculator_tool, retriever_tool]
+# Run the agent (returns full message history)
+response = agent.invoke({
+    "messages": [{"role": "user", "content": "What's 2**10?"}]
+})
 
-# create a React-style agent and wrap in executor
-agent = create_react_agent(llm=llm, tools=tools)
-agent_executor = AgentExecutor(agent=agent, tools=tools)
-
-# Run the agent:
-response = agent_executor.run("What's 2**10 and also: what is the summary of the docs about deployment?")
-print(response)
-
-# For advanced workflows consider LangGraph for agent graphs (see docs)
+# Extract final answer
+print(response["messages"][-1].content)
 \end{lstlisting}
+
+\textbf{v1 Changes:}
+\begin{itemize}
+\item \texttt{create\_agent} replaces \texttt{create\_react\_agent} + \texttt{AgentExecutor}
+\item No more \texttt{AgentExecutor} wrapper needed
+\item Built on LangGraph internally (durable execution)
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Memory (unchanged usage)}
+\begin{frame}[fragile]\frametitle{Memory (Requires langchain-classic in v1)}
+
+\textbf{Important:} Memory classes moved to \texttt{langchain-classic} in v1.
+
+\begin{lstlisting}[language=bash,basicstyle=\tiny]
+pip install langchain-classic
+\end{lstlisting}
+
 \begin{lstlisting}[language=python,basicstyle=\tiny]
-from langchain.memory import ConversationBufferMemory
+# Updated import for v1
+from langchain_classic.memory import ConversationBufferMemory
 
 memory = ConversationBufferMemory(memory_key="chat_history")
-# Pass memory into an agent or a custom runnable (AgentExecutor can accept memory in its run)
-res = agent_executor.run("Starter question")
+
+# For new projects, consider:
+# - LangGraph's built-in persistence
+# - Custom state management with LCEL
+# - Manual message history tracking
 \end{lstlisting}
+
+\textbf{Note:} For production apps, consider using LangGraph for state management instead of legacy memory classes.
 \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Memory (unchanged usage)}
+% \begin{lstlisting}[language=python,basicstyle=\tiny]
+% from langchain.memory import ConversationBufferMemory
+
+% memory = ConversationBufferMemory(memory_key="chat_history")
+% # Pass memory into an agent or a custom runnable (AgentExecutor can accept memory in its run)
+% res = agent_executor.run("Starter question")
+% \end{lstlisting}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{LLM Config \& Parameters (examples)}
 \begin{lstlisting}[language=python,basicstyle=\tiny]
 # temperature / max_tokens unchanged at model construction
-llm = ChatOpenAI(temperature=0.7, max_tokens=500)
+from langchain_groq import ChatGroq
+
+llm = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    temperature=0.7,
+    max_tokens=500
+)
 
 # streaming & callbacks are supported via callback_manager when constructing the model
-from langchain.callbacks.manager import CallbackManager
+from langchain_core.callbacks.manager import CallbackManager
 llm_streaming = ChatOpenAI(streaming=True, callback_manager=cb_manager)
 
 # Using prompt | llm | parser pipeline:
@@ -304,6 +463,11 @@ answer = pipeline.invoke({"q": "Write a short definition of RAG."})
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Short Examples / Patterns (cheat sheet)}
 \begin{lstlisting}[language=python,basicstyle=\tiny]
+
+from langchain_groq import ChatGroq
+
+llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
+
 # Basic prompt -> llm
 prompt = PromptTemplate(input_variables=["x"], template="Reverse: {x}")
 resp = (prompt | llm).invoke({"x":"abc"})
@@ -321,4 +485,40 @@ chain = PromptTemplate(input_variables=["txt"], template="Return json matching P
 out = chain.invoke({"txt": "Name Bob age 30"})
 print(out)
 \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{V1 Migration Quick Reference}
+
+\begin{center}
+\begin{tabular}{|p{3.5cm}|p{3.5cm}|}
+\hline
+\textbf{v0 (Old)} & \textbf{v1 (New)} \\
+\hline
+\texttt{create\_react\_agent} & \texttt{create\_agent} \\
+\hline
+\texttt{AgentExecutor} & Built-in (not needed) \\
+\hline
+\texttt{langchain.memory} & \texttt{langchain\_classic.memory} \\
+\hline
+\texttt{langchain.schema} & \texttt{langchain\_core.messages} \\
+\hline
+\texttt{langchain.prompts} & \texttt{langchain\_core.prompts} \\
+\hline
+\texttt{langchain. document\_loaders} & \texttt{langchain\_community. document\_loaders} \\
+\hline
+\texttt{LLMChain} & LCEL with \texttt{|} operator \\
+\hline
+\texttt{RetrievalQA} & Custom LCEL RAG chain \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Key Requirements:}
+\begin{itemize}
+\item Python 3.10+ (Python 3.9 EOL October 2025)
+\item Install \texttt{langchain-classic} for legacy features
+\item Use provider-specific packages (\texttt{langchain-groq}, etc.)
+\end{itemize}
+
 \end{frame}
