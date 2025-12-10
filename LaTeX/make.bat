@@ -1,2 +1,2 @@
 @echo off
-for /r %%i in (Main_Seminar_LLM_LangChain_*.tex) do texify -cp %%i
+for /r %%i in (Main_Seminar_LLM_GenAI*.tex) do texify -cp %%i
