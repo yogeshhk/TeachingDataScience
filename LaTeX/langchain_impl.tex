@@ -13,6 +13,111 @@
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Diff LLMs, Diff Calls}
+
+\begin{center}
+
+ \includegraphics[width=0.8\linewidth,keepaspectratio]{langchain18}
+		
+  {\tiny (Ref: What is LangChain - Yash Jain)}
+\end{center}
+
+Langchain provides abstraction. No LLM specific API calls, but a generic way. Need to install specific extension though and have to have respective KEYs.
+
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+
+pip install -U langchain langchain-openai langchain-anthropic langchain-google-genai langchain-groq
+\end{lstlisting}	
+
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Common Way of Calling Diff LLMs: V0}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
+from langchain_anthropic import ChatAnthropic
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage
+
+gpt_model = ChatOpenAI(
+    model="gpt-4o",
+    temperature=0.7,
+    max_tokens=500)
+
+groq_model = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    temperature=0.2,
+    # Groq-specific param example:
+    # reasoning_format="raw" )
+
+claude_model = ChatAnthropic(
+    model="claude-3-5-sonnet-latest",
+    timeout=None,
+    stop_sequences=["\n\nHuman:"])
+
+gemini_model = ChatGoogleGenerativeAI(
+    model="gemini-1.5-pro",
+    convert_system_message_to_human=True # Legacy helper for older models)
+
+def run_demo(model, provider_name):
+    message = [HumanMessage(content="Explain quantum entanglement in one sentence.")]
+    response = model.invoke(message)
+    print(f"Response: {response.content}\n")
+
+run_demo(gpt_model, "OpenAI")
+\end{lstlisting}	  
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Common Way of Calling Diff LLMs: V1}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+
+import os
+from langchain.chat_models import init_chat_model
+from langchain_core.messages import HumanMessage, SystemMessage
+
+# os.environ["OPENAI_API_KEY"] = "sk-..."
+# os.environ["ANTHROPIC_API_KEY"] = "sk-ant-..."
+# os.environ["GOOGLE_API_KEY"] = "..."
+# os.environ["GROQ_API_KEY"] = "gsk_..."
+
+def get_response(provider_string, user_query):
+    """
+    Initializes a model based on the provider string: 'openai', 'anthropic', 'google', or 'groq'.
+    """
+    llm = init_chat_model(provider_string, temperature=0)
+    
+    messages = [
+        SystemMessage(content="You are a helpful research assistant."),
+        HumanMessage(content=user_query)    ]
+    return llm.invoke(messages)
+
+gpt_response = get_response("openai:gpt-4o", "What is LangChain v1?")
+print(f"GPT-4o: {gpt_response.content[:100]}...")
+
+claude_response = get_response("anthropic:claude-3-5-sonnet-latest", "What is LangChain v1?")
+print(f"Claude: {claude_response.content[:100]}...")
+
+gemini_response = get_response("google_genai:gemini-1.5-pro", "What is LangChain v1?")
+print(f"Gemini: {gemini_response.content[:100]}...")
+
+groq_response = get_response("groq:llama-3.3-70b-versatile", "What is LangChain v1?")
+print(f"Groq: {groq_response.content[:100]}...")
+\end{lstlisting}	  
+
+
+
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Sentiment Analysis: Zero Shot}
