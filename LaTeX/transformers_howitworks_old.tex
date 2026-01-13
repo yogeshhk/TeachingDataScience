@@ -22,26 +22,6 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Two Phases of Transformer Operation}
-\begin{itemize}
-\item \textbf{Training Phase:} Model learns to predict output sequences given input-output pairs
-  \begin{itemize}
-  \item Uses teacher forcing (ground truth tokens fed to decoder)
-  \item Decoder processes entire target sequence in parallel with masking
-  \item Loss calculated by comparing predicted vs actual output
-  \item Backpropagation updates all weight matrices
-  \end{itemize}
-\item \textbf{Inference Phase:} Model generates output autoregressively
-  \begin{itemize}
-  \item Decoder generates one token at a time
-  \item Each generated token fed back as input for next prediction
-  \item Process continues until $<EOS>$ token generated
-  \item Encoder output reused for all decoder steps
-  \end{itemize}
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{A High-Level Look}
 
 Lets start with a very high-level view \ldots and then Zoom in each sub-blocks.
@@ -64,21 +44,6 @@ Here is the Transformer block and its i/o.
 \end{itemize}
 
 			
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Transformer Parameters}
-Where are all the learnable parameters?
-
-\begin{itemize}
-\item \textbf{Embeddings:} Token + Position embeddings
-\item \textbf{Attention:} $W^Q, W^K, W^V$ (per head, per layer) + $W^O$
-\item \textbf{Feed Forward:} $W_1, b_1, W_2, b_2$ (per layer)
-\item \textbf{Layer Norm:} Scale and shift parameters
-\item \textbf{Output:} Final vocabulary projection matrix
-\end{itemize}
-
-\textbf{Total:} Base transformer (6 layers) approx 65M parameters
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -233,300 +198,12 @@ Next, let’s look at the Transformer Encoder and Decoder Blocks in action
 			
 \end{frame}
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large Whole Process High Level Walk-through}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Create Vocabulary}
-
-
-\begin{itemize}
-\item All words in the training data
-\item Plus special tokens
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Special Tokens}
-In addition to vocabulary words, transformers use special tokens:
-
-\begin{itemize}
-\item \texttt{$<bos>$} (Beginning of Sequence): Signals decoder to start generation
-\item \texttt{$<EOS>$} (End of Sequence): Signals decoder to stop generation
-\item \texttt{$<pad>$} (Padding): Makes all sentences in a batch the same length
-\item These tokens get their own embeddings and are treated like regular tokens
-\end{itemize}
-
-\begin{center}
-\texttt{Example vocabulary: [red, car, blue, house, ..., $<bos>$, $<EOS>$, $<pad>$]}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Create Embeddings}
-
-we create embeddings for our tokens. There are two types of embeddings - position embeddings and token embeddings.
-
-For example, if we consider the token “red”, after applying the embedding transformation, it might look as follows (we are assuming an embedding dimension of 3):
-
-\begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_vizuara_15}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Convert each embeddings to queries, keys and values}
-
-Every embedding is converted to queries, keys, and values. This can be represented visually as follows:
-
-\begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{transformer_vizuara_1}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Calculate the attention matrix}
-
-We can represent the attention matrix schematically as follows:
-
-\begin{center}
-\includegraphics[width=0.4\linewidth,keepaspectratio]{transformer_vizuara_2}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-The color of the circle represents the magnitude of the attention scores. So, a brighter color means a larger attention score, and a lighter color means a lower attention score. These values lie between 0 and 1.
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Getting the context vectors}
-
-Once we have obtained the attention scores, we can now combine them with the values for all the tokens to get the context vector representing each token.
-
-This can be represented schematically as follows:
-
-\begin{center}
-\includegraphics[width=0.8\linewidth,keepaspectratio]{transformer_vizuara_3}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-Observe what we are doing here very closely. For the token corresponding to the word “The,” we are adding all the attention values corresponding to the query “The”, and then multiplying each of them with the value vectors.
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Getting the context vectors}
-
-The final context vectors for all the tokens would look visually as something as follows (assuming the dimension is three):
-
-\begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_vizuara_4}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-Observe what we are doing here very closely. For the token corresponding to the word “The,” we are adding all the attention values corresponding to the query “The”, and then multiplying each of them with the value vectors.
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Passing the context vectors to the Feed-Forward Neural Network}
-
-In the next step, we pass all these context vectors to a feed-forward neural network which first increases the dimensions of these vectors and then again brings it down.
-
-\begin{center}
-\includegraphics[width=0.8\linewidth,keepaspectratio]{transformer_vizuara_5}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-We can see here that first we increase the dimensions for all the tokens to 6, and then again bring them down to 3.
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Passing the context vectors to the Feed-Forward Neural Network}
-
-Here is how we can visualize these steps in a single diagram:
-
-\begin{center}
-\includegraphics[width=0.5\linewidth,keepaspectratio]{transformer_vizuara_6}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-What we have until now is the Transformer Encoder. The goal of the Encoder is to read the source sentence (red car) and create a rich numerical representation of it, that understands the context of each word.
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Transformer Decoder: Self-Attention}
-
-Let us say the input to the decoder is the following:
-
-$<bos>$ car
-
-In this step, every token in the input sequence attends to itself.
-
-First, we calculate the query, keys and values for all tokens:
-
-\begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{transformer_vizuara_7}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Transformer Decoder: Self-Attention}
-
-The next step is to calculate the attention matrix:
-
-\begin{center}
-\includegraphics[width=0.3\linewidth,keepaspectratio]{transformer_vizuara_8}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-Then we find the context vector for the “car” token by using its attention values and multiplying them by the value vectors:
-
-\begin{center}
-\includegraphics[width=0.4\linewidth,keepaspectratio]{transformer_vizuara_9}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}
-
-We have already seen these steps in the Transformer Encoder.
-
-After this comes a very unique step, which is called ``cross-attention''
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Transformer Decoder: Cross-Attention}
-
-In the cross-attention layer, the query comes from the decoder side, but the keys and values come from the encoder side.
-
-In the above example, we will use the context vector for the “car” token to calculate the query, but the keys and values will come from the encoder. Let us look at the visualization below to understand this:
-\begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{transformer_vizuara_10}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Transformer Decoder: Cross-Attention}
-
-Once the query, keys and values have been computed, we can calculate the attention scores:
-
-\begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_vizuara_11}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-Note that here we are trying to understand how much the token “car” relates to all the tokens in the input sentence. This is important for us because we know that the attention score for the token “red” is going to be high, since we want to swap the adjective and the nouns.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Transformer Decoder: Cross-Attention}
-
-After this, we again calculate the context vector in a similar fashion like we have done a couple of times before:
-
-\begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{transformer_vizuara_12}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-Note that here the values are coming from the encoder tokens.
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Transformer Decoder: Cross-Attention}
-
-You might have guessed what happens next. We pass it through the feed-forward network, just as we did with the encoder, where we increase the dimensions and then decrease them again:
-
-\begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{transformer_vizuara_13}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-The Decoder’s job is to generate the translation one word at a time, using the memory created by the Encoder.
-
-What next? How do we generate the next token?
-
-One last step is remaining ...
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Transformer Decoder: Projection into the Vocabulary Space}
-
-In this step, what we do is, we take the context vector from the previous step and then we project it into the entire vocabulary space. We look at which token has the maximum value, and we choose that as our next token. This can be visually presented as follows:
-
-\begin{center}
-\includegraphics[width=0.7\linewidth,keepaspectratio]{transformer_vizuara_14}
-
-
-{\tiny (Ref: ``The Transformer Architecture - Application to Robotics'' - Vizuara)}
-\end{center}		
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large Revisit the flow with more details}
-\end{center}
-\end{frame}
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large Block: Input Embedding}
 \end{center}
 \end{frame}
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Convert Sentence to Tokens}
@@ -540,7 +217,7 @@ In this step, what we do is, we take the context vector from the previous step a
 \item ``I love cats''  could be tokenised to $[816, 8129, 312]$
 \end{itemize}
 
-For now, we can use `Token` and `Word` synonymously.
+For now, we can use `Toekn` and `Word` synonymously.
 
 \end{frame}
 
@@ -792,27 +469,6 @@ Each position/index is mapped to a vector
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Positional Encoding: Why This Formula?}
-
-$$PE_{(pos,2i)} = \sin(pos/10000^{2i/d_{model}})$$
-$$PE_{(pos,2i+1)} = \cos(pos/10000^{2i/d_{model}})$$
-
-\textbf{Advantages of this approach:}
-\begin{itemize}
-\item \textbf{Uniqueness:} Each position gets unique encoding (multiple frequencies)
-\item \textbf{Relative positions:} Model can learn "distance" between tokens
-\item \textbf{Extrapolation:} Can handle sequences longer than training
-\item \textbf{Bounded values:} All values in [-1, 1], stable for learning
-\end{itemize}
-
-\textbf{Why sine/cosine?}
-\begin{itemize}
-\item Different frequencies capture different scales of relationships
-\item Low frequencies: global structure
-\item High frequencies: local word order
-\end{itemize}
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
@@ -845,28 +501,6 @@ $$PE_{(pos,2i+1)} = \cos(pos/10000^{2i/d_{model}})$$
 \end{itemize}
     \end{column}
   \end{columns}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Self-Attention: The Core Mechanism}
-
-Think of attention as a database lookup:
-\begin{itemize}
-\item \textbf{Query (Q):} What am I looking for? (from current token)
-\item \textbf{Key (K):} What do I contain? (from all tokens)
-\item \textbf{Value (V):} What information do I provide? (from all tokens)
-\end{itemize}
-
-\vspace{0.3cm}
-Process:
-\begin{enumerate}
-\item Compare Query with all Keys: get attention scores (how relevant each token is)
-\item Apply softmax: normalize scores to probabilities (sum = 1)
-\item Multiply scores with Values: weighted combination
-\item Sum up $\rightarrow$ final context vector for the token
-\end{enumerate}
-
-This allows each token to "attend" to relevant tokens in the sequence.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1062,23 +696,6 @@ cats  = `[1.24, 1.48, 1.39]`
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Context Vectors: The Output of Attention}
-
-After computing attention scores, we create context vectors:
-
-\textbf{For each token position:}
-$$\text{context}_i = \sum_{j} \text{attention}_{ij} \times \text{value}_j$$
-
-\begin{itemize}
-\item Context vector = weighted sum of all value vectors
-\item Weights = attention scores (how much to focus on each position)
-\item Result: rich representation incorporating relevant information from entire sequence
-\item Dimension: same as value vectors (typically 64 per head, 512 total)
-\end{itemize}
-
-\textbf{Intuition:} Token "it" creates context vector that blends information from "animal" (high attention) and other tokens (lower attention).
-\end{frame}
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1374,39 +991,6 @@ This is how Self-Attention block generates, ``attended'' vectors.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Feed Forward Network: Adding Non-Linearity}
-
-\begin{columns}
-  \begin{column}[T]{0.6\linewidth}
-    \textbf{Architecture:}
-    \begin{itemize}
-    \item Two linear layers with ReLU activation
-    \item First layer: expand dimensions (512 $\rightarrow$ 2048 typical)
-    \item Second layer: reduce back (2048 $\rightarrow$ 512)
-    \item Applied identically to each position
-    \end{itemize}
-    
-    \textbf{Why needed?}
-    \begin{itemize}
-    \item Attention is linear operation
-    \item FFN adds non-linearity for complex patterns
-    \item Each position processed independently
-    \end{itemize}
-  \end{column}
-  \begin{column}[T]{0.4\linewidth}
-    \textbf{Formula:}
-    $$\text{FFN}(x) = \text{ReLU}(xW_1 + b_1)W_2 + b_2$$
-    
-    \textbf{Parameters:}
-    \begin{itemize}
-    \item Same $W_1, W_2, b_1, b_2$ for all positions
-    \item Different from attention which considers relationships
-    \end{itemize}
-  \end{column}
-\end{columns}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Feed Forward}
 
 \begin{itemize}
@@ -1532,34 +1116,6 @@ Output of Encoders ($K$ and $V$) are passed to 'Cross Attention' layers of each 
 % \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Residual Connections: Why Add \& Norm?}
-
-\textbf{Residual Connection (Add):}
-$$\text{output} = \text{LayerNorm}(x + \text{Sublayer}(x))$$
-
-\begin{columns}
-  \begin{column}[T]{0.5\linewidth}
-    \textbf{Why needed?}
-    \begin{itemize}
-    \item Helps gradients flow during backprop
-    \item Prevents vanishing gradients in deep networks
-    \item Allows identity mapping if layer learns nothing
-    \end{itemize}
-  \end{column}
-  \begin{column}[T]{0.5\linewidth}
-    \textbf{Layer Normalization:}
-    \begin{itemize}
-    \item Normalizes across feature dimension
-    \item Stabilizes training
-    \item Reduces internal covariate shift
-    \end{itemize}
-  \end{column}
-\end{columns}
-
-Applied after: Self-Attention, Cross-Attention, Feed Forward
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large Encoder side is done}
@@ -1647,28 +1203,6 @@ The following steps repeat the process until a special symbol is reached indicat
 \end{center}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Why Masking? Training in Parallel}
-
-\textbf{Problem:} During training, we know the entire target sequence, but we want to teach the model to predict one word at a time.
-
-\textbf{Solution:} Masking allows parallel training while preventing "cheating"
-
-\begin{center}
-\begin{tabular}{|l|l|l|}
-\hline
-\textbf{Input} & \textbf{Can See} & \textbf{Must Predict} \\
-\hline
-$<bos>$ & $<bos>$ & "Ich" \\
-$<bos>$ Ich & $<bos>$, Ich & "liebe" \\
-$<bos>$ Ich liebe & $<bos>$, Ich, liebe & "dich" \\
-\hline
-\end{tabular}
-\end{center}
-
-All three predictions happen simultaneously, but masking ensures each prediction only uses previous tokens (setting future positions to $-\infty$ before softmax).
-\end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Masked Attention Need}
 
@@ -1738,58 +1272,12 @@ Now we can clearly see why masking is done.
 \end{center}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Cross-Attention: Connecting Encoder and Decoder}
-
-Cross-attention is what connects the encoder output to the decoder:
-
-\begin{columns}
-  \begin{column}[T]{0.5\linewidth}
-    \textbf{Key Difference from Self-Attention:}
-    \begin{itemize}
-    \item Query (Q): comes from \textcolor{blue}{decoder}
-    \item Keys (K): come from \textcolor{red}{encoder}
-    \item Values (V): come from \textcolor{red}{encoder}
-    \end{itemize}
-  \end{column}
-  \begin{column}[T]{0.5\linewidth}
-    \textbf{Purpose:}
-    \begin{itemize}
-    \item Allows decoder to focus on relevant parts of input
-    \item For translation: connects source and target words
-    \item Example: "car" in output attends to "voiture" in input
-    \end{itemize}
-  \end{column}
-\end{columns}
-
-\vspace{0.3cm}
-This is how the decoder "reads" the encoded input representation!
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large Linear plus Softmax}
 \end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Vocabulary Projection: From Vectors to Words}
-
-\textbf{Final Step:} Convert decoder output to next token prediction
-
-\begin{enumerate}
-\item Decoder output: vector of dimension 512
-\item Linear layer (learned): project to vocabulary size (e.g., 50,000)
-\item Each position = score for one vocabulary word
-\item Softmax: convert scores to probability distribution
-\item Selection: pick highest probability (or sample/beam search)
-\end{enumerate}
-
-$$\text{logits} = \text{decoder\_output} \times W_{\text{vocab}}$$
-$$P(\text{word}_i) = \frac{e^{\text{logits}_i}}{\sum_j e^{\text{logits}_j}}$$
-
-\textbf{Training:} Loss = cross-entropy between predicted and true distribution
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1923,24 +1411,6 @@ $$P(\text{word}_i) = \frac{e^{\text{logits}_i}}{\sum_j e^{\text{logits}_j}}$$
 \end{center}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Training Phase: Teacher Forcing}
-
-\textbf{Setup:} We have parallel corpus (source, target) pairs
-
-\textbf{Example:} "I love you" $\rightarrow$ "Ich liebe dich"
-
-\begin{enumerate}
-\item Encoder processes entire source sentence in parallel
-\item Decoder receives: \texttt{$<bos>$ Ich liebe} (shifted target)
-\item Decoder predicts: "Ich liebe dich"
-\item All decoder positions process simultaneously with masking
-\item Loss computed: compare predicted vs actual target
-\item Gradients backpropagate through entire network
-\end{enumerate}
-
-\textbf{Key Point:} During training, decoder sees ground truth previous tokens (teacher forcing), not its own predictions.
-\end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Pre-training workflow}
 
@@ -2018,7 +1488,7 @@ For example – input: ``je suis etudiant'' and expected output: ``i am a studen
 \item Each probability distribution is represented by a vector of width vocab\_size (6 in our toy example, but more realistically a number like 30,000 or 50,000)
 \item The first probability distribution has the highest probability at the cell associated with the word ``i''
 \item The second probability distribution has the highest probability at the cell associated with the word ``am''
-\item And so on, until the fifth output distribution indicates $$<EOS>$$ symbol, which also has a cell associated with it from the 10,000 element vocabulary.
+\item And so on, until the fifth output distribution indicates $<EOS>$ symbol, which also has a cell associated with it from the 10,000 element vocabulary.
 \end{itemize}
     \end{column}
   \end{columns}	
@@ -2049,27 +1519,6 @@ For example – input: ``je suis etudiant'' and expected output: ``i am a studen
     \end{column}
   \end{columns}	
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Decoding Strategies: Greedy vs Beam Search}
-
-\textbf{Greedy Decoding:}
-\begin{itemize}
-\item Always pick highest probability token
-\item Fast but may miss better overall sequences
-\end{itemize}
-
-\textbf{Beam Search (beam width = 2):}
-\begin{enumerate}
-\item Generate top-2 first tokens: ["I", "The"]
-\item For each, generate top-2 second tokens
-\item Keep best 2 sequences overall (4 candidates → 2 survivors)
-\item Repeat until all beams produce \texttt{$<EOS>$}
-\item Select sequence with highest cumulative probability
-\end{enumerate}
-
-\textbf{Trade-off:} Beam search explores multiple hypotheses but costs more computation (k times slower for beam width k).
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2121,29 +1570,6 @@ For example – input: ``je suis etudiant'' and expected output: ``i am a studen
     \end{column}
   \end{columns}	
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Inference Phase: Autoregressive Generation}
-
-\textbf{Setup:} Only source sentence available, must generate target
-
-\textbf{Step-by-step process:}
-\begin{enumerate}
-\item Encoder processes source once → produces K, V vectors
-\item Decoder starts with: \texttt{$<bos>$}
-\item Decoder predicts first token: "Ich" (using encoder's K, V)
-\item Feed "Ich" back: \texttt{$<bos>$ Ich}
-\item Decoder predicts second token: "liebe"
-\item Repeat until \texttt{$<EOS>$} generated
-\end{enumerate}
-
-\textbf{Differences from Training:}
-\begin{itemize}
-\item Sequential, not parallel
-\item Uses own predictions, not ground truth
-\item Encoder output reused (no need to re-encode)
-\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2212,7 +1638,7 @@ Note that since the Encoder sequence does not change for each iteration, we do n
 % \begin{frame}[fragile]\frametitle{Steps}
 
 % \begin{itemize}
-% \item Input: Prompt + $$<EOS>$$ (added internally)
+% \item Input: Prompt + $<EOS>$ (added internally)
 % \item Tokenize and covert all to vectors by same vectorizer, say word2vec
 % \item Add positional embedding
 % \item Masked self attention does similarity check with sentence, so far, with words added one at a time. So it looks at only past at that point in time. This is same Q K V calculation.
@@ -2257,38 +1683,3 @@ Note that since the Encoder sequence does not change for each iteration, we do n
 % \end{center}
 
 % \end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Clarity on parallel processing}
-
-\begin{itemize}
-\item Encoder processes ALL input tokens simultaneously
-\item Decoder during training processes ALL output positions simultaneously (with masking)
-\item Only inference is sequential
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Training vs Inference: Side-by-Side}
-
-\begin{center}
-\begin{tabular}{|p{4cm}|p{4cm}|p{4cm}|}
-\hline
-\textbf{Aspect} & \textbf{Training} & \textbf{Inference} \\
-\hline
-Decoder input & Ground truth (shifted) & Own predictions \\
-\hline
-Processing & Parallel (all positions) & Sequential (one at a time) \\
-\hline
-Masking & Prevents future visibility & Only past visible naturally \\
-\hline
-Encoder & Runs once per sample & Runs once, reused \\
-\hline
-Speed & Fast (parallelized) & Slower (sequential) \\
-\hline
-Purpose & Learn parameters & Generate output \\
-\hline
-\end{tabular}
-\end{center}
-\end{frame}
