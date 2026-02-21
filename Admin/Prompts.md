@@ -1,48 +1,45 @@
 # Prompts
 
-## The Master Reviewer Prompt
+## Slide Deck Upgrade prompt
 
-**Role:** You are acting as a Senior AI Research Scientist and an expert Technical Communicator specializing in LaTeX Beamer presentations. Your goal is to audit a slide deck for a high-level technical audience in 2026.
+You are an expert in <topic> and in preparing professional LaTeX Beamer slide decks.
 
-**Task:** Review the provided LaTeX source code for the topics of **AI, ML, NLP, LLMs, and RAG**.
+Your task is to critically review and improve an existing slide deck while preserving its current visual style, formatting, and LaTeX structure.
 
-**Evaluation Criteria:**
+### Context
+You will be provided with:
+* The `.tex` source files
+* The corresponding PDF output
 
-1. **Redundancy & Narrative Compression:** * Identify "Intro-level" redundancy (e.g., explaining basic Transformers or Tokenization multiple times).
-* Suggest frames to merge or delete to maximize "Information Density."
-
-
-2. **2026 Modernization:** * Replace any legacy references (pre-2025) with 2026 benchmarks.
-* Ensure ML/NLP concepts include **Mixture-of-Experts (MoE)**, **State Space Models (SSMs/Mamba)**, and **Neural Architecture Search**.
-* Ensure RAG concepts move beyond basic vector search to include **Agentic RAG**, **GraphRAG**, and **Long-Context (10M+) Retrieval**.
-
-
-3. **LaTeX/Beamer Optimization:**
-* Flag "Text-Heavy" slides (more than 6 bullets or dense paragraphs).
-* Suggest specific Beamer environments like `\begin{columns}`, `\begin{block}`, or `\pause` to improve visual hierarchy and pacing.
-* Ensure all math uses correct LaTeX syntax (e.g.,  or more complex equations).
-
-
-4. **Implementation & Code Snippets:**
-* Update any Python/PyTorch/Mojo examples to reflect 2026 libraries (e.g., decentralized training frameworks or agent-orchestration SDKs).
-
-
-
-**Output Requirements:**
-Please provide the review in a **Slide-by-Slide Audit Table**:
-
-* **Slide # / Title:** The identifier for the frame.
-* **Verdict:** (Keep / Merge / Delete / Update).
-* **Issue:** Why it needs changing (e.g., "Outdated example," "Redundant definition").
-* **Proposed LaTeX Snippet:** Provide the revised `\begin{frame} ... \end{frame}` code using modernized 2026 content and clean Beamer formatting.
-
-**Special Instruction:** Focus on the content within `\begin{document}`. Ignore styling preambles unless they conflict with readability.
-
+Carefully correlate the LaTeX source with the rendered slides to fully understand:
+* Slide numbering (as shown in the PDF)
+* Slide order and hierarchy
+* Structural organisation and flow
 ---
+### Tasks
+1. Technical Accuracy
+   * Review each slide for correctness and conceptual clarity.
+   * Flag only slides with significant technical issues.
+   * Provide corrected or improved content where necessary.
+   * Reference slides strictly by their PDF slide numbers.
+2. Redundancy
+   * Identify duplicate or substantially redundant slides.
+   * Recommend removals with justification.
+3. Structure & Organization
+   * Propose logical sections to group slides.
+   * For each section, provide: A short title; A one-sentence objective
+   * Recommend reordering of sections or slides if it significantly improves flow.
+4. Content Gaps & Modern Updates
+   * Suggest essential new slides covering recent developments in <topic>.
+   * Stay strictly within the scope of the deck.
+   * Include concise example content and code snippets where appropriate.
+---
+### Output Requirements
+* Reference slides by PDF slide number.
+* Provide only critical, high-impact suggestions.
+* Do not rewrite the full deck.
+* Do not provide a complete updated `.tex` file.
+* For modified or new slides, present content in the same format style as the existing deck.
 
-### How to use this prompt effectively:
-
-* **For Large Decks:** If your file is over 500 lines of code, upload the `.tex` file first and say: *"Review this file using the Master Reviewer Prompt."*
-* **For Specific Focus:** If you want to focus specifically on the RAG portion, add a line at the end: *"Pay extra attention to the RAG section; I want to emphasize Agentic workflows over static retrieval."*
-* **For Visuals:** If you need the AI to suggest where diagrams should go, add: *"Mark specific spots with a comment like `% [Insert Diagram: Explanation of X]` where a visual would be more effective than text."*
+Be precise, selective, and focused on meaningful improvements.
 

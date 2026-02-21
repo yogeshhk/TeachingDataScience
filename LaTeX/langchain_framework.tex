@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large LangChain Framework Components}
+{\Large Core Framework}
 \end{center}
 \end{frame}
 
@@ -98,7 +98,7 @@ For standalone model \lstinline|init_chat_model|
 from langchain.chat_models import init_chat_model  # Still valid in v1
 # OR use provider-specific import (recommended)
 from langchain_groq import ChatGroq
-from langchain.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 
 # Initialize Groq LLM (ensure GROQ_API_KEY is set in your environment)
@@ -308,113 +308,6 @@ print(result)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Document Loaders \& Retrievers}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Document Loading}
-
-\textbf{Wide Range of Loaders:}
-\begin{itemize}
-\item \textbf{Files}: PDF, Word, PowerPoint, CSV, Markdown
-\item \textbf{Web}: HTML, URLs, sitemaps, web scraping
-\item \textbf{Cloud}: S3, GCS, Google Drive, Notion
-\item \textbf{Databases}: SQL, MongoDB, Elasticsearch
-\item \textbf{Communication}: Email, Slack, Discord
-\item \textbf{Code}: GitHub, GitLab, Jupyter notebooks
-\end{itemize}
-
-\textbf{Modern Document Processing:}
-\begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain_community.document_loaders import (
-    PyPDFLoader,
-    WebBaseLoader,
-    TextLoader)
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-loader = PyPDFLoader("document.pdf")
-documents = loader.load()
-
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200)
-	
-chunks = splitter.split_documents(documents)
-\end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Vector Stores \& Retrievers}
-
-\textbf{Popular Vector Stores:}
-\begin{itemize}
-\item \textbf{Chroma}: Open-source, local-first, easy setup
-\item \textbf{Pinecone}: Managed service, production-ready
-\item \textbf{Weaviate}: GraphQL API, hybrid search
-\item \textbf{Qdrant}: High performance, filtering support
-\item \textbf{LanceDB}: Serverless, embedded option
-\end{itemize}
-
-\textbf{Complete Example with Chroma \& HuggingFace Embeddings:}
-\begin{lstlisting}[language=python, basicstyle=\tiny]
-# from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import WebBaseLoader
-
-loader = WebBaseLoader("https://example.com/article")
-docs = loader.load()
-
-splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-splits = splitter.split_documents(docs)
-
-vectorstore = Chroma.from_documents(
-    documents=splits,
-    embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"))
-
-retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-\end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Retrieval Strategies}
-
-\textbf{Different Retrieval Methods:}
-\begin{lstlisting}[language=python, basicstyle=\tiny]
-# Returns the most semantically similar documents to the user 
-# query based purely on vector distance (top-k closest matches).
-retriever = vectorstore.as_retriever(search_type="similarity", 
-			search_kwargs={"k": 4})
-
-# MMR (Maximum Marginal Relevance)Balances relevance and diversity, 
-# ensuring the retrieved documents aren't repetitive by reducing semantic redundancy among the top-k results.
-retriever = vectorstore.as_retriever(search_type="mmr", 
-			search_kwargs={"k": 4, "fetch_k": 20})
-
-# Filters out documents that fall below a minimum similarity score, 
-# ensuring only high-confidence matches are returned (still limited by k)
-retriever = vectorstore.as_retriever(search_type = "similarity_score_threshold",
-    search_kwargs={"score_threshold": 0.8, "k": 4})
-
-# Manual search: Directly retrieves the top-k most similar documents 
-# without using a retriever wrapper same as search_type "similarity" but explicitly called.
-results = vectorstore.similarity_search("What is machine learning?", k=3)
-
-# With scores: Same as above but also returns the similarity 
-# score for each document, helping you inspect retrieval quality
-results_with_scores = vectorstore.similarity_search_with_score(
-    "What is machine learning?", k=3)
-\end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
 {\Large Chains with LCEL}
 \end{center}
 \end{frame}
@@ -422,45 +315,59 @@ results_with_scores = vectorstore.similarity_search_with_score(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Modern LangChain: LCEL (LangChain Expression Language)}
 
-\textbf{What is LCEL?}
-\begin{itemize}
-\item Modern, declarative way to build chains (introduced 2023)
-\item Uses pipe operator \texttt{|} to chain components
-\item Replaces old \texttt{LLMChain} pattern
-\item Built-in streaming, async, and batch support
-\end{itemize}
+\begin{columns}
+  \begin{column}{0.5\textwidth}
+    \textbf{What is LCEL?}
+    \begin{itemize}
+    \item Pipe operator \texttt{|} composes components
+    \item Replaces deprecated \texttt{LLMChain}
+    \item Built-in streaming, async, batch
+    \item Better tracing and observability
+    \end{itemize}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    \textbf{Core Runnables:}
+    \begin{itemize}
+    \item \texttt{RunnablePassthrough} — pass data through
+    \item \texttt{RunnableParallel} — execute in parallel
+    \item \texttt{RunnableLambda} — custom functions
+    \item \texttt{RunnableBranch} — conditional logic
+    \end{itemize}
+  \end{column}
+\end{columns}
 
-\textbf{Key Benefits:}
-\begin{itemize}
-\item \textbf{Simplicity}: More readable and concise
-\item \textbf{Streaming}: Built-in streaming by default
-\item \textbf{Async}: Native async/await support
-\item \textbf{Observability}: Better tracing and debugging
-\item \textbf{Fallbacks}: Easy error handling and retries
-\end{itemize}
+\vspace{0.3cm}
+\textbf{Anatomy of an LCEL chain:}
+\begin{lstlisting}[language=python,basicstyle=\tiny]
+chain = prompt | llm | output_parser   # left-to-right data flow
+result = chain.invoke({...})            # sync
+result = await chain.ainvoke({...})     # async
+for chunk in chain.stream({...}): ...  # streaming
+\end{lstlisting}
+
 
 {\tiny (Ref: LangChain LCEL Documentation)}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\frametitle{Modern Chains: LCEL Overview}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}\frametitle{Modern Chains: LCEL Overview}
 
-\textbf{What Changed?}
-\begin{itemize}
-\item \textbf{Old}: \texttt{LLMChain}, \texttt{SimpleSequentialChain} (Deprecated)
-\item \textbf{New}: LCEL with pipe operator \texttt{|}
-\end{itemize}
+% \textbf{What Changed?}
+% \begin{itemize}
+% \item \textbf{Old}: \texttt{LLMChain}, \texttt{SimpleSequentialChain} (Deprecated)
+% \item \textbf{New}: LCEL with pipe operator \texttt{|}
+% \end{itemize}
 
 
-\textbf{Core Runnables:}
-\begin{itemize}
-\item \texttt{RunnablePassthrough}: Pass data through
-\item \texttt{RunnableParallel}: Execute in parallel
-\item \texttt{RunnableLambda}: Custom functions
-\item \texttt{RunnableBranch}: Conditional execution
-\end{itemize}
+% \textbf{Core Runnables:}
+% \begin{itemize}
+% \item \texttt{RunnablePassthrough}: Pass data through
+% \item \texttt{RunnableParallel}: Execute in parallel
+% \item \texttt{RunnableLambda}: Custom functions
+% \item \texttt{RunnableBranch}: Conditional execution
+% \end{itemize}
 
-\end{frame}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{LCEL: Basic Chain Patterns}
@@ -473,7 +380,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 prompt = ChatPromptTemplate.from_template("Tell me a joke about {topic}")
-model = ChatGroq(model_name="gemma-7b-it")
+model = ChatGroq(model_name="gemma2-9b-it")
 output_parser = StrOutputParser()
 
 chain = prompt | model | output_parser
@@ -483,14 +390,14 @@ result = chain.invoke({"topic": "programming"})
 # Step 1: Generate topic
 topic_chain = (
     ChatPromptTemplate.from_template("Suggest a {genre} topic")
-    | ChatGroq(model_name="gemma-7b-it")
+    | ChatGroq(model_name="gemma2-9b-it")
     | StrOutputParser()
 )
 
 # Step 2: Write content
 content_chain = (
     ChatPromptTemplate.from_template("Write a story about: {topic}")
-    | ChatGroq(model_name="llama3-8b-8192")
+    | ChatGroq(model_name="meta-llama/llama-4-scout-17b-16e-instruct")
     | StrOutputParser()
 )
 
@@ -501,41 +408,41 @@ result = full_chain.invoke({"genre": "science fiction"})
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LCEL: RAG Chain Pattern}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{LCEL: RAG Chain Pattern}
 
-\textbf{Retrieval Augmented Generation:}
-\begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain_core.runnables import RunnablePassthrough
-from langchain_groq import ChatGroq
-# Assume 'retriever' from previous slide is defined
+% \textbf{Retrieval Augmented Generation:}
+% \begin{lstlisting}[language=python, basicstyle=\tiny]
+% from langchain_core.runnables import RunnablePassthrough
+% from langchain_groq import ChatGroq
+% # Assume 'retriever' from previous slide is defined
 
-# Format documents
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
+% # Format documents
+% def format_docs(docs):
+    % return "\n\n".join(doc.page_content for doc in docs)
 
-# RAG chain
-rag_chain = (
-    {
-        "context": retriever | format_docs,
-        "question": RunnablePassthrough()
-    }
-    | ChatPromptTemplate.from_template("""
-        Answer the question based on the context:
+% # RAG chain
+% rag_chain = (
+    % {
+        % "context": retriever | format_docs,
+        % "question": RunnablePassthrough()
+    % }
+    % | ChatPromptTemplate.from_template("""
+        % Answer the question based on the context:
         
-        Context: {context}
+        % Context: {context}
         
-        Question: {question}
-    """)
-    | ChatGroq(model_name="llama3-8b-8192")
-    | StrOutputParser()
-)
+        % Question: {question}
+    % """)
+    % | ChatGroq(model_name="meta-llama/llama-4-scout-17b-16e-instruct")
+    % | StrOutputParser()
+% )
 
-# Use it
-answer = rag_chain.invoke("What is LangChain?")
-\end{lstlisting}
+% # Use it
+% answer = rag_chain.invoke("What is LangChain?")
+% \end{lstlisting}
 
-\end{frame}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{LCEL: Parallel Execution}
@@ -556,15 +463,15 @@ from langchain_core.output_parsers import StrOutputParser
 # Define parallel tasks
 parallel_chain = RunnableParallel(
     summary=ChatPromptTemplate.from_template("Summarize: {text}")
-    | ChatGroq(model_name="llama3-8b-8192")
+    | ChatGroq(model_name="meta-llama/llama-4-scout-17b-16e-instruct")
     | StrOutputParser(),
     
     keywords=ChatPromptTemplate.from_template("Extract keywords: {text}")
-    | ChatGroq(model_name="gemma-7b-it")
+    | ChatGroq(model_name="gemma2-9b-it")
     | StrOutputParser(),
     
     sentiment=ChatPromptTemplate.from_template("Analyze sentiment: {text}")
-    | ChatGroq(model_name="gemma-7b-it")
+    | ChatGroq(model_name="gemma2-9b-it")
     | StrOutputParser()
 )
 
@@ -582,7 +489,7 @@ results = parallel_chain.invoke({"text": "Long document content..."})
 from langchain_groq import ChatGroq
 from langchain_anthropic import ChatAnthropic
 
-primary = ChatGroq(model_name="llama3-70b-8192")
+primary = ChatGroq(model_name="llama-3.3-70b-versatile")
 fallback = ChatAnthropic(model="claude-3-opus-20240229")
 
 chain = prompt | primary.with_fallbacks([fallback]) | output_parser
@@ -593,7 +500,7 @@ from langchain_core.runnables import RunnableRetry
 chain_with_retry = (
     prompt
     | RunnableRetry(max_attempts=3, wait_exponential_jitter=True)
-    | ChatGroq(model_name="gemma-7b-it")
+    | ChatGroq(model_name="gemma2-9b-it")
     | output_parser
 )
 
@@ -619,7 +526,7 @@ chain = prompt | model | RunnableLambda(handle_errors)
 // Stream Tokens as Generated:
 from langchain_groq import ChatGroq
 # Assume prompt and output_parser are defined
-chain = prompt | ChatGroq(model_name="gemma-7b-it") | StrOutputParser()
+chain = prompt | ChatGroq(model_name="gemma2-9b-it") | StrOutputParser()
 
 # Stream output
 for chunk in chain.stream({"topic": "AI"}):
@@ -648,7 +555,7 @@ async for event in chain.astream_events({"topic": "AI"}, version="v1"):
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Memory}
+{\Large Memory (a bit old, update, TBD)}
 \end{center}
 \end{frame}
 
@@ -762,6 +669,540 @@ print(f"Stored messages: {len(history['history'])}")  # Will be 6 (3 pairs)
 \end{frame}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Output Parsers}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Output Parsers Overview}
+
+\textbf{Why Output Parsers?}
+\begin{itemize}
+\item LLMs return unstructured text
+\item Applications need structured data
+\item Parsers extract and validate output
+\end{itemize}
+
+\textbf{Common Parser Types:}
+\begin{itemize}
+\item \textbf{StrOutputParser}: Basic string extraction
+\item \textbf{JsonOutputParser}: Parse JSON responses
+\item \textbf{PydanticOutputParser}: Structured data with validation
+\item \textbf{StructuredOutputParser}: Multiple fields
+\item \textbf{CommaSeparatedListOutputParser}: Lists
+\end{itemize}
+
+\textbf{Modern Best Practice:}
+\begin{itemize}
+\item Use OpenAI's \texttt{with\_structured\_output()} when possible
+\item More reliable than prompt-based parsing
+\item Leverages function calling internally
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Structured Output: Modern Approach}
+
+\textbf{Benefits:}
+\begin{itemize}
+\item Type-safe responses
+\item Automatic validation
+\item More reliable than prompt-based parsing
+\end{itemize}
+
+
+% \textbf{Using with\_structured\_output():}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain_groq import ChatGroq
+from pydantic import BaseModel, Field
+
+# Define output schema
+class Person(BaseModel):
+    name: str = Field(description="Person's name")
+    age: int = Field(description="Person's age")
+    occupation: str = Field(description="Person's job")
+
+# Create model with structured output (relies on tool-calling)
+llm = ChatGroq(model_name="llama-3.3-70b-versatile")
+structured_llm = llm.with_structured_output(Person)
+
+# Use in chain
+response = structured_llm.invoke(
+    "Tell me about a software engineer named Alice who is 28"
+)
+
+# Response is a Pydantic object
+print(response.name)
+print(response.age)
+print(response.occupation)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pydantic Output Parser (Alternative)}
+
+% \textbf{When with\_structured\_output() Not Available:}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain.output_parsers import PydanticOutputParser
+from langchain_groq import ChatGroq
+from pydantic import BaseModel, Field, validator
+from typing import List
+
+class MovieReview(BaseModel):
+    title: str = Field(description="Movie title")
+    rating: int = Field(description="Rating from 1-10")
+   
+parser = PydanticOutputParser(pydantic_object=MovieReview)
+
+# Add to prompt
+prompt = ChatPromptTemplate.from_template("""
+Review the movie: {movie}
+
+{format_instructions}""")
+
+chain = (prompt.partial(format_instructions=parser.get_format_instructions())
+    | ChatGroq(model_name="gemma2-9b-it") | parser)
+
+result = chain.invoke({"movie": "Inception"})
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Output Parser Error Handling}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain_groq import ChatGroq
+# Assume 'parser' is a defined PydanticOutputParser
+
+// OutputFixingParser (Auto-fix Errors):
+from langchain.output_parsers import OutputFixingParser
+
+# If parsing fails, use LLM to fix
+fixing_parser = OutputFixingParser.from_llm(
+    parser=parser,
+    llm=ChatGroq(model_name="gemma2-9b-it")
+)
+
+// Automatically fixes malformed output
+# result = fixing_parser.parse(malformed_output)
+
+// RetryOutputParser (Retry with Context):
+from langchain.output_parsers import RetryWithErrorOutputParser
+
+retry_parser = RetryWithErrorOutputParser.from_llm(
+    parser=parser,
+    llm=ChatGroq(model_name="meta-llama/llama-4-scout-17b-16e-instruct")
+)
+
+# Retries with both output and original prompt
+# result = retry_parser.parse_with_prompt(...)
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Retrieval Augmented Generation (RAG)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{RAG: Why LLMs Alone Are Not Enough}
+
+\begin{columns}
+  \begin{column}{0.6\textwidth}
+    \textbf{The Problem:}
+    \begin{itemize}
+    \item LLMs have a fixed knowledge cutoff
+    \item They cannot access your private data
+    \item Fine-tuning is expensive \& slow
+    \item Hallucinations with out-of-scope queries
+    \end{itemize}
+    \vspace{0.4cm}
+    \textbf{RAG Solution:}
+    \begin{itemize}
+    \item Retrieve relevant documents at query time
+    \item Inject them into the prompt as context
+    \item LLM answers from real, up-to-date content
+    \item No fine-tuning required
+    \end{itemize}
+  \end{column}
+  \begin{column}{0.4\textwidth}
+    \begin{center}
+    \fcolorbox{blue}{blue!10}{\parbox{\linewidth}{
+      \centering
+      \textbf{Without RAG}\\
+      User asks about Q1 2026 report\\
+      $\downarrow$\\
+      LLM: ``I have no data after Sept 2025''
+    }}
+    \vspace{0.4cm}
+    \fcolorbox{green}{green!10}{\parbox{\linewidth}{
+      \centering
+      \textbf{With RAG}\\
+      User asks about Q1 2026 report\\
+      $\downarrow$ retrieve Q1 PDF chunks\\
+      LLM: ``Revenue was \$2.4B, up 12\%...''
+    }}
+    \end{center}
+  \end{column}
+\end{columns}
+
+{\tiny (Ref: Lewis et al., ``Retrieval-Augmented Generation'', NeurIPS 2020)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{RAG Pipeline: Two-Phase Architecture}
+
+\begin{columns}
+  \begin{column}{0.48\textwidth}
+    \textbf{Phase 1 --- Indexing (Offline):}
+    \begin{enumerate}
+    \item \textbf{Load}: Ingest raw documents
+    \item \textbf{Split}: Chunk into overlapping segments
+    \item \textbf{Embed}: Convert text to vectors
+    \item \textbf{Store}: Persist in vector database
+    \end{enumerate}
+    \vspace{0.3cm}
+    \texttt{DocumentLoader $\to$ TextSplitter}\\
+    \texttt{$\to$ EmbeddingModel $\to$ VectorStore}
+  \end{column}
+  \begin{column}{0.48\textwidth}
+    \textbf{Phase 2 --- Retrieval \& Generation (Online):}
+    \begin{enumerate}
+    \item \textbf{Query}: User sends a question
+    \item \textbf{Retrieve}: Embed query, find top-k chunks
+    \item \textbf{Augment}: Inject chunks into prompt
+    \item \textbf{Generate}: LLM produces grounded answer
+    \end{enumerate}
+    \vspace{0.3cm}
+    \texttt{Retriever $\to$ PromptTemplate}\\
+    \texttt{$\to$ LLM $\to$ OutputParser}
+  \end{column}
+\end{columns}
+
+\vspace{0.3cm}
+\begin{center}
+\fcolorbox{green}{green!10}{\parbox{0.85\linewidth}{\centering
+  \textbf{Key insight:} RAG = updatable external memory for LLMs.
+  No fine-tuning. Knowledge is always current.
+}}
+\end{center}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{}
+% \begin{center}
+% {\Large Document Loaders \& Retrievers}
+% \end{center}
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Document Loading}
+
+% \textbf{Wide Range of Loaders:}
+% \begin{itemize}
+% \item \textbf{Files}: PDF, Word, PowerPoint, CSV, Markdown
+% \item \textbf{Web}: HTML, URLs, sitemaps, web scraping
+% \item \textbf{Cloud}: S3, GCS, Google Drive, Notion
+% \item \textbf{Databases}: SQL, MongoDB, Elasticsearch
+% \item \textbf{Communication}: Email, Slack, Discord
+% \item \textbf{Code}: GitHub, GitLab, Jupyter notebooks
+% \end{itemize}
+
+% \textbf{Modern Document Processing:}
+% \begin{lstlisting}[language=python, basicstyle=\tiny]
+% from langchain_community.document_loaders import (
+    % PyPDFLoader,
+    % WebBaseLoader,
+    % TextLoader)
+% from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+% loader = PyPDFLoader("document.pdf")
+% documents = loader.load()
+
+% splitter = RecursiveCharacterTextSplitter(
+    % chunk_size=1000,
+    % chunk_overlap=200)
+	
+% chunks = splitter.split_documents(documents)
+% \end{lstlisting}
+
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Step 1: Document Loaders}
+
+\textbf{Wide range of sources (langchain-community):}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Source} & \textbf{Loader} & \textbf{Install} \\
+\hline
+PDF files & \texttt{PyPDFLoader} & langchain-community \\
+Web pages & \texttt{WebBaseLoader} & langchain-community \\
+Plain text & \texttt{TextLoader} & langchain-community \\
+Word docs & \texttt{Docx2txtLoader} & langchain-community \\
+Any format & \texttt{UnstructuredLoader} & unstructured \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{lstlisting}[language=python,basicstyle=\tiny]
+from langchain_community.document_loaders import (
+    PyPDFLoader, WebBaseLoader, TextLoader)
+
+# Each returns a list of Document objects with .page_content and .metadata
+pdf_docs   = PyPDFLoader("report.pdf").load()
+web_docs   = WebBaseLoader("https://docs.langchain.com").load()
+text_docs  = TextLoader("notes.txt").load()
+
+# Inspect
+print(pdf_docs[0].metadata)  # {'source': 'report.pdf', 'page': 0}
+print(pdf_docs[0].page_content[:200])
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Step 2: Text Splitters}
+
+\textbf{Why chunking matters:}
+\begin{itemize}
+\item LLMs have context-window limits --- chunks must fit
+\item Too small: loses context. Too large: retrieves noise
+\item \texttt{chunk\_overlap} preserves sentences across boundaries
+\item \textbf{Rule of thumb:} chunk\_size $\approx$ 1/4 of your model's context window.
+  Use chunk\_overlap $\approx$ 10--20\% of chunk\_size.
+\end{itemize}
+
+\begin{lstlisting}[language=python,basicstyle=\tiny]
+from langchain_text_splitters import (
+    RecursiveCharacterTextSplitter,  # Best default: splits on \n\n, \n, space
+    MarkdownHeaderTextSplitter,      # Respects ## headers
+    RecursiveJsonSplitter,           # For structured JSON
+)
+
+# Recommended starting point
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,    # Max characters per chunk
+    chunk_overlap=200,  # Overlap to preserve context at boundaries
+    length_function=len,
+)
+
+chunks = splitter.split_documents(docs)
+print(f"Split {len(docs)} docs into {len(chunks)} chunks")
+print(f"Avg chunk size: {sum(len(c.page_content) for c in chunks)//len(chunks)} chars")
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Step 3: Embeddings \& Vector Stores}
+
+\begin{columns}
+  \begin{column}{0.5\textwidth}
+    \textbf{Embedding Models:}
+    \begin{itemize}
+    \item Convert text $\to$ dense float vector
+    \item Semantically similar text = close vectors
+    \item Choice affects retrieval quality
+    \end{itemize}
+    % \vspace{0.2cm}
+    % \begin{tabular}{|l|l|}
+    % \hline
+    % \textbf{Model} & \textbf{Best For} \\
+    % \hline
+    % all-MiniLM-L6-v2 & Fast, local, free \\
+    % text-embedding-3-small & OpenAI, high quality \\
+    % nomic-embed-text & Long context \\
+    % \hline
+    % \end{tabular}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+  
+    \textbf{Vector Store Comparison:}
+    \begin{itemize}
+    \item \textbf{Chroma} --- local, zero-config
+    \item \textbf{Pinecone} --- managed, scalable
+    \item \textbf{Weaviate} --- hybrid search
+    \item \textbf{Qdrant} --- filtering support
+    \end{itemize}
+  \end{column}
+\end{columns}
+
+\begin{lstlisting}[language=python,basicstyle=\tiny]
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
+
+# 1. Instantiate embedding model (runs locally, no API key needed)
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+
+# 2. Embed chunks and store in vector DB (one-time indexing step)
+vectorstore = Chroma.from_documents(
+    documents=chunks,
+    embedding=embeddings,
+    persist_directory="./chroma_db"  # Persist to disk
+)
+print(f"Indexed {vectorstore._collection.count()} chunks")
+\end{lstlisting}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Vector Stores \& Retrievers}
+
+% \textbf{Popular Vector Stores:}
+% \begin{itemize}
+% \item \textbf{Chroma}: Open-source, local-first, easy setup
+% \item \textbf{Pinecone}: Managed service, production-ready
+% \item \textbf{Weaviate}: GraphQL API, hybrid search
+% \item \textbf{Qdrant}: High performance, filtering support
+% \item \textbf{LanceDB}: Serverless, embedded option
+% \end{itemize}
+
+% \textbf{Complete Example with Chroma \& HuggingFace Embeddings:}
+% \begin{lstlisting}[language=python, basicstyle=\tiny]
+% # from langchain_community.embeddings import HuggingFaceEmbeddings
+% from langchain_huggingface import HuggingFaceEmbeddings
+% from langchain_community.vectorstores import Chroma
+% from langchain_text_splitters import RecursiveCharacterTextSplitter
+% from langchain_community.document_loaders import WebBaseLoader
+
+% loader = WebBaseLoader("https://example.com/article")
+% docs = loader.load()
+
+% splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+% splits = splitter.split_documents(docs)
+
+% vectorstore = Chroma.from_documents(
+    % documents=splits,
+    % embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"))
+
+% retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+% \end{lstlisting}
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Retrieval Strategies}
+
+% \textbf{Different Retrieval Methods:}
+% \begin{lstlisting}[language=python, basicstyle=\tiny]
+% # Returns the most semantically similar documents to the user 
+% # query based purely on vector distance (top-k closest matches).
+% retriever = vectorstore.as_retriever(search_type="similarity", 
+			% search_kwargs={"k": 4})
+
+% # MMR (Maximum Marginal Relevance)Balances relevance and diversity, 
+% # ensuring the retrieved documents aren't repetitive by reducing semantic redundancy among the top-k results.
+% retriever = vectorstore.as_retriever(search_type="mmr", 
+			% search_kwargs={"k": 4, "fetch_k": 20})
+
+% # Filters out documents that fall below a minimum similarity score, 
+% # ensuring only high-confidence matches are returned (still limited by k)
+% retriever = vectorstore.as_retriever(search_type = "similarity_score_threshold",
+    % search_kwargs={"score_threshold": 0.8, "k": 4})
+
+% # Manual search: Directly retrieves the top-k most similar documents 
+% # without using a retriever wrapper same as search_type "similarity" but explicitly called.
+% results = vectorstore.similarity_search("What is machine learning?", k=3)
+
+% # With scores: Same as above but also returns the similarity 
+% # score for each document, helping you inspect retrieval quality
+% results_with_scores = vectorstore.similarity_search_with_score(
+    % "What is machine learning?", k=3)
+% \end{lstlisting}
+
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Step 4: Retrieval Strategies}
+
+\begin{center}
+\begin{tabular}{|p{3cm}|p{2cm}|p{4cm}|}
+\hline
+\textbf{Type} & \textbf{search\_type} & \textbf{When to Use} \\
+\hline
+Similarity & \texttt{"similarity"} & General purpose (default) \\
+MMR & \texttt{"mmr"} & Avoid repetitive chunks \\
+Score threshold & \texttt{"similarity
+\_score\_threshold"} & Only high-confidence results \\
+Hybrid & BM25 + vector & Keyword + semantic needed \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{lstlisting}[language=python,basicstyle=\tiny]
+# Default: top-k semantic similarity
+retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+
+# MMR: diversity-aware retrieval (avoids 4 near-identical chunks)
+retriever = vectorstore.as_retriever(
+    search_type="mmr",
+    search_kwargs={"k": 4, "fetch_k": 20, "lambda_mult": 0.5})
+
+# Score threshold: only return chunks above 80% similarity
+retriever = vectorstore.as_retriever(
+    search_type="similarity_score_threshold",
+    search_kwargs={"score_threshold": 0.8, "k": 4})
+
+# Hybrid search (BM25 + dense): requires langchain-community
+from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import EnsembleRetriever
+bm25 = BM25Retriever.from_documents(chunks, k=4)
+ensemble = EnsembleRetriever(retrievers=[bm25, retriever], weights=[0.5, 0.5])
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conversational RAG: Adding Memory}
+
+\textbf{Challenge:} Follow-up questions need conversation history.
+
+\begin{lstlisting}[language=python,basicstyle=\tiny]
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
+
+# Prompt aware of both context AND history
+prompt = ChatPromptTemplate.from_messages([
+    ("system", """Answer using the context below. If unsure, say so.
+    Context: {context}"""),
+    MessagesPlaceholder(variable_name="history"),
+    ("human", "{question}"),
+])
+
+rag_chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt | llm | StrOutputParser()
+)
+
+# Wrap with persistent session history
+store = {}
+conversational_rag = RunnableWithMessageHistory(
+    rag_chain,
+    lambda sid: store.setdefault(sid, ChatMessageHistory()),
+    input_messages_key="question",
+    history_messages_key="history",
+)
+
+# Multi-turn usage
+cfg = {"configurable": {"session_id": "user_42"}}
+print(conversational_rag.invoke("What is LangChain?", config=cfg))
+print(conversational_rag.invoke("Who created it?", config=cfg))  # uses history
+\end{lstlisting}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
@@ -920,7 +1361,7 @@ print(response["messages"][-1].content)
     % MessagesPlaceholder(variable_name="agent_scratchpad")
 % ])
 
-% llm = ChatGroq(model_name="llama3-70b-8192", temperature=0)
+% llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
 % agent = create_tool_calling_agent(llm, tools, prompt)
 
 % agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
@@ -948,7 +1389,7 @@ def add(a: int, b: int) -> int:
     return a + b
 
 # Bind tools to model
-llm = ChatGroq(model_name="llama3-8b-8192")
+llm = ChatGroq(model_name="meta-llama/llama-4-scout-17b-16e-instruct")
 llm_with_tools = llm.bind_tools([multiply, add])
 
 # Invoke
@@ -1004,143 +1445,6 @@ agent = create_agent(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Output Parsers}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Output Parsers Overview}
-
-\textbf{Why Output Parsers?}
-\begin{itemize}
-\item LLMs return unstructured text
-\item Applications need structured data
-\item Parsers extract and validate output
-\end{itemize}
-
-\textbf{Common Parser Types:}
-\begin{itemize}
-\item \textbf{StrOutputParser}: Basic string extraction
-\item \textbf{JsonOutputParser}: Parse JSON responses
-\item \textbf{PydanticOutputParser}: Structured data with validation
-\item \textbf{StructuredOutputParser}: Multiple fields
-\item \textbf{CommaSeparatedListOutputParser}: Lists
-\end{itemize}
-
-\textbf{Modern Best Practice:}
-\begin{itemize}
-\item Use OpenAI's \texttt{with\_structured\_output()} when possible
-\item More reliable than prompt-based parsing
-\item Leverages function calling internally
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Structured Output: Modern Approach}
-
-\textbf{Benefits:}
-\begin{itemize}
-\item Type-safe responses
-\item Automatic validation
-\item More reliable than prompt-based parsing
-\end{itemize}
-
-
-% \textbf{Using with\_structured\_output():}
-\begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain_groq import ChatGroq
-from pydantic import BaseModel, Field
-
-# Define output schema
-class Person(BaseModel):
-    name: str = Field(description="Person's name")
-    age: int = Field(description="Person's age")
-    occupation: str = Field(description="Person's job")
-
-# Create model with structured output (relies on tool-calling)
-llm = ChatGroq(model_name="llama3-70b-8192")
-structured_llm = llm.with_structured_output(Person)
-
-# Use in chain
-response = structured_llm.invoke(
-    "Tell me about a software engineer named Alice who is 28"
-)
-
-# Response is a Pydantic object
-print(response.name)
-print(response.age)
-print(response.occupation)
-\end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Pydantic Output Parser (Alternative)}
-
-% \textbf{When with\_structured\_output() Not Available:}
-\begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain.output_parsers import PydanticOutputParser
-from langchain_groq import ChatGroq
-from pydantic import BaseModel, Field, validator
-from typing import List
-
-class MovieReview(BaseModel):
-    title: str = Field(description="Movie title")
-    rating: int = Field(description="Rating from 1-10")
-   
-parser = PydanticOutputParser(pydantic_object=MovieReview)
-
-# Add to prompt
-prompt = ChatPromptTemplate.from_template("""
-Review the movie: {movie}
-
-{format_instructions}""")
-
-chain = (prompt.partial(format_instructions=parser.get_format_instructions())
-    | ChatGroq(model_name="gemma-7b-it") | parser)
-
-result = chain.invoke({"movie": "Inception"})
-\end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Output Parser Error Handling}
-
-\begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain_groq import ChatGroq
-# Assume 'parser' is a defined PydanticOutputParser
-
-// OutputFixingParser (Auto-fix Errors):
-from langchain.output_parsers import OutputFixingParser
-
-# If parsing fails, use LLM to fix
-fixing_parser = OutputFixingParser.from_llm(
-    parser=parser,
-    llm=ChatGroq(model_name="gemma-7b-it")
-)
-
-// Automatically fixes malformed output
-# result = fixing_parser.parse(malformed_output)
-
-// RetryOutputParser (Retry with Context):
-from langchain.output_parsers import RetryWithErrorOutputParser
-
-retry_parser = RetryWithErrorOutputParser.from_llm(
-    parser=parser,
-    llm=ChatGroq(model_name="llama3-8b-8192")
-)
-
-# Retries with both output and original prompt
-# result = retry_parser.parse_with_prompt(...)
-\end{lstlisting}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
 {\Large LangChain Ecosystem}
 \end{center}
 \end{frame}
@@ -1184,6 +1488,8 @@ retry_parser = RetryWithErrorOutputParser.from_llm(
     \end{itemize}
 \end{itemize}
 
+
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1226,6 +1532,39 @@ app = workflow.compile()
 
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{LangChain Core vs LangGraph: When to Use Each}
+
+\begin{center}
+\begin{tabular}{|p{4.5cm}|p{4.5cm}|}
+\hline
+\textbf{Use LangChain Core (LCEL)} & \textbf{Use LangGraph} \\
+\hline
+RAG pipelines (load-split-embed-retrieve-generate) &
+  Agents with retry loops \& branching \\
+Single-turn Q\&A with documents &
+  Human-in-the-loop approval \\
+Linear chain workflows &
+  Multi-agent collaboration \\
+Data extraction \& classification &
+  Long-running persistent workflows \\
+Chatbots with conversation memory &
+  Self-correcting agent systems \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.3cm}
+\begin{center}
+\fcolorbox{blue}{blue!10}{\parbox{0.85\linewidth}{\centering
+  \textbf{Rule:} If your workflow is a DAG (no cycles), use \textbf{LCEL}.\\
+  If your workflow has loops, conditionals, or agents that retry,\\
+  use \textbf{LangGraph}.
+}}
+\end{center}
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{LangServe: Deploy as API}
 \textbf{Automatic Features:}
@@ -1245,7 +1584,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 # Create chain
 prompt = ChatPromptTemplate.from_template("Tell me about {topic}")
-chain = prompt | ChatGroq(model_name="gemma-7b-it")
+chain = prompt | ChatGroq(model_name="gemma2-9b-it")
 
 # Create FastAPI app
 app = FastAPI(
@@ -1286,7 +1625,7 @@ os.environ["LANGCHAIN_PROJECT"] = "my-groq-project"
 
 # Now all chain executions are automatically traced
 prompt = ChatPromptTemplate.from_template("Tell me about {topic}")
-llm = ChatGroq(model_name="gemma-7b-it")
+llm = ChatGroq(model_name="gemma2-9b-it")
 output_parser = StrOutputParser()
 chain = prompt | llm | output_parser
 result = chain.invoke({"topic": "Large Language Models"})
@@ -1311,7 +1650,7 @@ result = chain.invoke({"topic": "Large Language Models"})
 from langchain_groq import ChatGroq
 from langchain_anthropic import ChatAnthropic
 
-primary = ChatGroq(model_name="llama3-70b-8192")
+primary = ChatGroq(model_name="llama-3.3-70b-versatile")
 fallback = ChatAnthropic(model="claude-3-opus-20240229")
 
 chain = prompt | primary.with_fallbacks([fallback]) | parser
@@ -1319,14 +1658,10 @@ chain = prompt | primary.with_fallbacks([fallback]) | parser
 // 2. Implement Retries:
 from langchain_core.runnables import RunnableRetry
 
-chain_with_retry = (
-    prompt
-    | RunnableRetry(
-        max_attempts=3,
-        wait_exponential_jitter=True
-    )
-    | ChatGroq(model_name="gemma-7b-it")
-    | parser
+# Correct: wrap the sub-chain to retry
+chain_with_retry = RunnableRetry(
+    bound=(prompt | ChatGroq(model_name='meta-llama/llama-4-scout-17b-16e-instruct') | parser),
+    max_attempts=3
 )
 
 // 3. Graceful Degradation:
@@ -1346,9 +1681,9 @@ except Exception as e:
 \textbf{Groq Models - Fast and Free Tier:}
 \begin{itemize}
 \item gemma2-9b-it: Ultra-fast, 8K context, great for chat
-\item llama3-8b-8192: Balanced, 8K context, general purpose
-\item llama3-70b-8192: Most capable, 8K context, complex tasks
-\item llama-3.1-8b-instant: Fastest, optimized for low latency
+\item meta-llama/llama-4-scout-17b-16e-instruct: Balanced, 8K context, general purpose
+\item llama-3.3-70b-versatile: Most capable, 8K context, complex tasks
+\item meta-llama/llama-4-scout-17b-16e-instruct: Fastest, optimized for low latency
 \item Groq billed by requests/day on free tier, not tokens
 \end{itemize}
 
@@ -1377,8 +1712,8 @@ token_count = len(tokenizer.encode(text))
 % Use Appropriate Models:
 % \begin{itemize}
 % \item gemma2-9b-it: Very fast, general purpose
-% \item llama3-8b-8192: Good balance of speed and capability
-% \item llama3-70b-8192: High quality, more powerful
+% \item meta-llama/llama-4-scout-17b-16e-instruct: Good balance of speed and capability
+% \item llama-3.3-70b-versatile: High quality, more powerful
 % \item Groq is billed by time, not tokens, but token limits still apply.
 % \end{itemize}
 
@@ -1428,7 +1763,7 @@ api_key = os.getenv("GROQ_API_KEY")
 // 2. Timeouts and Retries:
 from langchain_groq import ChatGroq
 
-llm = ChatGroq(model_name="llama3-8b-8192",
+llm = ChatGroq(model_name="meta-llama/llama-4-scout-17b-16e-instruct",
     temperature=0,
     max_retries=2,
     request_timeout=30) # seconds
@@ -1450,19 +1785,19 @@ def validate_input(user_input: str) -> str:
 \textbf{Groq Model Selection Guide:}
 
 \begin{center}
-\begin{tabular}{|l|l|l|}
+\begin{tabular}{|p{2cm}|p{3cm}|p{4cm}|}
 \hline
 \textbf{Use Case} & \textbf{Model} & \textbf{Why} \\
 \hline
 Chatbots & gemma2-9b-it & Fast, efficient, good reasoning \\
 \hline
-Summarization & llama3-8b-8192 & Balanced speed/quality \\
+Summarization & meta-llama/llama-4-scout-17b-16e-instruct & Balanced speed/quality \\
 \hline
-Complex reasoning & llama3-70b-8192 & Most capable \\
+Complex reasoning & llama-3.3-70b-versatile & Most capable \\
 \hline
-Ultra-low latency & llama-3.1-8b-instant & Optimized for speed \\
+Ultra-low latency & meta-llama/llama-4-scout-17b-16e-instruct & Optimized for speed \\
 \hline
-Code generation & llama3-70b-8192 & Better instruction following \\
+Code generation & llama-3.3-70b-versatile & Better instruction following \\
 \hline
 \end{tabular}
 \end{center}
@@ -1472,7 +1807,7 @@ Code generation & llama3-70b-8192 & Better instruction following \\
 from langchain_groq import ChatGroq
 
 primary = ChatGroq(model_name="gemma2-9b-it", temperature=0.7)
-fallback = ChatGroq(model_name="llama3-70b-8192", temperature=0.7)
+fallback = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0.7)
 
 chain = prompt | primary.with_fallbacks([fallback]) | parser
 \end{lstlisting}
