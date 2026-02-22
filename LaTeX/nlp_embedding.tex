@@ -57,7 +57,7 @@ Ability to include non-language information (culture, visuals, etc) will improve
   \begin{itemize}
     \item Word embedding = vector representation of a word
 	\item A word is `embedded' in $n$ dimensional space.
-	\item Once the words are vectors, their prosperities can be utilized.
+	\item Once the words are vectors, their properties can be utilized.
 	\item One such property is dot product giving cosine similarity.
 	\item Goal is to capture some sort of relationship in that space, be it meaning, morphology, context, or some other kind of relationship.
   \end{itemize}
@@ -264,10 +264,12 @@ Once tf-idf model is trained on a corpus of documents, what happens when a test 
 \begin{itemize}
 \item For just one test word, its tf would be 1, then do we just mulitply idf of that word from trained model? Are tf values in trained model irrelevant?
 \item Even for test document, does \lstinline|inverse_transform| take into account tfs of current test document or tfs within trained model?
-\item Answer: the test word or document is 'ADDED' to the corpus are retraining/calculation is done to arrive at meaningful numbers.
+\item Answer: The IDF (inverse document frequency) weights learned during training 
+are frozen and applied to test data. Only the TF (term frequency) values are 
+recalculated per test sample. Retraining does NOT occur.
 \end{itemize}
 
-{\tiny (Ref: https://stackoverflow.com/questions/55707577/how-does-tfidfvectorizer-compute-scores-on-test-data )}
+% {\tiny (Ref: https://stackoverflow.com/questions/55707577/how-does-tfidfvectorizer-compute-scores-on-test-data )}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -608,6 +610,24 @@ Two major learning approaches:
 
 \end{frame}
 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{CBOW: Architecture \& Training}
+% \begin{itemize}
+  % \item \textbf{Goal:} Predict target word $w_t$ from context words $\{w_{t-k},\ldots,w_{t+k}\}$
+  % \item \textbf{Architecture:} Input (one-hot) $\rightarrow$ Projection (average) $\rightarrow$ Output (softmax)
+  % \item \textbf{Objective:} Maximise $\displaystyle\frac{1}{T}\sum_{t=1}^{T}\log P\!\left(w_t \mid w_{t-k},\ldots,w_{t+k}\right)$
+  % \item Context vectors are \textit{averaged} before predicting — faster, smoother
+  % \item \textbf{Best for:} Smaller datasets, frequent words, faster training
+% \end{itemize}
+
+% \begin{lstlisting}[language=Python]
+% from gensim.models import Word2Vec
+% # sg=0  ->  CBOW
+% model = Word2Vec(sentences, vector_size=100,
+                 % window=5, sg=0, min_count=2)
+% \end{lstlisting}
+% \end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Skip-Gram}
@@ -618,6 +638,43 @@ Two major learning approaches:
 
 {\tiny (Ref:NLP — Word Embedding \& GloVe - Jonathan Hui )}
 
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Skip-Gram: Architecture \& Training}
+% \begin{itemize}
+  % \item \textbf{Goal:} Given word $w_t$, predict each context word $w_{t+j}$
+  % \item \textbf{Objective:} Maximise $\displaystyle\frac{1}{T}\sum_{t=1}^{T}\sum_{\substack{j=-k \\ j\neq 0}}^{k}\log P\!\left(w_{t+j} \mid w_t\right)$
+  % \item \textbf{Negative Sampling (NS):} Replace full softmax --- sample $k$ noise words as negatives; reduces compute dramatically
+  % \item Each step updates the target word vector + $k$ negative vectors only
+  % \item \textbf{Best for:} Large corpora, rare words, richer semantic relations
+% \end{itemize}
+
+% \begin{lstlisting}[language=Python]
+% from gensim.models import Word2Vec
+% # sg=1 -> Skip-Gram, negative sampling
+% model = Word2Vec(sentences, vector_size=100,
+                 % window=5, sg=1, negative=5,
+                 % min_count=2)
+% \end{lstlisting}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CBOW vs Skip-Gram: Quick Comparison}
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Aspect} & \textbf{CBOW} & \textbf{Skip-Gram} \\
+\hline
+Predicts & Target from context & Context from target \\
+Training speed & Faster & Slower \\
+Rare words & Weaker & Stronger \\
+Dataset size & Small--medium & Large \\
+\hline
+\end{tabular}
+\end{center}
+\vspace{0.3em}
+{\small Rule of thumb: use \textbf{Skip-Gram} for downstream NLP tasks; use \textbf{CBOW} when training speed matters.}
 \end{frame}
 
 
@@ -781,11 +838,12 @@ Two major learning approaches:
 \item Example: "bank" in "river bank" vs "bank account"
 \item Bi-directional LSTM architecture
 \item Character-level processing (no OOV issues)
-\item Layer-wise representations:
+\item Layer-wise representations (task-dependent):
   \begin{itemize}
-  \item Lower layers: syntax, POS tagging
-  \item Upper layers: semantics, word sense
+  \item Lower layers typically capture: syntax, morphology
+  \item Upper layers typically capture: semantics, word sense
   \end{itemize}
+\item Note: Task-specific analysis may reveal different patterns
 \end{itemize}
 \end{frame}
 
@@ -1055,6 +1113,109 @@ Modern - Word Vectors
 \begin{center}
 \includegraphics[width=0.7\linewidth,keepaspectratio]{word15}
 \end{center}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Case Study: Tweet Sentiment with Word2Vec}
+\begin{itemize}
+  \item \textbf{Task:} Classify tweets as positive / negative
+  \item \textbf{Pipeline:}
+  \begin{itemize}
+    \item Preprocess tweets (tokenise, remove noise)
+    \item Train a Word2Vec model on tweet corpus (gensim)
+    \item Represent each tweet as the \textit{mean} of its word vectors
+    \item Train a Logistic Regression classifier (scikit-learn)
+  \end{itemize}
+  \item Mean-pooling is simple yet competitive for short texts
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tweet Sentiment: Data \& Preprocessing}
+\begin{lstlisting}[language=Python]
+import re, nltk
+from nltk.tokenize import TweetTokenizer
+
+tokenizer = TweetTokenizer(strip_handles=True,
+                            reduce_len=True)
+
+def preprocess(tweet):
+    tweet = re.sub(r'http\S+', '', tweet)  # URLs
+    tweet = re.sub(r'#', '', tweet)        # hashtags
+    tokens = tokenizer.tokenize(tweet.lower())
+    return tokens
+
+# Example
+tweet = "Loving the new #NLP models! https://t.co/x"
+print(preprocess(tweet))
+# ['loving', 'the', 'new', 'nlp', 'models', '!']
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tweet Sentiment: Train Word2Vec}
+\begin{lstlisting}[language=Python]
+from gensim.models import Word2Vec
+
+# tweets_tokens: list of token lists
+model = Word2Vec(tweets_tokens,
+                 vector_size=100,
+                 window=5,
+                 sg=1,          # Skip-Gram
+                 negative=5,
+                 min_count=2,
+                 epochs=10)
+
+model.save("tweet_w2v.model")
+print(model.wv.most_similar("happy", topn=5))
+# [('glad', 0.91), ('thrilled', 0.89), ...]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tweet Sentiment: Feature Extraction \& Classification}
+\begin{lstlisting}[language=Python]
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+
+def tweet_vector(tokens, model, dim=100):
+    vecs = [model.wv[w] for w in tokens
+            if w in model.wv]
+    return np.mean(vecs, axis=0) if vecs \
+           else np.zeros(dim)
+
+X = np.array([tweet_vector(t, model)
+              for t in tweets_tokens])
+y = labels   # 1=positive, 0=negative
+
+from sklearn.model_selection import train_test_split
+X_tr, X_te, y_tr, y_te = train_test_split(
+    X, y, test_size=0.2, random_state=42)
+
+clf = LogisticRegression(max_iter=1000)
+clf.fit(X_tr, y_tr)
+print(classification_report(y_te, clf.predict(X_te)))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tweet Sentiment: Results \& Takeaways}
+\begin{itemize}
+  \item Typical accuracy on balanced tweet sets: \textbf{78--84\%}
+  \item \textbf{Key observations:}
+  \begin{itemize}
+    \item Mean-pooling discards word order --- sufficient for sentiment
+    \item Rare/slang words missed by \texttt{min\_count} degrade coverage
+    \item Pre-trained Twitter Word2Vec (GloVe-Twitter-100d) often outperforms custom training on small corpora
+  \end{itemize}
+  \item \textbf{Easy improvements:}
+  \begin{itemize}
+    \item TF-IDF weighted pooling instead of simple mean
+    \item Replace LR with SVM (\texttt{kernel='rbf'}) or MLP
+    \item Fine-tune a pre-trained BERTweet for state-of-the-art results
+  \end{itemize}
 \end{itemize}
 \end{frame}
 
