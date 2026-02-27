@@ -825,6 +825,59 @@ $$PE_{(pos,2i+1)} = \cos(pos/10000^{2i/d_{model}})$$
 \end{itemize}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Positional Encoding: Why Not Just Use the Index?}
+
+A natural question: why not encode position as a simple integer (1, 2, 3, \ldots)?
+
+\begin{itemize}
+\item \textbf{Magnitude problem:} Index 500 is 500$\times$ larger than index 1 --- the model would be dominated by position, not meaning.
+\item \textbf{Generalisation problem:} If training sentences have at most 100 tokens, the model has never seen index 250 and will fail on longer sequences.
+\item \textbf{Normalised index problem:} Dividing by max length means position 50 in a 100-word sentence has the \emph{same value} as position 5 in a 10-word sentence --- they are different positions conceptually.
+\end{itemize}
+
+\textbf{What we actually need from a position encoding:}
+\begin{enumerate}
+\item Each position must have a \emph{unique} signature (no two positions look the same).
+\item \emph{Distance} between nearby positions should be small and consistent.
+\item It must work for \emph{arbitrary sequence lengths}, including those longer than seen in training.
+\item Values should be \emph{bounded} to keep training numerically stable.
+\end{enumerate}
+
+The sinusoidal formula satisfies all four requirements simultaneously --- that is why it was chosen.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Positional Encoding: Step-by-Step for One Sentence}
+
+Consider sentence ``I love cats'' with embedding dim $d=4$.
+
+\textbf{Step 1 -- Token embedding} (learned or pre-trained):
+\begin{center}
+\texttt{I    = [0.34, -0.21,  1.21,  0.10]} \\
+\texttt{love = [-1.36, 0.98,  0.23, -0.55]} \\
+\texttt{cats = [ 0.54, 0.68,  0.49,  1.02]}
+\end{center}
+
+\textbf{Step 2 -- Compute positional encoding} for positions 0, 1, 2 (sine/cosine at two frequencies for $d=4$):
+\begin{center}
+\texttt{PE[0] = [sin(0), cos(0), sin(0), cos(0)] = [0.00, 1.00, 0.00, 1.00]} \\
+\texttt{PE[1] = [sin(1), cos(1), sin(0.01), cos(0.01)] $\approx$ [0.84, 0.54, 0.01, 1.00]} \\
+\texttt{PE[2] = [sin(2), cos(2), sin(0.02), cos(0.02)] $\approx$ [0.91, -0.42, 0.02, 1.00]}
+\end{center}
+
+\textbf{Step 3 -- Add} (element-wise):
+\begin{center}
+\texttt{I\_final    = [0.34+0.00, -0.21+1.00, 1.21+0.00, 0.10+1.00]} \\
+\texttt{love\_final = [-1.36+0.84, 0.98+0.54, 0.23+0.01, -0.55+1.00]} \\
+\texttt{cats\_final = [0.54+0.91, 0.68-0.42, 0.49+0.02, 1.02+1.00]}
+\end{center}
+
+These position-aware vectors are what actually enters the first encoder (or decoder) layer.
+
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
@@ -878,6 +931,56 @@ Process:
 \end{enumerate}
 
 This allows each token to "attend" to relevant tokens in the sequence.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why Q, K, V? Why Three? What Do They Mean?}
+
+A common question: why exactly three matrices --- Query, Key, Value --- and not two or four?
+
+\textbf{The database analogy explained deeply:}
+\begin{itemize}
+\item Imagine a library. Each book has a \textbf{title on the spine (Key)} --- a compact description of its content.
+\item When you enter looking for information, you carry a \textbf{search query (Query)} in mind.
+\item The \textbf{actual content of the book (Value)} is what you read once you find the right book.
+\end{itemize}
+
+\textbf{Why not just two (Q and V)?}
+Separating Key from Value allows the ``searchability signature'' of a token to differ from the ``information it provides''. A word like ``bank'' might be a weak query but a rich value (it can mean river-bank or finance-bank depending on context). Decoupling K and V gives the model more expressive power.
+
+\textbf{Why not four?}
+Three is the minimal decomposition that captures: \emph{what I seek} (Q), \emph{what I advertise} (K), \emph{what I give} (V). Adding a fourth matrix would be redundant --- it can always be absorbed into one of the existing three via a linear transformation.
+
+\textbf{Intuition for a word in a sentence:}
+\begin{itemize}
+\item Q = ``In this context, what kind of information am I looking for from others?''
+\item K = ``What information about me should I broadcast to others?''
+\item V = ``If someone attends to me, what actual content do I pass along?''
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{How Q, K, V Matrices are Computed Per Word}
+
+For each token embedding $x_i$ (already position-aware), three small vectors are produced by learned weight matrices:
+
+$$q_i = x_i \, W^Q, \quad k_i = x_i \, W^K, \quad v_i = x_i \, W^V$$
+
+\begin{itemize}
+\item $W^Q, W^K \in \mathbb{R}^{d_{\text{model}} \times d_k}$ and $W^V \in \mathbb{R}^{d_{\text{model}} \times d_v}$ (in the original paper $d_k = d_v = 64$, $d_{\text{model}}=512$).
+\item These weight matrices are \emph{learned during backpropagation} --- the model discovers what ``searching'' and ``advertising'' should look like.
+\item The same $W^Q, W^K, W^V$ are applied to every word position (shared weights), but each word gets its own $q_i, k_i, v_i$ because $x_i$ is different.
+\end{itemize}
+
+\textbf{Attention score for word $i$ attending to word $j$:}
+$$\text{score}(i,j) = \frac{q_i \cdot k_j}{\sqrt{d_k}}$$
+
+Divide by $\sqrt{d_k}$ to prevent dot products from growing too large and pushing softmax into saturation (near-zero gradients).
+
+\textbf{Final context vector for word $i$:}
+$$z_i = \sum_j \text{softmax}\!\left(\frac{q_i k_j^T}{\sqrt{d_k}}\right) v_j$$
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1257,6 +1360,29 @@ Having multiple self attention helps:
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multi-Head Attention: Why Multiple Heads?}
+
+A single attention head computes one weighted blend of all values. But language has \emph{multiple simultaneous relationships}:
+
+\begin{itemize}
+\item Head 1 might learn \textbf{syntactic subject-verb} agreement (``cats \ldots eat'').
+\item Head 2 might capture \textbf{coreference} (``it'' $\rightarrow$ ``animal'').
+\item Head 3 might track \textbf{positional proximity} (adjacent words).
+\item Head 4 might encode \textbf{semantic similarity} (synonyms attend to each other).
+\end{itemize}
+
+\textbf{Mechanism:} Run $h=8$ independent attention functions in parallel, each with its own $W^Q_i, W^K_i, W^V_i$ (each of dimension $d_{model}/h = 64$).
+
+$$\text{MultiHead}(Q,K,V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h) \, W^O$$
+$$\text{head}_i = \text{Attention}(Q W^Q_i,\; K W^K_i,\; V W^V_i)$$
+
+\textbf{Cost?} Same as single-head attention (heads are smaller) + one extra $W^O$ projection. The model gets richer representations for free.
+
+\textbf{Why 8 heads?} Empirical hyperparameter. GPT-3 uses 96 heads, BERT-base uses 12.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Self Attention in Summary}
 
 
@@ -1382,6 +1508,28 @@ This is how Self-Attention block generates, ``attended'' vectors.
 \begin{center}
 {\Large Feed Forward}
 \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feed Forward Network: Why is it Needed After Attention?}
+
+Self-attention is a \emph{linear} operation (weighted sum of values). A purely linear model --- no matter how deep --- is equivalent to a single linear layer. We need non-linearity to model complex, non-linear relationships between concepts.
+
+\textbf{Role of the FFN:}
+\begin{itemize}
+\item After attention, each token has gathered context from its neighbours. The FFN \emph{processes} that gathered context per token independently, adding capacity.
+\item Think of attention as: ``Which words should I look at?'' and FFN as: ``Now that I have the information, what do I compute with it?''
+\item The expand-then-compress structure ($512 \to 2048 \to 512$) creates a ``bottleneck with extra computation capacity'' --- the expanded layer acts like a large lookup table of learned transformations.
+\end{itemize}
+
+\textbf{Why the same weights for every position?}
+\begin{itemize}
+\item Weight sharing (like CNNs) reduces parameter count.
+\item The positional information is already baked into the vector from the embedding step, so the FFN can apply the same transformation meaningfully to any position.
+\end{itemize}
+
+{\tiny (ReLU replaced by GELU in most modern models like BERT, GPT-2 onwards)}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1750,6 +1898,53 @@ Now we can clearly see why masking is done.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cross-Attention: Why Is It Needed in the Decoder?}
+
+In an encoder-decoder model the decoder must generate output \emph{conditioned on the encoded input}. Without some mechanism to look at the encoder output, the decoder would generate purely from the target-side context and could produce an answer unrelated to the source.
+
+\textbf{What cross-attention does:}
+\begin{itemize}
+\item Query $Q$ comes from the decoder's \emph{current state} (what have I generated so far?).
+\item Keys $K$ and Values $V$ come from the encoder's \emph{final output} (what did the source say?).
+\item The dot product $q_{\text{dec}} \cdot k_{\text{enc}}^T$ measures relevance: which source token is most useful for predicting the \emph{current} target token?
+\end{itemize}
+
+\textbf{Example --- translating ``Je t'aime'' $\to$ ``I love you'':}
+\begin{itemize}
+\item When generating ``love'', the decoder query attends strongly to ``t'aime'' (the encoder key).
+\item When generating ``I'', the decoder query attends strongly to ``Je''.
+\end{itemize}
+
+\textbf{Why K and V from encoder, not decoder?}
+The encoder already produced a rich, bidirectional representation of the \emph{entire source sentence}. Pulling K and V from there gives the decoder \emph{global} source context at every generation step.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why Decoder Self-Attention is Masked (Causal Masking)}
+
+During \textbf{training} the decoder receives the \emph{entire target sequence at once} (teacher forcing) for speed. But the model must not ``cheat'' by looking at future tokens when predicting position $t$.
+
+\textbf{Solution: causal (look-ahead) mask.}
+
+\begin{itemize}
+\item Before the softmax in self-attention, set attention scores to $-\infty$ for all positions $j > i$ (future tokens).
+\item Softmax($-\infty$) $= 0$ --- those tokens are completely ignored.
+\item Each position can only attend to itself and \emph{earlier} positions.
+\end{itemize}
+
+\textbf{Why only up to known words:}
+\begin{itemize}
+\item At inference the model generates left-to-right; future tokens simply do \emph{not exist yet}.
+\item The mask enforces the same condition during training, ensuring training and inference behaviour are consistent.
+\item Without the mask, the model would trivially ``copy'' the answer from future positions and never learn language modelling.
+\end{itemize}
+
+\textbf{Note:} The encoder has \emph{no} such mask --- it is allowed (and required) to see the full source sentence bidirectionally.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Cross-Attention: Connecting Encoder and Decoder}
 
 Cross-attention is what connects the encoder output to the decoder:
@@ -2081,6 +2276,136 @@ For example – input: ``je suis etudiant'' and expected output: ``i am a studen
 \end{enumerate}
 
 \textbf{Trade-off:} Beam search explores multiple hypotheses but costs more computation (k times slower for beam width k).
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Inference: How Encoder, Decoder, and Both Work}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Encoder-Only at Inference (BERT-style)}
+
+\textbf{Architecture:} Only the encoder stack; no decoder.
+
+\textbf{What happens at inference:}
+\begin{enumerate}
+\item Tokenise the input sentence, add \texttt{[CLS]} at the start.
+\item Pass all tokens through 12 (or 24) bidirectional encoder layers simultaneously.
+\item The encoder \emph{sees every token in the sentence at once} --- no masking, no autoregression.
+\item The \texttt{[CLS]} token's output vector is used as the sentence-level representation for classification.
+\item For token-level tasks (NER, QA), use per-token output vectors.
+\end{enumerate}
+
+\textbf{Key property:} Fully parallel --- the entire sentence is processed in one forward pass. Very fast at inference.
+
+\textbf{Cannot generate text} --- there is no mechanism to produce a new token autoregressively.
+
+\textbf{Use-cases:} Sentiment classification, named entity recognition, extractive question answering (span selection).
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Decoder-Only at Inference (GPT-style)}
+
+\textbf{Architecture:} Only masked (causal) decoder layers; no encoder, no cross-attention.
+
+\textbf{What happens at inference --- step by step:}
+\begin{enumerate}
+\item User provides a \textbf{prompt}, e.g., ``The capital of France is''.
+\item Tokenise prompt into IDs: [464, 3361, 286, 4881, 318].
+\item Compute Q, K, V for all prompt tokens; causal mask ensures each token only sees prior tokens.
+\item Final decoder layer outputs a vector of size $d_{\text{model}}$ for the \emph{last} token position.
+\item Project via $W_{\text{vocab}}$ to logits over vocabulary (50,000 dimensions for GPT-2).
+\item Apply softmax; sample or argmax $\to$ next token ``Paris''.
+\item \textbf{Append} ``Paris'' to the sequence; repeat from step 3.
+\item Stop when \texttt{<EOS>} token is generated or max length reached.
+\end{enumerate}
+
+\textbf{KV-cache optimisation:} At step $n$, the K and V vectors for all previous tokens are cached and reused. Only the new token's K, V are computed --- making generation efficient.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GPT Inference: What Happens After the Prompt is Given}
+
+Let us trace ``Tell me a joke about cats'' through a GPT-style model in concrete detail.
+
+\textbf{Step 1 --- Tokenisation + Embedding:}
+Prompt $\to$ token IDs $\to$ embedding vectors $\to$ add positional encodings $\to$ position-aware vectors $x_1 \ldots x_T$.
+
+\textbf{Step 2 --- Forward pass through all decoder layers (each layer does):}
+\begin{itemize}
+\item \textbf{Masked Self-Attention:} Each token queries all \emph{previous} tokens (including itself). Causal mask ensures $x_T$ sees $x_1 \ldots x_T$ but not future positions (there are none yet).
+\item \textbf{Add \& Norm:} Residual connection + layer norm.
+\item \textbf{Feed Forward:} Non-linear per-token transformation.
+\item \textbf{Add \& Norm:} Again.
+\end{itemize}
+
+\textbf{Step 3 --- Output head:} Take last-position hidden state $h_T$; project to vocabulary logits; softmax.
+
+\textbf{Step 4 --- Token selection:}
+\begin{itemize}
+\item \textbf{Greedy:} pick $\arg\max$ (deterministic, often repetitive).
+\item \textbf{Temperature sampling:} divide logits by $\tau$ before softmax; $\tau < 1$ more focused, $\tau > 1$ more creative.
+\item \textbf{Top-$k$ / nucleus (top-$p$):} Sample only from the top $k$ tokens or the smallest set with cumulative probability $\geq p$.
+\end{itemize}
+
+\textbf{Step 5 --- Repeat} with the new token appended until \texttt{<EOS>}.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Encoder-Decoder at Inference (T5 / BART-style)}
+
+\textbf{Architecture:} Full encoder + full decoder with cross-attention.
+
+\textbf{Phase A --- Encode source (runs once only):}
+\begin{enumerate}
+\item Tokenise source text; pass through all bidirectional encoder layers in parallel.
+\item Encoder produces K, V matrices for every decoder layer --- fixed for the entire generation.
+\end{enumerate}
+
+\textbf{Phase B --- Autoregressive decoding (loop):}
+\begin{enumerate}
+\item Decoder starts with \texttt{<bos>} token.
+\item Masked self-attention over generated tokens so far.
+\item \textbf{Cross-attention:} decoder Q vs encoder K, V --- source context injected at every step.
+\item FFN + output projection $\to$ next token probabilities.
+\item Append predicted token; repeat until \texttt{<EOS>}.
+\end{enumerate}
+
+\textbf{Efficiency:} Encoder runs \emph{once}; only the decoder is sequential. Encoder output is reused at every decoder step at no extra cost.
+
+\textbf{Use-cases:} Machine translation, abstractive summarisation, SQL / code generation from natural language.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Encoder vs Decoder vs Encoder-Decoder: Inference Comparison}
+
+\begin{center}
+\begin{tabular}{|p{2.2cm}|p{2.6cm}|p{2.6cm}|p{2.6cm}|}
+\hline
+\textbf{Aspect} & \textbf{Encoder-only} & \textbf{Decoder-only} & \textbf{Encoder-Decoder} \\
+\hline
+Attention & Bidirectional & Causal (left-to-right) & Enc: bi; Dec: causal \\
+\hline
+Inference style & Single pass & Autoregressive & Encode once, decode auto \\
+\hline
+Cross-attention & No & No & Yes \\
+\hline
+Can generate & No & Yes & Yes \\
+\hline
+Models & BERT, RoBERTa & GPT-3/4, LLaMA & T5, BART \\
+\hline
+Best for & Classification, NER & Open-ended generation & Translation, summarisation \\
+\hline
+\end{tabular}
+\end{center}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
