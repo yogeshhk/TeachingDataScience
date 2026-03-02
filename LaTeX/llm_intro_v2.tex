@@ -1,17 +1,15 @@
 %% ============================================================
-%%  LLM Introduction 
+%%  LLM Introduction  –  Improved & Condensed Edition
 %%  Sections:
-%%    1.  Background & Motivation         
-%%    2.  Language Modeling Fundamentals   
-%%    3.  From NLP to Transformers         
-%%    4.  Transformer Architecture        
-%%    5.  Encoder – Pre-training Walkthrough 
-%%    6.  Decoder – Pre-training Walkthrough 
-%%    7.  Pre-training Paradigms            
-%%    8.  LLM Training Pipeline             
-%%    9.  Inference Use-Cases               
-%%   10.  LLM Landscape & Notable Models    
-%%   11.  Limitations, Ethics & Next Steps  
+%%    1.  Background & Motivation
+%%    2.  Language Modeling Fundamentals
+%%    3.  From NLP to Transformers
+%%    4.  Transformer Architecture
+%%    5.  Pre-training Paradigms (Encoder / Decoder / Enc-Dec)
+%%    6.  LLM Training Pipeline
+%%    7.  Inference & Use-Cases
+%%    8.  LLM Landscape & Notable Models
+%%    9.  Limitations, Ethics & Next Steps
 %% ============================================================
 
 
@@ -65,19 +63,6 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Use Deep Learning When \ldots}
-\begin{itemize}
-\item You have \textbf{large amounts of data} (typically $10{,}000+$ examples).
-\item The problem involves \textbf{unstructured data}: text, images, audio.
-\item The task is inherently \textbf{complex}: translation, dialogue, code generation.
-\item You need a model capable of learning \emph{any function} given enough data.
-\end{itemize}
-\vspace{0.5em}
-Language is the canonical unstructured, high-complexity domain – the perfect fit for deep learning.
-{\tiny (Ref: Introduction to TensorFlow 2.0 – Brad Miro)}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{The Rise of Large Language Models}
 \begin{center}
 \includegraphics[width=0.65\linewidth,keepaspectratio]{llm120}
@@ -95,7 +80,7 @@ Language is the canonical unstructured, high-complexity domain – the perfect f
 \begin{itemize}
 \item While typing SMS, have you seen a next-word suggestion appear?
 \item That is a \textbf{language model}: it assigns a probability to each possible next word given the words seen so far.
-\item Formally: $P(w_t \mid w_1, w_2, \ldots, w_{t-1})$
+\item Think of it as: given everything said so far, what word is most likely to come next?
 \item Modern LLMs extend this: they model \emph{long-range} dependencies across thousands of tokens using neural networks.
 \item \textbf{Generative model}: keep sampling the next token until a complete response is formed.
 \end{itemize}
@@ -110,15 +95,14 @@ Language is the canonical unstructured, high-complexity domain – the perfect f
   \begin{column}[T]{0.55\linewidth}
     \textbf{Discriminative} (e.g., logistic regression, BERT fine-tuned)
     \begin{itemize}
-    \item Model $P(Y \mid X)$: given input, predict label.
-    \item Decision boundary separates classes.
+    \item Given input, predict label — separates classes.
     \item Cannot generate new samples.
     \end{itemize}
     \vspace{0.4em}
     \textbf{Generative} (e.g., GPT, DALL-E)
     \begin{itemize}
-    \item Model $P(X, Y)$ or $P(X)$: learn the data distribution.
-    \item \emph{Can} generate new samples and has discriminative properties.
+    \item Learns the \emph{distribution} of data itself.
+    \item \emph{Can} generate new samples.
     \item LLMs are generative – they sample from learned text distributions.
     \end{itemize}
   \end{column}
@@ -295,8 +279,8 @@ Transformers achieve this through \textbf{self-attention}: each token's represen
 \end{center}
 \begin{itemize}
 \item Instead of one context vector, the decoder \textbf{attends} to all encoder hidden states.
-\item Each decoder step computes a weighted sum over encoder states: $c_t = \sum_i \alpha_{ti}\,h_i$.
-\item $\alpha_{ti}$ (attention weight) reflects how relevant encoder position $i$ is to decoding step $t$.
+\item Each decoder step computes a weighted sum over encoder states — the weight reflects how relevant each input word is right now.
+\item Think of it like a spotlight: when generating the word ``bank'' in French, the model shines the spotlight back on the word ``bank'' in English.
 \end{itemize}
 {\tiny (Ref: CS447 Natural Language Processing – J.\ Hockenmaier)}
 \end{frame}
@@ -307,7 +291,7 @@ Transformers achieve this through \textbf{self-attention}: each token's represen
 \item \textbf{Cross-attention} (seq2seq): decoder attends to \emph{encoder} positions.
 \item \textbf{Self-attention}: every position in a sequence attends to every \emph{other position in the same sequence}.
 \item Enables the encoder to build rich, contextualised representations \emph{without} recurrence.
-\item Enables full \textbf{parallelisation}: all tokens processed simultaneously during training.
+\item Enables full \textbf{parallelisation}: all tokens processed simultaneously during training — dramatically faster than RNNs.
 \end{itemize}
 \vspace{0.5em}
 Self-attention is the core innovation of the Transformer, replacing sequential RNN processing with parallel, content-based lookups.
@@ -364,13 +348,6 @@ Self-attention is the core innovation of the Transformer, replacing sequential R
 \begin{center}
 \includegraphics[width=0.8\linewidth,keepaspectratio]{llm112}
 \end{center}
-% Each encoder and decoder \emph{layer} contains:
-% \begin{enumerate}
-% \item \textbf{Multi-Head Self-Attention} (+ optional Cross-Attention in decoder)
-% \item \textbf{Add \& Layer Norm} (residual connection)
-% \item \textbf{Position-wise Feed-Forward Network}
-% \item \textbf{Add \& Layer Norm} (residual connection)
-% \end{enumerate}
 {\tiny (Ref: Generative AI with LLMs – Abhinav Kimothi)}
 \end{frame}
 
@@ -378,7 +355,7 @@ Self-attention is the core innovation of the Transformer, replacing sequential R
 \begin{frame}[fragile]\frametitle{Step 1: Tokenisation \& Token Embedding}
 \begin{itemize}
 \item \textbf{Tokenisation}: raw text split into sub-word tokens using BPE or WordPiece.
-\item \textbf{Token Embedding}: each token ID mapped to a learned dense vector $\mathbf{e}_i \in \mathbb{R}^d$ via embedding matrix $E \in \mathbb{R}^{|V| \times d}$.
+\item \textbf{Token Embedding}: each token ID mapped to a learned dense vector via an embedding matrix.
 \end{itemize}
 \vspace{0.3em}
 \begin{center}
@@ -395,42 +372,11 @@ Self-attention is the core innovation of the Transformer, replacing sequential R
 \begin{frame}[fragile]\frametitle{Step 2: Positional Encoding}
 \begin{itemize}
 \item Self-attention is \textbf{permutation-invariant}: it treats a bag of tokens, not a sequence.
-\item We must inject \emph{order information} explicitly.
-\item Original Transformer uses sinusoidal positional encoding:
-\[
-  \text{PE}(pos, 2k)   = \sin\!\left(\frac{pos}{10000^{2k/d}}\right), \quad
-  \text{PE}(pos, 2k+1) = \cos\!\left(\frac{pos}{10000^{2k/d}}\right)
-\]
-\item Added element-wise to the token embedding:
-\[
-  \mathbf{x}_i = \mathbf{e}_i + \text{PE}(i)
-\]
-\item Modern models use learnable absolute or \textbf{Rotary Position Embeddings (RoPE)} for better generalisation.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Positional Encoding: Why This Method?}
-\begin{itemize}
-\item \textbf{Why not just append the position number?}
-  A raw integer like $42$ has no bounded magnitude – it would dominate the embedding
-  and scale differently at test-time lengths never seen in training.
-\item \textbf{Why sinusoids?} Three properties make them ideal:
-  \begin{enumerate}
-  \item \textbf{Bounded}: $\sin/\cos \in [-1, 1]$ – same scale as normalised embeddings.
-  \item \textbf{Unique per position}: each position gets a distinct vector of
-        $(\sin, \cos)$ values across frequencies.
-  \item \textbf{Relative positions are learnable}: $\text{PE}(pos+k)$ is a
-        \emph{linear function} of $\text{PE}(pos)$, so the model can learn
-        to attend by relative offset, not just absolute position.
-  \end{enumerate}
-\item \textbf{Why add, not concatenate?}
-  Addition keeps the vector dimension $d$ fixed.
-  Concatenation would double $d$, doubling all subsequent weight matrices.
-  Empirically, addition works just as well and is cheaper.
-\item \textbf{Modern alternative – RoPE} (Rotary Position Embedding):
-  encodes position directly into the $Q$–$K$ dot product so attention scores
-  are naturally relative; used in LLaMA, Mistral, GPT-NeoX.
+We must inject \emph{order information} explicitly.
+\item The original Transformer uses sine/cosine waves at different frequencies — each position gets a unique pattern of numbers added to its embedding.
+\item Think of it as a \textbf{unique address tag} for each position in the sentence.
+\item Modern models use learnable absolute or \textbf{Rotary Position Embeddings (RoPE)} —
+used in LLaMA, Mistral, GPT-NeoX — which encode position directly into the attention scores so the model naturally understands relative distances between words.
 \end{itemize}
 \end{frame}
 
@@ -441,13 +387,13 @@ Self-attention is the core innovation of the Transformer, replacing sequential R
 \[
   \mathbf{Q} = \mathbf{X}W^Q, \quad \mathbf{K} = \mathbf{X}W^K, \quad \mathbf{V} = \mathbf{X}W^V
 \]
-\item Attention scores and output:
+\item Attention formula:
 \[
   \text{Attention}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) 
     = \text{softmax}\!\left(\frac{\mathbf{Q}\mathbf{K}^\top}{\sqrt{d_k}}\right)\mathbf{V}
 \]
-\item \textbf{Why $\sqrt{d_k}$?} Without scaling, dot products grow large with dimension $d_k$, pushing softmax into saturation (near-zero gradients).
-\item The output for token $i$ is a \emph{weighted average} of all value vectors $\mathbf{V}_j$, with higher weight for tokens more relevant to $i$.
+\item \textbf{In plain English}: compute how relevant each word is to every other word (dot product), normalise to get weights (softmax), then mix the information accordingly.
+\item The $\sqrt{d_k}$ scaling prevents scores from getting too large and making the model overconfident.
 \end{itemize}
 \end{frame}
 
@@ -476,99 +422,24 @@ Self-attention is the core innovation of the Transformer, replacing sequential R
 \item Token \texttt{"cat"} has a Key that scores highly against that Query.
 \item The weighted Value of \texttt{"cat"} flows into the representation of \texttt{"sat"}.
 \end{itemize}
-% \textbf{Why exactly 3 and not 2 or 4?}
-% \begin{itemize}
-% \item \textbf{2 (Q=K)} was tried (cosine self-attention) – degenerates; a token's query
-      % and key collapse to the same space, causing it to always attend to itself most.
-% \item Separating Q and K lets the model ask and answer \emph{asymmetrically}:
-      % ``sat'' looks for subjects; ``cat'' does not look for verbs.
-% \item \textbf{V is separate} so the content contributed need not match what was queried.
-      % Retrieving ``cat'' can add meaning about \emph{animacy}, not just subject-hood.
-% \item 4 or more projections add no new expressive power – multi-head attention
-      % already provides diversity by repeating the Q/K/V pattern in parallel.
-% \end{itemize}
 \end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Q, K, V: Step-by-Step for One Word}
-\textbf{Input sentence}: \texttt{"The bank can guarantee deposits"}\\[0.4em]
-For the word \texttt{"bank"} (position $i = 2$):
-\begin{enumerate}
-\item \textbf{Project to Q, K, V}:
-      $\mathbf{q}_2 = \mathbf{x}_2 W^Q,\quad
-       \mathbf{k}_2 = \mathbf{x}_2 W^K,\quad
-       \mathbf{v}_2 = \mathbf{x}_2 W^V$
-\item \textbf{Score against every other token's Key}:
-      $s_{2j} = \mathbf{q}_2 \cdot \mathbf{k}_j / \sqrt{d_k}$
-      for $j = 1 \ldots T$
-\item \textbf{Normalise scores}: $\alpha_{2j} = \text{softmax}(s_{2j})$
-      \hfill {\small (sum to 1 across $j$)}
-\item \textbf{Aggregate Values}:
-      $\mathbf{z}_2 = \sum_j \alpha_{2j}\,\mathbf{v}_j$
-\end{enumerate}
-\vspace{0.3em}
-After seeing ``deposits'' and ``guarantee'', attention weights for \texttt{"bank"} should
-be high on those tokens $\Rightarrow$ \texttt{"bank"} gets a \emph{financial} representation.
-In a sentence about a river, weights shift to ``river'', ``flow'' $\Rightarrow$
-\texttt{"bank"} gets a \emph{geographical} representation.\\[0.3em]
-This is how the Transformer achieves \textbf{contextualised embeddings}.
-\end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Step 4: Multi-Head Attention}
 \begin{itemize}
 \item Run $h$ attention functions \textbf{in parallel}, each with independent $W^Q_l, W^K_l, W^V_l$ projections:
 \[
-  \text{head}_l = \text{Attention}(\mathbf{X}W^Q_l,\, \mathbf{X}W^K_l,\, \mathbf{X}W^V_l)
-\]
-\item Concatenate and project:
-\[
   \text{MultiHead}(\mathbf{X}) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h)\,W^O
 \]
-\item \textbf{Why multiple heads?} Each head can specialise in a different type of relationship:
+\item \textbf{Why multiple heads?} Each head specialises in a different type of relationship:
   \begin{itemize}
   \item Head 1: syntactic agreement (subject–verb)
   \item Head 2: co-reference (pronoun resolution)
-  \item Head 3: positional proximity
-  \item \ldots and so on.
+  \item Head 3: positional proximity … and so on
   \end{itemize}
+\item Think of it like multiple people reviewing the same sentence simultaneously, each looking for something different — then combining their findings.
 \item BERT-base uses $h=12$ heads; GPT-3 uses $h=96$.
 \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Multi-Head Attention: How It Works Mechanically}
-\begin{columns}
-  \begin{column}[T]{0.52\linewidth}
-    For each head $l = 1 \ldots h$:
-    \begin{enumerate}
-    \item Project $\mathbf{X}$ to lower-dimension Q, K, V:
-          $d_k = d_{\text{model}} / h$
-          (e.g.\ $768/12 = 64$ per head in BERT-base)
-    \item Compute scaled dot-product attention independently.
-    \item Each head looks at the \emph{same} input but through
-          \emph{different learned projection matrices}.
-    \end{enumerate}
-    After all heads:
-    \begin{itemize}
-    \item Concatenate $h$ outputs: shape $(T, h \cdot d_k) = (T, d_{\text{model}})$
-    \item Multiply by $W^O$ to mix heads: shape $(T, d_{\text{model}})$
-    \end{itemize}
-  \end{column}
-  \begin{column}[T]{0.48\linewidth}
-    \textbf{Why this design?}
-    \begin{itemize}
-    \item Each head has a smaller budget ($d_k \ll d_{\text{model}}$) – forced to
-          specialise on one type of signal.
-    \item Multiple heads = multiple ``questions'' asked of the same token simultaneously.
-    \item Final $W^O$ projection lets heads \emph{collaborate}: information from
-          different heads is mixed before being passed to the FFN.
-    \item Total computation is the same as single-head attention with $d_{\text{model}}$,
-          so no extra cost.
-    \end{itemize}
-  \end{column}
-\end{columns}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -582,425 +453,75 @@ This is how the Transformer achieves \textbf{contextualised embeddings}.
 \item \textbf{Layer Norm}: normalises across features for each token independently, stabilising training.
 \end{itemize}
 
-% \vspace{0.4em}
-% \textbf{Position-wise Feed-Forward Network (FFN):}
-% \[
-  % \text{FFN}(\mathbf{h}) = \max(0,\; \mathbf{h}W_1 + b_1)\,W_2 + b_2
-% \]
-% \begin{itemize}
-% \item Applied independently to \emph{each token position}.
-% \item Increases model capacity: stores factual knowledge in its weights.
-% \item Followed by another Add \& Norm.
-% \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Feed-Forward Network: Role and Design Rationale}
-% \[
-  % \text{FFN}(\mathbf{h}) = \max(0,\; \mathbf{h}W_1 + b_1)\,W_2 + b_2
-% \]
-\textbf{Why is FFN needed at all, if we already have attention?}
-\begin{itemize}
-\item Attention is a \emph{routing} mechanism: it decides \textbf{which} tokens to
-      aggregate, but the aggregation is a weighted average – a \emph{linear} operation.
-\item The FFN introduces \textbf{non-linearity} and per-position processing,
-      allowing the model to transform the aggregated information into something richer.
-\item Think of it as: attention \emph{collects} context; FFN \emph{processes} it.
-\end{itemize}
-% \textbf{Why is the hidden layer 4$\times$ wider?}
-% \begin{itemize}
-% \item $W_1$ expands from $d_{\text{model}}$ to $4d_{\text{model}}$ (e.g.\ 768 $\to$ 3072 in BERT-base).
-% \item This \emph{expansion-then-projection} pattern is a bottleneck:
-      % the wide hidden layer gives the model room to represent complex
-      % feature combinations; $W_2$ compresses back to $d_{\text{model}}$.
-% \item Empirically 4$\times$ is the sweet spot; modern models use SwiGLU or
-      % GELU activations instead of ReLU for smoother gradient flow.
-% \item Research (Geva et al., 2021) shows FFN layers act as \textbf{key-value memories}:
-      % $W_1$ rows are ``keys'' that fire on certain input patterns;
-      % $W_2$ columns are ``values'' that add factual information to the stream.
-% \end{itemize}
-\end{frame}
-
-%% ============================================================
-%%  SECTION 5 – ENCODER: PRE-TRAINING WALKTHROUGH
-%% ============================================================
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large \textbf{Encoder: Pre-training Walkthrough}}\\[0.5em]
-{\normalsize Bidirectional context learning via Masked Language Modelling}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Encoder-Only Architecture}
-\begin{columns}
-  \begin{column}[T]{0.4\linewidth}
-    \begin{itemize}
-    \item Stack of $N$ identical encoder layers.
-    \item \textbf{No causal mask}: every token can attend to every other token (bidirectional).
-    \item Output: one contextualised vector per input token.
-    \item Representative models: \textbf{BERT}, RoBERTa, ELECTRA.
-    \end{itemize}
-  \end{column}
-  \begin{column}[T]{0.6\linewidth}
-    \begin{center}
-    \includegraphics[width=\linewidth,keepaspectratio]{llm113}
-    \end{center}
-    {\tiny (Ref: Generative AI with LLMs – Abhinav Kimothi)}
-  \end{column}
-\end{columns}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Encoder Pre-training: Masked Language Modelling (MLM)}
-\textbf{Self-supervised objective} – no human labels needed:
-\begin{enumerate}
-\item Take a sentence from the training corpus.
-\item Randomly mask $\sim$15\% of tokens with a \texttt{[MASK]} token.
-\item Train the model to predict the original token at each masked position.
-\end{enumerate}
-
-\vspace{0.3em}
-\textbf{Example input–output pair:}\\
-Input: \quad\texttt{"The cat [MASK] on the [MASK]."}\\
-Target: \texttt{"sat"} at position 3, \texttt{"mat"} at position 6.
-
-\vspace{0.3em}
-\begin{itemize}
-\item Because the encoder sees \emph{both left and right} context, it learns truly \textbf{bidirectional} representations.
-\item This is why BERT outperforms left-to-right LMs on understanding tasks.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{What the Encoder Learns Layer by Layer}
-\begin{itemize}
-\item \textbf{Lower layers}: surface-level features – morphology, part-of-speech.
-\item \textbf{Middle layers}: syntactic structure – phrase boundaries, dependency relations.
-\item \textbf{Upper layers}: semantic/pragmatic features – co-reference, entity types, sentiment.
-\end{itemize}
-
 \vspace{0.4em}
-Probing studies (Tenney et al., 2019) confirm this hierarchy in BERT representations.
-
-\vspace{0.4em}
-\textbf{Key insight}: the encoder's output is not a prediction – it is a \emph{rich contextualised representation} of the input, suitable for many downstream tasks.
-\end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{BERT: MLM + Next Sentence Prediction}
-% \begin{itemize}
-% \item BERT (Devlin et al., 2018) pre-trains on two tasks:
-  % \begin{enumerate}
-  % \item \textbf{MLM}: predict masked tokens (as above).
-  % \item \textbf{Next Sentence Prediction (NSP)}: given sentence A and B, is B the actual next sentence?
-  % \end{enumerate}
-% \item Input format:
-  % \begin{center}
-  % \texttt{[CLS] Sentence A [SEP] Sentence B [SEP]}
-  % \end{center}
-% \item The \texttt{[CLS]} token's final representation aggregates the full sequence – used for classification.
-% \item RoBERTa (Liu et al., 2019) drops NSP, trains longer with more data, and achieves better results.
-% \end{itemize}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{BERT Word Representations: Parts of Speech Layout}
-% \begin{center}
-% \includegraphics[width=0.7\linewidth,keepaspectratio]{llm14}
-% \end{center}
-% \begin{itemize}
-% \item Words of the same grammatical category cluster together in embedding space.
-% \item The encoder has learned linguistic structure purely from self-supervised prediction.
-% \end{itemize}
-% {\tiny (Ref: What Is ChatGPT Doing\ldots – S.\ Wolfram)}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{Encoder at Inference: Add a Task Head}
-% \begin{itemize}
-% \item Pre-trained encoder is frozen or fine-tuned on a small labelled dataset.
-% \item A lightweight \textbf{task-specific head} is added on top:
-  % \begin{center}
-  % \small
-  % \begin{tabular}{|l|l|}
-  % \hline
-  % \textbf{Task} & \textbf{Head} \\
-  % \hline
-  % Sentiment / Classification & Linear layer on \texttt{[CLS]} \\
-  % Named Entity Recognition & Linear layer per token \\
-  % Extractive QA & Span start/end classifiers per token \\
-  % Sentence Similarity & Cosine similarity of \texttt{[CLS]} embeddings \\
-  % \hline
-  % \end{tabular}
-  % \end{center}
-% \item No text generation – encoder produces \emph{representations}, not sequences.
-% \end{itemize}
-% \end{frame}
-
-
-%% ============================================================
-%%  SECTION 6 – DECODER: PRE-TRAINING WALKTHROUGH
-%% ============================================================
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large \textbf{Decoder: Pre-training Walkthrough}}\\[0.5em]
-{\normalsize Left-to-right language modelling via Causal Masking}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Decoder-Only Architecture}
-\begin{columns}
-  \begin{column}[T]{0.4\linewidth}
-    \begin{itemize}
-    \item Stack of $N$ identical \emph{decoder} layers.
-    \item No separate encoder; no cross-attention.
-    \item \textbf{Causal (masked) self-attention}: token $i$ attends only to tokens $1 \ldots i$.
-    \item Output: one logit vector per position $\rightarrow$ probability over vocabulary.
-    \item Representative models: \textbf{GPT}, LLaMA, Mistral, Falcon.
-    \end{itemize}
-  \end{column}
-  \begin{column}[T]{0.6\linewidth}
-    \begin{center}
-    \includegraphics[width=\linewidth,keepaspectratio]{llm114}
-    \end{center}
-    {\tiny (Ref: Generative AI with LLMs – Abhinav Kimothi)}
-  \end{column}
-\end{columns}
-\end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{Causal Masking: Why and How}
-% \begin{itemize}
-% \item \textbf{The problem}: during training, the entire target sequence is available.
-  % Without masking, position $i$ could simply copy from position $i{+}1$ – the model learns nothing.
-% \item \textbf{Solution}: apply a \emph{causal mask} – set attention logits for positions $j > i$ to $-\infty$:
-% \[
-  % \text{score}(i, j) = 
-  % \begin{cases}
-    % \dfrac{\mathbf{Q}_i \cdot \mathbf{K}_j}{\sqrt{d_k}} & j \le i \\[6pt]
-    % -\infty & j > i
-  % \end{cases}
-% \]
-% \item After softmax: $\alpha_{ij} = 0$ for $j > i$ $\Rightarrow$ future tokens are invisible.
-% \item This mirrors inference: at generation time, future tokens genuinely do not exist yet.
-% \end{itemize}
-% \end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Why Decoder Self-Attention Is Restricted to Past Tokens}
-\textbf{The fundamental reason is training–inference consistency:}
+\textbf{Position-wise Feed-Forward Network (FFN):}
 \begin{itemize}
-\item At \textbf{inference}, token $i$ does not exist yet when we are predicting it, 
-      there is physically no future token to attend to.
-\item At \textbf{training}, the full target sequence is fed in one batch for efficiency.
-      Without masking, position $i$ would see token $i+1$ and trivially copy it, 
-      the model learns nothing useful.
-\item The causal mask enforces the \emph{same information constraint} in both phases,
-      so training faithfully simulates inference.
+\item Applied independently to \emph{each token} after attention.
+\item Attention \emph{collects} information from other tokens; FFN \emph{processes} it — adding non-linearity and depth to each token's representation.
+\item Think of attention as gathering evidence, and FFN as reasoning about it.
 \end{itemize}
-\vspace{0.4em}
-\textbf{Contrast with the encoder:}
-\begin{center}
-\small
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|l|l|l|}
-\hline
- & \textbf{Encoder self-attn} & \textbf{Decoder self-attn} \\
-\hline
-Sees & All tokens (bidirectional) & Only past + current tokens \\
-Mask & None & Lower-triangular causal mask \\
-Goal & Best \emph{representation} of input & Valid \emph{prediction} of next token \\
-\hline
-\end{tabular}
-\end{center}
-\vspace{0.3em}
-Allowing the decoder to see future tokens would be \emph{data leakage} –
-like giving a student the answer sheet during an exam.
-The causal mask is the guard that makes next-token prediction a genuine test.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Decoder Pre-training: Causal Language Modelling (CLM)}
-\textbf{Self-supervised objective} – input–output pairs derived automatically from raw text:
-
-\vspace{0.3em}
-\begin{center}
-\begin{tabular}{ll}
-\textbf{Input sequence:}  & \texttt{[BOS] The cat sat on} \\
-\textbf{Target (shifted right by 1):} & \texttt{The cat sat on the} \\
-\end{tabular}
-\end{center}
-
-% \vspace{0.3em}
-% At every position $i$, the model is trained to maximise:
-% \[
-  % \mathcal{L} = -\sum_i \log P(w_i \mid w_1, \ldots, w_{i-1}; \theta)
-% \]
-\begin{itemize}
-\item Labels = same sequence, offset by one token.
-\item \textbf{Fully self-supervised}: no human annotation required.
-\item Training data = any text on the internet, books, code, etc.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Cross-Attention in the Decoder: Why }
-\textbf{Context}: this applies to encoder-decoder models (T5, BART, classic Transformer).
-Decoder-only models (GPT, LLaMA) do \emph{not} have cross-attention.
-
-\vspace{0.4em}
-\textbf{The problem it solves:}
-\begin{itemize}
-\item The decoder must generate output conditioned on the \emph{source} sequence
-      (e.g.\ translate French input into English output).
-\item But decoder self-attention only sees previously generated \emph{output} tokens.
-\item Cross-attention bridges the two: each decoder position can ``look at'' the
-      entire encoder output.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Cross-Attention in the Decoder: How}
-\textbf{How it works – the key asymmetry:}
-\[
-  \mathbf{Q} = \mathbf{H}_{\text{dec}}\,W^Q, \qquad
-  \mathbf{K} = \mathbf{H}_{\text{enc}}\,W^K, \qquad
-  \mathbf{V} = \mathbf{H}_{\text{enc}}\,W^V
-\]
-\begin{itemize}
-\item \textbf{Queries come from the decoder}: ``What source information do I need
-      to generate the next output word?''
-\item \textbf{Keys and Values come from the encoder}: the full source
-      representation is available as a memory bank.
-\item The decoder attends to whichever encoder positions are most relevant, 
-      e.g.\ when generating ``chat'', the French word ``chat'' gets high attention weight.
-\end{itemize}
-\end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{The Decoder in Action: Token Generation}
-% % \begin{center}
-% % \includegraphics[width=0.6\linewidth,keepaspectratio]{rag7}
-% % \end{center}
-% \begin{enumerate}
-% \item Tokenise the prompt.
-% \item Pass all tokens through the decoder stack $\rightarrow$ logit vector for \emph{next} position.
-% \item Apply softmax $\rightarrow$ probability distribution; sample/argmax the next token.
-% \item Append new token to sequence; repeat steps 2--4 until \texttt{[EOS]} or max length.
-% \end{enumerate}
-% This \textbf{autoregressive} process generates one token per forward pass.
-% {\tiny (Ref: RAG Architecture – Abhinav Kimothi)}
-% \end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{GPT Inference: What Happens After You Send a Prompt}
-\textbf{Example prompt}: \texttt{"Translate to French: The sky is"}
-
-\begin{enumerate}
-\item \textbf{Tokenise}: prompt is split into tokens by the BPE tokeniser.
-      \texttt{["Translate", "\,to", "\,French", ":", "\,The", "\,sky", "\,is"]}
-      Each token is converted to an integer ID.
-\item \textbf{Embed + add positional encoding}: each ID $\rightarrow$ embedding vector
-      $\mathbf{e}_i$; add $\text{PE}(i)$; obtain $\mathbf{x}_i \in \mathbb{R}^d$.
-\item \textbf{Forward pass through all $N$ decoder layers}:
-      \begin{itemize}
-      \item Causal self-attention: each token attends to itself and all previous tokens.
-      \item Add \& Norm, FFN, Add \& Norm (repeated $N$ times, e.g.\ $N=96$ for GPT-3).
-      \end{itemize}
-\item \textbf{Project to vocabulary}: final hidden state at the \emph{last} position
-      is multiplied by $W_{\text{unembed}} \in \mathbb{R}^{d \times |V|}$
-      $\rightarrow$ logit vector of size $|V| \approx 50{,}000$.
-\item \textbf{Sample}: apply temperature + softmax; sample (or argmax) one token,
-      e.g.\ \texttt{"\,bleu"}.
-\item \textbf{Append \& repeat}: \texttt{"\,bleu"} is appended to the sequence;
-      repeat from step 2,  now 8 tokens long.
-\end{enumerate}
-This loop continues until \texttt{<|endoftext|>} is sampled or max length is hit.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{GPT Inference: Inside a Single Forward Pass}
-\textbf{What is actually computed layer-by-layer for your prompt?}
-\begin{itemize}
-\item \textbf{Layer 1–4 (lower)}: capture surface patterns,  token co-occurrence,
-      punctuation rules, common phrases.  The representation of \texttt{"sky"}
-      at this point mostly encodes its syntactic role (noun).
-\item \textbf{Layer 5–20 (middle)}: build syntactic + semantic structure, 
-      subject-verb agreement, entity types, topic coherence.
-      \texttt{"sky"} begins to carry meaning about environment, nature, colour.
-\item \textbf{Layer 21–96 (upper, GPT-3)}: world knowledge and task representation, 
-      the model identifies this as a \emph{translation} task; activations
-      organise around French vocabulary and syntax.
-\item \textbf{Final layer $\rightarrow$ logit head}: the hidden state at position $T$
-      (last prompt token) concentrates all information needed to predict the first
-      output token. The logit for \texttt{"bleu"} will be high; those for
-      unrelated words near zero.
-\end{itemize}
-\vspace{0.3em}
-\textbf{Key-Value Cache}: at each generation step, attention Keys and Values for
-all \emph{previous} tokens are cached. Only the \emph{new} token's Q, K, V are
-computed, making autoregressive generation roughly $O(1)$ per step (not $O(T)$).
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Sampling Strategies at Inference}
-\begin{itemize}
-\item \textbf{Greedy decoding}: always pick $\arg\max P(w)$ – fast, but repetitive and deterministic.
-\item \textbf{Top-$k$ sampling}: sample from the $k$ most probable tokens (e.g.\ $k=50$).
-\item \textbf{Top-$p$ (nucleus) sampling}: sample from the smallest set of tokens whose cumulative probability $\ge p$ (e.g.\ $p=0.9$).
-\item \textbf{Temperature}: divide logits by $T$ before softmax.
-  \begin{itemize}
-  \item $T \to 0$: near-greedy; $T=1$: standard; $T > 1$: more random/creative.
-  \end{itemize}
-\item \textbf{Beam search}: maintain top-$b$ partial sequences; pick the one with highest joint probability.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{How the Decoder Learns from Context}
-\begin{itemize}
-\item Decoder models like GPT learn implicitly to do many tasks without explicit training:
-  \begin{itemize}
-  \item Translation (if prompted with \texttt{"French: ... English: ..."})
-  \item Summarisation, QA, code generation, reasoning
-  \end{itemize}
-\item This \textbf{in-context learning} emerges at large scale – smaller models cannot do it reliably.
-\item Prompt = a task description + (optionally) a few examples $\rightarrow$ model completes the pattern.
-\item GPT-3 showed that 175B params is enough; GPT-4 can follow complex instructions zero-shot.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{What Is ChatGPT Really Doing?}
-\begin{itemize}
-\item ChatGPT is a \textbf{decoder-only} Transformer fine-tuned to follow instructions.
-\item At inference it runs the autoregressive loop:
-  ingest prompt tokens $\rightarrow$ predict next token $\rightarrow$ append $\rightarrow$ repeat.
-\item It has no symbolic knowledge, beliefs, or understanding in the human sense.
-\item It is "merely" pulling a coherent thread of text from the statistics of human language – yet the results are astoundingly human-like.
-\item Response quality is proportional to prompt quality.  Garbage in $\rightarrow$ garbage out.
-\end{itemize}
-{\tiny (Ref: What Is ChatGPT Doing\ldots – S.\ Wolfram; Understanding ChatGPT – G.\ Moore)}
 \end{frame}
 
 
 %% ============================================================
-%%  SECTION 7 – PRE-TRAINING PARADIGMS
+%%  SECTION 5 – PRE-TRAINING PARADIGMS
 %% ============================================================
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large \textbf{Pre-training Paradigms}}\\[0.5em]
-{\normalsize Encoder-only, Decoder-only, Encoder-Decoder}
+{\normalsize Encoder-only, Decoder-only, Encoder-Decoder — built differently from the start}
 \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Three Transformer Families: A Common Misconception}
+\textbf{Are encoder-only models just encoder-decoder models with the decoder removed?}\\[0.6em]
+\begin{center}
+\large\color{red}$\times$ NO.\quad\color{black}They are architecturally different from day one.
+\end{center}
+\vspace{0.4em}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|l|c|c|l|}
+\hline
+\textbf{Type} & \textbf{Has Encoder?} & \textbf{Has Decoder?} & \textbf{Example} \\
+\hline
+Encoder-only    & \checkmark & $\times$ & BERT \\
+Decoder-only    & $\times$ & \checkmark & GPT \\
+Encoder-Decoder & \checkmark & \checkmark & T5, BART \\
+\hline
+\end{tabular}
+\end{center}
+\vspace{0.4em}
+\begin{itemize}
+\item Weights are \textbf{never discarded} from a full model.
+\item Each family is \textbf{designed, trained and deployed with only its own components}.
+\item The architecture choice determines the training objective and best-fit tasks.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Three Families: Simple Mental Model}
+\begin{center}
+\large
+\begin{tabular}{cll}
+\textbf{Tool} & \textbf{Analogy} & \textbf{What it does} \\[0.3em]
+\includegraphics[height=1.2em,keepaspectratio]{llm113} &
+  \textbf{Highlighter} (Encoder-only) &
+  Reads and \emph{understands} text \\[0.5em]
+\includegraphics[height=1.2em,keepaspectratio]{llm114} &
+  \textbf{Story writer} (Decoder-only) &
+  \emph{Continues} / generates text \\[0.5em]
+\includegraphics[height=1.2em,keepaspectratio]{llm115} &
+  \textbf{Translator} (Enc-Dec) &
+  Reads one thing, \emph{writes} another \\
+\end{tabular}
+\end{center}
+\vspace{0.5em}
+{\footnotesize Note: the icons above are illustrative – replace with your actual diagram images if preferred.}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1013,16 +534,24 @@ The architecture choice determines what pre-training objective is used and what 
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Paradigm 1 – Encoder-Only (Autoencoders)}
+\begin{frame}[fragile]\frametitle{Paradigm 1 – Encoder-Only (e.g., BERT)}
 \begin{columns}
   \begin{column}[T]{0.5\linewidth}
+    \textbf{Training objective}: Masked Language Modelling (MLM)
+    \begin{enumerate}
+    \item Take a sentence; randomly mask $\sim$15\% of tokens.
+    \item Train the model to predict the original token at masked positions.
+    \end{enumerate}
+    \vspace{0.3em}
+    \textbf{Example:}\\
+    Input: \texttt{"The cat [MASK] on the [MASK]."}\\
+    Target: \texttt{"sat"}, \texttt{"mat"}
+    \vspace{0.3em}
     \begin{itemize}
-    \item \textbf{Objective}: Masked Language Modelling (MLM)
-    \item \textbf{Input}: sentence with masked tokens
-    \item \textbf{Output}: predicted original tokens at masked positions
-    \item Bidirectional context $\Rightarrow$ strong representations
-    \item Best for: \textbf{classification, NER, extractive QA, semantic search}
-    \item Models: \textbf{BERT}, RoBERTa, ELECTRA, DeBERTa
+    \item Sees \emph{both left and right} context — truly bidirectional.
+    \item No decoder exists at all — \textbf{not capable of generating text}.
+    \item Best for: \textbf{classification, NER, extractive QA, semantic search}.
+    \item Models: \textbf{BERT}, RoBERTa, ELECTRA.
     \end{itemize}
   \end{column}
   \begin{column}[T]{0.5\linewidth}
@@ -1035,16 +564,20 @@ The architecture choice determines what pre-training objective is used and what 
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Paradigm 2 – Decoder-Only (Autoregressors)}
+\begin{frame}[fragile]\frametitle{Paradigm 2 – Decoder-Only (e.g., GPT)}
 \begin{columns}
   \begin{column}[T]{0.5\linewidth}
+    \textbf{Training objective}: Causal Language Modelling (CLM)
     \begin{itemize}
-    \item \textbf{Objective}: Causal Language Modelling (CLM)
-    \item \textbf{Input}: token sequence $w_1 \ldots w_{t-1}$
-    \item \textbf{Output}: probability of next token $w_t$
-    \item Left-to-right; causal mask prevents future peek
-    \item Best for: \textbf{text generation, dialogue, code, reasoning, few-shot tasks}
-    \item Models: \textbf{GPT-4, LLaMA 3, Mistral, Falcon, Gemini}
+    \item Given tokens $w_1 \ldots w_{t-1}$, predict $w_t$.
+    \item Uses \textbf{causal (masked) self-attention}: when predicting position $i$, only positions $1 \ldots i$ are visible — future tokens are blocked.
+    \item \textbf{Why block future?} At inference the future genuinely doesn't exist; training must mirror this to learn correctly.
+    \end{itemize}
+    \vspace{0.3em}
+    No encoder. No cross-attention.
+    \begin{itemize}
+    \item Best for: \textbf{text generation, dialogue, code, reasoning, few-shot tasks}.
+    \item Models: \textbf{GPT-4, LLaMA 3, Mistral, Falcon, Gemini}.
     \end{itemize}
   \end{column}
   \begin{column}[T]{0.5\linewidth}
@@ -1057,16 +590,46 @@ The architecture choice determines what pre-training objective is used and what 
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Paradigm 3 – Encoder-Decoder (Seq2Seq)}
+\begin{frame}[fragile]\frametitle{Causal Masking: Why Decoder Can Only See the Past}
+\textbf{The fundamental reason is training–inference consistency:}
+\begin{itemize}
+\item At \textbf{inference}, when generating token $i$, future token $i+1$ does not exist yet — physically impossible to attend to it.
+\item At \textbf{training}, the full sequence is fed in one batch for efficiency.
+Without masking, position $i$ would trivially copy token $i+1$ — the model learns nothing.
+\item The causal mask enforces the \emph{same information constraint} in both phases.
+\end{itemize}
+\vspace{0.4em}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|l|l|l|}
+\hline
+ & \textbf{Encoder self-attn} & \textbf{Decoder self-attn} \\
+\hline
+Sees & All tokens (bidirectional) & Only past + current tokens \\
+Goal & Best \emph{representation} of input & Valid \emph{prediction} of next token \\
+\hline
+\end{tabular}
+\end{center}
+\vspace{0.3em}
+Allowing the decoder to see future tokens would be \emph{data leakage} –
+like giving a student the answer sheet during an exam.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Paradigm 3 – Encoder-Decoder (e.g., T5, BART)}
 \begin{columns}
   \begin{column}[T]{0.5\linewidth}
+    \textbf{Training objective}: Span corruption \& reconstruction (T5) or denoising (BART)
     \begin{itemize}
-    \item \textbf{Objective}: Span corruption \& reconstruction (T5) or denoising (BART)
-    \item \textbf{Input (encoder)}: corrupted source text
-    \item \textbf{Output (decoder)}: reconstructed / target text
-    \item Encoder: full bidirectional context; Decoder: cross-attends to encoder + causal self-attention
-    \item Best for: \textbf{translation, abstractive summarisation, dialogue, code generation}
-    \item Models: \textbf{T5, BART, mT5, PEGASUS}
+    \item \textbf{Encoder} reads corrupted or source text — full bidirectional attention.
+    \item \textbf{Decoder} generates the corrected / target text — causal attention + \textbf{cross-attention} to encoder.
+    \item Cross-attention: decoder's Q comes from decoder; K and V come from encoder — bridging source to target.
+    \end{itemize}
+    \vspace{0.2em}
+    \begin{itemize}
+    \item Best for: \textbf{translation, abstractive summarisation, dialogue, code generation}.
+    \item Models: \textbf{T5, BART, mT5, PEGASUS}.
     \end{itemize}
   \end{column}
   \begin{column}[T]{0.5\linewidth}
@@ -1097,7 +660,8 @@ Encoder-Decoder & Span corruption \& reconstruct & T5, BART, mT5 & Translation, 
 \end{center}
 
 \vspace{0.4em}
-\textbf{Trend}: large decoder-only models with instruction fine-tuning increasingly dominate even seq2seq tasks, as scale compensates for architecture.
+\textbf{Trend}: large decoder-only models with instruction fine-tuning increasingly dominate even seq2seq tasks, as scale compensates for architecture.\\[0.3em]
+\textbf{Key takeaway}: each family is built differently from scratch — the architecture is the training objective is the use-case.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1117,7 +681,7 @@ Encoder-Decoder & Span corruption \& reconstruct & T5, BART, mT5 & Translation, 
 
 
 %% ============================================================
-%%  SECTION 8 – LLM TRAINING PIPELINE (END-TO-END)
+%%  SECTION 6 – LLM TRAINING PIPELINE
 %% ============================================================
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1164,7 +728,7 @@ Encoder-Decoder & Span corruption \& reconstruct & T5, BART, mT5 & Translation, 
 \begin{columns}
   \begin{column}[T]{0.55\linewidth}
     \begin{itemize}
-    \item Decompose weight update $\Delta W \approx BA$ where $B \in \mathbb{R}^{d \times r},\; A \in \mathbb{R}^{r \times d'}$, $r \ll d$.
+    \item Instead of updating the entire weight matrix $W$ (millions/billions of numbers), LoRA learns only a tiny \textbf{correction} $\Delta W \approx BA$ where $B$ and $A$ are small matrices.
     \item Only $A$ and $B$ are trained; original weights $W$ are frozen.
     \item Reduces trainable parameters by $100\times$ or more.
     \item \textbf{QLoRA}: quantise the base model to 4-bit; apply LoRA on top.  Fine-tune a 65B model on a single consumer GPU.
@@ -1201,7 +765,8 @@ Goal: align LLM behaviour with human values – \textbf{Helpful, Honest, Harmles
 \begin{itemize}
 \item Sample multiple completions from the SFT model for each prompt.
 \item Human annotators \textbf{rank} completions from best to worst.
-\item Train a \textbf{Reward Model (RM)} as a classifier: given (prompt, response), output a scalar reward.
+\item Train a \textbf{Reward Model (RM)}: given (prompt, response), output a scalar score.
+\item This score captures human preference without needing labels for every possible response.
 \end{itemize}
 {\tiny (Ref: Generative AI with LLM – Abhinav Kimothi)}
 \end{frame}
@@ -1213,9 +778,8 @@ Goal: align LLM behaviour with human values – \textbf{Helpful, Honest, Harmles
 \end{center}
 \begin{itemize}
 \item Use \textbf{Proximal Policy Optimisation (PPO)} to update the LLM.
-\item Agent: the LLM. Environment: context window. Action: generating a token.
-\item Reward: score from the Reward Model.
-\item \textbf{KL penalty}: keeps updated model close to the SFT checkpoint, preventing reward hacking.
+\item Think of the LLM as an agent learning to write better responses to get higher rewards from the Reward Model.
+\item \textbf{KL penalty}: keeps updated model close to the SFT checkpoint, preventing reward hacking (the model gaming the score rather than genuinely improving).
 \end{itemize}
 {\tiny (Ref: Generative AI with LLM – Abhinav Kimothi)}
 \end{frame}
@@ -1225,96 +789,22 @@ Goal: align LLM behaviour with human values – \textbf{Helpful, Honest, Harmles
 \begin{itemize}
 \item PPO is complex and unstable. \textbf{DPO} (Rafailov et al., 2023) simplifies alignment.
 \item Directly optimise the LLM on preference pairs $(\text{chosen}, \text{rejected})$ without a separate reward model.
-\item Loss:
-\[
-  \mathcal{L}_\text{DPO}(\theta) 
-    = -\mathbb{E}\!\left[\log\sigma\!\left(\beta\log\frac{\pi_\theta(y_w|x)}{\pi_\text{ref}(y_w|x)} 
-    - \beta\log\frac{\pi_\theta(y_l|x)}{\pi_\text{ref}(y_l|x)}\right)\right]
-\]
-where $y_w$ = preferred response, $y_l$ = rejected response.
-\item Much simpler pipeline; increasingly preferred over RLHF.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Constitutional AI (Claude's Approach)}
-\begin{itemize}
-\item \textbf{Anthropic Claude} uses \emph{Constitutional AI (CAI)} instead of pure RLHF.
-\item A \textbf{constitution} – a set of high-level principles – defines desired behaviour.
-\item Two phases:
-  \begin{enumerate}
-  \item \textbf{Supervised}: model critiques its own responses based on the constitution and revises them.
-  \item \textbf{RL from AI Feedback (RLAIF)}: a fine-tuned model (trained on critiques) acts as the reward model – no human rankers needed.
-  \end{enumerate}
-\item More scalable and consistent than RLHF with human annotators.
+\item \textbf{In plain terms}: given the same prompt, the model is shown a preferred response and a rejected response and trained to make the preferred one more likely — directly, without the RL loop.
+\item Much simpler pipeline; increasingly preferred over RLHF for its stability and lower cost.
 \end{itemize}
 \end{frame}
 
 
 %% ============================================================
-%%  SECTION 9 – INFERENCE USE-CASES
+%%  SECTION 7 – INFERENCE & USE-CASES
 %% ============================================================
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large \textbf{Inference: Encoder, Decoder \& Encoder-Decoder}}\\[0.5em]
-{\normalsize How each architecture is deployed for different tasks}
+{\Large \textbf{Inference \& Use-Cases}}\\[0.5em]
+{\normalsize How each architecture is deployed}
 \end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Encoder-Only at Inference – Understanding Tasks}
-\begin{itemize}
-\item Encoder produces one \textbf{contextualised vector per token}.
-\item Fine-tune the encoder + add a \textbf{task head}:
-  \begin{center}
-  \small
-  \begin{tabular}{|l|p{5.5cm}|}
-  \hline
-  \textbf{Use-Case} & \textbf{Head} \\
-  \hline
-  Sentiment analysis & Softmax on \texttt{[CLS]} \\
-  Token classification (NER) & Softmax on each token output \\
-  Extractive QA & Two classifiers for span start / end \\
-  Semantic search & Cosine similarity between \texttt{[CLS]} vectors \\
-  Text entailment & Softmax on \texttt{[CLS]} of (premise, hypothesis) pair \\
-  \hline
-  \end{tabular}
-  \end{center}
-\item No text generation – pure classification / regression on representations.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Decoder-Only at Inference – Generation Tasks}
-\begin{itemize}
-\item Accepts a \textbf{prompt}, generates continuation token-by-token (autoregressive).
-\item Each forward pass produces one token; append; repeat until \texttt{[EOS]}.
-\item \textbf{Key use-cases}:
-  \begin{itemize}
-  \item Open-ended text generation and creative writing
-  \item Code generation (GitHub Copilot, CodeLlama)
-  \item Instruction-following chatbots (ChatGPT, Claude)
-  \item Zero-shot / few-shot task completion
-  \item Chain-of-thought reasoning
-  \item Summarisation via instruction prompt
-  \end{itemize}
-\item Instruction-tuned variants handle virtually any NLP task via prompting.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Encoder-Decoder at Inference – Seq2Seq Tasks}
-\begin{center}
-\includegraphics[width=0.82\linewidth,keepaspectratio]{llm115}
-\end{center}
-\begin{itemize}
-\item Encoder processes the \emph{entire input} bidirectionally $\Rightarrow$ rich source representation.
-\item Decoder: masked self-attention on generated tokens + \textbf{cross-attention} to encoder outputs.
-\item \textbf{Use-cases}: machine translation, abstractive summarisation, question generation, code translation, structured prediction.
-\end{itemize}
-{\tiny (Ref: Generative AI with LLMs – Abhinav Kimothi)}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1336,6 +826,50 @@ Encoder-Decoder & Explicit source→target; strong abstractive abilities & Trans
 \end{center}
 \vspace{0.3em}
 \textbf{Practical note}: large decoder-only models with instruction tuning increasingly match or surpass specialised encoder-decoder models even on seq2seq benchmarks.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GPT Inference: What Happens After You Send a Prompt}
+\textbf{Example prompt}: \texttt{"Translate to French: The sky is"}
+
+\begin{enumerate}
+\item \textbf{Tokenise}: prompt split into token IDs by the BPE tokeniser.
+\item \textbf{Embed + positional encoding}: each ID $\rightarrow$ embedding vector; add positional tag.
+\item \textbf{Forward pass through all $N$ decoder layers}:
+      causal self-attention + FFN, repeated $N$ times (e.g.\ $N=96$ for GPT-3).
+\item \textbf{Project to vocabulary}: final hidden state $\rightarrow$ logit vector of size $\sim$50K.
+\item \textbf{Sample}: apply temperature + softmax; sample (or argmax) one token, e.g.\ \texttt{"bleu"}.
+\item \textbf{Append \& repeat}: \texttt{"bleu"} is appended to the sequence; repeat until \texttt{<|endoftext|>}.
+\end{enumerate}
+\vspace{0.3em}
+\textbf{Key-Value Cache}: Keys and Values for all previous tokens are cached.  Only the new token's Q, K, V are computed each step — making autoregressive generation efficient.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sampling Strategies at Inference}
+\begin{itemize}
+\item \textbf{Greedy decoding}: always pick $\arg\max P(w)$ – fast, but repetitive and deterministic.
+\item \textbf{Top-$k$ sampling}: sample from the $k$ most probable tokens (e.g.\ $k=50$).
+\item \textbf{Top-$p$ (nucleus) sampling}: sample from the smallest set of tokens whose cumulative probability $\ge p$ (e.g.\ $p=0.9$).
+\item \textbf{Temperature}: divide logits by $T$ before softmax.
+  \begin{itemize}
+  \item $T \to 0$: near-greedy; $T=1$: standard; $T > 1$: more random/creative.
+  \end{itemize}
+\item \textbf{Beam search}: maintain top-$b$ partial sequences; pick the one with highest joint probability.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What Is ChatGPT Really Doing?}
+\begin{itemize}
+\item ChatGPT is a \textbf{decoder-only} Transformer fine-tuned to follow instructions.
+\item At inference it runs the autoregressive loop:
+  ingest prompt tokens $\rightarrow$ predict next token $\rightarrow$ append $\rightarrow$ repeat.
+\item It has no symbolic knowledge, beliefs, or understanding in the human sense.
+\item It is "merely" pulling a coherent thread of text from the statistics of human language – yet the results are astoundingly human-like.
+\item Response quality is proportional to prompt quality.  Garbage in $\rightarrow$ garbage out.
+\end{itemize}
+{\tiny (Ref: What Is ChatGPT Doing\ldots – S.\ Wolfram; Understanding ChatGPT – G.\ Moore)}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1399,7 +933,7 @@ print(out["answer"])   # "AI Coach"
 
 
 %% ============================================================
-%%  SECTION 10 – LLM LANDSCAPE & NOTABLE MODELS
+%%  SECTION 8 – LLM LANDSCAPE & NOTABLE MODELS
 %% ============================================================
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1479,7 +1013,7 @@ Key trends: context windows growing; multimodality standard; open-source closing
 
 
 %% ============================================================
-%%  SECTION 11 – LIMITATIONS, ETHICS & NEXT STEPS
+%%  SECTION 9 – LIMITATIONS, ETHICS & NEXT STEPS
 %% ============================================================
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1564,19 +1098,6 @@ Key trends: context windows growing; multimodality standard; open-source closing
 \item \textbf{Continual learning}: models that update knowledge without full retraining.
 \item \textbf{Efficient training}: DPO replacing PPO; LoRA and QLoRA as standard fine-tuning.
 \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LLM Ecosystem Landscape}
-\begin{itemize}
-\item \textbf{Foundation models}: GPT-4, Claude, Gemini, LLaMA – general purpose.
-\item \textbf{LLM lifecycle}: Pre-training $\rightarrow$ SFT $\rightarrow$ RLHF/DPO $\rightarrow$ PEFT (LoRA/QLoRA) $\rightarrow$ deployment.
-\item \textbf{Evaluation}: ROUGE, BLEU (translation/summarisation); MMLU, BIG-bench, GLUE, HumanEval (reasoning/code).
-\item \textbf{RAG \& Agents}: LangChain, LlamaIndex, vector DBs (Chroma, Pinecone, Weaviate).
-\item \textbf{Deployment}: vLLM, TGI (Text Generation Inference), TensorRT-LLM, Ollama (local).
-\item \textbf{LLMOps platforms}: Azure AI Studio, Vertex AI, AWS Bedrock, Hugging Face Hub.
-\end{itemize}
-{\tiny (Ref: LinkedIn post by Abhinav Kimothi – Jan 2024)}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
