@@ -421,8 +421,21 @@ Self-attention is the core innovation of the Transformer, replacing sequential R
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Step 2: Positional Encoding}
 \begin{itemize}
-\item Self-attention is \textbf{permutation-invariant}: it treats a bag of tokens, not a sequence.
-\item We must inject \emph{order information} explicitly. Index value is not used to represent the position as for long sequences, the indices can grow large in magnitude. If you normalize the index value to lie between 0 and 1, it can create problems for variable length sequences as they would be normalized differently.
+\item Transformer processes tokens parallel-ly. That's its main advantage over RNNs. But then the order is lost. RNN  at least had sequence and thus the order, but here we don't. What to do?
+% \item Self-attention is \textbf{permutation-invariant}: it treats a bag of tokens, not a sequence.
+\item We must inject \emph{order information}, a sort of position-id, explicitly. Index value is not used to represent the position as for long sequences, the indices can grow large in magnitude. If you normalize the index value to lie between 0 and 1, it can create problems for variable length sequences as they would be normalized differently.
+\item Every position should have same value, irrespective of the length. They should not have high values or else they shift the original word vector to a different meaning.
+\item So the choice is to have a bounded function (that moves continuously only between -1 and 1 and does not shoot out, however long the sequence is).
+
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Which function(s) to use?}
+\begin{itemize}
+\item If you use single sine function, ie $sine(i)$, then at multiple places you have same value (as it is periodical). So instead of single scalar value from one curve, overlay it with say cosine function on alternate tokens. But still, at some places even their addition can repeat. Then add again sine, cosine pairs with different frequencies. Till $L/2$ pairs. Like a Fourier transform. Summation is unique for each token.
 \item The original Transformer uses sine/cosine waves at different frequencies,  each position gets a unique pattern/vector of numbers added to its embedding.
 \item Think of it as a \textbf{unique address tag} for each position in the sentence.
 \item  Note that even positions correspond to a sine function and odd positions correspond to cosine functions.
