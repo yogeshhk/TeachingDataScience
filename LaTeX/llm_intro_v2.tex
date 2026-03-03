@@ -422,12 +422,63 @@ Self-attention is the core innovation of the Transformer, replacing sequential R
 \begin{frame}[fragile]\frametitle{Step 2: Positional Encoding}
 \begin{itemize}
 \item Self-attention is \textbf{permutation-invariant}: it treats a bag of tokens, not a sequence.
-We must inject \emph{order information} explicitly.
-\item The original Transformer uses sine/cosine waves at different frequencies,  each position gets a unique pattern of numbers added to its embedding.
+\item We must inject \emph{order information} explicitly. Index value is not used to represent the position as for long sequences, the indices can grow large in magnitude. If you normalize the index value to lie between 0 and 1, it can create problems for variable length sequences as they would be normalized differently.
+\item The original Transformer uses sine/cosine waves at different frequencies,  each position gets a unique pattern/vector of numbers added to its embedding.
 \item Think of it as a \textbf{unique address tag} for each position in the sentence.
-\item Modern models use learnable absolute or \textbf{Rotary Position Embeddings (RoPE)}, 
-used in LLaMA, Mistral, GPT-NeoX,  which encode position directly into the attention scores so the model naturally understands relative distances between words.
+\item  Note that even positions correspond to a sine function and odd positions correspond to cosine functions.
+\item Added element-wise to the token embedding:
+\[
+  \mathbf{x}_i = \mathbf{e}_i + \text{PE}(i)
+\]
 \end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Positional Encoding}
+
+\begin{itemize}
+
+\item Suppose you have an input sequence of length $L$ and require the position of the $k$th object within this sequence. The positional encoding is given by sine and cosine functions of varying frequencies::
+\[
+  \text{PE}(k, 2i)   = \sin\!\left(\frac{k}{n^{2i/d}}\right), \quad
+  \text{PE}(k, 2i+1) = \cos\!\left(\frac{k}{n^{2i/d}}\right)
+\]
+\item $k$: Position of an object in the input sequence, $0 \leq k \leq L/2$
+\item $d$ : Dimension of the output embedding space
+\item $i$: Used for mapping to column indices $0 \leq i \leq d/2$, with a single value of $i$ maps to both sine and cosine functions
+\item $n$: User-defined scalar, set to 10000 by the author
+
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.4\linewidth,keepaspectratio]{llm253}
+\end{center}
+
+{\tiny (Ref: GA Gentle Introduction to Positional Encoding in Transformer Models, Part 1 –  Mehreen Saeed)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Positional Encoding}
+
+Example: ``I am a robot'', with $n=100$ and $d=4$.
+
+
+\begin{center}
+\includegraphics[width=0.4\linewidth,keepaspectratio]{llm254}
+
+\includegraphics[width=0.4\linewidth,keepaspectratio]{llm255}
+
+\end{center}
+
+In fact, the positional encoding matrix would be the same for any four-letter phrase with $n=100$ and $d=4$.
+Range is always $[-1, 1]$ and sinusoid for each position is different, you have a unique way of encoding each position.
+
+{\tiny (Ref: GA Gentle Introduction to Positional Encoding in Transformer Models, Part 1 –  Mehreen Saeed)}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -742,6 +793,52 @@ Allowing the decoder to see future tokens would be \emph{data leakage} –
 like giving a student the answer sheet during an exam.
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GPT Inference: What Happens After You Send a Prompt}
+\textbf{Example prompt}: \texttt{"Translate to French: The sky is"}
+
+\begin{enumerate}
+\item \textbf{Tokenise}: prompt split into token IDs by the BPE tokeniser.
+\item \textbf{Embed + positional encoding}: each ID $\rightarrow$ embedding vector; add positional tag.
+\item \textbf{Forward pass through all $N$ decoder layers}:
+      causal self-attention + FFN, repeated $N$ times (e.g.\ $N=96$ for GPT-3).
+\item \textbf{Project to vocabulary}: final hidden state $\rightarrow$ logit vector of size $\sim$50K.
+\item \textbf{Sample}: apply temperature + softmax; sample (or argmax) one token, e.g.\ \texttt{"bleu"}.
+\item \textbf{Append \& repeat}: \texttt{"bleu"} is appended to the sequence; repeat until \texttt{<|endoftext|>}.
+\end{enumerate}
+\vspace{0.3em}
+\textbf{Key-Value Cache}: Keys and Values for all previous tokens are cached.  Only the new token's Q, K, V are computed each step,  making autoregressive generation efficient.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sampling Strategies at Inference}
+\begin{itemize}
+\item \textbf{Greedy decoding}: always pick $\arg\max P(w)$ – fast, but repetitive and deterministic.
+\item \textbf{Top-$k$ sampling}: sample from the $k$ most probable tokens (e.g.\ $k=50$).
+\item \textbf{Top-$p$ (nucleus) sampling}: sample from the smallest set of tokens whose cumulative probability $\ge p$ (e.g.\ $p=0.9$).
+\item \textbf{Temperature}: divide logits by $T$ before softmax.
+  \begin{itemize}
+  \item $T \to 0$: near-greedy; $T=1$: standard; $T > 1$: more random/creative.
+  \end{itemize}
+\item \textbf{Beam search}: maintain top-$b$ partial sequences; pick the one with highest joint probability.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What Is ChatGPT Really Doing?}
+\begin{itemize}
+\item ChatGPT is a \textbf{decoder-only} Transformer fine-tuned to follow instructions.
+\item At inference it runs the autoregressive loop:
+  ingest prompt tokens $\rightarrow$ predict next token $\rightarrow$ append $\rightarrow$ repeat.
+\item It has no symbolic knowledge, beliefs, or understanding in the human sense.
+\item It is "merely" pulling a coherent thread of text from the statistics of human language – yet the results are astoundingly human-like.
+\item Response quality is proportional to prompt quality.  Garbage in $\rightarrow$ garbage out.
+\end{itemize}
+{\tiny (Ref: What Is ChatGPT Doing\ldots – S.\ Wolfram; Understanding ChatGPT – G.\ Moore)}
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Paradigm 3 – Encoder-Decoder (e.g., T5, BART)}
 % \begin{columns}
@@ -810,145 +907,145 @@ Encoder-Decoder & Span corruption \& reconstruct & T5, BART, mT5 & Translation, 
 %%  SECTION 6 – LLM TRAINING PIPELINE
 %% ============================================================
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large \textbf{LLM Training Pipeline}}\\[0.5em]
-{\normalsize Pre-training $\rightarrow$ SFT $\rightarrow$ RLHF}
-\end{center}
-\end{frame}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{}
+% \begin{center}
+% {\Large \textbf{LLM Training Pipeline}}\\[0.5em]
+% {\normalsize Pre-training $\rightarrow$ SFT $\rightarrow$ RLHF}
+% \end{center}
+% \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Key Stages in LLM Development}
-\begin{enumerate}
-\item \textbf{Pre-training}: self-supervised on massive raw text corpus.\\
-  {\small High cost, long duration, high expertise required.}
-\item \textbf{Prompt Engineering}: craft effective prompts to steer the pre-trained model.\\
-  {\small No training cost; limited customisation.}
-\item \textbf{Supervised Fine-Tuning (SFT)}: train on small curated (prompt, response) pairs.\\
-  {\small Low–medium cost; teaches instruction-following.}
-\item \textbf{Reinforcement Learning from Human Feedback (RLHF)}: align model to human values.\\
-  {\small Medium–high cost; requires reward model.}
-\item \textbf{Deployment}: quantisation, distillation, caching optimisations.\\
-  {\small Reduces inference cost and latency.}
-\end{enumerate}
-\end{frame}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Key Stages in LLM Development}
+% \begin{enumerate}
+% \item \textbf{Pre-training}: self-supervised on massive raw text corpus.\\
+  % {\small High cost, long duration, high expertise required.}
+% \item \textbf{Prompt Engineering}: craft effective prompts to steer the pre-trained model.\\
+  % {\small No training cost; limited customisation.}
+% \item \textbf{Supervised Fine-Tuning (SFT)}: train on small curated (prompt, response) pairs.\\
+  % {\small Low–medium cost; teaches instruction-following.}
+% \item \textbf{Reinforcement Learning from Human Feedback (RLHF)}: align model to human values.\\
+  % {\small Medium–high cost; requires reward model.}
+% \item \textbf{Deployment}: quantisation, distillation, caching optimisations.\\
+  % {\small Reduces inference cost and latency.}
+% \end{enumerate}
+% \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Supervised Fine-Tuning (SFT)}
-\begin{itemize}
-\item \textbf{Dataset}: human-curated (instruction, ideal response) pairs.
-  \begin{center}
-  \texttt{Instruction}: "Summarise the following text in one sentence."\\
-  \texttt{Response}: "The article discusses..."
-  \end{center}
-\item Train the model with supervised cross-entropy loss on these pairs.
-\item Transforms a \emph{next-token predictor} into an \emph{instruction-follower}.
-\item \textbf{Full fine-tuning}: update all parameters – expensive.
-\item \textbf{Parameter-Efficient Fine-Tuning (PEFT)}: update only a small subset (LoRA, prefix tuning, adapters) – $<$1\% of parameters, comparable quality.
-\end{itemize}
-\end{frame}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Supervised Fine-Tuning (SFT)}
+% \begin{itemize}
+% \item \textbf{Dataset}: human-curated (instruction, ideal response) pairs.
+  % \begin{center}
+  % \texttt{Instruction}: "Summarise the following text in one sentence."\\
+  % \texttt{Response}: "The article discusses..."
+  % \end{center}
+% \item Train the model with supervised cross-entropy loss on these pairs.
+% \item Transforms a \emph{next-token predictor} into an \emph{instruction-follower}.
+% \item \textbf{Full fine-tuning}: update all parameters – expensive.
+% \item \textbf{Parameter-Efficient Fine-Tuning (PEFT)}: update only a small subset (LoRA, prefix tuning, adapters) – $<$1\% of parameters, comparable quality.
+% \end{itemize}
+% \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LoRA: Low-Rank Adaptation}
-\begin{columns}
-  \begin{column}[T]{0.55\linewidth}
-    \begin{itemize}
-    \item Instead of updating the entire weight matrix $W$ (millions/billions of numbers), LoRA learns only a tiny \textbf{correction} $\Delta W \approx BA$ where $B$ and $A$ are small matrices.
-    \item Only $A$ and $B$ are trained; original weights $W$ are frozen.
-    \item Reduces trainable parameters by $100\times$ or more.
-    \item \textbf{QLoRA}: quantise the base model to 4-bit; apply LoRA on top.  Fine-tune a 65B model on a single consumer GPU.
-    \end{itemize}
-  \end{column}
-  \begin{column}[T]{0.45\linewidth}
-    \begin{itemize}
-    \item \textbf{Benefits}:
-      \begin{itemize}
-      \item Low memory footprint
-      \item Fast training
-      \item Multiple task-specific adapters for same base model
-      \item Cost-effective deployment
-      \end{itemize}
-    \end{itemize}
-  \end{column}
-\end{columns}
-\end{frame}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{LoRA: Low-Rank Adaptation}
+% \begin{columns}
+  % \begin{column}[T]{0.55\linewidth}
+    % \begin{itemize}
+    % \item Instead of updating the entire weight matrix $W$ (millions/billions of numbers), LoRA learns only a tiny \textbf{correction} $\Delta W \approx BA$ where $B$ and $A$ are small matrices.
+    % \item Only $A$ and $B$ are trained; original weights $W$ are frozen.
+    % \item Reduces trainable parameters by $100\times$ or more.
+    % \item \textbf{QLoRA}: quantise the base model to 4-bit; apply LoRA on top.  Fine-tune a 65B model on a single consumer GPU.
+    % \end{itemize}
+  % \end{column}
+  % \begin{column}[T]{0.45\linewidth}
+    % \begin{itemize}
+    % \item \textbf{Benefits}:
+      % \begin{itemize}
+      % \item Low memory footprint
+      % \item Fast training
+      % \item Multiple task-specific adapters for same base model
+      % \item Cost-effective deployment
+      % \end{itemize}
+    % \end{itemize}
+  % \end{column}
+% \end{columns}
+% \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Reinforcement Learning from Human Feedback (RLHF)}
-\begin{center}
-\includegraphics[width=0.85\linewidth,keepaspectratio]{llm62}
-\end{center}
-Goal: align LLM behaviour with human values – \textbf{Helpful, Honest, Harmless (HHH)}.
-{\tiny (Ref: Katharina Koerner – LinkedIn, Aug 2023)}
-\end{frame}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Reinforcement Learning from Human Feedback (RLHF)}
+% \begin{center}
+% \includegraphics[width=0.85\linewidth,keepaspectratio]{llm62}
+% \end{center}
+% Goal: align LLM behaviour with human values – \textbf{Helpful, Honest, Harmless (HHH)}.
+% {\tiny (Ref: Katharina Koerner – LinkedIn, Aug 2023)}
+% \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{RLHF: Step 1 – Reward Model Training}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{RLHF: Step 1 – Reward Model Training}
 
-\begin{columns}
-    \begin{column}[T]{0.6\linewidth}
-		\begin{itemize}
-		\item Sample multiple completions from the SFT model for each prompt.
-		\item Human annotators \textbf{rank} completions from best to worst.
-		\item Train a \textbf{Reward Model (RM)}: given (prompt, response), output a scalar score.
-		\item This score captures human preference without needing labels for every possible response.
-		\end{itemize}
+% \begin{columns}
+    % \begin{column}[T]{0.6\linewidth}
+		% \begin{itemize}
+		% \item Sample multiple completions from the SFT model for each prompt.
+		% \item Human annotators \textbf{rank} completions from best to worst.
+		% \item Train a \textbf{Reward Model (RM)}: given (prompt, response), output a scalar score.
+		% \item This score captures human preference without needing labels for every possible response.
+		% \end{itemize}
 
-		{\tiny (Ref: Generative AI with LLM – Abhinav Kimothi)}
+		% {\tiny (Ref: Generative AI with LLM – Abhinav Kimothi)}
 
-    \end{column}
-    \begin{column}[T]{0.4\linewidth}
-			\begin{center}
-			\includegraphics[width=\linewidth,keepaspectratio]{rag19}
-			\end{center}
-    \end{column}
-  \end{columns}
+    % \end{column}
+    % \begin{column}[T]{0.4\linewidth}
+			% \begin{center}
+			% \includegraphics[width=\linewidth,keepaspectratio]{rag19}
+			% \end{center}
+    % \end{column}
+  % \end{columns}
   
-\end{frame}
+% \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{RLHF: Step 2 – PPO Optimisation}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{RLHF: Step 2 – PPO Optimisation}
 
-\begin{columns}
-    \begin{column}[T]{0.6\linewidth}
-		\begin{itemize}
-		\item Use \textbf{Proximal Policy Optimisation (PPO)} to update the LLM.
-		\item Think of the LLM as an agent learning to write better responses to get higher rewards from the Reward Model.
-		\item \textbf{KL penalty}: keeps updated model close to the SFT checkpoint, preventing reward hacking (the model gaming the score rather than genuinely improving).
-		\end{itemize}
+% \begin{columns}
+    % \begin{column}[T]{0.6\linewidth}
+		% \begin{itemize}
+		% \item Use \textbf{Proximal Policy Optimisation (PPO)} to update the LLM.
+		% \item Think of the LLM as an agent learning to write better responses to get higher rewards from the Reward Model.
+		% \item \textbf{KL penalty}: keeps updated model close to the SFT checkpoint, preventing reward hacking (the model gaming the score rather than genuinely improving).
+		% \end{itemize}
 
-		{\tiny (Ref: Generative AI with LLM – Abhinav Kimothi)}
+		% {\tiny (Ref: Generative AI with LLM – Abhinav Kimothi)}
 
-    \end{column}
-    \begin{column}[T]{0.4\linewidth}
-		\begin{center}
-		\includegraphics[width=\linewidth,keepaspectratio]{rag22}
-		\end{center}
-    \end{column}
-  \end{columns}
+    % \end{column}
+    % \begin{column}[T]{0.4\linewidth}
+		% \begin{center}
+		% \includegraphics[width=\linewidth,keepaspectratio]{rag22}
+		% \end{center}
+    % \end{column}
+  % \end{columns}
   
-\end{frame}
+% \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Alternative: Direct Preference Optimisation (DPO)}
-\begin{itemize}
-\item PPO is complex and unstable. \textbf{DPO} (Rafailov et al., 2023) simplifies alignment.
-\item Directly optimise the LLM on preference pairs $(\text{chosen}, \text{rejected})$ without a separate reward model.
-\item \textbf{In plain terms}: given the same prompt, the model is shown a preferred response and a rejected response and trained to make the preferred one more likely,  directly, without the RL loop.
-\item Much simpler pipeline; increasingly preferred over RLHF for its stability and lower cost.
-\end{itemize}
-\end{frame}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Alternative: Direct Preference Optimisation (DPO)}
+% \begin{itemize}
+% \item PPO is complex and unstable. \textbf{DPO} (Rafailov et al., 2023) simplifies alignment.
+% \item Directly optimise the LLM on preference pairs $(\text{chosen}, \text{rejected})$ without a separate reward model.
+% \item \textbf{In plain terms}: given the same prompt, the model is shown a preferred response and a rejected response and trained to make the preferred one more likely,  directly, without the RL loop.
+% \item Much simpler pipeline; increasingly preferred over RLHF for its stability and lower cost.
+% \end{itemize}
+% \end{frame}
 
 
 %% ============================================================
-%%  SECTION 7 – INFERENCE & USE-CASES
+%%  SECTION 7 – USE-CASES
 %% ============================================================
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large \textbf{Inference \& Use-Cases}}\\[0.5em]
+{\Large \textbf{Use Cases }}\\[0.5em]
 {\normalsize How each architecture is deployed}
 \end{center}
 \end{frame}
@@ -975,50 +1072,6 @@ Encoder-Decoder & Explicit source→target; strong abstractive abilities & Trans
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{GPT Inference: What Happens After You Send a Prompt}
-\textbf{Example prompt}: \texttt{"Translate to French: The sky is"}
-
-\begin{enumerate}
-\item \textbf{Tokenise}: prompt split into token IDs by the BPE tokeniser.
-\item \textbf{Embed + positional encoding}: each ID $\rightarrow$ embedding vector; add positional tag.
-\item \textbf{Forward pass through all $N$ decoder layers}:
-      causal self-attention + FFN, repeated $N$ times (e.g.\ $N=96$ for GPT-3).
-\item \textbf{Project to vocabulary}: final hidden state $\rightarrow$ logit vector of size $\sim$50K.
-\item \textbf{Sample}: apply temperature + softmax; sample (or argmax) one token, e.g.\ \texttt{"bleu"}.
-\item \textbf{Append \& repeat}: \texttt{"bleu"} is appended to the sequence; repeat until \texttt{<|endoftext|>}.
-\end{enumerate}
-\vspace{0.3em}
-\textbf{Key-Value Cache}: Keys and Values for all previous tokens are cached.  Only the new token's Q, K, V are computed each step,  making autoregressive generation efficient.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Sampling Strategies at Inference}
-\begin{itemize}
-\item \textbf{Greedy decoding}: always pick $\arg\max P(w)$ – fast, but repetitive and deterministic.
-\item \textbf{Top-$k$ sampling}: sample from the $k$ most probable tokens (e.g.\ $k=50$).
-\item \textbf{Top-$p$ (nucleus) sampling}: sample from the smallest set of tokens whose cumulative probability $\ge p$ (e.g.\ $p=0.9$).
-\item \textbf{Temperature}: divide logits by $T$ before softmax.
-  \begin{itemize}
-  \item $T \to 0$: near-greedy; $T=1$: standard; $T > 1$: more random/creative.
-  \end{itemize}
-\item \textbf{Beam search}: maintain top-$b$ partial sequences; pick the one with highest joint probability.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{What Is ChatGPT Really Doing?}
-\begin{itemize}
-\item ChatGPT is a \textbf{decoder-only} Transformer fine-tuned to follow instructions.
-\item At inference it runs the autoregressive loop:
-  ingest prompt tokens $\rightarrow$ predict next token $\rightarrow$ append $\rightarrow$ repeat.
-\item It has no symbolic knowledge, beliefs, or understanding in the human sense.
-\item It is "merely" pulling a coherent thread of text from the statistics of human language – yet the results are astoundingly human-like.
-\item Response quality is proportional to prompt quality.  Garbage in $\rightarrow$ garbage out.
-\end{itemize}
-{\tiny (Ref: What Is ChatGPT Doing\ldots – S.\ Wolfram; Understanding ChatGPT – G.\ Moore)}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{LLM Real-World Use Cases}
 \begin{center}
 \includegraphics[width=0.88\linewidth,keepaspectratio]{llm121}
@@ -1026,6 +1079,22 @@ Encoder-Decoder & Explicit source→target; strong abstractive abilities & Trans
 {\tiny (Ref: Applied LLMs Mastery 2024 – Aishwarya Reganti)}
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Key Stages in LLM Development}
+\begin{enumerate}
+\item \textbf{Pre-training}: self-supervised on massive raw text corpus.\\
+  {\small High cost, long duration, high expertise required.}
+\item \textbf{Prompt Engineering}: craft effective prompts to steer the pre-trained model.\\
+  {\small No training cost; limited customisation.}
+\item \textbf{Supervised Fine-Tuning (SFT)}: train on small curated (prompt, response) pairs.\\
+  {\small Low–medium cost; teaches instruction-following.}
+\item \textbf{Reinforcement Learning from Human Feedback (RLHF)}: align model to human values.\\
+  {\small Medium–high cost; requires reward model.}
+\item \textbf{Deployment}: quantisation, distillation, caching optimisations.\\
+  {\small Reduces inference cost and latency.}
+\end{enumerate}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Retrieval-Augmented Generation (RAG)}
@@ -1187,7 +1256,7 @@ Key trends: context windows growing; multimodality standard; open-source closing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{LLM Challenges: Technical \& Safety}
 \begin{center}
-\includegraphics[width=0.88\linewidth,keepaspectratio]{llm123}
+\includegraphics[width=\linewidth,keepaspectratio]{llm123}
 \end{center}
 {\tiny (Ref: Applied LLMs Mastery 2024 – Aishwarya Reganti)}
 \end{frame}

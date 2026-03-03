@@ -160,6 +160,72 @@ Think of it as having a senior developer sitting next to you
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Providers in OpenCode}
+
+\textbf{OpenCode supports 75+ LLM providers.} Here are the most useful options.
+
+\vspace{0.3cm}
+\textbf{OpenCode Zen (Curated Gateway)}
+
+\begin{itemize}
+    \item Pre-benchmarked models with optimized configurations
+    \item No setup headaches — models just work
+    \item Access to free models (GLM 4.7 Free, Kimi K2.5 Free, Big Pickle)
+    \item Competitive pricing (often cheaper than direct APIs)
+    \item Team management features built-in
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Pricing (per 1M tokens):}
+\begin{itemize}
+    \item Claude Sonnet 4.5: \$3.00 input / \$15.00 output
+    \item Qwen3 Coder 480B: \$0.45 input / \$1.50 output
+    \item Free models: \$0 (may train on user data)
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Setup:}
+\begin{itemize}
+    \item Sign in at \texttt{opencode.ai/auth}
+    \item Add billing details
+    \item Run \texttt{/connect}, select OpenCode, paste your key
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom OpenAI-Compatible Providers}
+
+\textbf{Connection Steps:}
+\begin{itemize}
+    \item Run \texttt{/connect}
+    \item Select \texttt{Other}
+    \item Enter provider ID
+    \item Paste your API key
+\end{itemize}
+
+\textbf{Use any provider with an OpenAI-compatible API.}
+
+\begin{lstlisting}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "my-provider": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "My Custom Provider",
+      "options": {
+        "baseURL": "https://api.my-provider.com/v1"
+      },
+      "models": {
+        "my-model": {
+          "name": "My Model" }}}}}
+\end{lstlisting}
+
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Plan vs Build Mode}
 
 Switch between them using the Tab key.
@@ -271,7 +337,9 @@ opencode -c run "Now add unit tests for those functions"
 
     \item \textbf{AGENTS.md:  ``The Onboarding Doc'':} \textit{Always-on}, repo-committed, team-shared. Tells \textit{any} agent how this project works: stack, build commands, test steps, conventions. Think of it as the README for AI:  written once, applied everywhere.
     \item \textbf{Rules:  ``Standing Orders'':} \textit{Always-on}, injected into every session. Global rules (\texttt{\textasciitilde/.config/opencode/AGENTS.md}) encode personal preferences never shared with the team. Multi-file rules via \texttt{opencode.json} allow conditional loading per glob/path. Same intent as AGENTS.md:  just scoped differently (personal vs. project vs. package).
-    \item \textbf{Skills:  ``The On-Call Expert'':} \textit{Lazy-loaded}:  the agent reads only the name + description at startup, then fetches full content only when the task is relevant. Prevents token waste on instructions that don't apply to the current task. Think: nobody memorizes the entire wiki before starting a ticket.
+	\item OpenCode has three extension mechanisms: commands, skills, and agents. Commands are what to do. Skills are how to do it. Agents are who does it. 
+	\item \item \textbf{Commands:  ``The shortcuts for repetitive prompts'':} stored in \lstinline|Create .opencode/commands/test.md| and triggered with $/$
+    \item \textbf{Skills:  ``The On-Call Expert'':} \textit{Lazy-loaded}: Unlike commands (which execute), skills inform. The agent reads only the name + description at startup, then fetches full content only when the task is relevant. Prevents token waste on instructions that don't apply to the current task. Think: nobody memorizes the entire wiki before starting a ticket.
     \item \textbf{Agents:  ``The Specialist Persona'':} Own model, temperature, tool set, permissions, and system prompt. Invoked by \texttt{@mention} or as a subagent. Not just instructions:  a \textit{different actor} with a different role (e.g., a read-only \texttt{Review} agent vs. a write-enabled \texttt{Build} agent).
   \end{itemize}
 \end{frame}
@@ -727,6 +795,15 @@ export const multiply = tool({ description: "Multiply",
   \end{itemize}
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
+{\Large Tips}
+\end{center}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Tips for Beginners}
   \begin{itemize}
@@ -743,6 +820,171 @@ Don't say "Make it better" but say, "Refactor the handleSubmit function to use a
   \end{itemize}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{1. Root Rules File is Execution Memory}
+  \begin{itemize}
+    \item Your \texttt{OPENCODE.md} (or workspace rules file) should define:
+    \begin{itemize}
+        \item WHY — product purpose
+        \item WHAT — repo map
+        \item HOW — non-negotiable rules
+    \end{itemize}
+    \item Keep it short and authoritative.
+    \item If it becomes a knowledge dump, OpenCode will ignore critical constraints.
+    \item Clear, structural guidance beats long explanations.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{2. Turn Repeated Workflows into Templates}
+  \begin{itemize}
+    \item If you repeat instructions twice, template them.
+    \item Create reusable folders such as:
+  \end{itemize}
+
+\begin{lstlisting}
+.opencode/tasks/
+.opencode/templates/
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Standardize code review, refactoring, and release workflows.
+    \item Prevent prompt drift across sessions and teammates.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{3. Use Automation for Deterministic Guardrails}
+  \begin{itemize}
+    \item Memory is probabilistic. Tooling is deterministic.
+    \item Use project-level commands, pre-commit hooks, and CI checks.
+    \item Examples:
+    \begin{itemize}
+        \item Auto-run formatters
+        \item Run tests after core changes
+        \item Block unsafe directory edits (auth, migrations)
+    \end{itemize}
+    \item Deterministic rules belong in tooling, not prompts.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{4. Use docs/ for Progressive Disclosure}
+  \begin{itemize}
+    \item Keep architecture, ADRs, and runbooks in \texttt{docs/}.
+    \item Reference documentation — do not paste it into context.
+  \end{itemize}
+
+\begin{lstlisting}
+docs/
+  architecture.md
+  decisions/
+  runbooks/
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Smaller context improves reliability.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{5. Add Local Rule Files Near Sharp Edges}
+  \begin{itemize}
+    \item Place rule files near high-risk directories.
+    \item Document invariants, constraints, and warnings.
+  \end{itemize}
+
+\begin{lstlisting}
+src/auth/RULES.md
+src/persistence/RULES.md
+infra/RULES.md
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Context is loaded exactly where it matters.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{6. Structure for Machine Onboarding}
+  \begin{itemize}
+    \item If a new engineer would be confused, OpenCode will be too.
+    \item Use clear boundaries:
+    \begin{itemize}
+        \item \texttt{src/}
+        \item \texttt{api/}
+        \item \texttt{domain/}
+        \item \texttt{infra/}
+    \end{itemize}
+    \item Keep naming consistent and nesting shallow.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{7. Smaller Context Beats Larger Context}
+  \begin{itemize}
+    \item More files in context does not mean better output.
+    \item Large context dilutes signal and increases hallucination risk.
+    \item Provide:
+    \begin{itemize}
+        \item Exact files
+        \item Exact constraints
+        \item Exact task definition
+    \end{itemize}
+    \item Precision beats volume.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{8. Document Architecture Decisions (ADRs)}
+  \begin{itemize}
+    \item OpenCode cannot infer historical decisions.
+    \item Document why technologies and boundaries were chosen.
+  \end{itemize}
+
+\begin{lstlisting}
+docs/decisions/
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Prevent the AI from “optimizing” your architecture away.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{9. Treat Prompts as Versioned Assets}
+  \begin{itemize}
+    \item Store reusable prompts in your repository.
+  \end{itemize}
+
+\begin{lstlisting}
+tools/prompts/
+feature-implementation.md
+refactor-checklist.md
+bug-triage.md
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Version and improve them over time.
+    \item Avoid copy-paste drift across sessions.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{10. Structure > Prompting Skill}
+  \begin{itemize}
+    \item Strong structure transforms OpenCode into a workspace-native engineer.
+    \item Combine:
+    \begin{itemize}
+        \item File-based rules
+        \item Workflow templates
+        \item Automated guardrails
+        \item Documented architecture
+        \item Minimal scoped context
+    \end{itemize}
+    \item Prompts are temporary. Structure is permanent.
+  \end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
