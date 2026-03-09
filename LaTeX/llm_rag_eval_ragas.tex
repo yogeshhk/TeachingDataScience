@@ -5,45 +5,14 @@
 \end{center}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{RAG Pipeline Evaluation Overview}
-  \begin{itemize}
-    \item \textbf{Evaluating Retrieval Pipeline:} Essential for LLM pipelines, especially RAG use-cases.
-    \item \textbf{Document Retrieval Quality:} In RAG use-cases, evaluate the quality of retrieved documents.
-    \item \textbf{Context Assessment:} Assessing top-k retrieved documents' quality.
-    \item \textbf{Component-level Evaluation:} Evaluate retriever and generator components separately.
-    \item \textbf{End-to-end Evaluation:} Overall system performance assessment.
-  \end{itemize}
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Pipeline}
 
-\begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{llm_eval10}
-\end{center}		
-		
-{\tiny (Ref: Evaluating LLM Models for Production Systems: Methods and Practices - Andrei Lopatenko)}
-		
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Evaluation of RAG - RAGAs}
-
-\begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{llm_eval11}
-\end{center}		
-
-{\tiny (Ref: Evaluating LLM Models for Production Systems: Methods and Practices - Andrei Lopatenko)}
-			
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large Introduction to RAGAS Framework}
-\end{center}
-\end{frame}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{}
+% \begin{center}
+% {\Large Introduction to RAGAS Framework}
+% \end{center}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{What is RAGAS?}
@@ -90,6 +59,8 @@
 {\Large RAGAS Evaluation Metrics}
 \end{center}
 \end{frame}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Component-Level Metrics}
@@ -182,6 +153,110 @@ High context relevancy: France, in Western Europe, encompasses medieval cities, 
 Low context relevancy: France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses... The country is also renowned for its wines and sophisticated cuisine. Lascaux's ancient cave drawings, Lyon's Roman theater and the vast Palace of Versailles attest to its rich history.
 \end{lstlisting}  
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Faithfulness}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Faithfulness} = \frac{\text{Claims in response that are supported by the retrieved context}}{\text{Total claims made in the response}}
+    \]
+    \item \textbf{Intuition:} Does the model \textit{stick to the retrieved evidence}, or does it add facts of its own (hallucinate)?
+    \newline \textit{Example:} If the response makes 5 claims and 4 are verifiable from the retrieved chunks, Faithfulness $= 0.8$.
+    \item Score Range: $[0, 1]$; higher is better. A score below 0.7 typically signals hallucination.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Answer Relevancy}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Answer Relevancy} = \frac{1}{N}\sum_{i=1}^{N} \cos(\mathbf{q}_{\text{orig}},\, \mathbf{q}_i^{\text{gen}})
+    \]
+    where $\mathbf{q}_i^{\text{gen}}$ are questions regenerated from the model's answer.
+    \item \textbf{Intuition:} An LLM generates $N$ hypothetical questions from the response. If those questions closely resemble the original question (measured by cosine similarity of embeddings), the answer is relevant.
+    \newline \textit{Why reverse?} Because it is easier to check if an answer \textit{implies} the right question than to directly score relevance.
+    \item Score Range: $[0, 1]$; higher is better.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Context Recall}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Context Recall} = \frac{\text{Ground truth sentences that are attributable to the retrieved context}}{\text{Total sentences in the ground truth}}
+    \]
+    \item \textbf{Intuition:} Of all the facts we \textit{know} should be in the answer (ground truth), how many were actually \textit{present in the retrieved chunks}?
+    \newline \textit{Low recall} means the retriever is missing important documents --- the LLM cannot answer correctly because the evidence was never fetched.
+    \item Score Range: $[0, 1]$; higher is better. Requires a labelled ground truth.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Context Precision}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Precision@k} = \frac{\text{Relevant chunks in top-}k\text{ results}}{k}
+      \quad;\quad
+      \text{Context Precision} = \frac{\sum_{k=1}^{K} \text{Precision@k} \cdot \mathbf{1}[\text{chunk}_k \text{ relevant}]}{\text{Total relevant chunks in top-}K}
+    \]
+    \item \textbf{Intuition:} Are the top-ranked retrieved chunks actually useful? If the retriever returns 10 chunks but only 2 are relevant, precision is low. \textit{High precision means less noise is sent to the LLM.}
+    \item \textbf{Precision vs.\ Recall trade-off:} Retrieving more chunks improves recall but hurts precision. Tuning $k$ balances this.
+    \item Score Range: $[0, 1]$; higher is better.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Context Relevancy}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Context Relevancy} = \frac{\text{Sentences in retrieved context relevant to the query}}{\text{Total sentences in the retrieved context}}
+    \]
+    \item \textbf{Intuition:} How much of what was retrieved is actually \textit{useful}? A low score means the retriever is returning noisy, off-topic documents, which can confuse the LLM and cause incorrect answers.
+    \newline \textit{Think of it as:} Signal-to-noise ratio of the retrieved context.
+    \item Score Range: $[0, 1]$; higher is better.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Answer Semantic Similarity}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Answer Semantic Similarity} = \cos(\mathbf{e}_{\text{generated}},\, \mathbf{e}_{\text{ground truth}})
+    \]
+    where $\mathbf{e}$ is the embedding vector of the respective answer.
+    \item \textbf{Intuition:} Does the generated answer \textit{mean} the same thing as the ground truth, even if the wording differs? This is measured in semantic (embedding) space, not exact word matching.
+    \newline \textit{Example:} ``The capital of France is Paris'' and ``Paris is France's capital city'' should score high.
+    \item Score Range: $[0, 1]$; higher is better.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Answer Correctness}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Answer Correctness} = w_1 \cdot F_1(\text{facts}) + w_2 \cdot \text{Semantic Similarity}
+    \]
+    where $w_1 + w_2 = 1$ (default $w_1 = w_2 = 0.5$).
+    \item \textbf{Intuition:} Combines two checks --- (1) \textit{factual overlap} (did the model get the facts right?) and (2) \textit{semantic similarity} (is the overall meaning correct?). A high score means both the facts and the meaning match the ground truth.
+    \item \textbf{When to use:} The most comprehensive end-to-end quality measure; use it as the primary metric for production monitoring.
+    \item Score Range: $[0, 1]$; higher is better.
+\end{itemize}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}

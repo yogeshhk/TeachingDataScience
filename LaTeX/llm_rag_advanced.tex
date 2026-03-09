@@ -1,4 +1,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  RAG ADVANCED CONCEPTS
+%
+%  Part 1 — Advanced RAG Techniques
+%           Naive RAG motivation → Pre-Retrieval → Retrieval → Post-Retrieval
+%           → Engineering Challenges → Failure Points → Agentic RAG
+%
+%  Part 2 — Advanced Chunking Techniques
+%           Impact & Factors → Character → Recursive → Sentence → Semantic
+%           → LLM-Propositions → Multi-Vector → Unstructured → Effectiveness Metrics
+%
+%  Self-contained: no overlap with intro (which covers Naive RAG & basic challenges)
+%  or framework (which covers chunking concepts and pipeline basics).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
 {\Large RAG Advanced Concepts}
@@ -6,179 +22,289 @@
 \end{frame}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Advanced RAG Approaches}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  PART 1 — ADVANCED RAG TECHNIQUES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-To  address  the  inefficiencies  of  the  Naive  RAG  approach,  Advanced  RAG
-approaches implement strategies focused on three processes:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why Advanced RAG? Naive RAG Falls Short}
+
+The intro module covers Naive RAG in detail. The key takeaway for this module:
+
+\begin{block}{Naive RAG fixed pipeline}
+\small
+Query $\xrightarrow{\text{embed}}$ top-$k$ chunks $\xrightarrow{\text{stuff}}$ LLM $\rightarrow$ Answer
+\end{block}
+
+\vspace{0.3em}
+\textbf{Three failure categories that Advanced RAG must address:}
+
 \begin{itemize}
-\item Pre-Retrieval
-\item Retrieval
-\item Post Retrieval
-\end{itemize}	
+  \item \textbf{Retrieval failures:} Low precision (wrong chunks retrieved), low recall (relevant chunks missed), and vocabulary mismatch between query and document language.
+  \item \textbf{Augmentation failures:} Redundant or oversized context confuses the LLM; the ``lost-in-the-middle'' effect buries key evidence.
+  \item \textbf{Generation failures:} Responses drift off-context, hallucinate facts not in retrieved chunks, or inherit noise and bias from low-quality retrieval.
+\end{itemize}
 
-% More complex integration through various processing layers between retriever and generator modules.
-
-% \begin{itemize}
-% \item Hybrid Model: Jointly train retrieval and generation models for stronger synergy.
-% \item Conditional Attention: Dynamically weigh retrieved documents based on their relevance to the current generation stage.
-% \item Controllable Generation: Introduce mechanisms to steer generated content towards retrieved information.
-% \end{itemize}	
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Advanced RAG Approaches}
+\vspace{0.3em}
+\textbf{Advanced RAG} adds targeted improvements at three stages:
 
 \begin{center}
-\includegraphics[width=0.55\linewidth,keepaspectratio]{rag2}
+\Large
+\textbf{Pre-Retrieval} $\;\longrightarrow\;$ \textbf{Retrieval} $\;\longrightarrow\;$ \textbf{Post-Retrieval}
+\end{center}
 
-{\tiny (Ref: Progression of RAG Systems - Abhinav Kimothi )}
-\end{center}	
+{\tiny (Ref: Progression of RAG Systems - Abhinav Kimothi)}
+
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Advanced RAG Stages: Pre-retrieval}
-\textbf{Chunk Optimization}
+\begin{frame}[fragile]\frametitle{Advanced RAG: Three-Stage Overview}
 
-  \begin{itemize}
-    \item Break external documents into appropriately sized chunks
-    \item Decision factors: content type, user queries, and application needs
-    \item No one-size-fits-all strategy; flexibility is crucial
-    \item Current research explores techniques like sliding windows and "small2big" methods
-  \end{itemize}
-  
-\textbf{Metadata Integration}
+\begin{columns}
+  \begin{column}[T]{0.52\linewidth}
+    \begin{itemize}
+      \item \textbf{Pre-Retrieval}, improve the index and the query \textit{before} searching:
+        \begin{itemize}
+          \item Smarter chunking (small2big, sliding window)
+          \item Metadata enrichment per chunk
+          \item Graph-based index structures
+          \item Document alignment for tables \& code
+        \end{itemize}
 
-  \begin{itemize}
-    \item Embed information like dates, purpose, chapter summaries, etc., into chunks
-    \item Improves retriever efficiency by assessing similarity to metadata
-  \end{itemize}
-  
+      \vspace{0.3em}
+      \item \textbf{Retrieval}, richer search strategies:
+        \begin{itemize}
+          \item Query rewriting, expansion, sub-queries
+          \item Hybrid dense + sparse search
+          \item Iterative, recursive, adaptive retrieval
+          \item HyDE and fine-tuned embeddings
+        \end{itemize}
 
-\end{frame}
+      \vspace{0.3em}
+      \item \textbf{Post-Retrieval}, refine what the LLM sees:
+        \begin{itemize}
+          \item Contextual compression
+          \item Cross-encoder reranking
+        \end{itemize}
+    \end{itemize}
+  \end{column}
+  \begin{column}[T]{0.48\linewidth}
+    \begin{center}
+    \includegraphics[width=\linewidth,keepaspectratio]{rag2}
+    \end{center}
+    {\tiny (Ref: Progression of RAG Systems - Abhinav Kimothi)}
+  \end{column}
+\end{columns}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Advanced RAG Stages: Pre-retrieval}
-\textbf{Indexing Structure}
-  \begin{itemize}
-    \item Introduction of graph structures enhances retrieval
-    \item Leverages nodes and their relationships
-    \item Multi-index paths aimed at increasing efficiency
-  \end{itemize}
-  
-\textbf{Alignment}
-  \begin{itemize}
-    \item Understanding complex data, like tables, can be tricky for RAG
-    % \item Improve indexing with counterfactual training
-    % \item Create hypothetical (what-if) questions to increase alignment
-    \item Reduce disparity between documents
-  \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Advanced RAG Stages: Retrieval}
-\textbf{Query Rewriting}
-  \begin{itemize}
-    \item Use rewriting approaches for better alignment between user queries and documents
-    \item LLMs create pseudo-documents from the query for improved matching
-    \item LLMs perform abstract reasoning; multi-querying for solving complex user queries
-  \end{itemize}
-\textbf{Hybrid Search Exploration}
-  \begin{itemize}
-    \item RAG system employs different types of searches: keyword, semantic, and vector
-    \item Search type depends on user query and available data
-  \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Advanced RAG Stages: Retrieval}
-\textbf{Sub Queries}
-  \begin{itemize}
-    \item Break down complex queries into sub-questions for each relevant data source
-    \item Gather intermediate responses and synthesize a final response
-  \end{itemize}
-\textbf{Query Routing}
-  \begin{itemize}
-    \item Query router identifies downstream task and decides subsequent action for RAG system
-    \item During retrieval, query router identifies most appropriate data source
-  \end{itemize}
-\textbf{Iterative Retrieval}
-  \begin{itemize}
-    \item Collect documents repeatedly based on query and generated response
-    \item Create a more comprehensive knowledge base
-  \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Advanced RAG Stages: Retrieval}
-\textbf{Recursive Retrieval}
-  \begin{itemize}
-    \item Iteratively retrieves documents and refines search queries based on previous results
-    \item Continuous learning process
-  \end{itemize}
-\textbf{Adaptive Retrieval}
-  \begin{itemize}
-    \item Enhance RAG framework by empowering LLMs to proactively identify suitable moments and content for retrieval
-    % \item Improve efficiency and relevance of information obtained
-    \item Dynamically choose when and what to retrieve for more precise and effective results
-  \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Advanced RAG Stages: Retrieval}
-\textbf{Hypothetical Document Embeddings (HyDE)}
-
-\textbf{Problem:} User queries are short (e.g., ``What is the refund policy?'') while stored documents are long and dense. Their embedding vectors often do not match well.
-
-\textbf{HyDE Solution:}
-  \begin{enumerate}
-    \item LLM generates a \textit{hypothetical} answer to the query (a fake but plausible document).
-    \item Embed this hypothetical answer $\rightarrow$ vector $\mathbf{h}$.
-    \item Retrieve real documents closest to $\mathbf{h}$ rather than the raw query vector.
-  \end{enumerate}
-
-\textbf{Why it works:} The hypothetical answer lives in the same embedding space as real documents (answer-to-answer similarity), so the match is stronger than query-to-document.
-
-\textbf{Fine-tuned Embeddings}
-  \begin{itemize}
-    \item Train embedding model on domain-specific (query, document) pairs.
-    \item Especially useful for specialized vocabulary (medical, legal, code).
-  \end{itemize}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Advanced RAG Stages: Post-retrieval}
-\textbf{Information Compression}
-  \begin{itemize}
-    \item Retriever proficient in extracting relevant information from extensive knowledge bases
-    \item Challenge: Managing vast amount of information within retrieval documents
-    \item Compress retrieved information to extract the most relevant points
-    \item Information passed to LLM after compression
-  \end{itemize}
-\textbf{Reranking}
-  \begin{itemize}
-    \item Re-ranking model crucial for optimizing the document set retrieved by the retriever
-    \item Rearrange document records to prioritize the most relevant ones at the top
-    \item Manages the total number of documents effectively
-    \item Resolves challenges related to context window expansion during retrieval
-    \item Improves efficiency and responsiveness
-  \end{itemize}
+\begin{frame}[fragile]\frametitle{Stage 1: Pre-Retrieval}
+
+\textbf{Goal:} Build a higher-quality index and present a better query \textit{before} the search begins.
+
+\begin{itemize}
+  \item \textbf{Chunk Optimization:}
+    Research shows ``small2big'' (index fine chunks, return larger parent) and sliding-window methods outperform fixed-size splitting on precision. No one-size-fits-all; content type and query complexity drive the decision.
+
+  \item \textbf{Metadata Integration:}
+    Attach structured metadata (date, document type, chapter, summary tags) to each chunk at index time. The retriever can pre-filter on metadata before semantic search, dramatically narrowing the candidate set.
+
+  \item \textbf{Graph Indexing:}
+    Represent documents as knowledge graphs (nodes = entities, edges = relationships). Enables multi-hop reasoning across documents, e.g., tracing an acquisition chain or a clinical drug interaction path.
+
+  \item \textbf{Document Alignment:}
+    Complex content types (tables, code, formulas) produce poor text embeddings. Alignment strategies generate natural-language descriptions of tables, or create hypothetical Q\&A pairs per chunk, to bridge the representation gap.
+\end{itemize}
+
+{\tiny (Ref: Progression of RAG Systems - Abhinav Kimothi)}
+
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Still, Challenges in Adv RAG}
-  \begin{itemize}
-    \item \textbf{Data Ingestion Complexity:} Handling extensive knowledge bases involves engineering challenges such as parallelizing requests, managing retries, and scaling infrastructure.
-    \item \textbf{Efficient Embedding:} Embedding large datasets requires addressing rate limits, implementing robust retry logic, and managing self-hosted models for optimal efficiency.
-    \item \textbf{Vector Database Considerations:} Storing data in a vector database introduces challenges like understanding compute resources, monitoring, sharding, and addressing potential bottlenecks.
-    \item \textbf{Fine-Tuning and Generalization:} Fine-tuning RAG models for specific tasks while ensuring generalization across diverse knowledge-intensive NLP tasks requires a careful balance.
-    % \item \textbf{Hybrid Parametric and Non-Parametric Memory:} Integrating both memory components in RAG poses challenges related to knowledge revision, interpretability, and avoiding hallucinations.
-    \item \textbf{Knowledge Update Mechanisms:} Developing mechanisms to update non-parametric memory as real-world knowledge evolves is crucial for adapting to changing information.
-  \end{itemize}
+\begin{frame}[fragile]\frametitle{Stage 2: Retrieval, Query-Side Improvements}
+
+\textbf{Goal:} Before issuing the search, transform the raw user query into something that retrieves better.
+
+\begin{itemize}
+  \item \textbf{Query Rewriting:}
+    LLM rephrases an ambiguous or poorly phrased query into a clear, search-optimised statement. Fixes typos, expands acronyms, resolves pronouns (``it'' $\rightarrow$ explicit entity name).
+
+  \item \textbf{Multi-Query Expansion:}
+    LLM generates 3--5 alternative phrasings of the same question. Each is searched in parallel; results are union-merged and deduplicated. Higher recall, catches documents that match some phrasings but not others.
+
+  \item \textbf{Sub-Queries:}
+    Complex questions are decomposed into targeted sub-questions, each aimed at a specific data source. Intermediate answers are synthesised into one final response. Prevents a single vague query from missing evidence spread across sources.
+
+  \item \textbf{Query Routing:}
+    A classifier directs each query to the most appropriate data source: vector DB, SQL database, web search, or calculator, based on detected intent. Avoids semantically searching a SQL database or running arithmetic through a vector index.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Stage 2: Retrieval, Search-Side Improvements}
+
+\textbf{Goal:} Use richer search algorithms and retrieval patterns beyond a single nearest-neighbour lookup.
+
+\begin{itemize}
+  \item \textbf{Hybrid Search:}
+    Combines dense (semantic embedding) search with sparse (BM25 keyword) search via Reciprocal Rank Fusion. Dense search captures meaning; sparse search catches exact-match terms (product codes, names) that dense vectors miss.
+
+  \item \textbf{Iterative Retrieval:}
+    Runs multiple retrieval rounds. Each round is conditioned on the query \textit{and} the response generated so far, progressively building a richer evidence base. Useful for open-ended research tasks.
+
+  \item \textbf{Recursive Retrieval:}
+    Refines the search query based on what was already retrieved; stops when results stabilise. Similar to a human researcher who adjusts their search terms after reading initial results.
+
+  \item \textbf{Adaptive Retrieval:}
+    The LLM proactively decides \textit{when} retrieval is necessary and \textit{what} to retrieve. For queries the model can answer from parametric memory, retrieval is skipped entirely, reducing latency and cost.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Stage 2: Retrieval, HyDE and Fine-Tuned Embeddings}
+
+\textbf{HyDE, Hypothetical Document Embeddings}
+
+\textbf{Problem:} A short user query (e.g., ``What is the refund policy?'') and a dense document paragraph occupy different regions of the embedding space, their cosine similarity is weak even when the document contains the answer.
+
+\textbf{Solution:}
+\begin{enumerate}
+  \item LLM generates a plausible \textit{hypothetical answer} to the query.
+  \item Embed the hypothetical answer $\rightarrow$ vector $\mathbf{h}$.
+  \item Retrieve real chunks closest to $\mathbf{h}$, not to the raw query vector.
+\end{enumerate}
+
+\textbf{Why it works:} Hypothetical answer and real document both use ``answer-shaped'' language, their embeddings cluster together. Answer-to-answer similarity is far stronger than query-to-document.
+
+\vspace{0.4em}
+\textbf{Fine-Tuned Embeddings}
+\begin{itemize}
+  \item Train a domain-specific embedding model on (query, relevant-chunk) pairs from your own corpus.
+  \item Especially valuable for specialised vocabulary: medical terminology, legal clauses, proprietary product names.
+  \item Typically yields a 5--15\% retrieval improvement over generic models on in-domain queries.
+\end{itemize}
+
+{\tiny (Ref: https://arxiv.org/pdf/2212.10496.pdf)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Stage 3: Post-Retrieval}
+
+\textbf{Goal:} Take the candidate chunks returned by the retriever and refine them before the LLM sees them, reducing noise and improving ordering.
+
+\vspace{0.3em}
+\textbf{Information Compression (Contextual Compression):}
+\begin{itemize}
+  \item Large retrieval sets can exceed the LLM's context window and introduce irrelevant content.
+  \item An extractor LLM reads each retrieved chunk and returns \textit{only the sentences directly relevant to the query}.
+  \item Reduces token count sent to the generator, lowering cost and improving the signal-to-noise ratio.
+\end{itemize}
+
+\vspace{0.3em}
+\textbf{Cross-Encoder Reranking:}
+\begin{itemize}
+  \item First-pass retrieval scores query and chunk \textit{independently} (bi-encoder cosine similarity). A cross-encoder scores them \textit{jointly}:
+    \[ s_i = \text{CrossEncoder}(\text{query} \oplus \text{chunk}_i) \]
+  \item Dramatically more accurate than cosine similarity; too slow to run over the full corpus, so it operates only on the top-$k$ candidates from the first pass.
+  \item Reorders chunks by true relevance; most relevant chunks placed first in the prompt.
+\end{itemize}
+
+{\tiny (Ref: https://www.pinecone.io/learn/series/rag/rerankers/)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Remaining Engineering Challenges}
+
+Even with Advanced RAG techniques, significant production challenges remain:
+
+\begin{itemize}
+  \item \textbf{Data Ingestion at Scale:}
+    Embedding a large corpus requires parallelism, rate-limit handling, robust retry logic, and incremental update pipelines. A na\"ive single-threaded approach will be too slow for production corpora.
+
+  \item \textbf{Vector Database Operations:}
+    Hosting a vector DB at scale introduces challenges: compute sizing, index sharding, query latency monitoring, and replication. Managed services reduce ops burden but add cost.
+
+  \item \textbf{Fine-Tuning vs.\ Generalisation:}
+    Fine-tuning embeddings or the LLM on domain data improves in-domain performance but can degrade generalisation. Requires a dedicated evaluation set and careful early-stopping.
+
+  \item \textbf{Knowledge Freshness:}
+    Non-parametric memory (the vector index) must be re-embedded whenever source documents change. Designing incremental update pipelines, without full re-ingestion, is a non-trivial engineering problem.
+
+  \item \textbf{Evaluation in Production:}
+    Unlike offline benchmarks, production RAG systems must be monitored continuously. Ground-truth labels are rarely available online; LLM-as-judge frameworks (RAGAS) are needed for no-label monitoring.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Failure Points: Overview}
+
+Even a well-tuned Advanced RAG pipeline can fail in predictable ways. The failure taxonomy below lets you diagnose issues systematically and target fixes precisely.
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{rag34}
+\end{center}
+
+{\tiny (Ref: Mastering RAG: How To Architect An Enterprise RAG System - Pratik Bhavsar)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Failure Points: FP1--FP7}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{itemize}
+      \item \textbf{FP1, Missing Content:}
+        The answer does not exist in any document. System should say ``I don't know'' but often hallucinates instead.
+        \textit{Fix: Out-of-scope detection; confidence thresholding.}
+
+      \item \textbf{FP2, Missed Top-Ranked Doc:}
+        Answer exists but the chunk ranked below top-$k$.
+        \textit{Fix: Increase $k$; improve chunking; add reranker.}
+
+      \item \textbf{FP3, Not in Context:}
+        Relevant chunk retrieved but buried in a long context window and ignored by the LLM (lost-in-the-middle).
+        \textit{Fix: Rerank; place best chunk first.}
+
+      \item \textbf{FP4, Not Extracted:}
+        Answer is present but LLM fails to extract it due to excessive noise or conflicting information.
+        \textit{Fix: Compress context; filter irrelevant chunks.}
+    \end{itemize}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+    \begin{itemize}
+      \item \textbf{FP5, Wrong Format:}
+        User asked for a table or list; LLM responds in prose.
+        \textit{Fix: Explicit format instructions in system prompt.}
+
+      \item \textbf{FP6, Incorrect Specificity:}
+        Response is too vague or too granular relative to the question.
+        \textit{Fix: Query clarification step; specificity instructions in prompt.}
+
+      \item \textbf{FP7, Incomplete:}
+        Answer is factually correct but omits relevant details spread across multiple chunks.
+        \textit{Fix: Increase $k$; decompose into sub-questions.}
+    \end{itemize}
+  \end{column}
+\end{columns}
+
+{\tiny (Ref: Mastering RAG: How To Architect An Enterprise RAG System - Pratik Bhavsar)}
+
 \end{frame}
 
 
@@ -186,629 +312,293 @@ approaches implement strategies focused on three processes:
 \begin{frame}[fragile]\frametitle{Agentic RAG: The Next Frontier}
 
 \textbf{What is Agentic RAG?}
-RAG where the LLM \textit{decides} when and what to retrieve, rather than retrieving on every query.
+Standard RAG always retrieves $k$ chunks before every generation call, regardless of whether retrieval is actually needed. Agentic RAG gives the LLM \textit{control over the retrieval process itself}.
 
-\begin{itemize}
-  \item \textbf{Standard RAG:} Fixed pipeline --- always retrieve $k$ chunks before generating.
-  \item \textbf{Agentic RAG:} The LLM acts as an agent --- it can:
-  \begin{itemize}
-    \item Issue \textit{multiple retrieval queries} for complex questions.
-    \item \textit{Reflect} on retrieved results and decide to search again.
-    \item \textit{Route} to different tools (web search, database, calculator).
-    \item \textit{Stop} and answer when sufficient context is found.
-  \end{itemize}
-\end{itemize}
+\begin{columns}
+  \begin{column}[T]{0.5\linewidth}
+    \textbf{Standard RAG (fixed pipeline):}
+    \begin{center}
+    \small Query $\rightarrow$ Retrieve $\rightarrow$ Generate
+    \end{center}
 
-\textbf{Key frameworks:} ReAct (Reason + Act), FLARE (Forward-Looking Active REtrieval), Self-RAG (model decides \textit{if} retrieval is needed at all).
+    \vspace{0.4em}
+    \textbf{Agentic RAG (LLM-controlled loop):}
+    \begin{enumerate}
+      \item \textbf{Reason:} Do I have enough context?
+      \item \textbf{Act:} Call a tool (search, SQL, web, calculator).
+      \item \textbf{Observe:} Read the tool result.
+      \item Repeat or generate the final answer.
+    \end{enumerate}
+  \end{column}
+  \begin{column}[T]{0.5\linewidth}
+    \textbf{Key patterns:}
+    \begin{itemize}
+      \item \textbf{ReAct} (Reason + Act): General agent loop using interleaved reasoning and tool calls.
+      \item \textbf{FLARE} (Forward-Looking Active REtrieval): Retrieves proactively when the LLM predicts it will need an external fact in the next sentence.
+      \item \textbf{Self-RAG}: Model emits special reflection tokens to decide \textit{whether} to retrieve, \textit{whether} retrieved chunks are relevant, and \textit{whether} its own response is supported.
+    \end{itemize}
 
-\vspace{0.3em}
-{\small \textbf{Trade-off:} More powerful but higher latency and harder to debug.}
+    \vspace{0.3em}
+    \textbf{Trade-off:} Higher accuracy on complex multi-step queries; higher latency and harder to debug than a fixed pipeline.
+  \end{column}
+\end{columns}
 
 \end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Failure Points of RAG Systems}
-
-
-		\begin{center}
-		\includegraphics[width=\linewidth,keepaspectratio]{rag34}
-		\end{center}
-
-{\tiny (Ref: Mastering RAG: How To Architect An Enterprise RAG System - Pratik Bhavsar)}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Failure Points}
-\begin{itemize}
-  \item \textbf{Missing Content (FP1):}
-    \begin{itemize}
-        \item Question without answer in available documents.
-        \item Ideal response: "Sorry, I don’t know."
-        \item Risk of system being misled for questions without clear answers.
-    \end{itemize}
-  
-  \item \textbf{Missed Top Ranked Documents (FP2):}
-    \begin{itemize}
-        \item Answer in document, but not ranked high enough.
-        \item Only top K documents returned (K based on performance).
-        \item Theoretical ranking vs. practical limitations.
-    \end{itemize}
-  
-  \item \textbf{Not in Context - Consolidation Strategy Limitations (FP3):}
-    \begin{itemize}
-        \item Relevant answer retrieval hindered during consolidation.
-        \item Occurs with a substantial number of returned documents.
-        \item Challenge in incorporating retrieved documents into context.
-    \end{itemize}
-  
-  \item \textbf{Not Extracted (FP4):}
-    \begin{itemize}
-        \item Answer present, but model fails to extract correct information.
-        \item Occurs with excessive noise or conflicting information.
-    \end{itemize}
-  
-
-\end{itemize}
-
-{\tiny (Ref: Mastering RAG: How To Architect An Enterprise RAG System - Pratik Bhavsar)}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Failure Points}
-\begin{itemize}
-  
-  \item \textbf{Wrong Format (FP5):}
-    \begin{itemize}
-        \item Question involves specific format (table/list), but model disregards.
-        \item Failure to follow instruction for information extraction.
-    \end{itemize}
-  
-  \item \textbf{Incorrect Specificity (FP6):}
-    \begin{itemize}
-        \item Response lacks required specificity or is overly specific.
-        \item Predetermined outcomes may lead to incorrect specificity.
-        \item Unclear user questions may result in overly general responses.
-    \end{itemize}
-  
-  \item \textbf{Incomplete (FP7):}
-    \begin{itemize}
-        \item Accurate answers lacking some information present in context.
-        \item Example: Key points covered in multiple documents.
-        \item Approach of asking separate questions for better results.
-    \end{itemize}
-\end{itemize}
-
-{\tiny (Ref: Mastering RAG: How To Architect An Enterprise RAG System - Pratik Bhavsar)}
-
-\end{frame}
-
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{}
-% \begin{center}
-% {\Large Model Optimization}
-% \end{center}
-% \end{frame}
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Deploying Large Language Models}
-  % \begin{itemize}
-    % \item Challenge: LLMs' size and computational demands in production.
-    % \item Optimisation strategies crucial for cost-effective deployment.
-  % \end{itemize}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{Model Compression}
-
-
-		% \begin{center}
-		% \includegraphics[width=0.6\linewidth,keepaspectratio]{rag16}
-		% \end{center}
-
-% {\tiny (Ref: Knowledge Brain RAG - Abhinav  Kimothi)}
-
-% \end{frame}
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Model Quantisation}
-  % \begin{itemize}
-    % \item Converts parameters and activations to lower precision data types.
-    % \item Reduces memory and computation requirements.
-    % \item Increases inference speed (2-4x) using int8 arithmetic.
-    % \item Approaches: post-training, quantisation-aware training, hybrid quantisation.
-    % \item Tradeoff analysis needed between reduced precision and model accuracy.
-  % \end{itemize}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Model Pruning}
-  % \begin{itemize}
-    % \item Removes redundant parameters to reduce size and complexity.
-    % \item Weight pruning removes individual weights based on magnitude.
-    % \item Neuron pruning removes entire neurons based on importance.
-    % \item Requires fine-tuning for maintaining accuracy.
-    % \item Approaches: post-training, iterative pruning.
-  % \end{itemize}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Model Distillation}
-  % \begin{itemize}
-    % \item Transfers knowledge from large "teacher" to smaller "student" model.
-    % \item Student mimics teacher's outputs using labeled data and teacher probabilities.
-    % \item Enhances efficiency while approximating teacher accuracy.
-    % \item Includes knowledge distillation, self-distillation, ensemble distillation.
-  % \end{itemize}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Combined Optimisation Techniques}
-  % \begin{itemize}
-    % \item By combining quantisation, pruning, and distillation:
-    % \item Unlock benefits of large language models.
-    % \item Control deployment costs and energy consumption.
-  % \end{itemize}
-% \end{frame}
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{}
-% \begin{center}
-% {\Large Multimodal Models}
-% \end{center}
-% \end{frame}
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Multimodal AI Models}
-    % \begin{itemize}
-        % \item Most AI models historically limited to a single modality (text, images, or video).
-        % \item Recent progress in handling multiple modalities, especially text and images.
-    % \end{itemize}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Features of Multimodal RAG}
-    % \begin{itemize}
-        % \item Ability to query/prompt in one or more modalities (e.g., text and images).
-        % \item Search and retrieve not only text but also images, tables, audio files related to the query.
-        % \item Ability to generate text, image, video, etc., irrespective of the input mode(s).
-    % \end{itemize}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Emergent Approaches in Multimodal RAG}
-    % \begin{itemize}
-        % \item Using multimodal embeddings like CLIP.
-        % \item Using LMMs to generate image captions and using text embeddings.
-    % \end{itemize}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{Multimodal RAG}
-
-
-
-		% \begin{center}
-		% \includegraphics[width=0.8\linewidth,keepaspectratio]{rag62}
-		
-	
-		% \end{center}
-
-% {\tiny (Ref: A Crash Course on Building RAG Systems -Daily Dose)}
-
-
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Multimodal Embeddings in RAG Workflow}
-    % \begin{itemize}
-        % \item \textbf{Multimodal Embeddings (e.g., CLIP):} Used for embedding both images and text.
-        % \item \textbf{Query/Prompt:} User input initiates the process.
-        % \item \textbf{Retrieved Context:} User query retrieves context (images and/or text).
-        % \item \textbf{LMM (Language Model):} Context, along with the prompt, passed to the Language Model.
-        % \item \textbf{Multimodal Response:} The Language Model generates the final response.
-        % \item \textbf{Indexing and RAG Pipelines:} Sequential steps involving embedding, retrieval, and response generation.
-    % \end{itemize}
-% \end{frame}
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{Multimodal RAG using Multimodal Embeddings}
-
-
-		% \begin{center}
-		% \includegraphics[width=0.6\linewidth,keepaspectratio]{rag12}
-		% \end{center}
-
-% {\tiny (Ref: Multimodal RAG - Abhinav  Kimothi)}
-
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{CLIP : Contrastive Language-Image Pre-training}
-
-
-		% \begin{center}
-		% \includegraphics[width=0.6\linewidth,keepaspectratio]{rag13}
-		% \end{center}
-
-% {\tiny (Ref: Multimodal RAG - Abhinav  Kimothi)}
-
-% \end{frame}
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{MM-RAG Paper and Implementations}
-    % \begin{itemize}
-        % \item MM-RAG paper published in June 2023 provides insights into building a retriever for multimodal RAG.
-        % \item LangChain cookbook offers a simple implementation of multimodal RAG using a multiquery retriever and OpenAI GPT4V.
-        % \item LlamaIndex tutorial explains multimodal RAG implementation in detail.
-    % \end{itemize}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Using LMMs for Text Summaries from Images}
-    % \begin{itemize}
-        % \item \textbf{Indexing:}
-            % \begin{itemize}
-                % \item LLM generates captions for images in the data.
-                % \item Captions and text summaries stored as text embeddings in a vector database.
-                % \item Maintains a mapping from image captions to image files.
-            % \end{itemize}
-        % \item \textbf{Generation:}
-            % \begin{itemize}
-                % \item User query with text and image.
-                % \item LLM generates image captions and embeddings.
-                % \item Search for text summaries and image captions; retrieve images based on relevant captions.
-                % \item Retrieved content passed to LMM with a prompt.
-                % \item LMM generates a multimodal response.
-            % \end{itemize}
-    % \end{itemize}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]{Using LMMs for Text Summaries from Images}
-
-
-		% \begin{center}
-		% \includegraphics[width=0.6\linewidth,keepaspectratio]{rag14}
-		% \end{center}
-
-% {\tiny (Ref: Multimodal RAG - Abhinav  Kimothi)}
-
-% \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  PART 2 — ADVANCED CHUNKING TECHNIQUES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Chunking}
+{\Large Advanced Chunking Techniques}
 
+\vspace{0.3em}
 {\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-
 \end{center}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{What is Chunking?}
-      \begin{itemize}
-\item Breaking down texts into smaller, manageable pieces called "chunks"
-\item Each chunk becomes a vectorized unit of information stored in database
-\item Fundamentally shapes efficiency and effectiveness of NLP tasks
-\item Central role in RAG systems affecting both retrieval and response quality
-\item Creates the foundation for information retrieval in vector databases
-\item Essential preprocessing step for LLM applications
-  \end{itemize}
-
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{What is Chunking?}
+\begin{frame}[fragile]\frametitle{Chunking: Impact and Decision Factors}
 
-  
-  	\begin{center}
-	\includegraphics[width=\linewidth,keepaspectratio]{rag72}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
-\end{frame}
+\textbf{Chunking is the highest-leverage ingestion decision.} Every downstream component depends on chunk quality.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Impact of Chunking on RAG Systems}
-      \begin{itemize}
-\item \textbf{Retrieval Quality}: Defines unit of information stored, enables retrieval of most relevant content
-\item \textbf{Vector Database Cost}: Storage costs grow linearly with number of chunks
-\item \textbf{Query Latency}: Fewer chunks reduce latency for real-time applications
-\item \textbf{LLM Costs}: Larger chunks increase serving costs and latency
-\item \textbf{Hallucination Control}: Excessive context can lead to LLM hallucinations
-\item \textbf{Balance Required}: Must optimize between contextual richness and retrieval precision
-  \end{itemize}
-\end{frame}
+\begin{columns}
+  \begin{column}[T]{0.5\linewidth}
+    \textbf{Impact on system performance:}
+    \begin{itemize}
+      \item \textbf{Retrieval quality:} Chunk boundaries determine whether the answer is retrievable at all. A boundary that cuts through an answer makes it invisible.
+      \item \textbf{LLM cost \& latency:} More/larger chunks $\Rightarrow$ more tokens per call $\Rightarrow$ higher cost and slower generation.
+      \item \textbf{Vector DB cost:} Storage and ANN index size grow linearly with chunk count.
+      \item \textbf{Hallucination risk:} Oversized chunks introduce irrelevant context that can mislead the LLM.
+    \end{itemize}
+  \end{column}
+  \begin{column}[T]{0.5\linewidth}
+    \textbf{Factors driving strategy choice:}
+    \begin{itemize}
+      \item \textbf{Content type:} Prose, code, tables, and tweets need very different boundaries.
+      \item \textbf{Embedding model:} Each model has a max input length (128--8K tokens); chunks exceeding it are silently truncated.
+      \item \textbf{LLM context window:} $k \times \text{chunk\_size}$ must fit within the prompt budget alongside the system prompt and query.
+      \item \textbf{Query type:} Narrow factual queries favour small chunks; multi-part analytical queries need more surrounding context.
+    \end{itemize}
+    \vspace{0.2em}
+    \textbf{No universal answer}, always benchmark strategies against real queries using RAGAS Context Precision before committing.
+  \end{column}
+\end{columns}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Key Factors Influencing Chunking Strategy}
-      \begin{itemize}
-\item \textbf{Text Structure}: Content type (sentences, paragraphs, code, tables) affects chunk size
-\item \textbf{Embedding Model}: Model capabilities and context length limitations guide strategy
-\item \textbf{LLM Context Window}: Finite context windows constrain chunk size decisions
-\item \textbf{Question Types}: Factual vs complex questions require different approaches
-\item \textbf{Application Needs}: No one-size-fits-all solution exists
-\item \textbf{Performance Trade-offs}: Must balance multiple competing factors
-  \end{itemize}
-\end{frame}
+{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{What is Chunking?}
-
-  
-  	\begin{center}
-	\includegraphics[width=\linewidth,keepaspectratio]{rag73}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Text splitter}
-
- \begin{columns}
-    \begin{column}[T]{0.5\linewidth}
-  	\begin{center}
-	\includegraphics[width=0.75\linewidth,keepaspectratio]{rag74}
-		
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
-
-    \end{column}
-    \begin{column}[T]{0.5\linewidth}
-  	\begin{center}
-	\includegraphics[width=0.75\linewidth,keepaspectratio]{rag75}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
-    \end{column}
-  \end{columns}
-  
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Character Splitter Technique}
-      \begin{itemize}
-\item Uses separator (e.g., "\textbackslash n") to identify text split points
-\item Merges splits into chunks based on chunk\_size and chunk\_overlap parameters
-\item Simple approach but can cut sentences midway
-\item Example: Empty string separator treats each character as splitter
-\item Combines splits according to specified size constraints
-\item Foundation for more sophisticated splitting methods
-  \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Character splitter}
-
-  
-  	\begin{center}
-	\includegraphics[width=0.5\linewidth,keepaspectratio]{rag76}
-	
-	\includegraphics[width=0.5\linewidth,keepaspectratio]{rag77}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Recursive Character Splitter}
-      \begin{itemize}
-\item Recursively attempts splitting using different separators
-\item Uses hierarchical list of separators in order of preference
-\item For Python: tries class definitions, function definitions, then common patterns
-\item More flexible and adaptive than simple character splitting
-\item Processes text recursively until manageable chunk sizes achieved
-\item Language-specific separators available for code chunking
-  \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Recursive Character Splitter}
-
- \begin{columns}
-    \begin{column}[T]{0.5\linewidth}
-  	\begin{center}
-	\includegraphics[width=0.75\linewidth,keepaspectratio]{rag78}
-		
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
-
-    \end{column}
-    \begin{column}[T]{0.5\linewidth}
-  	\begin{center}
-	\includegraphics[width=0.75\linewidth,keepaspectratio]{rag79}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
-    \end{column}
-  \end{columns}
-  
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Sentence Splitter Approach}
-      \begin{itemize}
-\item Uses SpaCy library to identify sentence boundaries
-\item Divides text into chunks containing specific number of sentences
-\item Controls chunk size with stride and overlap parameters
-\item Avoids cutting sentences midway (major advantage over character splitting)
-\item Maintains sentence integrity and readability
-\item Still faces challenges with pronoun references requiring context
-  \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Sentence Splitter Approach}
-
-  
-  	\begin{center}
-	\includegraphics[width=0.5\linewidth,keepaspectratio]{rag80}
-	
-	\includegraphics[width=0.5\linewidth,keepaspectratio]{rag81}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Semantic Splitting - The Favorite Method}
-      \begin{itemize}
-\item Groups sentences based on semantic similarity using embedding models
-\item Measures similarity between neighboring sentences
-\item Creates coherent groups where sentences are contextually related
-\item Handles coreference resolution (e.g., pronouns like "they")
-\item Overcomes chunk size and overlap management challenges
-\item Produces more meaningful and contextually coherent chunks
-  \end{itemize}
-\end{frame}
+\begin{frame}[fragile]\frametitle{Method 1: Character Splitter}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Semantic Splitting - The Favorite Method}
+\textbf{Mechanism:} Split text at every occurrence of a chosen separator (default: \texttt{\textbackslash n}). Merge adjacent splits until a \texttt{chunk\_size} character limit is reached; carry forward a \texttt{chunk\_overlap} tail into the next chunk.
 
- \begin{columns}
-    \begin{column}[T]{0.5\linewidth}
-  	\begin{center}
-	\includegraphics[width=0.75\linewidth,keepaspectratio]{rag82}
-		
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
+\vspace{0.2em}
+\textbf{Characteristics:}
+\begin{itemize}
+  \item Simplest and fastest method, zero linguistic or semantic processing.
+  \item Can cut mid-sentence: a question and its answer may land in different chunks, making the answer irretrievable.
+  \item Using an empty-string separator treats every character as a split point (maximum possible granularity).
+  \item Foundation that all more sophisticated splitters build on.
+\end{itemize}
 
-    \end{column}
-    \begin{column}[T]{0.5\linewidth}
-  	\begin{center}
-	\includegraphics[width=0.75\linewidth,keepaspectratio]{rag83}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
-    \end{column}
-  \end{columns}
-  
+\vspace{0.2em}
+\begin{center}
+\includegraphics[width=0.46\linewidth,keepaspectratio]{rag74}
+\hspace{0.04\linewidth}
+\includegraphics[width=0.46\linewidth,keepaspectratio]{rag76}
+\end{center}
+
+{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
+
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LLM-Based Chunking: Propositions}
-      \begin{itemize}
-\item Novel approach using "propositions" as atomic expressions of meaning
-\item Each proposition represents distinct, self-contained factoid
-\item Three principles: distinct meaning, minimal/indivisible, self-contained with context
-\item Performs automatic coreference resolution
-\item Uses specialized propositionizer models (e.g., chentong00/propositionizer-wiki-flan-t5-large)
-\item Produces self-sufficient sentences with resolved references
-  \end{itemize}
-  
-  	\begin{center}
-	\includegraphics[width=0.75\linewidth,keepaspectratio]{rag84}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}  
-\end{frame}
+\begin{frame}[fragile]\frametitle{Method 2: Recursive Character Splitter}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{LLM-Based Chunking: Propositions}
+\textbf{Mechanism:} Tries a prioritised list of separators in order, paragraph break $(\texttt{\textbackslash n\textbackslash n})$ $\rightarrow$ line break $(\texttt{\textbackslash n})$ $\rightarrow$ space $\rightarrow$ character, and stops as soon as a split produces chunks within \texttt{chunk\_size}.
 
-  
-  	\begin{center}
+\vspace{0.2em}
+\textbf{Characteristics:}
+\begin{itemize}
+  \item \textbf{Recommended default} for generic prose (LangChain \texttt{RecursiveCharacterTextSplitter}).
+  \item More likely than plain character splitting to preserve complete sentences and paragraphs.
+  \item Language-specific separator lists exist for code: tries class definition $\rightarrow$ function definition $\rightarrow$ comment $\rightarrow$ line for Python.
+  \item Still operates on character counts, not semantic meaning.
+\end{itemize}
 
-	\includegraphics[width=0.8\linewidth,keepaspectratio]{rag85}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
+\vspace{0.2em}
+\begin{center}
+\includegraphics[width=0.46\linewidth,keepaspectratio]{rag78}
+\hspace{0.04\linewidth}
+\includegraphics[width=0.46\linewidth,keepaspectratio]{rag79}
+\end{center}
+
+{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
+
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Multi-Vector Indexing Strategies}
-      \begin{itemize}
-\item \textbf{Smaller Chunks}: Divide documents into smaller pieces (ParentDocumentRetriever)
-\item \textbf{Summary Approach}: Generate and embed document summaries
-\item \textbf{Hypothetical Questions}: Create questions each document could answer
-\item Indexes both generated content and original text
-\item Improves recall of retrieval system
-\item Utilizes text2text models or LLMs with prompts for chunk generation
-  \end{itemize}
+\begin{frame}[fragile]\frametitle{Method 3: Sentence Splitter}
+
+\textbf{Mechanism:} Uses a linguistic parser (spaCy) to detect sentence boundaries. Packs whole sentences into a chunk until \texttt{chunk\_size} is reached; controls overlap in sentence count via \texttt{stride} and \texttt{overlap} parameters.
+
+\vspace{0.2em}
+\textbf{Characteristics:}
+\begin{itemize}
+  \item \textbf{Key advantage:} Never cuts mid-sentence, every chunk is grammatically complete and independently readable.
+  \item Chunk sizes vary (short vs.\ long sentences) but content integrity is preserved throughout.
+  \item Known weakness: pronouns (``they'', ``it'', ``the process'') may refer to entities introduced in the preceding chunk, creating dangling references that confuse the LLM.
+\end{itemize}
+
+\vspace{0.2em}
+\begin{center}
+\includegraphics[width=0.46\linewidth,keepaspectratio]{rag80}
+\hspace{0.04\linewidth}
+\includegraphics[width=0.46\linewidth,keepaspectratio]{rag81}
+\end{center}
+
+{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
+
 \end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Document-Specific Splitting with Unstructured}
-      \begin{itemize}
-\item Handles complex documents with tables, images, and varied formatting
-\item Supports major document types: PDF, DOCX, PPTX, XLSX, HTML, XML, images
-\item Adaptive partitioning with "auto" strategy for optimal processing
-\item Specialized strategies: "fast" (NLP), "hi\_res" (detectron2), "ocr\_only" (OCR)
-\item Extracts structured elements: titles, tables, images, headers, footers
-\item Enables tabular QnA through HTML table generation
-  \end{itemize}
+\begin{frame}[fragile]\frametitle{Method 4: Semantic Splitter}
+
+\textbf{Mechanism:} Embeds each sentence individually; computes cosine similarity between adjacent sentence pairs; inserts a chunk boundary wherever similarity drops below a threshold. Groups of contextually related sentences form a single chunk.
+
+\vspace{0.2em}
+\textbf{Characteristics:}
+\begin{itemize}
+  \item \textbf{Produces the most coherent chunks}, each chunk covers one coherent topic or argument, not an arbitrary character window.
+  \item Handles coreference naturally: pronouns stay in the same chunk as their referents because coreferential sentences score high similarity to each other.
+  \item Chunk sizes vary organically with topic length, no forced fixed size.
+  \item \textbf{Cost:} Requires embedding every sentence at ingestion time, significantly slower than text-based methods for large corpora.
+\end{itemize}
+
+\vspace{0.2em}
+\begin{center}
+\includegraphics[width=0.46\linewidth,keepaspectratio]{rag82}
+\hspace{0.04\linewidth}
+\includegraphics[width=0.46\linewidth,keepaspectratio]{rag83}
+\end{center}
+
+{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
+
 \end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Document-Specific Splitting with Unstructured}
+\begin{frame}[fragile]\frametitle{Method 5: LLM-Based Chunking, Propositions}
 
-  
-  	\begin{center}
+\textbf{Mechanism:} A specialised LLM (``propositionizer'') decomposes each passage into \textit{atomic propositions}, minimal, self-contained factual statements with all references resolved.
 
-	\includegraphics[width=0.6\linewidth,keepaspectratio]{rag86}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}
+\vspace{0.2em}
+\textbf{Three validity principles for a proposition:}
+\begin{enumerate}
+  \item \textbf{Distinct meaning:} Expresses exactly one fact or relationship.
+  \item \textbf{Minimal:} Cannot be split further without losing meaning.
+  \item \textbf{Self-contained:} All pronouns and co-references are replaced with explicit entities.
+\end{enumerate}
+
+\vspace{0.1em}
+\textbf{Example:} \textit{``Einstein, who was born in Germany, won the Nobel Prize in Physics in 1921.''}\\
+$\Rightarrow$ P1: ``Albert Einstein was born in Germany.''\\
+$\Rightarrow$ P2: ``Albert Einstein won the Nobel Prize in Physics in 1921.''
+
+\begin{center}
+\includegraphics[width=0.46\linewidth,keepaspectratio]{rag84}
+\hspace{0.04\linewidth}
+\includegraphics[width=0.46\linewidth,keepaspectratio]{rag85}
+\end{center}
+
+{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
+
 \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Method 6: Multi-Vector Indexing}
+
+\textbf{Problem:} A single embedding per chunk forces a precision-vs-context trade-off. Small chunks give precise retrieval but lose context; large chunks preserve context but dilute similarity scores.
+
+\textbf{Solution:} Store \textit{multiple vectors} per document, each representing a different view of the content. Retrieve using whichever view matches the query best; always return the full original text to the LLM.
+
+\begin{itemize}
+  \item \textbf{Parent Document Retriever:}
+    Index fine-grained child chunks for precise matching. When a child chunk is retrieved, return its larger parent chunk as context. Best of both worlds: precision at retrieval, richness at generation.
+
+  \item \textbf{Summary Indexing:}
+    Generate an LLM summary of each document; embed the summary; retrieve by summary similarity. The full document is returned for generation.
+
+  \item \textbf{Hypothetical Question Indexing:}
+    For each chunk, generate 3--5 questions it could answer; embed the questions. User queries and generated questions share the same linguistic register, query-to-question similarity is stronger than query-to-chunk-text.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Method 7: Document-Specific Splitting (Unstructured)}
+
+\textbf{Problem:} Real-world documents contain tables, images, headers, and footnotes interleaved with prose. Plain text splitters treat these as garbled character sequences, producing meaningless chunks.
+
+\textbf{Unstructured} library uses computer vision and NLP models to partition documents by element type \textit{before} chunking.
+
+\begin{itemize}
+  \item Supports: PDF, DOCX, PPTX, XLSX, HTML, XML, and scanned image files.
+  \item Identifies and labels: titles, body text, tables, figures, headers, footers, list items.
+  \item \textbf{Processing strategies:}
+    \begin{itemize}
+      \item \texttt{auto}, adaptive; selects the best strategy per document.
+      \item \texttt{fast}, NLP-only; fastest, for clean digital PDFs.
+      \item \texttt{hi\_res}, uses detectron2 CV model; handles complex layouts.
+      \item \texttt{ocr\_only}, for scanned documents with no embedded text layer.
+    \end{itemize}
+  \item Tables are converted to HTML, enabling structured table Q\&A.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.55\linewidth,keepaspectratio]{rag86}
+\end{center}
+
+{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
+
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Measuring Chunking Effectiveness}
-      \begin{itemize}
-\item \textbf{Chunk Attribution}: Binary metric determining if chunk influenced model response
-\item \textbf{Chunk Utilization}: Measures fraction of chunk text impacting response (0-1 scale)
-\item Attribution identifies chunks affecting response for troubleshooting
-\item Low utilization suggests chunks may be longer than necessary
-\item Helps optimize number of retrieved chunks for efficiency
-\item Enables faster debugging and system improvement
-  \end{itemize}
-  
-  	\begin{center}
 
-	\includegraphics[width=0.6\linewidth,keepaspectratio]{rag87}
-	
-	{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
-	
-	\end{center}  
-\end{frame}
+\textbf{How do you know which strategy is actually better?} Two complementary chunk-level metrics:
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Conclusion and Best Practices}
-      \begin{itemize}
-\item Effective chunking is crucial for optimizing RAG system performance
-\item No universal solution - strategy depends on specific use case requirements
-\item Consider text structure, embedding model, LLM context, and question types
-\item Semantic splitting often provides superior results over character-based methods
-\item Use evaluation metrics (Attribution, Utilization) to optimize performance
-\item Balance between contextual richness, retrieval precision, and system efficiency
-  \end{itemize}
+\vspace{0.3em}
+\textbf{Chunk Attribution (binary, 0 or 1):}
+Did this retrieved chunk influence the model's final response? A chunk that was retrieved but contributed nothing to the answer wasted context window budget.\\
+\textit{High attribution rate $\Rightarrow$ retrieval is precise; few wasted tokens.}
+
+\vspace{0.3em}
+\textbf{Chunk Utilisation (continuous, 0--1):}
+\[
+  \text{Utilisation} = \frac{\text{Tokens from this chunk that appear in the response}}{\text{Total tokens in this chunk}}
+\]
+Low utilisation means the chunk is too large, most of its content was irrelevant padding. Reduce chunk size until utilisation rises.
+
+\vspace{0.3em}
+\textbf{How to apply:} For a representative test query set, retrieve top-$k$ chunks for each strategy. Compute mean attribution and utilisation across strategies. The strategy with the highest utilisation at acceptable attribution wins, run before committing to a production chunking pipeline.
+
+\begin{center}
+\includegraphics[width=0.50\linewidth,keepaspectratio]{rag87}
+\end{center}
+
+{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
+
 \end{frame}
