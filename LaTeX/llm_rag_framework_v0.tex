@@ -9,17 +9,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{RAG Framework Basics}
 
-\begin{block}{Three Key Modules}
-\textbf{Ingestion} $\rightarrow$ \textbf{Retriever} $\rightarrow$ \textbf{Generator}
+\begin{block}{Three key modules}
+Ingetstion, Retriever, Generator
 \end{block}
 
-\vspace{0.5em}
-\begin{itemize}
-  \item \textbf{Ingestion:} Load raw documents, split into chunks, embed chunks into vectors, and store in a vector database. This is an \textit{offline} step done once (or periodically updated).
-  \item \textbf{Retriever:} At query time, embed the user's question and find the most similar chunks from the vector store. Think of it as a ``semantic search engine'' over your documents.
-  \item \textbf{Generator:} A large language model receives \textit{(user query + retrieved chunks)} as its prompt and generates a grounded, context-aware answer.
-\end{itemize}
 
+  % \begin{itemize}
+    % \item Three key modules: Ingetstion, Retriever, Generator
+    % \item Retrieval flow: identify, score, and generate
+    % \item External knowledge sources enhance language generation
+  % \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -261,20 +260,37 @@ https://www.pinecone.io/learn/series/rag/rerankers/
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]{Document Splitting}
     \begin{itemize}
-        \item \textbf{Why split?} LLMs have a finite context window (e.g., 4K--128K tokens). A 200-page PDF cannot fit in a single prompt; we must break it into manageable chunks.
-        \item \textbf{How?} Common strategies:
-        \begin{itemize}
-            \item \textbf{Fixed-size:} Split every $N$ characters/tokens (simple, fast).
-            \item \textbf{Sentence-aware:} Split at sentence boundaries (preserves meaning).
-            \item \textbf{Semantic:} Group sentences with similar meaning into one chunk.
-            \item \textbf{Structure-aware:} Honour headings, paragraphs, or code blocks.
-        \end{itemize}
-        \item \textbf{Overlap:} A small overlap (e.g., 20\%) between consecutive chunks prevents important context from being split across boundaries.
+        \item Websites \& HTML pages
+        \item Documents like word, pdf etc.
+        \item Code in python, java etc.
+        \item Data in json, csv etc.
+        \item APIs
+        \item File Directories
+        \item Databases
+        \item And many more
     \end{itemize}
 \end{frame}
 
 
-% [Duplicate RAG Pipeline Considerations removed - see Slide 50]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]{RAG Pipeline Considerations}
+    \begin{itemize}
+        \item RAG expands non-parametric memory of \#llms.
+        \item Indexing pipeline creates a knowledge base for the RAG pipeline.
+        \item Crucial step: Splitting documents into manageable chunks (Chunking).
+            \begin{itemize}
+                \item Large chunks are harder to search; chunking aids in better indexing.
+                \item Retrieved context should be significantly smaller than the LLM's context window.
+            \end{itemize}
+        \item Chunking strategies depend on:
+            \begin{itemize}
+                \item Nature of the content.
+                \item Embedding models chosen.
+                \item Length/Complexity of user inputs (context window limitations).
+                \item Use Case.
+            \end{itemize}
+    \end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]{Importance of Document Chunking}
@@ -621,13 +637,8 @@ https://www.pinecone.io/learn/series/rag/rerankers/
 \begin{frame}[fragile]
 \frametitle{Ragas Metrics: Faithfulness}
 \begin{itemize}
-    \item \textbf{Formula:}
-    \[
-      \text{Faithfulness} = \frac{\text{Claims in response that are supported by the retrieved context}}{\text{Total claims made in the response}}
-    \]
-    \item \textbf{Intuition:} Does the model \textit{stick to the retrieved evidence}, or does it add facts of its own (hallucinate)?
-    \newline \textit{Example:} If the response makes 5 claims and 4 are verifiable from the retrieved chunks, Faithfulness $= 0.8$.
-    \item Score Range: $[0, 1]$; higher is better. A score below 0.7 typically signals hallucination.
+    \item Faithfulness $= \frac{\text{Number of generated claims present}}{\text{Total number of claims made in the response}}$
+    \item Score Range: (0, 1), higher is better.
 \end{itemize}
 \end{frame}
 
@@ -635,14 +646,8 @@ https://www.pinecone.io/learn/series/rag/rerankers/
 \begin{frame}[fragile]
 \frametitle{Ragas Metrics: Answer Relevancy}
 \begin{itemize}
-    \item \textbf{Formula:}
-    \[
-      \text{Answer Relevancy} = \frac{1}{N}\sum_{i=1}^{N} \cos(\mathbf{q}_{\text{orig}},\, \mathbf{q}_i^{\text{gen}})
-    \]
-    where $\mathbf{q}_i^{\text{gen}}$ are questions regenerated from the model's answer.
-    \item \textbf{Intuition:} An LLM generates $N$ hypothetical questions from the response. If those questions closely resemble the original question (measured by cosine similarity of embeddings), the answer is relevant.
-    \newline \textit{Why reverse?} Because it is easier to check if an answer \textit{implies} the right question than to directly score relevance.
-    \item Score Range: $[0, 1]$; higher is better.
+    \item Answer Relevance $= \text{Avg}(\text{Cosine Similarity}(\text{Initial Query, LLM generated Query}[i]))$
+    \item Score Range: (0, 1), higher is better.
 \end{itemize}
 \end{frame}
 
@@ -650,13 +655,8 @@ https://www.pinecone.io/learn/series/rag/rerankers/
 \begin{frame}[fragile]
 \frametitle{Ragas Metrics: Context Recall}
 \begin{itemize}
-    \item \textbf{Formula:}
-    \[
-      \text{Context Recall} = \frac{\text{Ground truth sentences that are attributable to the retrieved context}}{\text{Total sentences in the ground truth}}
-    \]
-    \item \textbf{Intuition:} Of all the facts we \textit{know} should be in the answer (ground truth), how many were actually \textit{present in the retrieved chunks}?
-    \newline \textit{Low recall} means the retriever is missing important documents --- the LLM cannot answer correctly because the evidence was never fetched.
-    \item Score Range: $[0, 1]$; higher is better. Requires a labelled ground truth.
+    \item Context Relevance $= \frac{\text{Number of Ground Truth sentences in the context}}{\text{Total number of sentences in the Ground Truth}}$
+    \item Score Range: (0, 1), higher is better.
 \end{itemize}
 \end{frame}
 
@@ -664,15 +664,9 @@ https://www.pinecone.io/learn/series/rag/rerankers/
 \begin{frame}[fragile]
 \frametitle{Ragas Metrics: Context Precision}
 \begin{itemize}
-    \item \textbf{Formula:}
-    \[
-      \text{Precision@k} = \frac{\text{Relevant chunks in top-}k\text{ results}}{k}
-      \quad;\quad
-      \text{Context Precision} = \frac{\sum_{k=1}^{K} \text{Precision@k} \cdot \mathbf{1}[\text{chunk}_k \text{ relevant}]}{\text{Total relevant chunks in top-}K}
-    \]
-    \item \textbf{Intuition:} Are the top-ranked retrieved chunks actually useful? If the retriever returns 10 chunks but only 2 are relevant, precision is low. \textit{High precision means less noise is sent to the LLM.}
-    \item \textbf{Precision vs.\ Recall trade-off:} Retrieving more chunks improves recall but hurts precision. Tuning $k$ balances this.
-    \item Score Range: $[0, 1]$; higher is better.
+    \item Context Precision @ k $= \frac{\text{Sum(Precision@k)}}{\text{Total number of relevant documents in the top results}}$
+    \item Precision @ k $= \frac{\text{True Positives@k}}{\text{True Positives@k + False Positives@k}}$
+    \item Score Range: (0, 1), higher is better.
 \end{itemize}
 \end{frame}
 
@@ -680,13 +674,8 @@ https://www.pinecone.io/learn/series/rag/rerankers/
 \begin{frame}[fragile]
 \frametitle{Ragas Metrics: Context Relevancy}
 \begin{itemize}
-    \item \textbf{Formula:}
-    \[
-      \text{Context Relevancy} = \frac{\text{Sentences in retrieved context relevant to the query}}{\text{Total sentences in the retrieved context}}
-    \]
-    \item \textbf{Intuition:} How much of what was retrieved is actually \textit{useful}? A low score means the retriever is returning noisy, off-topic documents, which can confuse the LLM and cause incorrect answers.
-    \newline \textit{Think of it as:} Signal-to-noise ratio of the retrieved context.
-    \item Score Range: $[0, 1]$; higher is better.
+    \item Context Relevance $= \frac{\text{Number of relevant sentences from the context}}{\text{Total number of sentences in the retrieved context}}$
+    \item Score Range: (0, 1), higher is better.
 \end{itemize}
 \end{frame}
 
@@ -694,14 +683,8 @@ https://www.pinecone.io/learn/series/rag/rerankers/
 \begin{frame}[fragile]
 \frametitle{Ragas Metrics: Answer Semantic Similarity}
 \begin{itemize}
-    \item \textbf{Formula:}
-    \[
-      \text{Answer Semantic Similarity} = \cos(\mathbf{e}_{\text{generated}},\, \mathbf{e}_{\text{ground truth}})
-    \]
-    where $\mathbf{e}$ is the embedding vector of the respective answer.
-    \item \textbf{Intuition:} Does the generated answer \textit{mean} the same thing as the ground truth, even if the wording differs? This is measured in semantic (embedding) space, not exact word matching.
-    \newline \textit{Example:} ``The capital of France is Paris'' and ``Paris is France's capital city'' should score high.
-    \item Score Range: $[0, 1]$; higher is better.
+    \item Answer Semantic Similarity $= \text{Similarity}(\text{Generated Response, Ground Truth Response})$
+    \item Score Range: (0, 1), higher is better.
 \end{itemize}
 \end{frame}
 
@@ -709,37 +692,7 @@ https://www.pinecone.io/learn/series/rag/rerankers/
 \begin{frame}[fragile]
 \frametitle{Ragas Metrics: Answer Correctness}
 \begin{itemize}
-    \item \textbf{Formula:}
-    \[
-      \text{Answer Correctness} = w_1 \cdot F_1(\text{facts}) + w_2 \cdot \text{Semantic Similarity}
-    \]
-    where $w_1 + w_2 = 1$ (default $w_1 = w_2 = 0.5$).
-    \item \textbf{Intuition:} Combines two checks --- (1) \textit{factual overlap} (did the model get the facts right?) and (2) \textit{semantic similarity} (is the overall meaning correct?). A high score means both the facts and the meaning match the ground truth.
-    \item \textbf{When to use:} The most comprehensive end-to-end quality measure; use it as the primary metric for production monitoring.
-    \item Score Range: $[0, 1]$; higher is better.
+    \item Answer Correctness $= \text{Semantic and Factual Similarity between generated response and ground truth response}$
+    \item Score Range: (0, 1), higher is better.
 \end{itemize}
-\end{frame}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]
-\frametitle{Ragas Metrics: Summary}
-
-\begin{center}
-\small
-\begin{tabular}{llll}
-\hline
-\textbf{Metric} & \textbf{What it measures} & \textbf{Needs GT?} & \textbf{Diagnoses} \\
-\hline
-Faithfulness & Hallucination in response & No & Generator \\
-Answer Relevancy & Response on-topic? & No & Generator \\
-Context Recall & Retriever coverage & \textbf{Yes} & Retriever \\
-Context Precision & Retriever noise & \textbf{Yes} & Retriever \\
-Context Relevancy & Context signal/noise & No & Retriever \\
-Answer Correctness & End-to-end quality & \textbf{Yes} & Both \\
-\hline
-\end{tabular}
-\end{center}
-
-\vspace{0.3em}
-{\small \textbf{GT} = Ground Truth label required. Start with \textit{Faithfulness + Context Precision} for a quick no-label diagnostic.}
-
 \end{frame}
