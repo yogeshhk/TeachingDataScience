@@ -631,20 +631,6 @@ streamlit run src mychatbot/app.py
 \end{frame}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% STAGE 5:  TESTING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -691,7 +677,6 @@ license: MIT
 - Use `@pytest.mark.parametrize` for data-driven tests
 
 ### Coverage Target: 85%+
-EOF
 \end{lstlisting}
 \end{frame}
 
@@ -726,27 +711,19 @@ Write tests covering:
   multi-turn history tests
 
 Output: complete updated test file, no placeholders.
-EOF
 \end{lstlisting}
 
-\textbf{Usage:}
-\begin{lstlisting}
-/test-gen mychatbot/chain.py
-/test-gen mychatbot/cli.py
-\end{lstlisting}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Generate Tests with Synthetic Data}
-Run the custom command:
+In TUI (Build mode):
 \begin{lstlisting}
-# In TUI (Build mode):
-/test-gen mychatbot/chain.py
-\end{lstlisting}
+/test-gen src/mychatbot/chain.py
 
-OpenCode will generate something like:
-\begin{lstlisting}
+# OpenCode will generate something like:
+
 # tests/test_chain.py
 import pytest
 from unittest.mock import patch, MagicMock
@@ -781,10 +758,6 @@ def test_make_chain_returns_callable(mock_chat_groq, monkeypatch):
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Generate Tests for cli.py and Run Suite}
-\begin{lstlisting}
-# In TUI:
-/test-gen mychatbot/cli.py
-\end{lstlisting}
 
 CLI tests will cover:
   \begin{itemize}
@@ -795,42 +768,46 @@ CLI tests will cover:
     \item Rich console output contains expected text
   \end{itemize}
 
-\textbf{Run the full test suite:}
+
+In TUI (Build mode):
 \begin{lstlisting}
+
+/test-gen src/mychatbot/cli.py
+
+# Run the full test suite:
+
 pytest tests/ -v --tb=short
+
 # Expected: all green, no real API calls made
 
 # With coverage:
 pytest tests/ --cov=mychatbot --cov-report=term-missing
 # Target: >85% coverage
-\end{lstlisting}
 
-\textbf{If tests fail:}
-\begin{lstlisting}
-# In TUI:
+# If tests fail, In TUI:
 The test test_make_chain_missing_key is failing with:
 KeyError: 'GROQ_API_KEY'. Paste the traceback.
 OpenCode reads the test + source and proposes the fix.
-\end{lstlisting}
 
-\begin{lstlisting}
-git add tests/ && git commit -m "test: add unit tests with synthetic data"
+git add tests/
+git commit -m "test: add unit tests with synthetic data"
 \end{lstlisting}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Create a /test-run Command (Bonus)}
-Automate full test + coverage + report in one command:
+Automate full test + coverage + report in one command. This is the power of custom commands: complex multi-step workflows reduced to a single slash command. The entire team can use the same command once it's committed to Git:
+
 \begin{lstlisting}
 cat > .opencode/commands/test-run.md << 'EOF'
 ---
-description: Run the full test suite and summarize results
-agent: build
+description: >
+	Run the full test suite and summarize resulagent: build
 ---
 Run the full test suite for this project:
 
-1. Execute: `pytest tests/ -v --tb=short --cov=mychatbot
+1. Execute: `pytest tests/ -v --tb=short --cov=src/mychatbot
    --cov-report=term-missing 2>&1`
 2. Parse the output and give me:
    - Pass/fail count
@@ -838,15 +815,11 @@ Run the full test suite for this project:
    - List of any failing tests with the error message
    - Three specific suggestions to improve coverage
      for any module below 85%
-EOF
-\end{lstlisting}
 
-\textbf{Usage:}
-\begin{lstlisting}
+# Usage:
 /test-run
 \end{lstlisting}
 
-This is the power of custom commands: complex multi-step workflows reduced to a single slash command. The entire team can use the same command once it's committed to Git.
 \end{frame}
 
 
@@ -897,7 +870,6 @@ Output format:
 ## Affected Files
 ## Minimal Reproduction
 ## Suggested Fix
-EOF
 \end{lstlisting}
 \end{frame}
 
@@ -907,8 +879,9 @@ EOF
 \textbf{Scenario:} The CLI crashes when the user types a very long message.
 
 \textbf{Step 1:  Invoke debug agent:}
+In TUI (Build):
+
 \begin{lstlisting}
-# In TUI:
 @debug The CLI chatbot crashes when the user enters a
 message longer than ~4000 characters. Here's the error:
 
@@ -917,16 +890,22 @@ groq.BadRequestError: Error code: 400
   llama-3.3-70b-versatile in 5 requests per minute
   
 Stack trace:
-  File "mychatbot/chain.py", line 34, in __call__
+  File "src/mychatbot/chain.py", line 34, in __call__
     response = self.llm.invoke(messages)
-\end{lstlisting}
 
-\textbf{Debug agent output:} Root cause identified:  no token limit validation before sending to API.
+# Debug agent output: Root cause identified:  no token limit validation before sending to API.
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Debug Workflow Demo}
+\textbf{Scenario:} The CLI crashes when the user types a very long message.
 
 \textbf{Step 2:  Apply fix in Build mode:}
+In TUI (Build):
+
 \begin{lstlisting}
-# Switch to Build mode (Tab), then:
-@file:mychatbot/chain.py
+@file:src/mychatbot/chain.py
 Add input validation: if the total character count of
 all messages exceeds 12000 chars, truncate the oldest
 messages (not the system message) until it fits.
@@ -939,7 +918,6 @@ Raise a warning via the logging module when truncation occurs.
 # Rephrase and retry
 \end{lstlisting}
 \end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% STAGE 7:  REFACTORING
@@ -984,71 +962,66 @@ description: >
 - Functions longer than 40 lines: consider splitting
 - Duplicate code across cli.py and app.py: extract to utils
 - Nested if/else depth > 3: refactor to early returns
-EOF
 \end{lstlisting}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Refactor: Extract Shared Config}
+In TUI (Build mode):
+
 \begin{lstlisting}
-# In TUI (Build mode):
 @workspace
-Read the refactor-patterns skill, then:
+Read the .opencode/skills/refactor-patterns skill, then:
 1. Identify duplicated configuration logic between
-   cli.py and app.py (both read mychatbot_MODEL and
+   src/mychatbot/cli.py and src/mychatbot/app.py (both read mychatbot_MODEL and
    mychatbot_SYSTEM_PROMPT from env vars)
-2. Create mychatbot/config.py with a Config dataclass
+2. Create src/mychatbot/config.py with a Config dataclass
    that reads all env vars in one place
-3. Update cli.py and app.py to import and use Config
+3. Update src/mychatbot/cli.py and src/mychatbot/app.py to import and use Config
 4. Add a test for Config in tests/test_config.py
    covering defaults and env var overrides
 
 Use @file: to read each file before editing.
 Show me the plan before making any changes.
-\end{lstlisting}
 
-\textbf{Review the plan, then approve to proceed:}
-\begin{lstlisting}
+# Review the plan, then approve to proceed:
 # If plan looks good:
 Looks good. Go ahead and implement it.
 
-# After implementation, run tests:
+# After implementation, if not done already, run tests:
 pytest tests/ -v
-\end{lstlisting}
 
-\begin{lstlisting}
-git add . && git commit -m "refactor: extract Config dataclass"
+git add .
+git commit -m "refactor: extract Config dataclass"
 \end{lstlisting}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Refactor: Add Structured Logging}
+In TUI (Build mode):
+
 \begin{lstlisting}
-# In TUI (Build mode):
 @workspace
-Replace all print() debug statements in mychatbot/
+Replace all print() debug statements in src/mychatbot/
 with Python's logging module:
 - Create a logger = logging.getLogger(__name__)
   at the top of each module
 - Use logging.INFO for user-facing info
 - Use logging.DEBUG for internal state
 - Use logging.ERROR for caught exceptions
-- In cli.py, configure basicConfig with level from
+- In src/mychatbot/cli.py, configure basicConfig with level from
   env var LOG_LEVEL (default: WARNING)
 - Do NOT change any Rich console output:  that stays
 Only replace bare print() debug statements.
-\end{lstlisting}
 
-\textbf{Point to note:} The global rules file (AGENTS.md) already says ``Never catch bare except'':  OpenCode will respect this without being told again.
-
-\begin{lstlisting}
+# Point to note: The global rules file (AGENTS.md) already says ``Never catch bare except'':  OpenCode will respect this without being told again.
 # Verify nothing broke:
 pytest tests/ -v
-mychatbot  # quick manual smoke test
 
-git add . && git commit -m "refactor: replace print with logging"
+git add .
+git commit -m "refactor: replace print with logging"
 \end{lstlisting}
 \end{frame}
 
@@ -1093,16 +1066,16 @@ to generate docs:
 - Include a "Quick Start" section in every README
 - Use GitHub-flavored Markdown
 - Never invent features not present in the source code
-EOF
 \end{lstlisting}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Generate README and API Docs}
+In TUI (Build):
+
 \begin{lstlisting}
-# In TUI:
-@docs Generate a complete README.md for mychatbot:
+@docs Generate a complete README.md for src/mychatbot:
 - Badges: Python version, license (MIT), tests passing
 - Description: one paragraph
 - Features: bullet list
@@ -1114,23 +1087,19 @@ EOF
 - License section
 
 Then generate docs/api.md covering the public API
-of chain.py and config.py with usage examples.
-\end{lstlisting}
+of src/mychatbotchain.py and src/mychatbotconfig.py with usage examples.
 
-\begin{lstlisting}
 # Also create a /docs command for future use:
 cat > .opencode/commands/docs.md << 'EOF'
 ---
-description: Generate/update documentation for a module
+description: >
+	Generate/update documentation for a module 
 agent: docs
 ---
 Generate complete documentation for $ARGUMENTS.
 Read the source file, update or create the corresponding
 doc in docs/. Follow the existing README style.
-EOF
-\end{lstlisting}
 
-\begin{lstlisting}
 git add README.md docs/ && git commit -m "docs: generate README and API docs"
 \end{lstlisting}
 \end{frame}
@@ -1138,9 +1107,11 @@ git add README.md docs/ && git commit -m "docs: generate README and API docs"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Generate CHANGELOG and Version Bump}
+
+In TUI (Build):
+
 \begin{lstlisting}
-# In TUI:
-@docs Generate a CHANGELOG.md for mychatbot in
+@docs Generate a CHANGELOG.md for src/mychatbot in
 Keep-a-Changelog format.
 Run `git log --oneline` to get the commit history,
 then group commits into sections:
@@ -1149,13 +1120,12 @@ then group commits into sections:
 - Changed (refactor: commits)
 - Documentation (docs: commits)
 Tag this as version 0.1.0 with today's date.
-\end{lstlisting}
 
-\textbf{Creating a custom /changelog command:}
-\begin{lstlisting}
+# Creating a custom /changelog command:
 cat > .opencode/commands/changelog.md << 'EOF'
 ---
-description: Update CHANGELOG from recent git commits
+description: >
+	Update CHANGELOG from recent git commits
 agent: docs
 ---
 Run `git log --oneline --since="$ARGUMENTS"` to get
@@ -1163,7 +1133,7 @@ recent commits. Update CHANGELOG.md with a new
 version section grouping commits by type:
 feat->Added, fix->Fixed, refactor->Changed, docs->Docs.
 Suggest a semantic version bump based on the changes.
-EOF
+
 
 # Usage: /changelog "1 week ago"
 # Usage: /changelog "last tag"
@@ -1217,16 +1187,16 @@ Perform a code review. For each file, check:
 4. Style: matches project conventions in AGENTS.md
 5. Test coverage: untested branches or edge cases
 Output: structured report with severity (Critical/Major/Minor)
-EOF
 \end{lstlisting}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Run a Full Code Review}
+In TUI (Build):
+
 \begin{lstlisting}
-# In TUI:
-@review Review the entire mychatbot codebase.
+@review Review the entire src/mychatbot codebase.
 Focus on:
 1. Security: are API keys ever logged or printed?
 2. Error handling: are all Groq API errors caught?
@@ -1239,25 +1209,21 @@ For each issue, note:
 - Severity: Critical / Major / Minor
 - What the issue is
 - How to fix it
-\end{lstlisting}
 
-\textbf{Apply review findings:}
-\begin{lstlisting}
+# Apply review findings:
 # After reading the review report:
 Apply all Critical and Major fixes identified in
 the review report. For each fix, show what changed.
-\end{lstlisting}
 
-\begin{lstlisting}
 # Create a /review command:
 cat > .opencode/commands/review.md << 'EOF'
 ---
-description: Full code review of $ARGUMENTS (or workspace)
+description: >
+	Full code review of $ARGUMENTS (or workspace)
 agent: review
 ---
 Review $ARGUMENTS for correctness, security,
 performance, and style. Group by severity.
-EOF
 \end{lstlisting}
 \end{frame}
 
@@ -1301,11 +1267,8 @@ cat > .opencode/opencode.json << 'EOF'
     }
   }
 }
-EOF
-\end{lstlisting}
 
-\textbf{Step 2:  Create a GitHub repo and push:}
-\begin{lstlisting}
+# Step 2:  Create a GitHub repo and push:
 # Create repo on GitHub (manually or via gh CLI)
 gh repo create mychatbot --public --source=. --push
 \end{lstlisting}
@@ -1316,9 +1279,9 @@ gh repo create mychatbot --public --source=. --push
 \begin{frame}[fragile]\frametitle{GitHub MCP Workflows}
 With the GitHub MCP server active, OpenCode can manage your repo:
 
-\textbf{Create issues from code review findings:}
+\textbf{Create issues from code review findings, in TUI: (Build):}
 \begin{lstlisting}
-# In TUI:
+
 Create GitHub issues for each Critical and Major finding
 from the code review we just ran. Title each issue
 clearly, add labels: "bug" for Critical, "enhancement"
@@ -1334,10 +1297,8 @@ GitHub PR with:
 - Title: "feat: add streaming responses"
 - Body: description of changes, testing done,
   link to relevant issue
-\end{lstlisting}
 
-\textbf{Auto-respond to PR comments:}
-\begin{lstlisting}
+# Auto-respond to PR comments:
 # Non-interactive mode (usable in CI/GitHub Action):
 opencode run "Read the latest unresolved PR comment
 on PR #1 and either apply the requested change or
@@ -1370,10 +1331,8 @@ OpenCode supports many MCP servers. Add them to \texttt{opencode.json}:
     }
   }
 }
-\end{lstlisting}
 
-\textbf{With Brave Search MCP, you can:}
-\begin{lstlisting}
+# With Brave Search MCP, you can:
 # In TUI:
 Search for the latest LangChain 0.3 changelog and
 tell me if any of our chain.py code needs updating.
@@ -1556,10 +1515,10 @@ opencode session continue <id>
 \begin{frame}[fragile]\frametitle{What We Built}
 \textbf{Project \texttt{mychatbot/}:  complete from scratch:}
   \begin{itemize}
-    \item \texttt{mychatbot/chain.py}:  LangChain + Groq chain factory
-    \item \texttt{mychatbot/cli.py}:  Rich CLI chatbot with history
-    \item \texttt{mychatbot/app.py}:  Streamlit multi-turn chatbot
-    \item \texttt{mychatbot/config.py}:  Centralized env-based config
+    \item \texttt{src/mychatbot/chain.py}:  LangChain + Groq chain factory
+    \item \texttt{src/mychatbot/cli.py}:  Rich CLI chatbot with history
+    \item \texttt{src/mychatbot/app.py}:  Streamlit multi-turn chatbot
+    \item \texttt{src/mychatbot/config.py}:  Centralized env-based config
     \item \texttt{tests/}:  Full pytest suite with synthetic Faker data
     \item \texttt{docs/specs/mychatbot-spec.md}:  Technical specification
     \item \texttt{README.md} + \texttt{docs/api.md}:  Auto-generated docs
