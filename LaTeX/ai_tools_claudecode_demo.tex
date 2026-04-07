@@ -42,7 +42,8 @@
 9 & Code review & Review subagent \\
 10 & GitHub workflow & MCP GitHub server \\
 11 & Hooks \& automation & Hooks system (new!) \\
-12 & Plugins & Plugin packaging (new!) \\
+12 & .claude/ production setup & Rules, deny perms, skills \\
+13 & Plugins & Plugin packaging (new!) \\
 \hline
 \end{tabular}
 \end{center}
@@ -311,7 +312,19 @@ EOF
 \end{center}
 \end{frame}
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Customization}
+The Anatomy of a Production .claude Folder
+	  \begin{itemize}
+			\item settings.json : Shared permission rules
+			\item settings.local.json : Personal permissions (gitignored)
+			\item rules  : Auto-enforced contextual rules
+			\item commands  : Slash commands for common workflows
+			\item agents  : Specialized subagent personas
+			\item skills  :  Auto-triggered workflow checks
+      \end{itemize}
+\end{frame}
+	  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Create a Specs Subagent}
 In Claude Code, subagents live in \texttt{.claude/agents/}. Create a dedicated \textbf{Specs subagent}:
@@ -1675,6 +1688,180 @@ Claude Code accepts images as input -- paste screenshots, UI mockups, or diagram
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 12: PRODUCTION .claude/ SETUP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 12: Production \texttt{.claude/} Setup}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Problem: Every Session Is Day One}
+  \begin{itemize}
+    \item Most engineers use Claude Code like ChatGPT --- every conversation is stateless, every session a blank slate.
+    \item For real projects with a framework, conventions, deployment pipelines, and team standards, you're \textbf{throwing away context} every time you close the terminal.
+    \item Symptoms:
+      \begin{itemize}
+        \item Re-explaining the stack 10 times a week.
+        \item Claude generating \texttt{print()} instead of structured logging.
+        \item Manually approving every \texttt{git diff} format.
+        \item No guardrails against destructive commands.
+      \end{itemize}
+    \item The \texttt{.claude/} folder fixes this. It is a \textbf{persistent configuration layer} that loads automatically every session --- your AI assistant's onboarding document that it actually reads and follows.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Demo: Add Path-Scoped Rules}
+
+\textbf{Step 1 --- Create the Python style rule:}
+\begin{lstlisting}
+cat > .claude/rules/code-style.md << 'EOF'
+---
+paths:
+  - "**/*.py"
+---
+# Python Code Style
+- Follow PEP 8
+- Type hints required on all function signatures
+- Use the project logger, never print() or stdlib logging
+- Pydantic models for all request/response validation
+- Async functions for all FastAPI endpoints
+EOF
+\end{lstlisting}
+
+\textbf{Step 2 --- Verify it activates automatically:}
+\begin{lstlisting}
+# Edit any .py file and ask Claude to add a function.
+# Observe: Claude enforces type hints and logger without
+# being told -- the rule fired on the file glob match.
+\end{lstlisting}
+
+\textbf{Step 3 --- Add a security rule for all files:}
+\begin{lstlisting}
+cat > .claude/rules/security.md << 'EOF'
+---
+paths:
+  - "**/*"
+---
+# Security Rules
+- No hardcoded secrets or API keys in source files
+- Pydantic validation on all external inputs
+- Never log sensitive data (tokens, passwords, PII)
+EOF
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Demo: Deny Rules in \texttt{settings.json}}
+
+\textbf{Update \texttt{.claude/settings.json} with deny rules:}
+\begin{lstlisting}
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(python *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(pytest *)",
+      "Read", "Write", "Edit"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Read(.env)",
+      "Read(.env.*)"
+    ]
+  }
+}
+\end{lstlisting}
+
+\textbf{Test the deny rules:}
+\begin{lstlisting}
+# Ask Claude: "Show me the contents of .env"
+# Observe: Claude cannot read it -- permission denied.
+
+# Ask Claude: "Force push to main"
+# Observe: Blocked by deny rule -- no hesitation needed.
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Demo: Model-Optimized Subagents}
+
+\textbf{Create the codebase explorer on Haiku (cheap + fast):}
+\begin{lstlisting}
+cat > .claude/agents/explore-codebase.md << 'EOF'
+---
+name: explore-codebase
+description: >
+  Answers "how does X work?" questions. Use when tracing
+  request flows, finding where logic lives, or mapping
+  module dependencies. DO NOT use for code changes.
+model: haiku
+tools: Read, Grep, Glob
+---
+You are a codebase explorer for this project.
+Trace full request flows. Reference specific files and
+line numbers. Keep answers concise with code references.
+EOF
+\end{lstlisting}
+
+\textbf{Create the security-focused code reviewer on Sonnet:}
+\begin{lstlisting}
+cat > .claude/agents/code-reviewer.md << 'EOF'
+---
+name: code-reviewer
+description: >
+  Reviews code for bugs, security issues, and pattern
+  compliance. Returns file:line references with fixes.
+model: sonnet
+tools: Read, Grep, Glob, Bash
+---
+Flag actual bugs and logic errors, not style nitpicks.
+Check for security issues. Suggest specific fixes.
+EOF
+\end{lstlisting}
+
+\textbf{Invoke:} Ask ``How does the chatbot handle conversation state?'' --- Haiku fires. Ask ``Review src/mychatbot/chain.py for security issues'' --- Sonnet fires.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Demo: Auto-Triggered Security Skill}
+
+\textbf{Create a skill that fires automatically on API/config changes:}
+\begin{lstlisting}
+mkdir -p .claude/skills/security-review
+cat > .claude/skills/security-review/SKILL.md << 'EOF'
+---
+name: security-review
+description: >
+  Auto-triggered security checklist. Activates when
+  editing API endpoints, config files, or Dockerfiles.
+triggers:
+  - "**/*router*.py"
+  - "**/*config*.py"
+  - "**/Dockerfile*"
+  - "**/*.env.example"
+---
+# Security Review Checklist
+Run through these checks automatically on every match:
+1. No hardcoded secrets or tokens in source
+2. All external inputs validated with Pydantic
+3. No sensitive data appears in log statements
+4. Docker containers run as non-root user
+5. Dependency versions pinned (no bare `>=`)
+Report any violations with file:line references.
+EOF
+\end{lstlisting}
+
+\textbf{Test:} Edit \texttt{src/mychatbot/config.py}. Observe Claude automatically runs the security checklist --- no \texttt{/review} needed.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SUMMARY
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
@@ -1701,7 +1888,8 @@ Claude Code accepts images as input -- paste screenshots, UI mockups, or diagram
 \textbf{Claude Code config committed to repo:}
   \begin{itemize}
     \item \texttt{CLAUDE.md}: Project intelligence file
-    \item \texttt{.claude/agents/}: specs, debug, docs, review subagents
+    \item \texttt{.claude/rules/}: code-style, agent-patterns, security rules (path-scoped)
+    \item \texttt{.claude/agents/}: specs, debug, docs, review, explore-codebase subagents
     \item \texttt{.claude/skills/}: pytest-patterns, refactor-patterns
     \item \texttt{.claude/commands/}: /test-gen, /test-run, /review, /docs, /changelog
     \item \texttt{.claude/settings.json}: Permissions, hooks, MCP configs
@@ -1737,6 +1925,9 @@ Block bad commands & PreToolUse hook \\
 Run tests on stop & Stop hook \\
 Create GitHub issue & GitHub MCP \\
 Create PR & GitHub MCP \\
+Enforce code style auto & Path-scoped rule (\texttt{.claude/rules/}) \\
+Block destructive cmds & Deny rules (\texttt{settings.json}) \\
+Auto security review & Auto-triggered skill \\
 Resume session & \texttt{claude -c} or \texttt{claude --resume} \\
 Share config & Plugin (\texttt{claude plugin add}) \\
 \hline
@@ -1751,6 +1942,8 @@ Share config & Plugin (\texttt{claude plugin add}) \\
     \item \textbf{CLAUDE.md is your multiplier.} Write it carefully and every session starts smarter. Nested CLAUDE.md files in subdirectories add directory-specific context. Commit them all to Git.
     \item \textbf{Plan before Build.} Press Shift+Tab to enter Plan mode for anything non-trivial. Clear context on approval to give the plan a fresh window. Avoid costly rewrites.
     \item \textbf{Hooks guarantee; prompts suggest.} Use hooks for anything that \textit{must} always happen: formatting, security checks, test runs. Never rely on the model to remember.
+    \item \textbf{Deny rules build trust.} Pre-authorizing operations is only half the picture. Deny \texttt{rm -rf}, \texttt{git push --force}, and \texttt{.env} reads so you never hesitate before approving an action.
+    \item \textbf{Rules enforce themselves.} Path-scoped rules in \texttt{.claude/rules/} activate on file globs --- no manual invocation. Edit a \texttt{.py} file and get PEP 8 enforcement; touch an agent file and get domain-specific patterns on top.
     \item \textbf{Route by model tier.} Use Haiku subagents for exploration, Sonnet for daily coding, Opus for architecture and security review. Save cost without sacrificing quality.
     \item \textbf{Skills keep context lean.} Lazy-loaded skills don't consume tokens until needed. Don't put everything in CLAUDE.md; use skills for domain knowledge and patterns.
     \item \textbf{MCP extends reach.} GitHub, databases, search -- connect once and the agent acts across your entire stack. Use \texttt{--scope project} to share configs with the team.
@@ -1788,6 +1981,7 @@ Share config & Plugin (\texttt{claude plugin add}) \\
     \item \textbf{Streamlit Docs:} \href{https://docs.streamlit.io}{\texttt{docs.streamlit.io}}
     \item Blake Crosley, ``Claude Code CLI: The Complete Guide'', blakecrosley.com, 2026.
     \item Muneeb Ahmad, ``Claude Code Extensions Explained'', Medium, Mar 2026.
+    \item Himanshu Bhoir, ``The 15-File Setup That Turned Claude Code Into My Development Team'', Towards AI, Mar 2026.
   \end{itemize}
 
 \begin{center}

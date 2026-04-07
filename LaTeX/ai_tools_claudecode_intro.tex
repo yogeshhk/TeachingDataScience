@@ -345,6 +345,15 @@ claude -p "Review changed files for bugs: $CHANGED.
     \item Claude Code is fully configurable at \textbf{two primary scopes}: User (\texttt{\textasciitilde/.claude/}) and Project (\texttt{.claude/} in repo root).
     \item \textbf{Config priority} (highest → lowest): Enterprise managed → CLI flags → Local project \texttt{.claude/settings.local.json} → Shared project \texttt{.claude/settings.json} → User \texttt{\textasciitilde/.claude/settings.json}.
     \item \textbf{Subdirectories}: \texttt{agents/}, \texttt{skills/}, \texttt{commands/}, \texttt{rules/}, \texttt{plans/}.
+	\item \textbf{Meanings}:
+	  \begin{itemize}
+			\item settings.json : Shared permission rules
+			\item settings.local.json : Personal permissions (gitignored)
+			\item rules  : Auto-enforced contextual rules
+			\item commands  : Slash commands for common workflows
+			\item agents  : Specialized subagent personas
+			\item skills  :  Auto-triggered workflow checks
+      \end{itemize}
     \item \textbf{Schema-validated:} Config validated against \texttt{json.schemastore.org/claude-code-settings.json}; editors autocomplete fields.
     \item \textbf{Team sharing:} \texttt{.claude/settings.json} and \texttt{.mcp.json} are committed to Git; \texttt{.claude/settings.local.json} is personal (add to \texttt{.gitignore}).
     \item Each section below covers: what ships built-in → what you can customize → how to create your own.
@@ -437,7 +446,7 @@ CLAUDE.md helps Claude Code understand: project structure, coding conventions, t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Rules: Persistent AI Instructions}
   \begin{itemize}
-    \item \textbf{What:} Markdown instructions injected into every LLM context matching the path pattern. Think of them as standing orders: coding style, constraints, security invariants.
+    \item \textbf{What:} Markdown instructions injected into every LLM context matching the path pattern. Think of them as standing orders: coding style, constraints, security invariants. Auto-enforced contextual rules
     \item \textbf{Built-in bootstrap:} \texttt{/init} auto-generates \texttt{CLAUDE.md} by scanning your repo: languages, deps, folder structure, patterns.
     \item \textbf{Auto Memory:} Claude automatically appends learnings to \texttt{CLAUDE.md} during sessions. Use \texttt{/memory} to view or clear them.
     \item \textbf{Scope:}
@@ -1098,6 +1107,166 @@ docs/decisions/
   \end{itemize}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The \texttt{.claude/} Folder: Persistent Project Memory}
+  \begin{itemize}
+    \item Most developers treat Claude Code like ChatGPT --- every session a blank slate. \textbf{This is wrong.}
+    \item The \texttt{.claude/} folder is a \textbf{persistent configuration layer} that lives in your repo and loads automatically every session.
+    \item Think of it as your AI assistant's onboarding document --- except it actually reads and follows it.
+    \item A well-structured \texttt{.claude/} folder has \textbf{six layers}, each solving a different problem:
+  \end{itemize}
+\begin{lstlisting}
+CLAUDE.md              # Project instructions (auto-loaded)
+CLAUDE.local.md        # Personal overrides (gitignored)
+.claude/
+  settings.json        # Shared permission rules (allow + deny)
+  settings.local.json  # Personal permissions (gitignored)
+  rules/               # Auto-enforced contextual rules
+  commands/            # Slash commands for common workflows
+  agents/              # Specialized subagent personas
+  skills/              # Auto-triggered workflow checks
+\end{lstlisting}
+  {\tiny (Ref: Himanshu Bhoir, ``The 15-File Setup That Turned Claude Code Into My Development Team'', Towards AI, Mar 2026)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Layer 1: Rules That Enforce Themselves}
+  \begin{itemize}
+    \item Rules are \textbf{markdown files} that activate automatically based on \textbf{file path globs}.
+    \item You don't invoke them. You don't remember them. \textit{They just work.}
+    \item The same Claude instance behaves differently depending on where you're working:
+      \begin{itemize}
+        \item Edit a Python utility? PEP 8 enforcement activates automatically.
+        \item Touch an agent file? ADK-specific patterns layer on top.
+      \end{itemize}
+  \end{itemize}
+\begin{lstlisting}
+# .claude/rules/code-style.md  (scoped to **/*.py)
+---
+paths:
+  - "**/*.py"
+---
+# Python Code Style
+- Follow PEP 8; type hints required on all signatures
+- Use the project logger -- never print() or stdlib logging
+- Pydantic models for all request/response validation
+- Async functions for all FastAPI endpoints
+\end{lstlisting}
+  \begin{itemize}
+    \item Like having multiple specialized reviewers built into one tool --- with zero manual invocation.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Layer 2: The Deny Rules Nobody Talks About}
+  \begin{itemize}
+    \item Most guides focus on what to \textit{allow}. The more important half is what you \textbf{deny}.
+    \item Deny rules mean you never have to hesitate before approving an action.
+    \item \texttt{settings.json} is committed to the repo; \texttt{settings.local.json} is gitignored --- team shares safety rules, developers keep personal overrides.
+  \end{itemize}
+\begin{lstlisting}
+// .claude/settings.json
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)", "Bash(python *)",
+      "Bash(git status)", "Bash(git diff *)",
+      "Bash(pytest *)", "Read", "Write", "Edit"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Read(.env)", "Read(.env.*)"
+    ]
+  }
+}
+\end{lstlisting}
+  \begin{itemize}
+    \item \textbf{Result:} Claude cannot read \texttt{.env} files, cannot force push, cannot \texttt{rm -rf} anything.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Layer 3: Subagents With Assigned Roles and Models}
+  \begin{itemize}
+    \item Claude Code lets you define \textbf{specialized subagents} --- each with their own system prompt, tool access, and \textit{model}.
+    \item Assign the right model to the right task: \textbf{Haiku} for fast exploration, \textbf{Sonnet} for code review.
+    \item This optimizes for both \textbf{cost and quality} at the project configuration level.
+  \end{itemize}
+\begin{lstlisting}
+# .claude/agents/explore-codebase.md
+---
+name: explore-codebase
+description: Answers "how does X work?" questions
+model: haiku
+tools: Read, Grep, Glob
+---
+Trace full request flows. Reference specific files
+and line numbers. Keep answers concise.
+
+# .claude/agents/code-reviewer.md
+---
+name: code-reviewer
+description: Reviews code for bugs, security, patterns
+model: sonnet
+tools: Read, Grep, Glob, Bash
+---
+Flag actual bugs and logic errors, not style nitpicks.
+Suggest specific fixes with code snippets.
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Layer 4: Commands That Cover the Entire SDLC}
+  \begin{itemize}
+    \item Commands are slash commands you invoke manually (\texttt{/project:git}, \texttt{/project:fix}).
+    \item Build a set that covers your full development cycle --- version them in the repo.
+  \end{itemize}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Command} & \textbf{Description} \\
+\hline
+\texttt{/git} & Conventional commits, MR creation, branch management \\
+\texttt{/fix} & Trace error to root cause, apply minimal fix \\
+\texttt{/explain} & Map request flow through codebase with file refs \\
+\texttt{/refactor} & Safe restructuring with impact analysis \\
+\texttt{/test} & Run pytest, analyze failures, optionally auto-fix \\
+\texttt{/review} & Security-first code review with file:line references \\
+\texttt{/deploy} & Pre-deployment checklist for target environment \\
+\hline
+\end{tabular}
+\end{center}
+  \begin{itemize}
+    \item The \texttt{/fix} command: paste an error, it traces the execution path and suggests a \textit{minimal} fix. No unrelated refactoring. No style suggestions. Just the fix.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Layer 5: Auto-Triggered Skills}
+  \begin{itemize}
+    \item Skills fire \textbf{automatically} when matching conditions are met. No slash command needed.
+    \item Identify what you always forget to check, and make it automatic.
+    \item Example: a security review skill that triggers whenever API endpoints, config files, or Dockerfiles are modified.
+      \begin{itemize}
+        \item Checks: no hardcoded secrets, Pydantic validation on inputs, no secrets in logs, non-root Docker user.
+      \end{itemize}
+    \item \textbf{Zero discipline required.} The review happens whether you remember to ask for it or not.
+    \item Other ideas to add:
+      \begin{itemize}
+        \item Auto-documentation skill when docstrings change.
+        \item Dependency audit when \texttt{requirements.txt} is modified.
+      \end{itemize}
+    \item \textbf{Minimum viable setup} --- start with just three files and grow from there:
+      \begin{enumerate}
+        \item \texttt{CLAUDE.md} --- stack, conventions, what Claude should never do.
+        \item \texttt{settings.json} --- deny rules for destructive commands and \texttt{.env} reads.
+        \item One rule file --- your most common code style violation.
+      \end{enumerate}
+  \end{itemize}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% References
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1110,6 +1279,7 @@ docs/decisions/
     \item Claude Code How-To Guide: \href{https://github.com/luongnv89/claude-howto}{\texttt{github.com/luongnv89/claude-howto}}
     \item Blake Crosley, ``Claude Code CLI: The Complete Guide'', \href{https://blakecrosley.com/guides/claude-code}{\texttt{blakecrosley.com}}, 2026.
     \item Muneeb Ahmad, ``Claude Code Extensions Explained: Skills, MCP, Hooks, Subagents, Agent Teams \& Plugins'', Medium, Mar 2026.
+    \item Himanshu Bhoir, ``The 15-File Setup That Turned Claude Code Into My Development Team'', Towards AI, Mar 2026.
     \item MCP Server Registry: \href{https://github.com/modelcontextprotocol/servers}{\texttt{github.com/modelcontextprotocol/servers}}
   \end{itemize}
 \end{frame}
