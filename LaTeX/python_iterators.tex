@@ -10,13 +10,13 @@
 Looping over a list:
 \begin{lstlisting}
 >>> for i in [1, 2, 3, 4]:
-...     print i
+...     print(i)
 \end{lstlisting}
 
 With a string, it loops over its characters:
 \begin{lstlisting}
 >>> for c in "python":
-...     print c
+...     print(c)
 \end{lstlisting}
 \end{frame}
 
@@ -25,13 +25,13 @@ With a string, it loops over its characters:
 With a dictionary, it loops over its keys:
 \begin{lstlisting}
 >>> for k in {"x": 1, "y": 2}:
-...     print k
+...     print(k)
 \end{lstlisting}
 
 With a file, it loops over lines of the file:
 \begin{lstlisting}
 >>> for line in open("a.txt"):
-...     print line
+...     print(line)
 \end{lstlisting}
 \end{frame}
 
@@ -103,27 +103,26 @@ An iterator object allows to loop just once.
     \begin{itemize}
     \item Protocol of 2 methods:
     \begin{itemize}
-    	\item \_\_iter\_\_(): get iterator
-	\item next(): get next value, raises StopIteration when done
-
+    	\item \lstinline|__iter__()|: returns the iterator object itself
+	\item \lstinline|__next__()|: returns the next value; raises \lstinline|StopIteration| when exhausted
         \end{itemize}
-        \item Explicit iterator creation with iter() 
-
+        \item Call via the built-in: \lstinline|next(obj)| invokes \lstinline|obj.__next__()|
+        \item Explicit iterator creation: \lstinline|iter(obj)| invokes \lstinline|obj.__iter__()|
     \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Iteration Protocol}
-The built-in function iter takes an iterable object and returns an iterator.
+The built-in function \lstinline|iter()| takes an iterable object and returns an iterator.
 	\begin{lstlisting}
 >>> x = iter([1, 2, 3])
 >>> x
-<listiterator object at 0x1004ca850>
->>> x.next()
+<list_iterator object at 0x1004ca850>
+>>> next(x)
 1
->>> x.next()
+>>> next(x)
 2
->>> x.next()
+>>> next(x)
 3
 \end{lstlisting}
 \end{frame}
@@ -132,16 +131,16 @@ The built-in function iter takes an iterable object and returns an iterator.
 \begin{frame}[fragile]\frametitle{Iteration Protocol}
 
 \begin{lstlisting}
->>> x.next()
+>>> next(x)
 2
->>> x.next()
+>>> next(x)
 3
->>> x.next()
+>>> next(x)
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 StopIteration
 \end{lstlisting}
-Each time we call the next method on the iterator gives us the next element. If there are no more elements, it raises a StopIteration.
+Each call to \lstinline|next()| returns the next element. When exhausted, it raises \lstinline|StopIteration|.
 \end{frame}
 
 
@@ -186,7 +185,7 @@ class yrange:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.i < self.n:
             i = self.i
             self.i += 1
@@ -200,21 +199,21 @@ class yrange:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Iterator Class}
     \begin{itemize}
-    \item The \_\_iter\_\_ method is what makes an object iterable. Behind the scenes, the iter function calls \_\_iter\_\_ method on the given object.
-    \item The return value of \_\_iter\_\_ is an iterator.
-    \item It should have a next method and raise StopIteration when there are no more elements.
+    \item \lstinline|__iter__| makes an object iterable; \lstinline|__next__| returns the next value.
+    \item The built-in \lstinline|next()| function calls \lstinline|__next__()| on the iterator.
+    \item When no more elements exist, \lstinline|__next__| must raise \lstinline|StopIteration|.
 	\begin{lstlisting}
 >>> y = yrange(3)
->>> y.next()
+>>> next(y)
 0
->>> y.next()
+>>> next(y)
 1
->>> y.next()
+>>> next(y)
 2
->>> y.next()
+>>> next(y)
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
-  File "<stdin>", line 14, in next
+  File "<stdin>", line 14, in __next__
 StopIteration
 \end{lstlisting}
     \end{itemize}
@@ -260,7 +259,7 @@ class zrange_iter:
         # Adding this functions to make them so.
         return self
 
-    def next(self):
+    def __next__(self):
         if self.i < self.n:
             i = self.i
             self.i += 1
@@ -291,6 +290,36 @@ If both iteratable and iterator are the same object, it is consumed in a single 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Context Managers (\texttt{with} statement)}
+A \textbf{context manager} manages resource setup and teardown automatically --- even if an exception occurs.
+\begin{lstlisting}
+# Without context manager
+f = open('data.txt')
+try:
+    data = f.read()
+finally:
+    f.close()
+
+# With context manager (preferred)
+with open('data.txt') as f:
+    data = f.read()   # file is closed automatically on exit
+\end{lstlisting}
+Implement your own using \lstinline|__enter__| / \lstinline|__exit__| (or \lstinline|contextlib.contextmanager|):
+\begin{lstlisting}
+from contextlib import contextmanager
+
+@contextmanager
+def timer():
+    import time; t = time.time()
+    yield
+    print(f"Elapsed: {time.time()-t:.3f}s")
+
+with timer():
+    sum(range(10_000_000))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Iteration Advantages}
     \begin{itemize}
     \item Cleaner code
@@ -300,19 +329,19 @@ If both iteratable and iterator are the same object, it is consumed in a single 
    \end{frame}
    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Iteration Assinment}
-Write an iterator class reverse\_iter, that takes a list and iterates it from the reverse direction:
+\begin{frame}[fragile]\frametitle{Iteration Assignment}
+Write an iterator class \lstinline|reverse_iter| that takes a list and iterates it from the reverse direction:
 \begin{lstlisting}
 >>> it = reverse_iter([1, 2, 3, 4])
->>> it.next()
+>>> next(it)
 4
->>> it.next()
+>>> next(it)
 3
->>> it.next()
+>>> next(it)
 2
->>> it.next()
+>>> next(it)
 1
->>> it.next()
+>>> next(it)
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 StopIteration
