@@ -5,3 +5,414 @@
 \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large GNNs vs Graph Transformers}\\[0.5em]
+{\large From Local Message Passing to Global Self-Attention}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Architectural Shift}
+
+\begin{center}
+{\large A monumental leap in graph learning}
+\end{center}
+
+\begin{itemize}
+  \item Graph Neural Networks (GNNs) revolutionised modelling of interconnected data
+  \begin{itemize}
+    \item Social networks, molecular structures, supply chains
+  \end{itemize}
+  \item But GNNs hit \textbf{hard structural constraints} when graphs got complex or large
+  \item Graph Transformers (GTs) kidnap the \emph{attention is all you need} philosophy from NLP and adapt it to graphs
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GNN Core: Message Passing Framework}
+
+Every GNN layer repeats two steps for each node $v$:
+
+\begin{itemize}
+\item \textbf{Aggregate}: collect representations from neighbours:
+  $$a_v^{(k)} = \mathrm{AGGREGATE}^{(k)}\!\bigl(\{h_u^{(k-1)} : u \in \mathcal{N}(v)\}\bigr)$$
+  \emph{(Each node ``listens to'' only its immediate neighbours.)}
+
+\item \textbf{Update}: combine aggregated signal with node's own state:
+  $$h_v^{(k)} = \mathrm{UPDATE}^{(k)}\!\bigl(h_v^{(k-1)},\; a_v^{(k)}\bigr)$$
+  \emph{(Each node ``updates its opinion'' based on what it heard.)}
+\end{itemize}
+
+After $K$ layers, $h_v^{(K)}$ encodes information from the $K$-hop neighbourhood only.\\[0.3em]
+\textbf{Key insight:} Localisation is both GNN's greatest strength and its Achilles heel.
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GNN Limitation 1: Long-Range Dependency}
+
+\begin{columns}
+  \begin{column}[T]{0.55\linewidth}
+    \begin{itemize}
+      \item Information must flow \textbf{hop-by-hop}, like a telephone game
+      \item Two nodes 50 hops apart need 50 layers for the message to travel
+      \item At every step the signal is corrupted and compressed
+      \item \textbf{By the time it arrives, signal has become noise}
+    \end{itemize}
+    \vspace{0.5em}
+    \textbf{Real cost:} In a huge protein, drug efficacy may depend on interaction between two atoms far apart, the GNN misses it \emph{structurally}, not because data is missing.
+  \end{column}
+  \begin{column}[T]{0.43\linewidth}
+    \begin{block}{Analogy}
+      GNN = town council where news travels slowly street by street.\\[0.5em]
+      A 3-layer GNN sees only 3 hops, nothing beyond.
+    \end{block}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GNN Limitation 2: Over-Smoothing}
+
+\begin{itemize}
+  \item Trying to fix long-range problem by \textbf{stacking more layers} backfires
+  \item Iterative neighbourhood averaging causes all node representations to converge
+  \item Nodes become \textbf{indistinguishable}, a bland global average
+  \item Discriminative power vanishes $\Rightarrow$ classification tasks fail
+\end{itemize}
+
+\vspace{0.5em}
+\begin{block}{The Trap}
+  You cannot win:\\
+  \quad Too shallow $\Rightarrow$ long-range dependencies missed\\
+  \quad Too deep $\Rightarrow$ all nodes look the same\\
+  The mechanism itself limits the useful depth.
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GNN Limitation 3: Over-Squashing}
+
+\begin{itemize}
+  \item An information \textbf{bottleneck} at hub nodes (superconnected nodes)
+  \item A hub must compress hundreds of high-dimensional neighbour messages into a \emph{single fixed-size vector}
+  \item Critical fine-grained detail is lost in the compression
+\end{itemize}
+
+\vspace{0.5em}
+\begin{block}{Analogy}
+  Like summarising a 300-page book on a sticky note, you lose most of it.
+\end{block}
+
+\vspace{0.3em}
+\textbf{Impact:} In drug discovery, the difference between two compounds can be incredibly subtle. If the GNN squashes that detail, the prediction fails.
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Summary of GNN Limitations}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Problem} & \textbf{Root Cause} \\
+\hline
+Long-range dependency & Multi-hop signal decay \\
+Over-smoothing & Rigid averaging collapses representations \\
+Over-squashing & Fixed-size vector bottleneck at hubs \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.5em}
+\begin{itemize}
+  \item All three stem from the same root: \textbf{localization}
+  \item GNNs are blind to global patterns
+  \item They lose information when trying to see beyond their neighbourhood
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Graph Transformers: Global Self-Attention}
+
+\begin{itemize}
+  \item GTs \textbf{throw out local message passing} and switch to \textbf{global self-attention}
+  \item Every node computes an attention score with \emph{every other node simultaneously}
+  \item Distance does not matter, 1 hop or 50 hops, nodes interact directly in a single layer
+\end{itemize}
+
+\vspace{0.5em}
+\begin{columns}
+  \begin{column}[T]{0.48\linewidth}
+    \begin{block}{GNN (Local)}
+      Town council: news travels slowly down the street.
+    \end{block}
+  \end{column}
+  \begin{column}[T]{0.48\linewidth}
+    \begin{block}{GT (Global)}
+      Company-wide email: everyone gets the memo instantly and can react to everyone else.
+    \end{block}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{How GTs Fix the Three Problems}
+
+\begin{itemize}
+  \item \textbf{Long-range dependency:} Direct global interaction in one layer, bypasses multi-hop flow entirely
+
+  \vspace{0.3em}
+  \item \textbf{Over-smoothing:} Learned attention weights decide relevance dynamically; node representations stay \emph{distinct}, allowing much deeper models
+
+  \vspace{0.3em}
+  \item \textbf{Over-squashing:} Bottleneck vanishes, instead of forced compression, a node uses attention scores to \emph{pull} the most important information from anywhere in the graph (distributed gathering, not forced compression)
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Graph Structure Problem}
+
+\begin{itemize}
+  \item Standard transformers were built for \textbf{sequences}, text has a clear order (position 1, 2, 3 \ldots)
+  \item Graphs are \textbf{non-Euclidean}: no natural sequence or ordering
+  \item Dumping a random node list into a vanilla transformer loses all topological information
+  \item Solution: embed \textbf{graph inductive biases} directly into the attention mechanism
+\end{itemize}
+
+\vspace{0.3em}
+Three main strategies: \emph{Node Positional Encoding}, \emph{Edge Structural Bias}, \emph{Interleaving}.
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Strategy 1: Node Positional Encoding (PE)}
+
+\begin{itemize}
+  \item No natural sequence $\Rightarrow$ must use \textbf{structural information} as position
+
+  \vspace{0.3em}
+  \item \textbf{Global PE}: Eigenvectors of the graph Laplacian matrix:
+    \begin{itemize}
+      \item Laplacian encodes the global connectivity of the whole network
+      \item Eigenvectors reveal geometry, communities, macro-scale position of each node
+    \end{itemize}
+
+  \vspace{0.3em}
+  \item \textbf{Local PE}: Shortest-path (hop) distance between nodes:
+    \begin{itemize}
+      \item Simple but very effective
+      \item Gives the model immediate neighbourhood context
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Strategy 2: Edge Structural Bias}
+
+\begin{itemize}
+  \item In a standard transformer, attention is based only on node query/key vectors
+  \item In a GT, \textbf{edge features} are injected into the attention calculation
+  \item Common approach: \textbf{Residual edge channels}
+\end{itemize}
+
+\vspace{0.5em}
+\begin{block}{How It Works}
+  When deciding how much node $A$ should attend to node $B$, use the edge feature (e.g.\ chemical bond type) to \textbf{dynamically adjust the attention score}:\\[0.3em]
+  Strong covalent bond $\Rightarrow$ higher attention\\
+  Weak social link $\Rightarrow$ lower attention
+\end{block}
+
+\vspace{0.3em}
+Edges in a knowledge graph (\texttt{works\_for}) are semantically different from (\texttt{lives\_in}), the GT learns this.
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Strategy 3: Interleaving (Hybrid GNN + GT)}
+
+\begin{itemize}
+  \item \textbf{Not a complete divorce} from GNNs, a strategic collaboration
+  \item GNNs are actually very efficient at \emph{local} feature extraction
+  \item Hybrid models \textbf{alternate} between:
+    \begin{itemize}
+      \item Message-passing layer (local structure)
+      \item Self-attention layer (global context)
+    \end{itemize}
+  \item Result: fine-grained local structure \emph{plus} long-range expressive power
+\end{itemize}
+
+\vspace{0.3em}
+Finding the perfect balance between the two is a major active research area.
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Scalability: The Central Challenge}
+
+\begin{itemize}
+  \item Global self-attention requires every node to ``shake hands'' with every other node
+  \item Complexity: $\mathcal{O}(N^2)$ where $N$ = number of nodes
+  \item \textbf{Double the nodes $\Rightarrow$ cost quadruples}
+  \item Vanilla GTs are prohibitive for real-world large-scale graphs ($10^5$–$10^6$ nodes)
+\end{itemize}
+
+\vspace{0.3em}
+\begin{block}{Goal}
+  Reduce complexity from $\mathcal{O}(N^2)$ towards linear $\mathcal{O}(N)$
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Scalability: Mitigation Strategies}
+
+Borrowed from the LLM world:
+
+\begin{itemize}
+  \item \textbf{Sparse Attention}: compute attention only over a small, relevant subset of nodes
+  \item \textbf{Linear Attention}: clever mathematical approximation of the full attention matrix, much faster to compute
+  \item \textbf{Graph Simplification / Node Sampling}: run the model on a smaller but representative subgraph
+    \begin{itemize}
+      \item Pioneered by efficient GNNs like GraphSAGE
+      \item Makes the quadratic part manageable
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GT Architecture Taxonomy}
+
+\begin{center}
+\begin{tabular}{|l|c|l|}
+\hline
+\textbf{Type} & \textbf{Layers} & \textbf{Use Case} \\
+\hline
+Shallow GT & 2--4 & Graphs $<$1000 nodes; efficient \\
+Deep GT & 6--12+ & Complex tasks (molecular simulation) \\
+Pre-trained GT & Many & Low-label settings; fine-tune downstream \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.5em}
+\begin{itemize}
+  \item \textbf{PairNorm} (for deep GTs): normalisation layer that keeps node representations distinct across a batch, prevents vanishing gradients and representation collapse
+  \item \textbf{Pre-trained GTs} (ChemBERTa, GPT-GNN): pre-train on massive unlabelled graph data via masked node prediction $\Rightarrow$ transferable embeddings $\Rightarrow$ fine-tune on small labelled tasks
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Applications of Graph Transformers}
+
+\begin{itemize}
+  \item \textbf{Node-level tasks}
+    \begin{itemize}
+      \item Protein structure prediction, amino acid interactions across long distances
+    \end{itemize}
+
+  \item \textbf{Edge-level tasks}
+    \begin{itemize}
+      \item Drug--drug interaction prediction
+      \item Knowledge graph completion (edge semantics are paramount)
+    \end{itemize}
+
+  \item \textbf{Graph-level tasks}
+    \begin{itemize}
+      \item Molecular property prediction
+      \item Graph clustering
+    \end{itemize}
+
+  \item \textbf{Beyond graphs}
+    \begin{itemize}
+      \item Video modelled as a scene graph of interacting objects $\Rightarrow$ GT captures complex temporal dynamics
+      \item Imposing graph structures on text or video to leverage GT power
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GNNs vs Graph Transformers: Side-by-Side}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Aspect} & \textbf{GNN} & \textbf{Graph Transformer} \\
+\hline
+Information flow & Local, hop-by-hop & Global, single layer \\
+Long-range deps & Fails beyond K hops & Direct, always \\
+Depth limit & Over-smoothing & PairNorm enables deep \\
+Hub bottleneck & Over-squashing & Distributed attention \\
+Structure encoding & Implicit in edges & Explicit PE + edge bias \\
+Complexity & $\mathcal{O}(N \cdot d)$ & $\mathcal{O}(N^2)$ (mitigated) \\
+Scale & Handles millions & Research-stage at scale \\
+\hline
+\end{tabular}
+\end{center}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Summary}
+
+\begin{itemize}
+  \item GNNs are powerful but structurally limited by localisation: long-range dependency, over-smoothing, over-squashing
+  \item Graph Transformers solve all three via \textbf{global self-attention}, but at the cost of $\mathcal{O}(N^2)$ complexity
+  \item The graph structure must be \emph{explicitly taught} to GTs via Laplacian PE, edge bias, and interleaving
+  \item GT architectures span shallow, deep, and pre-trained paradigms, each suited to different problem scales
+  \item GTs are making the biggest impact in protein folding, drug discovery, and knowledge graphs
+  \item \textbf{The field is not replacing GNNs but integrating}, finding the optimal balance between structural certainty and modelling flexibility
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Open Question}
+
+\begin{block}{Provocative thought to mull over}
+Given that Graph Transformers trade structural certainty for modelling flexibility:
+\end{block}
+
+\vspace{0.5em}
+\begin{center}
+\emph{If we use GTs to model really complex systems,\\
+the human brain's connectome,\\
+or to design totally new synthetic molecules,\\
+does their superior flexibility unlock\\
+\textbf{fundamentally new discoveries}\\
+that structure-bound GNNs could never have found,\\
+no matter how much data we gave them?}
+\end{center}
+
+\end{frame}
