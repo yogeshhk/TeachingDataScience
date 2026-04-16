@@ -84,7 +84,7 @@ for source, prefix in sources.items():
 \item So we feed it the array of sentences. `model.build\_vocab` takes an array of tagged documents.
 \end{itemize}
 \begin{lstlisting}
-model = Doc2Vec(min_count=1, window=10, size=100, sample=1e-4, negative=5, workers=2)
+model = Doc2Vec(min_count=1, window=10, vector_size=100, sample=1e-4, negative=5, workers=2)
 
 model.build_vocab(taggedDocs)
 \end{lstlisting}
@@ -98,7 +98,7 @@ The model is better trained if it is done multiple times.
 \begin{lstlisting}
 for i in range(2): # 10 if good machine
     print("Iteration {}...".format(i))
-    model.train(taggedDocs,total_examples=model.corpus_count, epochs=model.iter)
+    model.train(taggedDocs, total_examples=model.corpus_count, epochs=10)
 \end{lstlisting}
 \end{frame}
 
@@ -111,7 +111,7 @@ for i in range(2): # 10 if good machine
 \end{itemize}
 
 \begin{lstlisting}
-model.most_similar('good')
+model.wv.most_similar('good')
 
 [('great', 0.8066476583480835),
  ('decent', 0.7794740200042725),
@@ -131,13 +131,13 @@ model.most_similar('good')
 \begin{frame}[fragile]\frametitle{Accessing Vectors}
 \begin{itemize}
 \item Each of the vectors of the words and sentences in the model. 
-\item We can access all of them using model.syn0 (syn0 is simply the output layer of the shallow neural network). 
-\item However, we don't want to use the entire syn0 since that contains the vectors for the words as well, but we are only interested in the ones for sentences.
+\item We can access all of them using model.wv.vectors (the word embedding matrix of the model).
+\item However, we don't want to use the entire wv.vectors since that contains the vectors for the words as well, but we are only interested in the ones for sentences (accessed via model.dv).
 \end{itemize}
 
 Here's a sample vector for the first sentence in the training set for negative reviews:
 \begin{lstlisting}
-model['TRAIN_NEG_0']
+model.dv['TRAIN_NEG_0']
 array([ 0.45238438, -0.07346677, -0.17444436,  0.60655016, -0.70522565,
            -0.2582404 , -0.19224562, -0.07114315, -0.25864932, -0.5387702 ,\ldots,], dtype=float32)
 \end{lstlisting}
@@ -171,8 +171,8 @@ train_labels = numpy.zeros(25000)
 for i in range(12500):
     prefix_train_pos = 'TRAIN_POS_' + str(i)
     prefix_train_neg = 'TRAIN_NEG_' + str(i)
-    train_arrays[i] = model[prefix_train_pos]
-    train_arrays[12500 + i] = model[prefix_train_neg]
+    train_arrays[i] = model.dv[prefix_train_pos]
+    train_arrays[12500 + i] = model.dv[prefix_train_neg]
     train_labels[i] = 1
     train_labels[12500 + i] = 0
 \end{lstlisting}

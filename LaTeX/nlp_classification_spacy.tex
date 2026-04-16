@@ -129,15 +129,13 @@ def train_model(
     # Build pipeline
     nlp = spacy.load("en_core_web_sm")
     if "textcat" not in nlp.pipe_names:
-        textcat = nlp.create_pipe(
-            "textcat", config={"architecture": "simple_cnn"}
-        )
-        nlp.add_pipe(textcat, last=True)	
-    else:
-        textcat = nlp.get_pipe("textcat")
+        nlp.add_pipe("textcat", last=True,
+                     config={"model": {"@architectures": "spacy.TextCatBOW.v2",
+                                       "exclusive_classes": True}})
+    textcat = nlp.get_pipe("textcat")
 
     textcat.add_label("pos")
-    textcat.add_label("neg")				
+    textcat.add_label("neg")
 \end{lstlisting}
 
 \end{frame}
@@ -173,13 +171,13 @@ def train_model(
     training_excluded_pipes = [
         pipe for pipe in nlp.pipe_names if pipe != "textcat"
     ]		
-    with nlp.disable_pipes(training_excluded_pipes):
-        optimizer = nlp.begin_training()
+    with nlp.select_pipes(enable=["textcat"]):
+        optimizer = nlp.initialize()
         # Training loop
         print("Beginning training")
         batch_sizes = compounding(
             4.0, 32.0, 1.001
-        )  # A generator that yields infinite series of input numbers		
+        )  # A generator that yields infinite series of input numbers
 \end{lstlisting}
 
 \end{frame}
@@ -192,8 +190,8 @@ def train_model(training_data: list,test_data: list,iterations: int = 20
 ) -> None:
 		:
 		:
-    with nlp.disable_pipes(training_excluded_pipes):
-        optimizer = nlp.begin_training()
+    with nlp.select_pipes(enable=["textcat"]):
+        optimizer = nlp.initialize()
         # Training loop
         print("Beginning training")
         batch_sizes = compounding(

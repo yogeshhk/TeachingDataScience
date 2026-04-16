@@ -103,3 +103,6 @@ A repo-wide `Code/.gitignore` covers `__pycache__/`, `.ipynb_checkpoints/`, `.en
 
 ### Security note
 `Code/google-adk/my_agent/.env` is gitignored but contains a real `GOOGLE_API_KEY` on disk — rotate it in Google Cloud Console.
+
+## Git
+Do not run any git commands. The user manages all git operations externally.
