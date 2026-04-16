@@ -305,9 +305,17 @@ in between
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Build Layers}
+\begin{itemize}
+\item Constructing a Sequential model, and
+adding three layers to it: a linear, or dense, layer;
+the activation layer; and the output layer.
+\item The input shape parameter needs to be set for the
+first layer, but can be inferred for all of the other
+layers.
+\end{itemize}
 \begin{lstlisting}
-from keras.models import Sequential
-from keras.layers import Dense, Activation
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Activation
 
 model = Sequential()
 
@@ -315,76 +323,54 @@ model.add(Dense(units=64, input_dim=100))
 model.add(Activation('relu'))
 model.add(Dense(units=10))
 model.add(Activation('softmax'))
-\end{lstlisting}
 
-\begin{itemize}
-\item Constructing a Sequential model, and
-adding three layers to it: a linear, or dense, layer;
-the activation layer; and the output layer.
-\begin{lstlisting}
->>> model = Sequential()
->>> model.add(Dense(512, input_shape=(28 * 28,)))
->>> model.add(Activation("sigmoid"))
->>> model.add(Dense(10))
+# Alternative example
+model = Sequential()
+model.add(Dense(512, input_shape=(28 * 28,)))
+model.add(Activation("sigmoid"))
+model.add(Dense(10))
 \end{lstlisting}
-\item The input shape parameter needs to be set for the
-first layer, but can be inferred for all of the other
-layers.
-\end{itemize}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Compile Model}
-\begin{lstlisting}
-model.compile(loss='categorical_crossentropy',optimizer='sgd',
-metrics=['accuracy'])
-
-or
-
-model.compile(loss=keras.losses.categorical_crossentropy,optimizer=
-keras.optimizers.SGD(lr=0.01, momentum=0.9))
-\end{lstlisting}
-
 \begin{itemize}
 \item Compile the model (this may take a minute
 or more) using stochastic gradient descent.
-\begin{lstlisting}
->>> sgd = SGD(lr = 0.02, momentum = 0.01, nesterov = True)
->>> model.compile(loss='mse', optimizer=sgd)
-\end{lstlisting}
 \item By setting various environment variables, we could do this
-over Tensorflow or Theano, and could make it run over
+over TensorFlow or Theano, and could make it run over
 various CPU or GPU architectures.
 \end{itemize}
+\begin{lstlisting}
+model.compile(loss='categorical_crossentropy', optimizer='sgd',
+              metrics=['accuracy'])
 
+# or with explicit optimizer settings:
+sgd = SGD(lr=0.02, momentum=0.01, nesterov=True)
+model.compile(loss='mse', optimizer=sgd)
+\end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Training}
+\begin{itemize}
+\item To train the actual model, we run the fit method on
+the model, giving the desired batch size and number
+of epochs.
+\item This will produce a running output of the model training
+process.
+\end{itemize}
 \begin{lstlisting}
 model.fit(x_train, y_train, epochs=5, batch_size=32)
 
 # You can feed data batches manually
-
 model.train_on_batch(x_batch, y_batch)
-\end{lstlisting}
 
-\begin{itemize}
-\item To train the actual model, we run the fit method on
-the model, giving the desired batch size and number
-of epochs:
-\begin{lstlisting}
->>> model.fit(X_train, Y_train, batch_size=32, nb_epoch=25,
-...           verbose=1, show_accuracy=True)
+# Verbose training example
+model.fit(X_train, Y_train, batch_size=32, epochs=25,
+          verbose=1)
 \end{lstlisting}
-\item This will produce a running output of the model training
-process.
-
-% \item Run this is the Python interpreter
-% and see the various advanced features than can be easily added
-% to adapt the final model.
-\end{itemize}
 \end{frame}
 
 
@@ -626,18 +612,18 @@ What is dim?
 With the Sequential model:
 
 \begin{lstlisting}
-from keras.models import Sequential  
-from keras.layers import *  
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import *
 
-model = Sequential()    
+model = Sequential()
 
-#start from the first hidden layer, since the input is not actually a layer   
-#but inform the shape of the input, with 3 elements.    
-model.add(Dense(units=4,input_shape=(3,))) #hidden layer 1 with input
+#start from the first hidden layer, since the input is not actually a layer
+#but inform the shape of the input, with 3 elements.
+model.add(Dense(units=4, input_shape=(3,)))  # hidden layer 1 with input
 
-#further layers:    
-model.add(Dense(units=4)) #hidden layer 2
-model.add(Dense(units=1)) #output layer   
+#further layers:
+model.add(Dense(units=4))  # hidden layer 2
+model.add(Dense(units=1))  # output layer
 \end{lstlisting}
 
 \tiny{(Ref: Keras input explanation: input\_shape, units, batch\_size, dim, etc - Stack Overflow)}
@@ -646,25 +632,7 @@ model.add(Dense(units=1)) #output layer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Example: Images}
 
-With the functional API Model:
-
-\begin{lstlisting}
-from keras.models import Model   
-from keras.layers import * 
-
-#Start defining the input tensor:
-inpTensor = Input((3,))   
-
-#create the layers and pass them the input tensor to get the output tensor:    
-hidden1Out = Dense(units=4)(inpTensor)    
-hidden2Out = Dense(units=4)(hidden1Out)    
-finalOut = Dense(units=1)(hidden2Out)   
-
-#define the model's start and end points    
-model = Model(inpTensor,finalOut)  
-\end{lstlisting}
-
-Remember you ignore batch sizes when defining layers:
+With the functional API Model. Remember you ignore batch sizes when defining layers:
 
 \begin{itemize}
 \item  inpTensor: (None,3)
@@ -673,8 +641,22 @@ Remember you ignore batch sizes when defining layers:
 \item  finalOut: (None,1)
 \end{itemize}
 
-
 \tiny{(Ref: Keras input explanation: input\_shape, units, batch\_size, dim, etc - Stack Overflow)}
+\begin{lstlisting}
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import *
+
+#Start defining the input tensor:
+inpTensor = Input((3,))
+
+#create the layers and pass them the input tensor to get the output tensor:
+hidden1Out = Dense(units=4)(inpTensor)
+hidden2Out = Dense(units=4)(hidden1Out)
+finalOut = Dense(units=1)(hidden2Out)
+
+#define the model's start and end points
+model = Model(inpTensor, finalOut)
+\end{lstlisting}
 \end{frame}
 
 
@@ -705,8 +687,8 @@ Steps:
 \begin{frame}[fragile] \frametitle{Imports}
 Note: machine learning algorithms that use a stochastic process (e.g. random numbers), it is a good idea to set the random number seed.
 \begin{lstlisting}
-from keras.models import Sequential
-from keras.layers import Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
 import numpy
 # fix random seed for reproducibility
 numpy.random.seed(7)
@@ -899,10 +881,10 @@ print(rounded)
 \begin{lstlisting}
 import numpy
 import pandas
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.wrappers.scikit_learn import KerasClassifier
-from keras.utils import np_utils
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
+from tensorflow.keras.utils import to_categorical as np_utils
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import LabelEncoder
@@ -1053,9 +1035,9 @@ Accuracy: 97.33% (4.42%)
 \begin{lstlisting}
 import numpy
 import pandas
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.wrappers.scikit_learn import KerasRegressor
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
@@ -1116,7 +1098,7 @@ def baseline_model():
 seed = 7
 numpy.random.seed(seed)
 # evaluate model with standardized dataset
-estimator = KerasRegressor(build_fn=baseline_model, nb_epoch=100, batch_size=5, verbose=0)
+estimator = KerasRegressor(build_fn=baseline_model, epochs=100, batch_size=5, verbose=0)
 \end{lstlisting}
 \end{frame}
 
@@ -1132,7 +1114,7 @@ estimator = KerasRegressor(build_fn=baseline_model, nb_epoch=100, batch_size=5, 
 seed = 7
 numpy.random.seed(seed)
 # evaluate model with standardized dataset
-estimator = KerasRegressor(build_fn=baseline_model, nb_epoch=100, batch_size=5, verbose=0)
+estimator = KerasRegressor(build_fn=baseline_model, epochs=100, batch_size=5, verbose=0)
 \end{lstlisting}
 \end{frame}
 

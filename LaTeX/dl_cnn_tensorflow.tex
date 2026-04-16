@@ -29,17 +29,16 @@
 
 \begin{itemize}
 \item Importing numpy and setting a seed for the computer's pseudo-random number generator.
+\item Keras libs
+\end{itemize}
 \begin{lstlisting}
 import numpy as np
 np.random.seed(123)  # for reproducibility
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten
+from tensorflow.keras.layers import Conv2D, MaxPooling2D
 \end{lstlisting}
-\item Keras libs
-\begin{lstlisting}
-from tf.keras.models import Sequential
-from tf.keras.layers import Dense, Dropout, Activation, Flatten
-from tf.keras.layers import Conv2D, MaxPooling2D
-\end{lstlisting}
-\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,9 +48,10 @@ from tf.keras.layers import Conv2D, MaxPooling2D
 \item MNIST is included in Keras
 \item It's a big enough challenge to warrant neural networks, but it's manageable on a single computer. 
 \end{itemize}
+We have 60,000 samples in our training set, and the images are 28 pixels x 28 pixels each.
 \begin{lstlisting}
-from tf.keras.datasets import mnist
- 
+from tensorflow.keras.datasets import mnist
+
 # Load pre-shuffled MNIST data into train and test sets
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
@@ -60,7 +60,6 @@ print(X_train.shape)
 print(X_train[0].shape)
 # (26,28)
 \end{lstlisting}
-We have 60,000 samples in our training set, and the images are 28 pixels x 28 pixels each.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,14 +68,14 @@ We have 60,000 samples in our training set, and the images are 28 pixels x 28 pi
 \begin{itemize}
 \item Check by plotting a sample image
 \end{itemize}
+\begin{center}
+\includegraphics[width=0.3\linewidth,keepaspectratio]{cnnkr2}
+\end{center}
 \begin{lstlisting}
 from matplotlib import pyplot as plt
 plt.imshow(X_train[0])
 plt.show()
 \end{lstlisting}
-\begin{center}
-\includegraphics[width=0.3\linewidth,keepaspectratio]{cnnkr2}
-\end{center}
 \end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,26 +131,23 @@ X_test = X_test.astype('float32')
 X_train /= 255
 X_test /= 255
 \end{lstlisting}
-Now, our input data Xs are ready for model training.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Pre-process Labels}
 
 \begin{itemize}
-\item Let's take a look at the shape of our class label data:
+\item Let's take a look at the shape of our class label data.
+\item That may be problematic.
+\item We should have 10 different classes, one for each digit, but it looks like we only have a 1-dimensional array.
+\item Let's take a look at the labels for the first 10 training samples.
+\end{itemize}
 \begin{lstlisting}
 print(y_train.shape)
 # (60000,)
-\end{lstlisting}
-\item That may be problematic. 
-\item We should have 10 different classes, one for each digit, but it looks like we only have a 1-dimensional array.
-\item Let's take a look at the labels for the first 10 training samples:
-\begin{lstlisting}
 print(y_train[:10])
 # [5 0 4 1 9 2 1 3 1 4]
 \end{lstlisting}
-\end{itemize}
 \end{frame}
 
 
@@ -159,22 +155,19 @@ print(y_train[:10])
 \begin{frame}[fragile] \frametitle{Pre-process Labels}
 
 \begin{itemize}
-\item And there's the problem. 
+\item And there's the problem.
 \item The y\_train and y\_test data are not split into 10 distinct class labels, but rather are represented as a single array with the class values.
-\item We can fix this easily:
+\item We can fix this easily; see the resulting shape.
+\end{itemize}
 \begin{lstlisting}
-from tf.keras.utils import to_categorical
+from tensorflow.keras.utils import to_categorical
 
 # Convert 1-dimensional class arrays to 10-dimensional class matrices
 Y_train = to_categorical(y_train)
 Y_test = to_categorical(y_test)
-\end{lstlisting}
-\item See now:
-\begin{lstlisting}
 print(Y_train.shape)
 # (60000, 10)
 \end{lstlisting}
-\end{itemize}
 \end{frame}
 
 
@@ -186,7 +179,8 @@ print(Y_train.shape)
 \item In this case, it's the same (28, 28, 1) that corresponds to  the (width, height,depth) of each digit image.
 \item But what do the first 3 parameters represent? 
 \item They correspond to the number of convolution filters to use, the number of rows in each convolution kernel, and the number of columns in each convolution kernel, respectively.
-\item We can confirm this by printing the shape of the current model output:
+\item We can confirm this by printing the shape of the current model output.
+\item Note: The step size is (1,1) by default, and it can be tuned using the 'subsample' parameter.
 \end{itemize}
 \begin{lstlisting}
 model = Sequential()
@@ -194,7 +188,6 @@ model.add(Conv2D(32,  kernel_size=3, activation='relu', input_shape=(28,28,1)))
 print(model.output_shape)
 # (None, 32, 26, 26)
 \end{lstlisting}
-*Note: The step size is (1,1) by default, and it can be tuned using the 'subsample' parameter.
 \end{frame}
 
 
@@ -266,14 +259,14 @@ model.compile(loss='categorical_crossentropy',
 \begin{frame}[fragile] \frametitle{Fit Model}
 
 \begin{itemize}
-\item To fit the model, all we have to do is declare the batch size and number of epochs to train for, 
+\item To fit the model, all we have to do is declare the batch size and number of epochs to train for,
 \item Then pass in our training data.
+\item You can also use a variety of callbacks to set early-stopping rules, save model weights along the way, or log the history of each training epoch.
 \end{itemize}
 \begin{lstlisting}
-model.fit(X_train, Y_train, 
-          batch_size=32, nb_epoch=10, verbose=1)
+model.fit(X_train, Y_train,
+          batch_size=32, epochs=10, verbose=1)
 \end{lstlisting}
-You can also use a variety of callbacks to set early-stopping rules, save model weights along the way, or log the history of each training epoch.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

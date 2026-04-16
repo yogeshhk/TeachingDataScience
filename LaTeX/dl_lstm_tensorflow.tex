@@ -143,40 +143,37 @@ Each blue box is an LSTM layer, composed of multiple cells/units, each of which 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{LSTM Layers}
-
+2nd layer onwards, no need to specify input\_shape. You may keep/change the number of units. Last LSTM has return\_sequences to False.
 \begin{lstlisting}
-from tf.keras.models import Sequential
-from tf.keras.layers import Dense
-from tf.keras.layers import LSTM
-from tf.keras.layers import Dropout
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, LSTM, Dropout
 
 regressor = Sequential()
-regressor.add(LSTM(units=50, return_sequences = True, input_shape = (x_train.shape[1],1)))
+regressor.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
 regressor.add(Dropout(0.2))
-regressor.add(LSTM(units=50, return_sequences = True))
+regressor.add(LSTM(units=50, return_sequences=True))
 regressor.add(Dropout(0.2))
-regressor.add(LSTM(units=50, return_sequences = True))
+regressor.add(LSTM(units=50, return_sequences=True))
 regressor.add(Dropout(0.2))
-regressor.add(LSTM(units=50, return_sequences = False))
+regressor.add(LSTM(units=50, return_sequences=False))
 regressor.add(Dropout(0.2))
 \end{lstlisting}
-2nd layer onwards, no need to specify input\_shape. You may keep/change the number of units. Last LSTM has return sequenes to False.
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Output Layer and compiling, fitting}
 Adding fully connected layer ie Dense layer.
-Output is the stock prediction, which is dimension 1, so outout layer's dim is 1.
+Output is the stock prediction, which is dimension 1, so output layer's dim is 1.
+For compilation one can use ``RMSProp'' as optimizer seems suitable for RNN, but Adam is also ok.
+Epochs can be decided by experimenting. 100 looks better. Instead of updating weights for each new input, we set batch size = 32, so wts update after 32 epochs.
 \begin{lstlisting}
 regressor.add(Dense(units=1))
 
-regressor.compile(optimizer="adam",loss = "mean_squared_error")
+regressor.compile(optimizer="adam", loss="mean_squared_error")
 
-regressor.fit(x_train,y_train,epochs=100,batch_size = 32)
+regressor.fit(x_train, y_train, epochs=100, batch_size=32)
 \end{lstlisting}
-For compilation one can use ``RMSProp'' as optimizer seems suitable for RNN, but Adam is also ok.
-Epochs can be decided by experimenting. 100 looks better.Instead of updating weights for each new input, we set batch size = 32, so wts update after 32 epochs.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -284,18 +281,16 @@ plt.show()
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Imports}
-
+Last thing is that for reproducibility, a seed is used in numpy's random.
 \begin{lstlisting}
 import matplotlib.pyplot as plt
 import numpy as np
 import time
 import csv
-from tf.keras.models import Sequential
-from tf.keras.layers.core import Dense, Activation, Dropout
-from tf.keras.layers.recurrent import LSTM
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Activation, Dropout, LSTM
 np.random.seed(1234)
 \end{lstlisting}
-Last thing is that for reproductibility, a seed is used in numpy's random.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -357,10 +352,9 @@ def data_power_consumption(path_to_dataset='household_power_consumption.txt', se
     
     result_mean = result.mean()
     result -= result_mean
-    print "Shift : ", result_mean
-    print "Data  : ", result.shape    
+    print("Shift : ", result_mean)
+    print("Data  : ", result.shape)
 \end{lstlisting}
-Simply center the data to have a 0 mean.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -484,7 +478,7 @@ Lastly, we compile the model using a Mean Square Error (again, it's standard for
 \begin{lstlisting}
     start = time.time()
     model.compile(loss="mse", optimizer="rmsprop")
-    print "Compilation Time : ", time.time() - start
+    print("Compilation Time : ", time.time() - start)
     return model
 \end{lstlisting}    
 \end{frame}
@@ -589,18 +583,17 @@ def run_network(model=None, data=None):
     path_to_dataset = 'household_power_consumption.txt'
     
     if data is None:
-        print 'Loading data... '
+        print('Loading data... ')
         X_train, y_train, X_test, y_test = data_power_consumption(
                 path_to_dataset, sequence_length, ratio)
     else:
         X_train, y_train, X_test, y_test = data
-    
-    print '\nData Loaded. Compiling...\n'
-    
+
+    print('\nData Loaded. Compiling...\n')
+
     if model is None:
         model = build_model()
-\end{lstlisting}   
-To be as modular as possible we start with checking whether or not data and model values were provided. 
+\end{lstlisting}
 \end{frame}
 
 
@@ -613,11 +606,11 @@ def run_network(model=None, data=None):
 	try:
         model.fit(
             X_train, y_train,
-            batch_size=512, nb_epoch=epochs, validation_split=0.05)
+            batch_size=512, epochs=epochs, validation_split=0.05)
         predicted = model.predict(X_test)
         predicted = np.reshape(predicted, (predicted.size,))
     except KeyboardInterrupt:
-        print 'Training duration (s) : ', time.time() - global_start_time
+        print('Training duration (s) : ', time.time() - global_start_time)
         return model, y_test, 0
 \end{lstlisting}           
 \end{frame}
@@ -663,8 +656,8 @@ def run_network(model=None, data=None):
         plt.plot(predicted[:100, 0])
         plt.show()
     except Exception as e:
-        print str(e)
-    print 'Training duration (s) : ', time.time() - global_start_time
+        print(str(e))
+    print('Training duration (s) : ', time.time() - global_start_time)
     return model, y_test, predicted
     
 if __name__ == '__main__':
