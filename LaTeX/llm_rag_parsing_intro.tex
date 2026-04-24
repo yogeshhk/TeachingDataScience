@@ -1,0 +1,463 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large RAG Parsing Introduction}
+
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Executive Summary}
+      \begin{itemize}
+        \item Document parsing transforms unstructured data into structured, machine-readable form.
+        \item It is foundational for RAG (Retrieval-Augmented Generation) systems.
+        \item Parsing quality directly affects downstream retrieval and generation accuracy.
+        \item Poor parsing causes hallucinations and retrieval errors.
+        \item Docling, by IBM Research, represents a modern open-source parsing framework.
+        \item This report explores parsing theory, current methods, and Docling’s architecture.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Background and Need for Document Parsing}
+      \begin{itemize}
+        \item Evolved from OCR, which focused only on character recognition.
+        \item Early OCR failed with complex layouts, images, and poor scans.
+        \item Modern LLMs require semantically rich document structures.
+        \item Traditional text extraction leads to “garbage in, garbage out”.
+        \item Parsing is essential for contextualized, structured inputs to RAG systems.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Pipeline and Parsing Role}
+      \begin{itemize}
+        \item RAG pipeline steps: Ingestion → Chunking → Embedding → Indexing → Retrieval → Generation.
+        \item Parsing defines quality of all downstream stages.
+        \item Poor parsing leads to loss of information and degraded retrieval.
+        \item Incorrect structure causes hallucinations during generation.
+        \item Accurate parsing enhances semantic coherence and query relevance.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Parsing: Historical Evolution}
+      \begin{itemize}
+        \item Early OCR (1970s-1990s): Character-level recognition only.
+        \item Limited to simple, clean documents with uniform layouts.
+        \item Struggled with: multi-column layouts, mixed content, variable quality scans.
+        \item Modern era (2020s): LLM-driven demand for semantic understanding.
+        \item Shift from text extraction to structural comprehension.
+        \item Integration with AI pipelines requires context preservation.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Impact of Parsing Quality on RAG}
+      \begin{itemize}
+        \item \textbf{Information Loss:} Tables and visual layouts become inaccessible.
+        \item \textbf{Context Degradation:} Reading order confusion breaks semantic flow.
+        \item \textbf{Downstream Hallucinations:} LLMs fabricate info from incomplete context.
+        \item \textbf{Retrieval Failures:} Vector search fails on poorly extracted chunks.
+        \item \textbf{Critical Finding:} Distracting documents degrade performance more than irrelevant ones.
+        \item Parsing is the \textit{first line of defense} against RAG failures.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Layers: Multi-Dimensional Understanding}
+      \begin{itemize}
+        \item \textbf{Spatial Layer:} Physical coordinates and bounding boxes.
+        \item \textbf{Logical Layer:} Semantic hierarchy (sections, relationships).
+        \item \textbf{Visual Layer:} Styling information (fonts, colors, emphasis).
+        \item \textbf{Textual Layer:} Raw character sequences.
+        \item Modern parsers must integrate all layers for accurate representation.
+        \item Single-layer extraction (text-only) loses critical context.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reading Order: The Critical Challenge}
+\begin{columns}
+    \begin{column}[T]{0.5\linewidth}
+      \begin{itemize}
+        \item PDFs store visual representations, not logical flow.
+        \item Reading order must be \textit{inferred} from layout.
+        \item Challenges: multi-column, floating elements, tables.
+        \item Algorithms use spatial clustering and visual cues.
+        \item Incorrect order produces incoherent chunks.
+      \end{itemize}
+    \end{column}
+    \begin{column}[T]{0.5\linewidth}
+% \begin{verbatim}
+% Two-Column Example:
+% ┌─────────────────────┐
+% │  Col1  │   Col2     │
+% │ Para1  │  Para4     │
+% │ Para2  │  Para5     │
+% │ Para3  │  Image     │
+% │ Table  │            │
+% └─────────────────────┘
+
+% Correct Order:
+% 1. All of Column 1
+% 2. All of Column 2
+% 3. Footer
+% \end{verbatim}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunking: Semantic Preservation Strategies}
+      \begin{itemize}
+        \item \textbf{Fixed-size:} Simple, 512/1024 tokens; ignores semantic boundaries.
+        \item \textbf{Sentence-based:} Respects grammar but may split cohesive ideas.
+        \item \textbf{Semantic:} Uses embedding similarity to group related content.
+        \item \textbf{Hierarchical:} Preserves document structure (sections, subsections).
+        \item \textbf{Best Practice:} Structure-aware chunking maintains context.
+        \item Poor chunking = disconnected information for retrieval.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parsing Approaches: Modular vs End-to-End}
+      \begin{itemize}
+        \item \textbf{Modular Pipelines:}
+        \begin{itemize}
+          \item Sequential stages: OCR → Layout → Structure → Assembly.
+          \item Component-level optimization and testing.
+          \item Requires careful integration.
+        \end{itemize}
+        \item \textbf{End-to-End VLMs:}
+        \begin{itemize}
+          \item Single model processes entire page.
+          \item Eliminates integration complexity.
+          \item Higher computation, potential generality trade-off.
+        \end{itemize}
+        \item \textbf{Hybrid (Docling):} Specialized models + flexible orchestration.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Technical Challenges: Context Windows}
+      \begin{itemize}
+        \item Vision-Language Models have finite attention spans.
+        \item High-resolution A4 pages exceed typical context limits.
+        \item Models process small patches, losing global context.
+        \item 50-page documents with cross-page relationships are problematic.
+        \item Solutions: sophisticated chunking, multi-pass processing.
+        \item Advanced platforms handle multi-page context automatically.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Performance Challenges: Speed vs Accuracy}
+      \begin{itemize}
+        \item Complex documents are time-consuming (1-3 sec/page typical).
+        \item Vision models require GPU acceleration (3-33x speedup).
+        \item Resource requirements: 6-18 GB VRAM for high-accuracy models.
+        \item Specialized models excel but struggle with edge cases.
+        \item General models handle diversity but sacrifice accuracy.
+        \item Trade-off: speed (egret-m) vs accuracy (heron-101).
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Semantic Challenges: Fragmentation \& Hallucination}
+      \begin{itemize}
+        \item \textbf{Information Fragmentation:} Captions separated from figures.
+        \item Retrieval fails when context is disconnected.
+        \item \textbf{Downstream Hallucinations:} LLMs generate false info from incomplete input.
+        \item Not an LLM failure—a parsing failure.
+        \item \textbf{Ambiguity:} Handwritten notes, artistic layouts lack clear structure.
+        \item Deterministic algorithms struggle with subjective interpretations.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cloud vs Open-Source: Trade-offs}
+\begin{table}[h]
+\centering
+\tiny
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Aspect} & \textbf{Cloud-Based} & \textbf{Open-Source} \\
+\hline
+Cost & Per-page fees (\$0.03+) & Infrastructure only \\
+Privacy & Data transmitted & Local processing \\
+Customization & Limited & Full control \\
+Scalability & Automatic & Manual setup \\
+Vendor Lock-in & High & None \\
+Setup & Easy & Moderate-High \\
+\hline
+\end{tabular}
+\end{table}
+      \begin{itemize}
+        \item Cloud: prototyping, bursty workloads, no infrastructure.
+        \item Open-Source: production, sensitive data, cost control.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{When to Use Each Approach}
+      \begin{itemize}
+        \item \textbf{Cloud-Based:}
+        \begin{itemize}
+          \item Prototyping and proof-of-concepts.
+          \item Unpredictable, bursty document volumes.
+          \item No infrastructure expertise available.
+        \end{itemize}
+        \item \textbf{Open-Source (Docling):}
+        \begin{itemize}
+          \item Production systems with consistent volume.
+          \item Sensitive/proprietary documents (legal, medical, financial).
+          \item Air-gapped or offline requirements.
+          \item Cost-constrained at scale (millions of docs).
+          \item Full customization and auditability needed.
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document Layout Understanding}
+      \begin{itemize}
+        \item Modern parsing identifies spatial, logical, visual, and textual layers.
+        \item Layout analysis uses computer vision to classify elements.
+        \item Elements: headers, body, tables, figures, captions, and footers.
+        \item Enables structured, semantically meaningful document representations.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Information Structure Types}
+      \begin{itemize}
+        \item Linear: sequential paragraphs and text.
+        \item Tabular: structured grid data.
+        \item Visual: charts, diagrams, images.
+        \item Mathematical: equations and formulas.
+        \item Hierarchical: sections and subsections.
+        \item Effective parsing must handle all these content forms.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reading Order Reconstruction}
+      \begin{itemize}
+        \item PDFs lack explicit reading order; it must be inferred.
+        \item Algorithms analyze spatial proximity, alignment, and indentation.
+        \item Handle multi-column, nested, or cross-page content.
+        \item Ensure logical, coherent flow for retrieval and chunking.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chunking Strategies}
+      \begin{itemize}
+        \item Fixed-size: simple but ignores semantics.
+        \item Sentence-based: respects grammar but splits ideas.
+        \item Semantic: uses embeddings for cohesive grouping.
+        \item Hierarchical: preserves document structure.
+        \item Docling enables native, structure-aware chunking.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Approaches to Document Parsing}
+      \begin{itemize}
+        \item Modular pipelines: sequential OCR, layout, structure, post-processing.
+        \item End-to-end VLMs: unified model predicting full structure.
+        \item Hybrid systems: mix specialized and orchestration models.
+        \item Docling employs modular yet flexible hybrid pipelines.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Challenges in Document Parsing}
+      \begin{itemize}
+        \item Context window limits in vision-language models.
+        \item Complex, dense, and multi-language layouts.
+        \item Cross-page relationships and multimodal integration.
+        \item Speed, GPU demand, and accuracy trade-offs.
+        \item Hallucinations from fragmented or incorrect parsing.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parsing Solutions: Cloud vs Open-Source}
+      \begin{itemize}
+        \item Cloud-based: easy to scale, but has privacy and cost issues.
+        \item Open-source: full control, no vendor lock-in, local execution.
+        \item Hybrid: combines flexibility with enterprise reliability.
+        \item Docling fits open-source/enterprise hybrid model.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Pipeline: Complete Workflow}
+      \begin{itemize}
+        \item \textbf{Stage 1 - Document Ingestion:} Parse raw documents into structured format.
+        \item \textbf{Stage 2 - Chunking:} Segment into meaningful pieces.
+        \item \textbf{Stage 3 - Embedding:} Convert chunks to vector representations.
+        \item \textbf{Stage 4 - Indexing:} Store vectors in database for retrieval.
+        \item \textbf{Stage 5 - Retrieval:} Find relevant chunks for user queries.
+        \item \textbf{Stage 6 - Generation:} LLM creates responses using retrieved context.
+        \item Parsing quality at Stage 1 determines all downstream performance.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Distracting Documents: The Hidden Danger}
+      \begin{itemize}
+        \item Recent RAG research reveals critical finding:
+        \item \textbf{Distracting documents} (incorrectly extracted but seemingly relevant) degrade performance MORE than completely irrelevant documents.
+        \item Poor parsing creates false signal for retrieval systems.
+        \item Vector search matches on corrupted patterns, not true content.
+        \item LLM receives contradictory or incomplete context.
+        \item Result: Hallucinations and incorrect responses.
+        \item \textbf{Implication:} Parsing accuracy is more critical than retrieval sophistication.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multimodal Integration Challenge}
+      \begin{itemize}
+        \item Documents contain multiple content modalities:
+        \begin{itemize}
+          \item Text extraction with coordinates
+          \item Table structure recognition
+          \item Image classification and description
+          \item Mathematical notation preservation
+        \end{itemize}
+        \item Each modality requires specialized processing.
+        \item Elements must be linked while preserving distinct properties.
+        \item Challenge: Creating unified representation from diverse inputs.
+        \item Solution: Coordinated pipeline with shared document model.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cross-Page References: Document-Level Understanding}
+      \begin{itemize}
+        \item Tables and images frequently span multiple pages.
+        \item Text narratives continue across page breaks.
+        \item Footnotes and citations reference earlier content.
+        \item Page-level processing loses these relationships.
+        \item Requires post-processing with document-level awareness.
+        \item Advanced parsers track element continuity.
+        \item Critical for: legal documents, academic papers, technical reports.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Performance Case Study: Star Tex}
+      \begin{itemize}
+        \item \textbf{Use Case:} Safety Data Sheet processing.
+        \item \textbf{Before Advanced Parsing:} 10 minutes per document.
+        \item \textbf{After Docling Implementation:} 10 seconds per document.
+        \item \textbf{60x speedup} through optimized parsing.
+        \item Enabled real-time document processing pipeline.
+        \item Improved accuracy reduced manual review requirements.
+        \item Demonstrates production-scale impact of parsing quality.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Resource Comparison: Models}
+\begin{table}[h]
+\centering
+\tiny
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Model} & \textbf{VRAM} & \textbf{Speed} & \textbf{Use Case} \\
+\hline
+Nanonets-OCR & 17.7 GB & 83 sec/doc & High accuracy \\
+Dolphin & 5.8 GB & Fast & Balanced \\
+Docling (heron-101) & 17.7 GB & 1.26 sec/page & Production \\
+Docling (egret-m) & 5.8 GB & 0.024 sec/img & Edge devices \\
+\hline
+\end{tabular}
+\end{table}
+      \begin{itemize}
+        \item Choose model based on hardware constraints.
+        \item GPU acceleration provides 3-33x speedup.
+        \item Edge devices: use smaller models (egret-m).
+        \item Production systems: balance accuracy and throughput.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cloud Solutions: Examples and Pricing}
+      \begin{itemize}
+        \item \textbf{Microsoft Azure Document Intelligence:}
+        \begin{itemize}
+          \item Layout-aware extraction with semantic chunking.
+          \item ~\$0.03+ per page, enterprise SLAs.
+        \end{itemize}
+        \item \textbf{AWS Kendra:}
+        \begin{itemize}
+          \item Enterprise search with integrated parsing.
+          \item Volume-based pricing, automatic scaling.
+        \end{itemize}
+        \item \textbf{LlamaParse:}
+        \begin{itemize}
+          \item 10,000 free credits monthly, diverse format support.
+          \item Pay-per-page beyond free tier.
+        \end{itemize}
+        \item \textbf{Cost at Scale:} \$30,000+ for 1M pages.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Open-Source Solutions: Ecosystem}
+      \begin{itemize}
+        \item \textbf{Docling (IBM):} Comprehensive modular system, state-of-the-art models.
+        \item \textbf{Grobid:} Specialized for academic/scientific documents.
+        \item \textbf{Camelot:} Focused on table extraction (99.02\% accuracy).
+        \item \textbf{Deepdoctection:} Framework for orchestrating detection and OCR.
+        \item \textbf{Dolphin (ByteDance):} Open-source VLM, GPU requirements.
+        \item \textbf{PyMuPDF:} Lightweight, fast text extraction.
+        \item Each specialized for different document types and use cases.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Privacy and Compliance Considerations}
+      \begin{itemize}
+        \item \textbf{Sensitive Document Types:}
+        \begin{itemize}
+          \item Legal contracts and case files
+          \item Medical records (HIPAA compliance)
+          \item Financial statements (SOX, GDPR)
+          \item Classified or proprietary information
+        \end{itemize}
+        \item \textbf{Cloud Risks:} Data transmission to third-party servers.
+        \item \textbf{Open-Source Benefits:}
+        \begin{itemize}
+          \item Air-gapped deployment possible
+          \item No data leaves organization
+          \item Full audit trail and transparency
+        \end{itemize}
+        \item Compliance requirements often mandate local processing.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Hybrid/Enterprise Solutions}
+      \begin{itemize}
+        \item \textbf{Advantages:}
+        \begin{itemize}
+          \item Combine flexibility of open-source with professional support.
+          \item Run locally OR on cloud as needed.
+          \item Pre-trained models with customization options.
+          \item Enterprise-grade reliability and SLAs.
+        \end{itemize}
+        \item \textbf{Disadvantages:}
+        \begin{itemize}
+          \item Higher costs than pure open-source.
+          \item Licensing complexity.
+          \item May still have vendor constraints.
+        \end{itemize}
+        \item Best for: Large enterprises with mixed requirements.
+      \end{itemize}
+\end{frame}

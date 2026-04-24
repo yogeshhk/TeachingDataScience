@@ -1,0 +1,228 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\exnum}{4}
+
+\exercises
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \exsection{Trajectory optimization}
+
+%% On slide 3:29 (lecture 3 page 29) we defined the cost function for a
+%% single step as
+%% $$f(q_{t\po}) =~ \norm{q_{t\po}-q_t}_{W}^2
+%%  + \Phi(q_{t\po})^\T \Phi(q_{t\po})$$ where $\Phi$ comprises $m$
+%%  different tasks (with map $\phi_i$, target $y^*_i$ and precision
+%%  $\r_i$).
+
+%% Assume we want to find a joint trajectory $q_{0:T}$ that,
+%% in \emph{each} time slice $t$ tries to fulfill $m$ tasks (with target
+%% $y^t_i$ and precision $\r^t_i$ for the $i$th task in time slice $t$).
+
+%% a) What is an appropriate cost function $f(q_{0:T})$ for the whole
+%% trajectory?
+
+%% b) Describe an algorithm in pseudo-code that optimizes the trajectory
+%% w.r.t.\ this cost function. You are free to pick any algorithm --
+%% ideally exploiting 2nd order information.
+
+
+\exsection{Verify some things from the lecture}
+
+a) On slide 02:46 it says that
+\begin{align*}
+&\argmin_q \norm{q-q_0}_W^2 + \norm{\Phi(q)}^2 \\
+ &\qquad\approx q_0 - (J^\T J + W)^\1 J^\T~ \Phi(q_0)
+ =q_0 - J^\# \Phi(q_0)
+\end{align*}
+where the approximation $\approx$ means that we use the local
+linearization $\Phi(q) = \Phi(q_0) + J (q-q_0)$. Verify this.
+
+b) On slide 02:34 there is a term $(\Id - J^\# J)$ called nullspace
+ projection. Verify that for $\r\to\infty$ (and $C=\r\Id$) and any choice
+ of $a\in\RRR^n$
+$$ \d q = (\Id - J^\# J) a ~ \To ~ \d y=0 $$
+(assuming linearity of $\phi$, i.e., $J \d q=\d
+y$). Note: this means that any choice of $a$, the motion $(\Id - J^\# J) a$ will
+not change the ``endeffector position'' $y$.
+
+\begin{solution}
+Due to the Woodbury identity, the pseudo inverse can be written in two
+ways:
+\begin{align}
+J^\#
+ &= (W/\r + J^\T J)^\1 J^\T 
+  = W^\1 J^\T (J W^\1 J^\T + \Id/\r)^\1
+\end{align}
+Note that you CANNOT USE THE FIRST VERSION to take the limit
+$\r\to\infty$ because $J^\T J$ is not invertible. (It is a $n\times
+n$-matrix of rank $d$.) But you can use the second version to let
+$\r\to\infty$ and $J^\# \to W^\1 J^\T (J W^\1 J^\T)^\1$, where $J W^\1
+J^\T$ is a $d\times d$-matrix with full rank (for non-singular
+$J$). Therefore we have
+\begin{align}
+\d y
+&= J \d q
+ = J (\Id - J^\# J) a \\
+&= [J - J  W^\1 J^\T (J W^\1 J^\T)^\1 J] a = [J-J]a = 0
+\end{align}
+\end{solution}
+
+c) On slide 02:27 we derived the basic inverse kinematics law. Verify
+that (assuming linearity of $\phi$) for $C\to\infty$ the desired task
+is fulfilled exactly, i.e., $\phi(q^*) = y^*$. By writing $C\to\infty$
+we mean that $C$ is a matrix of the form $C=\r C_0$, $\r\in\RRR$, and
+we take the limit $\r\to\infty$.
+
+
+%% \show[.25]{optim-InvKin}
+
+%% We want to find an optimum for joint angle step $\d q\in\RRR^n$
+%% under two ``competing tasks'': On the one hand, we want $\d q$ to be
+%% small (be lazy); on the other hand, we want $\d q$ to be close to
+%% the hyperplane $J\d q-\d y=0$, for given $J\in\RRR^{d\times n}$
+%% and $\d y\in\RRR^d$. We associate square costs to both tasks and
+%% define the cost function
+%% \begin{align} \label{eq1}
+%% f(\d q)
+%%  &= \d q^\T~ W~ \d q + (J\d q-\d y)^\T~ C~ (J\d q-\d y) ~.
+%% \end{align}
+%% We introduced metrics (=symmetric positive definite matrix)
+%% $W \in\RRR^{n\times n}$ and $C \in \RRR^{d\times d}$ to weight the
+%% cost terms. Find the optimal $\d q^* = \argmin_{\d q} f(\d q)$.
+
+%% \emph{Simplification:} If you like, first solve a simplified problem: 
+%% Drop $W$ and $C$ (let $W$ and $C$ be Euclidean metrics).
+
+%% \emph{Bonus:} What is the solution for $C \to \infty\Id$ (enforcing
+%% the solution to be definitely on the hyperplane)? Tip: Before taking the limit,
+%% rewrite the solution using the \emph{Woodbury identity} (for positive
+%% definite matrices $W$ and $C$):
+%% \begin{align}
+%% (W + J^\T C J)^\1 J^\T C = W^\1 J^\T (C^\1 + J W^\1 J^\T)^\1 ~.
+%% \end{align}
+
+%% \emph{For discussion during exercises:} How are the solutions related to the
+%% so-called pseudo-inverse? How are they related to singularities, the
+%% ``singularity robust Jacobian'' and ``Tikhonov regularization''?
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \exsection{Motion profiles}
+
+%% Construct a motion profile that accelerates constantly in the first
+%% quarter of the trajectory, then moves with constant velocity, then
+%% decelerates constantly in the last quarter. Write down the equation
+%% $\text{MP}:~ [0,1] \mapsto [0,1]$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\exsection{Multiple task variables}
+
+Consider again the last week's exercise where the robot moved his hand
+in a circle (Exercise 3.2d).
+
+a) We've seen that the solution does track the circle nicely, but the
+trajectory ``gets lost'' in joint space, leading to very strange
+postures. We can fix this by adding more tasks, esp.\ a task that
+permanently tries to (moderatly) minimize the distance of the
+configuration $q$ to a natural posture $q_\text{home}$. Realize this
+by adding a respective task to the code given on the next page.
+
+b) Make the robot simultaneously point upward with the left hand. Use 
+@kinematicsVec@ and @jacobianVec@ for this.
+
+\newpage
+
+\begin{code}\begin{verbatim}
+void multiTask(){
+  Simulator S("man.ors");
+  arr q,q_home,y_target,y,J,W,Phi,PhiJ;
+  uint n = S.getJointDimension();
+
+  S.getJointAngles(q);
+  W.setDiag(1.,n); //we define W as identity matrix
+  q_home = q; //we store the initial posture as q_home
+
+  for(uint i=0;i<10000;i++){
+    Phi.clear();
+    PhiJ.clear();
+
+    //1st task: track with right hand
+    y_target = ARR(-0.2, -0.4, 1.1); 
+    y_target += .2 * ARR(cos((double)i/20), 0, sin((double)i/20)); 
+    S.kinematicsPos(y,"handR");
+    S.jacobianPos  (J,"handR");
+
+    Phi .append( 1e2 * (y - y_target) );  //rho = 1e4 (cp. slide 02:45)
+    PhiJ.append( 1e2 * J );
+
+    //add the "stay close to home" task here
+    
+    //add another task for the left hand here, if you like
+
+    //compute joint updates
+    q -= inverse(~PhiJ*PhiJ + W)*~PhiJ* Phi; //(cp. slide 02:46)
+    S.setJointAngles(q);
+  }
+}
+\end{verbatim}\end{code}
+
+
+%% In our @libRoboticsCourse.12.tgz@ in
+%% @teaching/RoboticsCourse/02-pegInAHole@ you find an example problem
+%% (rename @main.problem.cpp@ to @main.cpp@), where the goal is to stick
+%% the green peg into the blue ``hole''.
+
+%% The initial implementation fails: it does not find an appropriate path
+%% to insert the peg from the top; and it does not use
+%% @kinematicsVec(y,"peg")@ with target @ARR(0,0,-1)@ to force the peg to
+%% point down.
+
+%% Implement a nice peg-in-a-hole movement. You may devide the whole
+%% movement in several sections and use task space or joint space
+%% interpolations with a smooth motion profiles within each. The motion
+%% should reach the final position with very high accuracy in finite time
+%% and without collisions.
+
+%% Bonus: How can we apply joint space interpolation? How could one avoid
+%% zero velocities at the junction of sections?
+
+
+
+%% , using sine motion profiles
+%% and task space interpolation
+
+%%  const char* bodyName, const arr* vec=0); //get the z-axis of the body
+%%   void jacobianVec(arr& J, const char* bodyName, const arr* vec=0);   //get the 
+%% and
+%% implemented reactive controller fails.)
+
+%% a) First ignore collisions. Write an algorithms that finds a posture
+%% $q_T$ that places the pin into the whole and pointing downward. For
+%% this minimize the cost function given on slide 3:47.  Note that in this
+%% cost function the $q_0$ is fixed (and not the current posture $q_k$ at
+%% which we computed $J$ and $\phi$). Optimization can therefore be done
+%% by iteration the Gauss-Newton (see Wikipedia) update, in our case:
+%% $$
+%% q_{k\po} \gets q_k + \a (J^\T J + W)^\1 [ W(q_k-q_0) + J^\T \Phi(q_k)]
+%% $$
+%% For $\a=1$ this iteration might diverge, for smaller $\a\approx .01$
+%% it should converge to an optimal $q_T$.
+
+%% b) Still ignore collision. Generate a trajectory by interpolating in
+%% joint space between $q_0$ and $q_T$ with a sine profile (with
+%% $T=100$). Also generate a trajectory by interpolating in task space
+%% (of the position task as well as vector task) and projecting it to
+%% joint space using inverse kinematics. How do they compare?
+
+%% c) Try to generate a collision free trajectory to place the pin into
+%% the whole. Any heuristics are allowed. A trick might be to work
+%% backward from $q_T$.
+
+
+
+
+
+\exerfoot

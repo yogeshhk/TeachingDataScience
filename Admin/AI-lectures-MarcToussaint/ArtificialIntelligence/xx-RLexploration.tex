@@ -1,0 +1,983 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Artificial Intelligence}
+\renewcommand{\coursepicture}{course_ai}
+\renewcommand{\coursedate}{Winter 2019}
+\renewcommand{\topic}{Reinforcement Learning -- Exploration}
+
+\newcommand{\rmax}{{\textsc{R-max}}}
+
+\slides
+
+\graphicspath{{../pics-all/}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Motivation}{
+
+%% \begin{center}
+%% \begin{tabular}{ll}
+%% Start: many potential paths
+%% &
+%% \hspace{1.2cm}
+%% % First try:
+%% \\
+%% \includegraphics[width=3.2cm]{exploration-gold1} &
+%% \hspace{1.2cm}
+%% \\
+%% &
+%% \hspace{1.2cm}
+%% % Continue using this path?
+%% \\
+%% &
+%% \hspace{5.5cm}
+%% \vspace{-0.3cm}
+%% \end{tabular}
+%% \end{center}
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Motivation}{
+
+%% \begin{center}
+%% \begin{tabular}{ll}
+%% Start: many potential paths
+%% &
+%% \hspace{1.2cm}
+%% First try:
+%% \\
+%% \includegraphics[width=3.2cm]{exploration-gold1} &
+%% \hspace{1.2cm}
+%% \includegraphics[width=4.cm]{exploration-gold2}
+%% \\
+%% &
+%% \hspace{1.2cm}
+%% Continue using this path?
+%% \\
+%% &
+%% \hspace{1.2cm}
+%% \vspace{-0.3cm}
+%% Try out alternatives?
+%% \end{tabular}
+%% \end{center}
+
+%% }
+
+
+
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Motivation}{
+
+%% \begin{center}
+%% \begin{tabular}{ll}
+%% Second try:
+%% &
+%% % \hspace{1.2cm}
+%% % Third try:
+%% \\
+%% \includegraphics[width=4.2cm]{exploration-gold3} &
+%% \hspace{1.2cm}
+%% % \includegraphics[width=4.cm]{exploration-gold4}
+%% \\
+%% &
+%% \hspace{5cm}
+%% % Found good path
+%% \end{tabular}
+%% \end{center}
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Motivation}{
+
+%% \begin{center}
+%% \begin{tabular}{ll}
+%% Second try:
+%% &
+%% \hspace{1.2cm}
+%% Third try:
+%% \\
+%% \includegraphics[width=4.2cm]{exploration-gold3} &
+%% \hspace{1.2cm}
+%% \includegraphics[width=4.cm]{exploration-gold4}\\
+%% &
+%% \hspace{1.2cm}
+%% Found good path
+%% \end{tabular}
+%% \end{center}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Exploration is fundamental intelligent behavior}{
+
+\vspace{0.5cm}
+
+\twocol{.4}{.5}{
+\item \textbf{Try to control the data you collect!}
+\begin{items}
+\item  Make decisions that lead to \emph{interesting} data
+\item Reflect your own knowledge; know what you don't know, what you
+could learn
+\item Go to situations where you might learn something
+\end{items}
+
+\item Curiousity, fun, intrinsic motivation, life-long learning
+}
+{
+\center
+\includegraphics[height=4cm]{exploring_children}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Recall Markov decision processes}{
+
+
+\shows[.7]{mdp1}
+
+{\tiny $P(s_{0:T},a_{0:T},r_{0:T};\pi) =$\\$P(s_0) P(a_0|s_0;\pi)
+P(r_0|a_0,s_0)~ \prod_{t=1}^T P(s_t|a_{t\1},s_{t\1}) P(a_t|s_t;\pi)
+P(r_t|a_t,s_t)$\\}
+
+~
+
+\begin{items}
+\item world's initial state distribution $P(s_0)$
+
+\item world's transition probabilities $P(s_{t\po} \| a_t,s_t)$
+
+\item world's reward probabilities $P(r_t \| a_t,s_t)$
+
+\item discount parameter $\gamma$ for future rewards
+
+~
+
+\item agent's \emph{policy} $\pi(a_t \| s_t)$ ~ (or deterministic
+$a_t
+= \pi(s_t)$)
+\end{items}
+
+\emph{not} part of the world model!
+
+-- two different sources of uncertainty: the world itself (not
+controlled by the agent) vs.~the policy (controlled by the agent)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Recall reinforcement learning}{
+
+\item Agent wants to maximize its future rewards
+$E[\sum_{t=0}^{\infty} \gamma^t r_t \| s_0; \pi]$
+
+~
+
+\item Agent starts \textbf{without a world model}
+
+$\to$ no $P(s_{t\po} \| a_t,s_t)$, no $P(r_t \| a_t,s_t)$, no $V^*(s)$,
+no $Q^*(s,a)$
+
+~
+
+\item Agent needs to \textbf{learn from experience} $s_0,
+a_0,
+r_0, s_1, a_1, r_1, \dots$ which actions lead to high rewards
+
+\begin{items}
+\item model-based RL: learn world model and then plan
+
+\item model-free RL: learn $V$ and $Q$ directly (Q-learning, TD-learning)
+\end{items}
+
+\mypause
+
+~
+
+\item Don't forget the difference between \emph{learning} and
+\emph{planning}. Planning (solving an MDP / calculating optimal state
+and action values) is the problem of adapting the behavior based on a
+given model
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Exploration in reinforcement learning}{
+
+%% \item Where do the data $s_0, a_0, r_0, s_1, a_1, r_1, \dots$ for
+%% learning come from?
+
+%% ~\mypause
+
+%% \item Supervised learning: teacher provides $\DD = \{(x_i,y_i)\}$
+
+%% ~\mypause
+
+%% \item Reinforcement learning: the \emph{agent chooses $a$} and
+%% thereby influences data $\DD = \{(s,a,r,s')\}$
+
+%% ~
+
+%% \item Challenge: which actions lead to relevant learning progress?
+
+%% Relevance with respect to what? \mypause Specific goal, general
+%% knowledge...?
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Epsilon-greedy exploration in Q-learning}
+\slide{\protect$\e$-greedy exploration in Q-learning}{
+
+\begin{algo}
+\State Initialize $Q(s,a)=0$
+\Repeat[for each episode]
+\State Initialize start state $s$
+\Repeat[for each step of episode]
+\State {\color{blue} Choose action
+$a = \begin{cases}
+{\color{blue} \text{random}} & {\color{blue} \text{with prob.}~ \e}\\
+\argmax_a Q(s,a) & \text{else}
+\end{cases}
+$}
+\State Take action $a$, observe $r, s'$
+\State $Q_\new(s,a) \gets Q_\old(s,a) + \a~ [r + \g \max_{a'} 
+Q_\old(s',a' ) -
+Q_\old(s,a)]$
+\State $s\gets s'$
+\Until end of episode
+\Until happy
+\end{algo}
+
+\item Estimate $Q(s,a)$ converges to $Q^*(s,a)$ with \emph{infinite
+number of samples} for $(s,a)$ and appropriate $\a$ (Watkins and
+Dayan, 1992) 
+
+\item Off-policy learning:
+
+\begin{items}
+\item Q-learning estimates $\pi^*$ in form of $Q^*$ (line 7)
+
+\item However, Q-learning does not execute $\pi^*$ (or its current
+estimate thereof), but $\e$-greedy to ensure to \emph{explore} (line
+5)
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{``Exploration-exploitation tradeoff''}{
+
+\item Two different types of behavior:
+
+\begin{items}
+\item \emph{exploration}: act with the goal to \emph{learn} as much
+as possible;
+
+perform actions with unknown rewards / outcomes / values
+
+\item \emph{exploitation}: act with the goal of getting as much
+\emph{reward} as possible;
+\end{items}
+
+perform actions which are known to produce large reward / value
+
+
+~\mypause
+
+\item \textbf{Exploration-exploitation tradeoff}:
+
+be sure not to miss states and actions with large rewards;
+
+but do not waste too much time in low-reward states and actions
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Exploration in simple RL algorithms}{
+
+%% \item Policy $\pi(s)$ / $\pi(s,a)$ of RL algorithm defines
+%% exploration strategy
+
+%% \item Assume we have estimates $\hat{Q}(s,a)$ based on previous
+%% experiences $\{(s,a,r,s')\}$
+
+%% ~ \mypause
+
+%% \item \textbf{greedy} algorithm:
+%% $\pi(s) = \argmax_a \hat{Q}(s,a)$
+
+%% Exploration? \mypause none, only exploitation; suboptimal solutions
+
+%% ~ \mypause
+
+%% \item \textbf{random} algorithm: choose action $a$ with
+%% probability $1 / \{\sharp actions\}$
+
+%% Exploration? \mypause yes, but no exploitation at all
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Exploration in simple RL algorithms}{
+
+%% \item \textbf{$\epsilon$-greedy} algorithm:
+%% $\pi(s) = \begin{cases}
+%% \text{random} & \text{with prob.}~ \e \\
+%% \argmax_a \hat{Q}(s,a) & \text{else}
+%% \end{cases}$
+
+%% -- Most popular method in RL
+
+%% -- Exploration and exploitation? \mypause yes, both
+
+%% but ignores level of confidence in estimates
+
+%% -- ad-hoc extension: $\e(n_{s,a})$ depends on number of samples
+%% $n_{s,a}$ in $s,a$
+
+%% ~\mypause
+
+%% \item \textbf{Boltzmann} algorithm: choose action $a$ with
+%% probability
+%% $
+%% \frac{
+%% \exp (\hat{Q}(s,a)/T)
+%% }{
+%% \sum_a \exp (\hat{Q}(s,a)/T)
+%% }
+%% $
+
+%% -- temperature $T$ controls amount of exploration
+
+%% -- similar to $\epsilon$-greedy
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Sample Complexity}
+\slide{Sample Complexity}{
+
+\item Let $\cal A$ be an RL algorithm which acts in an unknown MDP,
+resulting in $s_0, a_0, r_0, s_1, a_1, r_1, \dots$
+
+\item How can we describe and judge the exploration efficiency of $\cal
+A$ in formal terms?
+
+~\mypause
+
+\item 
+\textbf{Definition (Kakade, 2003)}:\\
+Let $V^{\cal A}_{t} =
+E[\sum_{s=0}^{\infty} \gamma^s r_{t+s} \|
+s_0, a_0, r_0 \dots s_{t-1}, a_{t-1}, r_{t-1}, s_t]$. $V^*$ is the value
+function of the optimal policy.\\
+Let $\epsilon > 0$ be a prescribed accuracy.\\
+The \textbf{sample complexity} of $\cal A$ is the number
+of
+timesteps $t$ such that $V^{\cal A}_{t}(s_t)<V^*(s_t)-\epsilon$
+\\ This is the number of timesteps where the policy of $\cal A$ 
+is more than $\e$ worse than the optimal policy
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{PAC-MDP efficiency}
+\slide{PAC-MDP efficiency}{
+
+\item Let $\delta > 0$ be an allowed probability of failure. \\
+$\cal A$ is called \textbf{PAC-MDP efficient} if with
+probability $1-\delta$ its sample complexity scales polynomially in
+$\delta$, $\e$ and quantities describing the MDP
+
+~\mypause
+
+\item \textbf{PAC}: probably ($\delta$) approximately ($\e$) correct \\
+The PAC framework is fundamental to frequentist learning theory.\\
+For instance, it can be used to derive guarantees on the generalization
+performance of support vector machines
+
+~\mypause
+
+\item \textbf{Quantities describing the MDP}: number of states, number
+of actions, discount factor $\gamma$, maximal reward $R_{max}>0$,
+parameters in the transition model $P(s' \| s,a)$, $\dots$
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{PAC-MDP efficiency}{
+
+
+\item $\e$-greedy is \emph{not} PAC-MDP efficient.\\
+Its sample complexity is \emph{exponential} in the number of states
+
+\show[.7]{combinationLock}
+
+{\tiny (Whitehead, 1991)}
+
+~\mypause
+
+\item Examples of PAC-MDP efficient approaches:
+
+\begin{items}
+\item model-based: $E^3$, \rmax
+
+\item model-free: Delayed Q-learning
+\end{items}
+
+}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Explicit-Exploit-or-Explore*}
+\slide{Explicit-Exploit-or-Explore ($E^3$) algorithm*}{
+
+Kearns and Singh (2002)
+
+~
+
+\item PAC-MDP efficient model-based RL algorithm
+
+\item Based on two previously established key ideas:
+
+\begin{items}
+\item \textbf{counts $c(s,a)$ for states and actions} to quantify
+model confidence: $s$ is \emph{known} if all actions in $s$ sufficiently
+often executed
+
+\item \textbf{optimism in the face of uncertainty}: unknown
+states are assumed to give maximum reward (whose value is known)
+\end{items}
+
+\mypause
+
+\item $E^3$ uses \textit{two} MDPs:
+\vspace{0.2cm}
+
+\begin{items}
+\item \textbf{MDP$_{known}$}: known states with (approximately
+exact)
+estimates of $P(s_{t\po} \| s_t, a_t)$ and $P(r_t \| s_t, a_t)$ \\
+\hspace{0.2cm} $\rightarrow$ captures what you know and drives
+exploitation
+\vspace{0.2cm}
+
+\item \textbf{MDP$_{unknown}$}: MDP$_{known}$ without reward +
+special
+state $s'$ where the agent receives maximum reward\\
+\hspace{0.2cm} $\rightarrow$ drives exploration
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{$E^3$ sketch*}{
+
+\begin{algo}
+\Require State $s$
+\Ensure Action $a$
+\If{$s$ is \textbf{known}}
+  \State Plan in \textbf{MDP$_{known}$}
+\Comment{Sufficiently accurate model estimates}
+  \If{resulting plan has value above some threshold}
+    \State \textbf{return} first action of plan  \Comment{Exploitation}
+  \Else
+    \State Plan in \textbf{MDP$_{unknown}$}
+    \State \textbf{return} first action of plan
+        \Comment{Planned exploration}
+  \EndIf
+\Else
+  \State \textbf{return} action with the \textbf{least
+observations} in $s$
+        \Comment{Direct exploration}
+\EndIf
+\end{algo}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{$E^3$ example*}{
+
+\show{page63}
+
+S.~Singh (Tutorial 2005)
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{$E^3$ example*}{
+
+\show{page64}
+
+S.~Singh (Tutorial 2005)
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{$E^3$ example*}{
+
+\show{page65}
+
+S.~Singh (Tutorial 2005)
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{R-Max}
+\slide{\rmax}{
+
+Brafman and Tennenholtz (2002)
+
+\item similar to $E^3$; implicit instead of explicit exploration
+
+\item based on reward function
+
+\begin{align}
+\nonumber
+R^{\rmax}(s,a) =
+\left\{
+\begin{array}{ll}
+R(s,a) & \! c(s,a) \!\ge\! m ~ \text{($s,a$ known)} \\
+R_{max} & \! c(s,a) \!<\! m ~ \text{($s,a$ unknown)}
+\end{array}
+\right.
+\end{align}
+
+\item Is PAC-MDP efficient
+
+\item Optimism in the face of uncertainty
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Limitations of $E^3$ and \rmax}{
+
+%% \item $E^3$ and \rmax\ are called ``efficient'' because their sample
+%% complexity scales ``only'' polynomially in the number of states
+
+%% \emph{But}: This number is gigantic in non-trivial scenarios
+
+%% $\to$ We need to exploit the \textbf{structure} in the
+%% world!
+
+%% \mypause
+
+%% \item Example: Natural environments contain objects
+
+%% \mypause
+
+%% The number of states is \emph{exponential in the number of
+%% objects}
+
+%% \show[.4]{rrl_example}
+
+%% Hence $E^3$ and \rmax\ scale exponentially in the number of objects!
+
+%% \mypause
+
+%% \item \textbf{Generalization} over states and actions is
+%% \textbf{crucial} for exploration
+%% }
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Relational reinforcement learning}{
+
+%%   \item Relational representations model the \textbf{structure
+%% of environments with objects} explicitly
+
+%% -- Predicates represent \emph{properties and relationships of
+%% objects}: $on(X,Y)$, $clear(X)$ etc
+
+%% -- \emph{Compact} models which \emph{generalize} over
+%% objects, actions and states
+
+%% ~\mypause
+
+%% \show{rrl}
+
+%% \mypause
+
+%% \item \textbf{Explore} states which are {\enzian
+%% structurally
+%% different} from observed states
+
+%% }
+
+
+
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{KWIK-R-max}{
+
+%% Li, 2009
+
+%% ~
+
+%% \item Extension of \rmax\ to \emph{more general
+%% representations}
+
+%% ~
+
+%% \item Let's say the transition model $P(s' \| s,a)$ is defined by $n$
+%% parameters
+
+%% Typically, \emph{$n \ll$ number of states}!
+
+%% ~
+
+%% \item Efficient KWIK-learner $L$ requires a number of samples which
+%% is polynomial in $n$ to estimate approximately correct $\hat{P}(s' \|
+%% s,a)$
+
+%% (KWIK = Knows-what-it-knows framework)
+
+%% ~
+
+%% \item KWIK-\rmax\ using $L$ is \emph{PAC-MDP efficient in $n$}
+
+%% $\to$ polynomial in number of parameters of transition model!
+
+%% $\to$ more efficient than plain \rmax\ by several orders of magnitude!
+
+
+%% }
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Bayesian RL}
+\slide{Bayesian RL}{
+
+\item There exists an optimal solution to the exploration-exploitation
+  trade-off: belief planning (see my tutorial ``Bandits, Global
+  Optimization, Active Learning, and Bayesian RL – understanding the
+  common ground'')
+
+
+$$
+V^\pi(b,s)
+ = R(s,\pi(b,s)) 
+ + \int_{b',s'} P(b',s' \|b,s,\pi(b,s))~ V^\pi(b',s')
+$$
+
+\begin{items}
+\item Agent maintains a \emph{distribution (belief) $b(m)$ over
+MDP models $m$}
+
+\item typically, MDP structure is fixed; belief over the parameters
+
+\item belief updated after each observation $(s,a,r,s')$: $b \to b'$
+
+\item only tractable for very simple problems
+\end{items}
+
+~
+
+\item \emph{Bayes-optimal policy} $\pi^*=\argmax_\pi V^\pi(b,s)$
+\begin{items}
+\item no other policy leads to more rewards in expectation w.r.t.~prior
+distribution over MDPs
+
+\item solves the exploration-exploitation tradeoff
+%\item is \emph{not} PAC-MDP efficient!
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Optimistic heuristics}
+\slide{Optimistic heuristics}{
+
+\item As with UCB, choose estimators for $R^*$, $P^*$ that are optimistic/over-confident
+$$V_t(s)
+= \max_a\[ R^* + \Sum_{s'} P^*(s'|s,a)~ V_{t\po}(s') \]$$
+
+\item Rmax:
+\begin{items}
+\item $R^*(s,a)=\begin{cases} R_{\text{max}} & \text{if
+$\#_{s,a}<n$} \\ \hat\t_{rsa} & \text{otherwise} \end{cases}$
+\comma $P^*(s'|s,a)=\begin{cases} \d_{s's^*} & \text{if
+$\#_{s,a}<n$} \\ \hat\t_{s'sa} & \text{otherwise} \end{cases}$
+\item Guarantees over-estimation of values, polynomial PAC results!
+\item Read about ``KWIK-Rmax''! (Li, Littman, Walsh, Strehl, 2011)
+\end{items}
+
+\item Bayesian Exploration Bonus (BEB), Kolter \& Ng (ICML 2009)
+\begin{items}
+\item Choose $P^*(s'|s,a) = P(s'|s,a,b)$ integrating over the current belief
+$b(\t)$ (non-over-confident)
+\item But choose $R^*(s,a) = \hat\t_{rsa} + \frac{\b}{1+\a_0(s,a)}$
+with a hyperparameter $\a_0(s,a)$, over-estimating return
+\end{items}
+
+\item Confidence intervals for $V$-/$Q$-function
+(Kealbling '93, Dearden et al.\ '99)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{More ideas about exploration}{
+
+\item \textbf{Intrinsic rewards} for \emph{learning progress}
+
+\begin{items}
+\item ``fun'', ``curiousity''
+
+\item in addition to the external ``standard'' reward of the MDP
+
+\item \textit{``Curious agents are interested in learnable but yet
+unknown regularities, and get bored by both predictable and inherently
+unpredictable things.''} (J.~Schmidhuber)
+
+\item Use of a meta-learning system which learns to predict the error that
+the
+learning machine makes in its predictions; meta-predictions measure the
+\emph{potential interestingness of situations} (Oudeyer et al.)
+\end{items}
+
+
+~
+
+\item \emph{Dimensionality reduction} for model-based
+exploration in \emph{continuous spaces}: low-dimensional
+representation of the transition function; focus exploration on relevant
+dimensions (A.~Nouri, M.~Littman)
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{More ideas about exploration}{
+
+\item Exploration to reduce uncertainty of a belief $p(x)$
+
+\begin{items}
+\item In robotics, $p(x)$ might be the belief about the robot position $x$
+
+\item \emph{Entropy}: a probabilistic measure of information
+
+\hspace{0.5cm} $H(p(x)) = - \int p(x) \log p(x) dx$
+
+\hspace{0.5cm} $H_p(x)$ is maximal if $p$ is uniform,
+
+\hspace{0.5cm} and minimal if $p$ is a point mass distribution
+
+\item \emph{Information gain} of action $a$:
+
+\hspace{0.5cm} $I(a) = H(p(x)) - E_z[H(p(x' \| z, a))]$
+
+\hspace{0.5cm} ($z$ is the potential observation)
+
+\hspace{0.5cm} expected change of entropy when executing an action
+
+\item \emph{maximizing information gain = minimizing uncertainty
+in
+belief}
+\end{items}
+
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Digression: Active Learning}{
+
+Cohn, Ghahramani, Jordan (1996)
+
+\item active choice of learning examples in a \emph{supervised}
+learning setting:
+
+learn mapping $X \rightarrow Y$ from training examples ${\cal D} =
+\{(x_i, y_i)_{i=1}^m\}$
+
+\item active learning protocol:
+
+\begin{items}
+\item \emph{select a new input} $\tilde{x}$: $\tilde{x}$ may be a query,
+experiment, action $\dots$
+
+\item observe resulting output $\tilde{y}$
+
+\item incorporate new example $(\tilde{x}, \tilde{y})$ into ${\cal D}$,
+relearn, and repeat;
+\end{items}
+
+
+\item crucial question: \textbf{how to choose $\tilde{x}$?}
+
+\mypause
+
+\item heuristics:
+
+\begin{items}
+\item where we don't have data
+
+\item where we perform poorly
+
+\item where we have low confidence
+
+\item where we expect it to change our model
+
+\item where we previously found data
+\end{items}
+
+\mypause
+
+\item in the following: select $\tilde{x}$ in a \emph{statistically
+``optimal'' manner}
+
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Digression: Active Learning (continued)}{
+
+\item \emph{Goal}: \emph{minimize variance of prediction}
+$\hat{y}$ for given $x$
+
+$\sigma_{\hat{y}}^2 = E_{\cal D}[(\hat{y} - E_{\cal D}[\hat{y}])^2]$
+
+changes with new training example $(\tilde{x}, \tilde{y})$
+
+~
+
+\mypause
+
+\item Choose $\tilde{x}$ which \emph{minimizes the expected
+predictive variances} conditioned on having seen $\tilde{x}$:
+
+$\langle \sigma_{\hat{y}}^2 \rangle = E_{{\cal D} \cup (\tilde{x},
+\tilde{y})}[\sigma_{\hat{y}}^2 \| \tilde{x}]$
+
+~
+
+\mypause
+
+\item How can we compute $\langle \sigma_{\hat{y}}^2 \rangle$?
+Monte Carlo approximation (sampling): evaluate at a set of reference
+points drawn from $P(x)$
+
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Digression: Active Learning (continued)}{
+
+\item Example: \emph{mixture of Gaussians}
+
+\begin{items}
+\item analytic solution for calculating expected predictive variances of
+the
+learner
+\end{items}
+
+\show{active-learning}
+
+Cohn, Ghahramani, Jordan (1996)
+
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Conclusions}{
+
+\item Exploration is fundamental intelligent behavior
+
+~
+
+\item RL agents need to solve the \emph{exploration-exploitation
+  tradeoff}
+
+~
+
+\item \emph{Sample complexity} is a measure of the exploration
+efficiency of an RL algorithm
+
+~
+
+\item Ideas for driving exploration: random actions, \emph{optimism in
+  the face of uncertainty}, maximizing learning progress and
+  information gain
+
+~
+\item Generalization over states and actions is crucial
+($\to$ \emph{relational RL})
+
+~
+
+\item \emph{Active learning} selects statistically optimal
+training data for efficient supervised learning
+
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{References}{\label{lastpage}
+
+\small
+\item Brafman, Tennenholtz (2002). R-max - a general polynomial time
+algorithm for near-optimal RL. \emph{JMLR}.
+
+\item Cohn, Ghahramani, Jordan (1996): Active learning with statistical models.
+\emph{JAIR}.
+
+\item Kakade (2003): On the sample complexity of RL. \emph{PhD thesis}.
+
+\item Kearns, Singh (2002): Near-optimal reinforcement learning in polynomial
+time. \emph{Machine Learning Journal}.
+
+\item Li (2009): A unifying framework for computational RL theory.
+\emph{PhD thesis}.
+
+\item Nouri, Littman (2010): Dimension reduction and its application to
+model-based exploration in continuous spaces. \emph{Machine Learning Journal}.
+
+\item Oudeyer, Kaplan, Hafner (2007): Intrinsic motivation systems for
+autonomous mental development. \emph{IEEE Evolutionary Computation}.
+
+\item Schmidhuber (1991): Curious model-building control systems. In
+\emph{Int.~Joint Conf.~on Neural Networks}.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot

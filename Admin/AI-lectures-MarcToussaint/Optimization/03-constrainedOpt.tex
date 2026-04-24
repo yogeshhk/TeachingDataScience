@@ -1,0 +1,1027 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Optimization}
+\renewcommand{\coursepicture}{optim}
+\renewcommand{\coursedate}{Summer 2015}
+
+\renewcommand{\topic}{Constrained Optimization}
+\renewcommand{\keywords}{General definition, log barriers, central
+path, squared penalties, augmented Lagrangian (equalities \&
+inequalities), the Lagrangian, force balance view \& KKT conditions,
+saddle point view, dual problem, min-max max-min duality, modified KKT
+\& log barriers, Phase I}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Constrained optimization}
+\slide{Constrained Optimization}{
+
+\item General constrained optimization problem:
+
+Let $x\in\RRR^n$, $f:~ \RRR^n \to \RRR$, $g:~ \RRR^n \to \RRR^m$,
+$h:~ \RRR^n \to \RRR^l$ find
+$$ \min_x~ f(x) \st g(x)\le 0,~ h(x) = 0 $$
+
+~
+
+In this lecture I'll mostly focus on inequality constraints $g$,
+equality constraints are analogous/easier
+
+~
+
+\item Applications
+
+-- Find an optimal, non-colliding trajectory in robotics
+
+-- Optimize the shape of a turbine blade, s.t.\ it must not break
+
+-- Optimize the train schedule, s.t.\ consistency/possibility
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{General approaches}{
+
+\item Try to somehow transform the constraint problem to
+
+~
+
+$\qquad$ a series of unconstraint problems
+
+~
+
+$\qquad$ a single but larger unconstraint problem
+
+~
+
+$\qquad$ another constraint problem, hopefully simpler (dual, convex)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{General approaches}{
+
+\item Penalty \& Barriers
+
+{\small
+-- Associate a (adaptive) penalty cost with violation of the constraint
+
+-- Associate an additional ``force compensating the gradient into the
+   constraint'' (augmented Lagrangian)
+
+-- Associate a log barrier with a constraint, becoming $\infty$ for violation (interior point method)
+
+~}
+
+\item Gradient projection methods (mostly for linear contraints)
+
+{\small
+-- For `active' constraints, project the step direction to become
+   tangantial
+
+-- When checking a step, always pull it back to the feasible region
+
+~}
+
+\item Lagrangian \& dual methods
+
+{\small
+-- Rewrite the constrained problem into an unconstrained one
+
+-- Or rewrite it as a (convex) dual problem
+
+~}
+
+\item Simplex methods (linear constraints)
+
+{\small
+
+-- Walk along the constraint boundaries
+
+}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Barriers \& Penalties}{
+
+\item Convention:
+
+~
+
+
+\quad A \emph{barrier} is really $\infty$ for $g(x)>0$
+
+~
+
+\quad A \emph{penalty} is zero for $g(x)\le 0$ and increases with $g(x)>0$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Log barrier method ~ or ~ Interior Point method}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Log barrier method}
+\slide{Log barrier method}{
+
+\item Instead of 
+$$\min_x~ f(x) \st g(x)\le 0$$
+we address
+$$\min_x~ f(x) - \mu \sum_i \log(-g_i(x))$$
+
+~
+
+\show[.4]{logBarrier}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Log barrier}{
+
+\show[.4]{logBarrier}
+
+\item For $\mu\to 0$, $-\mu\log(-g)$ converges to $\infty [g>0]$
+
+{\tiny\hfill\textbf{Notation:} $[\textit{boolean expression}] \in \{0,1\}$}
+
+\item The barrier gradient $\na -\log(-g) = \frac{\na g}{g}$ pushes
+away from the constraint
+
+~
+
+\item Eventually we want to have a very small $\mu$---but choosing
+small $\mu$ makes the barrier very non-smooth, which might be bad for
+gradient and 2nd order methods
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Log barrier method}{
+
+\begin{algo}
+\Require initial $x\in\RRR^n$, functions $f(x), g(x), \na f(x), \na
+g(x)$, tolerance $\t$, parameters (defaults: $\mdec=0.5, \mu_0=1$)
+\Ensure $x$
+\State initialize $\mu=\mu_0$
+\Repeat
+\State find $x \gets \argmin_x~ f(x) - \mu\sum_i \log(-g_i(x))$ with
+tolerance $\sim\!10\t$
+\State decrease $\mu \gets \mdec \mu$
+\Until $|\D x|<\t$
+\end{algo}
+
+~
+
+\small
+Note: See Boyd \& Vandenberghe for alternative stopping criteria based on $f$
+precision (duality gap) and better choice of initial $\mu$ (which is
+called $t$ there).
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Central path}
+\slide{Central Path}{
+
+
+\item Every $\mu$ defines a different optimal $x^*(\mu)$
+$$x^*(\mu) = \argmin_x~ f(x) - \mu\sum_i \log(-g_i(x))$$
+
+\show[.5]{centralPath}
+
+
+\item Each point on the path can be understood as the optimal
+compromise of minimizing $f(x)$ and a repelling force of the
+constraints. (Which corresponds to dual variables $\l^*(\mu)$.)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+We will revisit the log barrier method later, once we introduced the
+Langrangian...
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Squared Penalty Method}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Squared penalty method}
+\slide{Squared Penalty Method}{
+
+\item This is perhaps the simplest approach
+
+\item Instead of 
+$$\min_x~ f(x) \st g(x)\le 0$$
+we address
+$$\min_x~ f(x) + \mu \sum_{i=1}^m [g_i(x)>0]~ g_i(x)^2$$
+
+~
+
+\begin{algo}
+\Require initial $x\in\RRR^n$, functions $f(x), g(x), \na f(x), \na
+g(x)$, tol.\ $\t$, $\e$, parameters (defaults: $\minc=10, \mu_0=1$)
+\Ensure $x$
+\State initialize $\mu=\mu_0$
+\Repeat
+\State find $x \gets \argmin_x f(x) + \mu \sum_i [g_i(x)>0]~ g_i(x)^2$ with tolerance $\sim\!10\t$
+\State $\mu \gets \minc \mu$
+\Until $|\D x| < \t$ and $\forall_i:~ g_i(x)<\e$
+\end{algo}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Squared Penalty Method}{
+
+\item The method is ok, but will always lead to \emph{some} violation
+of constraints
+
+~\mypause
+
+\item A better idea would be to add an out-pushing gradient/force $-\na
+g_i(x)$ for every constraint $g_i(x)>0$ that is violated
+
+~
+
+Ideally, the out-pushing gradient mixes with $-\na f(x)$ exactly such
+that the result becomes \emph{tangential} to the constraint!
+
+~
+
+This idea leads to the \emph{augmented Lagrangian} approach
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Augmented Lagrangian method}
+\slide{Augmented Lagrangian}{
+
+{\small (We can introduce this is a self-contained manner, without yet
+defining the ``Lagrangian'')}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Augmented Lagrangian ~ (equality constraint)}{
+
+\item We first consider an \emph{equality} constraint before
+addressing inequalities
+
+\item Instead of 
+$$\min_x~ f(x) \st h(x)= 0$$
+we address
+\begin{align}
+\min_x~ f(x) + \mu \sum_{i=1}^m h_i(x)^2 + \sum_{i=1} \l_i
+h_i(x) \label{eq1}
+\end{align}
+
+~
+
+\item Note:
+
+-- The gradient $\na h_i(x)$ is always orthogonal to the constraint
+
+-- By tuning $\l_i$ we can induce a ``virtual gradient'' $\l_i \na
+   h_i(x)$
+
+-- The term $\mu \sum_{i=1}^m h_i(x)^2$ penalizes as before
+
+~
+
+\item Here is the trick:
+
+-- First minimize (\ref{eq1}) for some $\mu$ and $\l_i$
+
+-- This will in general lead to a (slight) penalty
+   $\mu \sum_{i=1}^m h_i(x)^2$
+
+-- For the next iteration, \emph{choose $\l_i$ to generate exactly the
+   gradient that was previously generated by the penalty}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\small
+
+\item Optimality condition after an iteration:
+\begin{align*}
+x'
+ &= \argmin_x~ f(x) + \mu \sum_{i=1}^m h_i(x)^2 + \sum_{i=1}^m \l_i h_i(x) \\
+\To \quad
+0 &= \na f(x') + \mu \sum_{i=1}^m 2 h_i(x') \na h_i(x')
+ + \sum_{i=1}^m \l_i \na h_i(x')
+\end{align*}
+\item Update $\l$'s for the next iteration:
+\begin{align*}
+\sum_{i=1} \l_i^\new \na h_i(x')
+ &= \mu \sum_{i=1}^m 2 h_i(x') \na h_i(x') + \sum_{i=1} \l_i^\old \na h_i(x') \\
+\l_i^\new
+ &= \l_i^\old + 2 \mu h_i(x')
+\end{align*}
+
+\begin{algo}
+\Require initial $x\in\RRR^n$, functions $f(x), h(x), \na f(x), \na
+h(x)$, tol.\ $\t$, $\e$, parameters (defaults: $\minc=1, \mu_0=1$)
+\Ensure $x$
+\State initialize $\mu=\mu_0$, $\l_i=0$
+\Repeat
+\State find $x \gets \argmin_x f(x) + \mu \sum_i h_i(x)^2 + \sum_i \l_i h_i(x)$
+\State $\forall_i:~ \l_i \gets \l_i + 2 \mu h_i(x')$
+\State optionally, $\mu \gets \minc \mu$
+\Until $|\D x| < \t$ and $|h_i(x)|<\e$
+\end{algo}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+This adaptation of $\l_i$ is really elegant:
+
+\begin{items}
+\item We do \emph{not} have to take the penalty limit $\mu\to\infty$ but
+   still can have \emph{exact} constraints
+
+\item If $f$ and $h$ were linear ($\na f$ and $\na h_i$ constant), the
+   updated $\l_i$ is \emph{exactly right}: In the next iteration we
+   would exactly hit the constraint (by construction)
+
+\item The penalty term is like a \emph{measuring device} for the necessary
+   ``virtual gradient'', which is generated by the
+   agumentation term in the next iteration
+
+\item The $\l_i$ are very meaningful: they give the force/gradient that a
+   constraint exerts on the solution
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Augmented Lagrangian ~ (inequality constraint)}{
+
+\item Instead of 
+$$\min_x~ f(x) \st g(x)\le 0$$
+we address
+$$\min_x~ f(x) + \mu \sum_{i=1}^m [g_i(x)\ge 0
+\vee \l_i>0]~ g_i(x)^2 + \sum_{i=1}^m \l_i g_i(x)$$
+
+\small
+
+\item A constraint is either \textbf{active} or \textbf{inactive}:
+
+-- When active ($g_i(x)\ge 0 \vee \l_i>0$) we aim for equality
+   $g_i(x)=0$
+
+-- When inactive ($g_i(x)< 0 \wedge \l_i=0$) we don't penalize/augment
+
+-- $\l_i$ are zero or positive, but never negative
+
+\begin{algo}[7]
+\Require initial $x\in\RRR^n$, functions $f(x), g(x), \na f(x), \na
+g(x)$, tol.\ $\t$, $\e$, parameters (defaults: $\minc=1, \mu_0=1$)
+\Ensure $x$
+\State initialize $\mu=\mu_0$, $\l_i=0$
+\Repeat
+\State find $x \gets \argmin_x f(x) + \mu \sum_i [g_i(x)\ge 0
+\vee \l_i>0]~ g_i(x)^2 + \sum_i \l_i g_i(x)$
+\State $\forall_i:~ \l_i \gets \max(\l_i + 2 \mu g_i(x'), 0)$
+\State optionally, $\mu \gets \minc \mu$
+\Until $|\D x| < \t$ and $g_i(x)<\e$
+\end{algo}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\small
+
+\item See also:
+
+M. Toussaint: A Novel Augmented Lagrangian Approach for Inequalities
+and Convergent Any-Time Non-Central Updates. e-Print arXiv:1412.4329,
+2014.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% \slide{Penalty with augmented Lagrangian}{
+
+%% \item Instead of 
+%% $$\min_x~ f(x) \st g(x)\le 0$$
+%% we address
+%% $$\min_{s,x}~ f(x) \st g(x)+s=0,~ s\in\RRR^m\ge 0$$
+%% or
+%% $$\min_{s,x}~ f(x) + \frac{\mu}{2} \sum_i (g_i(x)+s_i)^2 - \sum_i \l_i (g_i(x)+s_i) \st s\ge 0$$
+
+%% \item Here, $s_i$ is called a \emph{slack variable}
+
+%% We can do the minimization w.r.t.\ $s$ analytically!{\tiny
+%% $$\min_x~ f(x) + \frac{\mu}{2} \Phi(g_i,\l_i/\mu)^2
+%% - \sum_i \l_i \Phi(g_i,\l_i/\m)
+%% \comma \Phi(g_i,\l_i/\m) = \begin{cases} g_i & \l_i/\mu-g_i <
+%% 0 \\ \l_i/\mu &\text{else}\end{cases}$$}
+
+%% \item In each iteration update
+%% $$\l_i \gets \l_i - \mu \Phi(g_i(x),\l_i/\mu)$$
+%% }
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\footer
+
+
+%% \slide{General approaches}{
+
+%% \item Penalty \& Barriers
+
+%% {\small
+%% -- Associate a (adaptive) penalty cost with violation of the constraint
+
+%% -- Associate an additional ``force compensating the gradient into the
+%%    constraint'' (augmented Lagrangian)
+
+%% -- Associate a log-barrier with a constraint, becoming $\infty$ for violation (interior point method)
+
+%% ~}
+
+%% \item Gradient projection methods (mostly for linear contraints)
+
+%% {\small
+%% -- For `active' constraints, project the step direction to become
+%%    tangantial
+
+%% -- When checking a step, always pull it back to the feasible region
+
+%% ~}
+
+%% \item Lagrangian \& dual methods
+
+%% {\small
+%% -- Rewrite the constrained problem into an unconstrained one
+
+%% -- Or rewrite it as a (convex) dual problem
+
+%% ~}
+
+%% \item Simplex methods (linear constraints)
+
+%% {\small
+
+%% -- Walk along the constraint boundaries
+
+%% }
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{The Lagrangian}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Lagrangian: definition}
+\slide{The Lagrangian}{
+
+\item Given a constraint problem
+$$ \min_x~ f(x) \st g(x)\le 0$$
+we define the \textbf{Lagrangian} as
+$$L(x,\l) = f(x) + \sum_{i=1}^m \l_i g_i(x)$$
+
+~
+
+\item The $\l_i \ge 0$ are called \textbf{dual variables}
+or \emph{Lagrange multipliers}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{What's the point of this definition?}{
+
+~
+
+\item The Lagrangian is useful to compute optima analytically, on
+paper -- that's why physicist learn it early on
+
+~
+
+\item The Lagrangian implies the KKT conditions of optimality
+
+~
+
+\item Optima are necessarily at saddle points of the Lagrangian
+
+~
+
+\item The Lagrangian implies a dual problem, which is sometimes easier to solve than the primal
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: Some calculus using the Lagrangian}{
+
+\item For $x\in\RRR^2$, what is
+$$\min_x x^2 \st x_1+x_2 = 1$$
+
+~
+
+\item Solution:
+\begin{align*}
+L(x,\l)
+ &= x^2 + \l(x_1+x_2-1)\\
+0
+ &= \na_x L(x,\l)
+  = 2 x + \l\mat{c}{1\\1} \quad\To\quad x_1=x_2=-\l/2\\
+0
+ &= \na_\l L(x,\l)
+  = x_1+x_2-1 = -\l/2-\l/2-1 \quad\To\quad \l=-1 \\
+\To
+ & x_1=x_2=1/2
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Lagrangian: relation to KKT}
+\slide{The ``force'' \& KKT view on the Lagrangian}{
+
+~
+
+\item \emph{At the optimum there must be a balance between the cost
+gradient $-\na f(x)$ and the gradient of the active constraints $-\na
+g_i(x)$}
+
+~
+
+~
+
+\show[.4]{KKT}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Karush-Kuhn-Tucker (KKT) conditions}
+\slide{The ``force'' \& KKT view on the Lagrangian}{
+
+\item \emph{At the optimum there must be a balance between the cost
+gradient $-\na f(x)$ and the gradient of the active constraints $-\na
+g_i(x)$}
+
+{\small
+
+\item Formally: for optimal $x$:~ $\na f(x) \in \text{span}\{ \na g_i(x) \}$
+
+\item Or: for optimal $x$ there must exist $\l_i$ such that $-\na f(x) = -\[\sum_i  (-\l_i\na g_i(x))\]$
+
+}
+
+~\mypause
+
+\item For optimal $x$ it must hold (necessary condition):~ $\exists_\l \st$
+\begin{align*}
+\na f(x) + \sum_{i=1}^m \l_i \na g_i(x) &= 0 && \text{(``stationarity'')}\\
+\forall_i:~ g_i(x) &\le 0 && \text{(primal feasibility)}\\
+\forall_i:~ \l_i &\ge 0  && \text{(dual feasibility)}\\
+\forall_i:~ \l_i g_i(x) &= 0 && \text{(complementary)}
+\end{align*}
+The last condition says that $\l_i > 0$ only for active constraints.
+
+These are the \textbf{Karush-Kuhn-Tucker conditions} (KKT, neglecting
+equality constraints)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{The ``force'' \& KKT view on the Lagrangian}{
+
+\item The first condition (``stationarity''), $\exists_\l \st$
+$$\na f(x) + \sum_{i=1}^m \l_i \na g_i(x) = 0$$
+can be equivalently expressed as, $\exists_\l \st$
+$$\na_x L(x,\l) = 0$$
+
+~
+
+\item In that sense, the Lagrangian can be viewed as the ``energy function''
+that generates (for good choice of $\l$) the right balance between
+cost and constraint gradients
+
+~
+
+\small
+
+\item This is exactly as in the augmented Lagrangian approach, where however
+we have an additional (``augmented'') squared penalty that is
+used to tune the $\l_i$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Lagrangian: saddle point view}
+\slide{Saddle point view on the Lagrangian}{
+
+\item Let's briefly consider the equality case again:
+$$ \min_x~ f(x) \st h(x)= 0$$
+with the Lagrangian
+$$L(x,\l) = f(x) + \sum_{i=1}^m \l_i h_i(x)$$
+
+\item Note:
+\begin{align*}
+\min_x L(x,\l) \quad\To\quad 0&=\na_x L(x,\l) \quad\oto\quad \text{stationarity} \\
+\max_{\l} L(x,\l) \quad\To\quad 0&=\na_\l L(x,\l) = h(x)
+\quad\oto\quad \text{constraint} \end{align*}
+
+~
+
+\item Optima ($x^*,\l^*$) are saddle points where
+
+\qquad\qquad $\na_x L = 0$ ensures stationarity and
+
+\qquad\qquad $\na_\l L = 0$ ensures the primal feasibility
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Saddle point view on the Lagrangian}{
+
+\item In the inequality case:
+\begin{align*}
+\max_{\l\ge 0} L(x,\l)
+ &= \begin{cases}
+   f(x) & \text{if }g(x)\le 0 \\
+   \infty & \text{otherwise} \end{cases}\\
+\l=\argmax_{\l\ge 0} L(x,\l)
+ & \quad\To\quad
+\begin{cases}
+\l_i=0 & \text{if }g_i(x)<0 \\ 0=\na_{\l_i} L(x,\l) = g_i(x) & \text{otherwise}
+\end{cases}
+\end{align*}
+This implies either $(\l_i=0 \wedge g_i(x)<0)$ or $g_i(x)=0$,
+which is exactly equivalent to the \textbf{complementarity}
+and \textbf{primal feasibility} conditions
+
+\item Again, optima $(x^*,\l^*)$ are saddle points where
+
+\qquad\qquad $\min_x L$ enforces stationarity and
+
+\qquad\qquad $\max_{\l\ge0} L$ enforces complementarity and primal feasibility
+
+~
+
+\cen{\textbf{Together, $\min_x L$ and $\max_{\l\ge0} L$ enforce the KKT
+conditions!}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Lagrange dual problem}
+\slide{The Lagrange dual problem}{
+
+\item Finding the saddle point can be written in two ways:
+\begin{align*}
+\min_x \max_{\l\ge 0} L(x,\l) && \textbf{primal problem} \\
+\max_{\l\ge 0} \min_x L(x,\l) && \textbf{dual problem}
+\end{align*}
+%% because the $\max_{\l\ge 0} L(x,\l)$ ensures the constraints (previous
+%% slide).
+
+~
+
+\item Let's define the Lagrange \textbf{dual function} as
+$$l(\l) = \min_x L(x,\l)$$
+
+Then we have
+\begin{align*}
+\min_x f(x) &\st g(x)\le 0 && \textbf{primal problem} \\
+\max_\l l(\l) &\st \l\ge 0 && \textbf{dual problem}
+\end{align*}
+The dual problem is convex (objective=concave, constraints=convex), even if the primal is non-convex!
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{The Lagrange dual problem}{
+
+\item The dual function is always a lower bound (for any $\l_i\ge 0$)
+$$l(\l)= \min_x L(x,\l) ~\le~ \[\min_x f(x) \st g(x)\le 0\]$$
+And consequently
+$$\max_{\l\ge 0} \min_x L(x,\l) ~\le~ \min_x \max_{\l\ge 0} L(x,\l)
+= \min_{x:g(x)\le 0} f(x)$$
+
+\item We say \textbf{strong duality} holds iff
+$$\max_{\l\ge 0} \min_x L(x,\l)  =  \min_x \max_{\l\ge 0} L(x,\l)$$
+
+~
+
+\item If the primal is convex, and there exist an interior point
+$$\exists_x:~ \forall_i:~ g_i(x) < 0$$
+(which is called \textbf{Slater condition}), then we
+have \emph{strong duality}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{And what about algorithms?}{
+
+\item So far we've only introduced a whole lot of formalism, and seen
+that the Lagrangian sort of represents the constrained problem
+
+%% -- $\min_x L$ or $\na_x L=0$ is related to the stationarity
+
+%% -- $\max_\l L$ or $\na_\l L=0$ is related to feasibility or KKT conditions
+
+%% -- This implies two dual problems, $\min_x \max_\l L$ and
+%% $\max_\l \min_x L$, the second (dual) is a lower bound of the first (primal)
+
+~
+
+\item What are the algorithms we can get out of this?
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Log barrier method revisited}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Log barrier as approximate KKT}
+\slide{Log barrier method revisited}{
+
+\item Log barrier method: Instead of 
+$$\min_x~ f(x) \st g(x)\le 0$$
+we address
+$$\min_x~ f(x) - \mu \sum_i \log(-g_i(x))$$
+
+\item For given $\mu$ the optimality condition is
+$$\na f(x) - \sum_i \frac{\mu}{g_i(x)} \na g_i(x) = 0$$
+or equivalently
+\begin{align*}
+\na f(x) + \sum_i \l_i \na g_i(x) &= 0 \comma
+\l_i g_i(x) = -\mu
+\end{align*}
+These are called \textbf{modified (=approximate) KKT conditions}.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Log barrier method revisited}{
+
+~
+
+\begin{center}
+\emph{Centering (the unconstrained minimization) in the log barrier
+method is equivalent to solving the modified KKT conditions.}
+\end{center}
+
+~
+
+~
+
+ \tiny
+Note also: On the central path, the duality gap is $m \mu$:
+
+\cen{$l(\l^*(\mu)) = f(x^*(\mu)) + \sum_i \l_i g_i(x^*(\mu)) = f(x^*(\mu))
+- m \mu$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Primal-Dual interior-point Newton Method}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Primal-dual interior-point Newton method}
+\slide{Primal-Dual interior-point Newton Method}{
+
+\item A core outcome of the Lagrangian theory was the shift in problem
+formulation:
+
+\begin{center}
+find $x$ to $\min_x f(x) \st g(x)\le 0$
+
+\medskip
+
+$\to$ ~ find $x$ to solve the KKT conditions
+\end{center}
+
+~
+
+\cen{\fbox{
+Optimization problem $\quad\too\quad$
+Solve KKT conditions
+}}
+
+~
+
+\item We think of the KKT conditions as an equation system
+$r(x,\l)=0$, and can use the Newton method for solving it:
+
+\cen{$\na r \mat{c}{\D x\\\D \l} = -r$}
+
+~
+
+This leads to primal-dual algorithms that adapt $x$ and $\l$
+concurrently. Roughly, this uses the \emph{curvature $\na^2 f$} to
+estimate the right $\l$ to push out of the constraint.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Primal-Dual interior-point Newton Method}{
+
+\item The first and last modified (=approximate) KKT conditions
+\begin{align*}
+{\color{blue}\na f(x) + \Sum_{i=1}^m \l_i \na g_i(x)} &= 0 && \text{(``force balance'')}\\
+\forall_i:~ g_i(x) &\le 0 && \text{(primal feasibility)}\\
+\forall_i:~ \l_i &\ge 0  && \text{(dual feasibility)}\\
+{\color{blue}\forall_i:~ \l_i g_i(x)} &= -\m && \text{(complementary)}
+\end{align*}
+can be written as the $n+m$-dimensional equation system
+$$
+r(x,\l) = 0
+\comma
+r(x,\l) := \mat{c}{
+\na f(x) + \na g(x)^\T \l\\
+-\diag(\l) g(x) - \m \one_m
+}$$
+
+~
+
+\item Newton method to find the root $r(x,\l) = 0$
+\begin{align*}
+\mat{c}{x\\\l}
+ &\gets \mat{c}{x\\\l} - \na r(x,\l)^\1 r(x,\l) \\
+\na r(x,\l)
+ &= \mat{cc}{
+\he f(x) + \Sum_i \l_i \he g_i(x) & \na g(x)^\T \\
+-\diag(\l) \na g(x) & - \diag(g(x))
+} ~ \in \RRR^{(n+m)\times(n+m)}
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Primal-Dual interior-point Newton Method}{
+
+\item The method requires the Hessians $\he f(x)$ and $\he g_i(x)$
+\begin{items}
+\item One can approximate the constraint Hessians $\he g_i(x) \approx
+0$
+\item Gauss-Newton case: $f(x)=\phi(x)^\T \phi(x)$ only requires
+$\na\phi(x)$
+\end{items}
+
+~
+
+\item This primal-dual method does a joint update of both
+
+-- the solution $x$
+
+-- the lagrange multipliers (constraint forces) $\l$
+
+\emph{No need for nested iterations, as with penalty/barrier methods!}
+
+~
+
+\item The above formulation allows for a duality gap $\m$;
+choose $\m=0$ or consult Boyd how to update on the fly (sec 11.7.3)
+
+~
+
+\item The \textbf{feasibility constraints} $g_i(x) \le 0$ and
+$\l_i \ge 0$ need to be handled explicitly by the root finder (the
+line search needs to ensure these constraints)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Phase I: Finding a feasible initialization}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Phase I optimization}
+\slide{Phase I: Finding a feasible initialization}{
+
+\item An elegant method for finding a feasible point $x$:
+$$\min_{(x,s)\in\RRR^{n\po}} s \st \forall_i:~ g_i(x)\le s,~ s\ge 0$$
+or
+$$\min_{(x,s)\in\RRR^{n+m}} \sum_{i=1}^m s_i \st \forall_i:~ g_i(x)\le s_i,~ s_i\ge 0$$
+
+}
+
+\key{Trust region}
+\slide{Trust Region}{
+
+\item Instead of adapting the stepsize along a fixed direction, an
+alternative is to adapt the \emph{trust region}
+
+\item Rougly, while $f(x+\d) > f(x) + \lsstop \na f(x)^\T \d$:
+\begin{items}
+\item Reduce trust region radius $\b$
+\item try $\d = \argmin_{\d:|\d|<\b} f(x+\d)$ using a local quadratic
+model of $f(x+\d)$
+\end{items}
+
+~
+
+\item The constraint optimization $\min_{\d:|\d|<\b} f(x+\d)$ can be
+translated into an unconstrained $\min_\d f(x+\d) + \l \d^2$ for suitable
+$\l$. The $\l$ is equivalent to a regularization of the Hessian; see
+damped Newton.
+
+\item We'll not go into more details of trust region methods; see
+Nocedal Section 4. 
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{General approaches}{\label{lastpage}
+
+\item Penalty \& Barriers
+
+{\small
+-- Associate a (adaptive) penalty cost with violation of the constraint
+
+-- Associate an additional ``force compensating the gradient into the
+   constraint'' (augmented Lagrangian)
+
+-- Associate a log barrier with a constraint, becoming $\infty$ for violation (interior point method)
+
+~}
+
+\item Gradient projection methods (mostly for linear contraints)
+
+{\small
+-- For `active' constraints, project the step direction to become
+   tangantial
+
+-- When checking a step, always pull it back to the feasible region
+
+~}
+
+\item Lagrangian \& dual methods
+
+{\small
+-- Rewrite the constrained problem into an unconstrained one
+
+-- Or rewrite it as a (convex) dual problem
+
+~}
+
+\item Simplex methods (linear constraints)
+
+{\small
+
+-- Walk along the constraint boundaries
+
+}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot

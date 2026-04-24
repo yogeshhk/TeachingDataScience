@@ -1,0 +1,1772 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\topic}{Computer Vision Basics}
+\renewcommand{\keywords}{Homogeneous coordinates, camera models,
+calibration matrix, (multi)-camera calibration: image error,
+colinearity error, keypoint detectors, keypoint features, motion
+filter, background subtraction, disparity maps, segmentation}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% -- given set of 3D points $X_i$ and 2D points $x_i$, compute the
+%%    position of the camera (or the position of the points relative to
+%%    the camera)
+
+%% -- cost functions!!
+
+%% -- given a set of 
+
+%% -- calibration
+
+%% -- Fundamental matrix (stereo: relates points on two images) (chapter 9)
+
+%% -- RANSAC
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \item Next time:
+
+%% -- OpenCV
+
+%% -- features: edges, corners, SIFT
+
+%% -- segmentation
+
+%% -- motion estimation
+
+%% -- stereo
+
+%% -- image difference
+
+%% -- RANSAC
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Not covered yet:
+
+%% -- edges, Canny, Hough, corners
+
+%% -- OpenCV
+
+%% -- stereo, Fundamental matrix (stereo: relates points on two images) (chapter 9)
+
+%% -- RANSAC
+
+%% -- part-based models, etc
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item \emph{Perception is one of the hardest problems in Robotics}
+
+\begin{items}
+\item Image interpretation is non-trivial
+\item Occlusions
+\item 3D reconstruction
+\item Ambiguities
+\end{items}
+
+~\mypause
+
+\item Perception means (probabilistic) \emph{inference}
+
+~
+
+\centerline{\color{blue}$P(\text{perception}|\text{appearance})
+ \propto P(\text{appearance}|\text{perception})~ \underbrace{P(\text{perception})}_{\text{prior}}$}
+
+~
+
+-- efficient perception needs strong (and ``good'') priors!
+
+-- this is \emph{the} open problem in ``computer perception'' ~ (in my view)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\show{snowDog}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item Gestalt principles
+
+\show{gestalt1und2.pdf}
+
+\item Heuristics
+
+\show[.5]{gestalt3-Heuristics.png}
+
+\item Context
+
+\show{gestalt4-CatInHat.png}
+
+\item Attention
+
+\show{gestalt5-Attention.png}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item Kanizsa Figures
+
+\show[.7]{gestalt6-KanizsaFigures.png}
+
+\item M\"uller-Lyer, horizontal/vertical, Ebbinghaus-Titchener
+
+\show[.5]{gestalt8-sizes.png}
+
+\item Munker-White
+
+\show[.5]{gestalt7-MunkerWhite.png}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+\item Adelson
+
+\only<1>{\show{checker1}}
+\only<2>{\show{checker2}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\centerline{\color{blue}$P(\text{perception}|\text{appearance})
+ \propto P(\text{appearance}|\text{perception})~ \underbrace{P(\text{perception})}_{\text{prior}}$}
+
+~
+
+\item Human priors presumably include
+\begin{items}
+\item $\exists$ light, shade, reflectance properties $\to$ infer true
+   ``material color''
+
+\item $\exists$ occlusions \& objects $\to$ infer complete shapes, objects
+
+\item depth $\to$ sizes are relative
+
+\item etc
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Outline}{
+
+\item Basic geometry of world and image points
+\begin{items}
+\item Camera models
+\end{items}
+
+\item (Multiple-) Camera calibration
+
+\item Point-based object localization
+
+(camera localization $\oto$ object localization)
+
+~
+
+\begin{items}
+\item Seeing the world as a ``set of points \& features''
+\item Seeing the world as pixel values \& patches
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Reference}{
+
+\twocol{.4}{.5}{
+\show{MultipleViewGeometry}
+}{
+
+
+Hartley \& Zisserman: \emph{Multiple View Geometry}.
+Cambridge, 2003. (2nd edition)
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Basic geometry of world and image points}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Notation \& Problems}{
+
+\item 3D world points $\vec X_i$
+
+\item 2D image points $\vec x_i$
+
+\item Camera $P$ (calibration $K$, pose $T$, lens distortion $L$)
+
+\item Problems:
+
+~
+
+\begin{tabular}{|p{.26\columnwidth}|p{.3\columnwidth}|p{.25\columnwidth}|}
+\hline
+& given & wanted \\
+\hline
+Camera calibration & $\{\vec x_i\}$, $\{\vec X_i\}$ & $P$ ($K$,
+$T$, $L$) \\
+\hline
+Camera localization & $K,L$, $\{\vec x_i\}$, $\{\vec X_i\}$  & $T$ \\
+\hline
+Object localization & $P$, $\{\vec x_i\}$, $\{\vec X_i\}$ in object
+Coordinates & $\{\vec X_i\}$ in world coordinates\\
+\hline
+$n$ camera object localization & $P^c$, $\{\vec x_i^c\}$ in $n$ cameras & $\{\vec X_i\}$\\
+\hline
+$n$ camera calibration & $\{\vec x_i^c\}$ in $n$ cameras & $P^c$ of
+$n$ cameras, $\{\vec X_i\}$\\
+\hline
+\end{tabular}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera model -- pinhole camera}{
+
+\show[1]{pinHoleCamera}
+
+~
+
+\centerline{
+world point $\hat{\vec X}=\mat{c}{X\\Y\\Z}$
+$\qquad \mapsto \qquad$
+image point $\hat{\vec x} = \mat{c}{\hat x\\\hat y} = \mat{c}{fX/Z\\ fY/Z}$}
+
+~
+
+~
+
+\item The division by $Z$ is non-linear and called \emph{perspective projection}.
+
+~
+
+\item \textbf{Note:} In the usual convention $X$- and
+$Z$-axes are flipped ($X$-axis is image-right; depth is $-Z$-axis)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Homogeneous coordinates}{
+
+%% \small
+%% \centerline{\small $\mat{c}{X\\Y\\Z} \mapsto \mat{c}{\hat x\\\hat y} = \mat{c}{fX/Z\\ fY/Z}$}
+
+%% \item In \emph{homogeneous} coordinates:
+
+%% $\mat{c}{x\\y\\w} = \mat{c}{fX\\ fY\\ Z}
+%% = \mat{cccc}{f & & & 0 \\ & f & & 0 \\ & & 1 & 0}\mat{c}{X\\Y\\Z\\1}$
+
+\item Definition:
+
+\emph{A homogeneous coordinate $\vec x=(x_1,..,x_n,w)$ is a
+(redundant) description of the $n$-dim point}
+
+\cen{$\hat{\vec x}= \mat{c}{x_1/w \\ \vdots \\ x_n/w}
+=: \PP(\vec x)$}
+
+\item Two coordinates $(x_1,..,x_n,w)$ and $(\l x_1,..,\l x_n,\l w)$
+   are ``equivalent''
+
+\item $\PP$ is \emph{non-linear} and called \emph{perspective
+   projection}
+
+~
+
+\item Why?
+
+\begin{items}
+\item Simplifies the notation of rotation/translations (with $w=1$)
+\item Many equations (in perspective geometry) can be expressed
+\emph{linear} in the homogeneous $\vec x$ which are actually
+\emph{non-linear} in the \emph{in}homogeneous $\hat{\vec x}=\PP(\vec
+x)$!
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera model -- pinhole camera}{
+
+\show{pinHoleCamera}
+
+\centerline{\small
+world point $\hat{\vec X}=\mat{c}{X\\Y\\Z}$
+$\qquad \mapsto \qquad$
+image point $\hat{\vec x} = \mat{c}{\hat x\\\hat y} = \mat{c}{fX/Z\\ fY/Z}$}
+
+~
+
+\item In \emph{homogeneous} coordinates:
+
+\centerline{\small
+world point $\vec X=\mat{c}{X\\Y\\Z\\1}$
+$\quad \mapsto \quad$
+image point $\vec x=
+  \mat{c}{fX\\ fY\\ Z}
+ = \underbrace{\mat{cccc}{f & & & 0 \\ & f & & 0 \\ & & 1 & 0}}_P \vec X$}
+
+\item The relation between homogeneous $\vec X$ and $\vec x$ is
+linear, and given by the \textbf{camera projection matrix $P$}
+
+
+%% \item \emph{Camera (projection) matrix $P$} \qquad {\color{red}$\vec x = P~ \vec X$}
+
+%% \item The image point is
+
+%% \centerline{$\hat{\vec x} = \mat{c}{\hat x\\ \hat y} = \mat{c}{x/w\\y/w} = \PP(\vec
+%% x) = \PP( P \vec X)$}
+
+\item The 3rd entry in $\vec x$ has a meaning: ~ \emph{projective depth}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera projection matrix $P$}{
+
+~
+
+\centerline{\color{red}\large\fbox{$\vec x = P \vec X$}}
+
+~
+
+\item Maps linearly from homogeneous 3D world coordinates to
+homogeneous 2D image coordinates
+
+~
+
+\item $P$ is a $3\times 4$ matrix
+
+~
+
+\item For the pinhole camera $P = \mat{cccc}{f & & & 0 \\ & f & & 0 \\ & & 1 &
+0}$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera model -- calibration matrix $K$}{
+
+\item Cameras are not ideal pinholes!
+
+\item Image offset, pixel resolutions, skew
+
+\centerline{\small$\mat{c}{X\\Y\\Z} \mapsto \mat{c}{x\\y}~ \mat{c}{(\a_xX+sY)/Z + x_0\\ \a_yY/Z + y_0}$}
+
+~
+
+or, in homogeneous coordinates,
+
+\centerline{\small $\vec x = P \vec X
+\comma P = \mat{cccc}{\a_x & s & x_0 & 0 \\ & \a_y & y_0 & 0\\ & & 1 &
+0}$ }
+
+~
+
+\item \textbf{Camera calibration matrix:} {\small$K = \mat{ccc}{\a_x & s &
+x_0 \\ & \a_y & y_0 \\ & & 1 } \comma P=\mat{cc}{K & 0}$}
+
+~
+
+(Note: skew $s$ is usually zero)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera model -- pose $T$}{
+
+\item Camera is translated and rotated
+
+\begin{items}
+\item world-to-camera transformation $T_{W\to C}$:
+\end{items}
+$$T_{W\to C} = \mat{cc}{R & t \\ 0 & 1}$$
+
+\begin{items}
+\item point coordinates transform with the inverse
+\end{items}
+$$\vec X^C =T^\1_{W\to C}~ \vec X^W$$
+
+~
+
+\item Convention in the following: $T := T^\1_{W\to C} = \mat{cc}{R^\T & -R^\T t \\ 0 & 1}$
+
+~
+
+\item Camera projection matrix:
+
+\centerline{$\vec x = P \vec X \comma
+ P  
+ = K \circ T
+ = \mat{cc}{K R^\T & -K R^\T t}$}
+
+~
+
+\item
+$K \sim $ internal parameters
+
+$T \sim $ external parameters
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera model -- lens distortion}{
+
+\item Lens introductes distortion
+
+\centerline{
+\showh[.2]{distortionBarrel}
+\qquad
+\showh[.2]{distortionPincushion}
+}
+
+\item Radial distortion is non-linear, transforms projected pixel coordinates
+
+%%  $\hat{\vec x} = \PP \cdot K \cdot L \cdot T \cdot \vec X$
+%% ``distortion before calibration+projection''
+
+%%  $\hat{\vec x} = L \cdot \PP \cdot K \cdot T \cdot \vec X$
+%% ``distortion after calibration+projection''
+
+%% (actually the distortion is before the calibration $K$, but oh well)
+
+~
+
+\centerline{$\mat{c}{\hat x' \\ \hat y'}
+ = \mat{c}{x_{dc} \\ y_{dc}} + L(r) \mat{c}{\hat x - x_{dc}\\ \hat y -
+ y_{dc}}$}
+
+~
+
+$x_{dc},y_{dc}$ is the distortion center
+
+~
+
+\centerline{$L(r) = 1+\k_1 r + \k_2 r^2 + \k_3 r^3 + \k_4 r^4
++ \cdots$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera model -- Summary}{
+
+\item A general camera is described by:
+{\large $$\hat{\vec x} = \underbrace{L \circ \PP}_{\text{non-linear}}(\underbrace{K~ T}_P~ \vec X )$$}
+
+\begin{items}
+\item world point $\vec X$
+
+\item linear camera projection $\vec x = P\vec X\comma  P = K~ T$
+
+\item non-linear perspective projection $\PP$
+
+\item non-linear distortion $L$
+\end{items}
+
+~
+
+\item total parameters
+
+\centerline{\begin{tabular}{|c|c|p{.2\columnwidth}|}
+\hline
+$T$ & $R, t$ & 6dofs \\
+\hline
+$K$ & $\a_x, \a_y, (s), x_0, y_0$ & 3-5dofs, often $\a_x=\a_y$ \\
+\hline
+$L$ & $\k_{1:4}, x_{dc}, y_{dc}$ & 6 dofs\\
+\hline
+\end{tabular}}
+
+(17dofs at max)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera calibration}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\emph{In the following we assume the distortion has been taken care
+of:}
+
+-- optimize parameters of $L$ so that lines appear straight
+
+~
+
+\show[.6]{straightLine}
+
+~
+
+-- minimize quadratic distances of midpoints to straight line
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\show[.6]{checkerBoard3}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item Many problems in vision geometry are of the following kind:\
+
+~
+
+-- we have two sources of points:
+
+~~ $\{\vec x_i\}$ and $\{\vec x_i'\}$, ~ or $\{\vec X_i\}$ and $\{\vec X_i'\}$, ~ or $\{\vec X_i\}$ and $\{\vec x_i\}$
+
+~
+
+-- we want to find a geometrical relation (transformation)
+
+~~ that makes these two sets of points ``consistent''
+
+~
+
+~
+
+\item Camera calibration is one example; later others...
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera calibration}{
+
+\item Problem:
+
+We have world points $\{\vec X_i\}$ and image points $\{\vec x_i\}$
+
+{\tiny
+(each $\vec x_i = \mat{c}{\hat x_i \\ \hat y_i \\ 1}$ for measured
+image coordinates $(\hat x_i,\hat y_i)$ )
+
+}
+
+\emph{Find the camera projection matrix $P$ such that each}
+
+\cen{\color{red}$P \vec X_i$ is consistent
+   with $\vec x_i$}
+
+~
+
+\item What does is \textbf{consistent} mean?
+
+Setting equal? No! ~ ~ $(x,y,1) \equiv (\l x, \l y, \l)$
+
+We want them to be equivalent in the sense
+
+\cen{\color{red} $\PP(P \vec X_i) = \PP(\vec x_i)$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera calibration -- Image Error}{
+
+\item We want $\PP(\vec x_i) \approx \PP(P \vec X_i)$
+
+-- 2 ways to translate this to a cost formulation:
+
+~
+
+{\color{red}1) \emph{Image error:}}
+
+~
+
+\centerline{$f(P) = \sum_{i=1}^N \norm{\PP(\vec x_i) - \PP(P \vec X_i)}^2$}
+
+~
+
+\item Problem: find $P = \argmin_P f(P)$
+
+-- Since $\PP$ is non-linear, this is a non-linear optimization
+problem
+
+-- Gradient descent
+
+{\tiny  Note: the derivative of $\PP$ is $\PP\mat{c}{x\\y\\w}'
+  =  \mat{c}{x'/w - x/w^2 w' \\ y'/w - y/w^2 w'}$}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera calibration -- Colinearity Error}{
+
+\item {\color{red}2) \emph{Colinearity error:}}~ (also called Algebraic error)
+
+-- The homogeneous vectors $\vec x_i$ and $P \vec X_i$ should
+   be \emph{colinear!}
+
+-- That is, for each $i$ there should exist a $\l_i$ such that
+$$\l_i \vec x_i \approx P \vec X_i$$
+
+\item Since these are 3-vectors, measure colinearity by $\vec x_i \times
+P \vec X_i \overset{!}= 0$
+{\small
+\begin{align*}
+0 &\overset{!}=
+\vec x_i \times P \vec X_i \\
+0 &\overset{!}=
+\vec x_i \times \mat{c}{P^1{}^\T \vec X_i \\P^2{}^\T \vec
+X_i \\P^3{}^\T \vec X_i}
+\qquad \text{$P^j$ is $j$th row of $P$} \\
+0 &\overset{!}=
+\mat{c}{
+y_i P^3{}^\T \vec X_i - w_i P^2{}^\T \vec X_i \\
+w_i P^1{}^\T \vec X_i - x_i P^3{}^\T \vec X_i \\
+x_i P^2{}^\T \vec X_i - y_i P^1{}^\T \vec X_i} \\
+0 &\overset{!}=
+\mat{ccc}{
+0 & -w_i \vec X_i^\T &      y_i \vec X_i^\T \\
+w_i \vec X_i^\T & 0 & -x_i \vec X_i^\T}
+\mat{c}{P^1 \\ P^2 \\ P^3}
+\end{align*}
+}
+{\tiny (We droped the 3rd equation since it is linearly dependent on the first two.)}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Colinearity error vs.\ image error}{
+
+
+\small
+
+\item Colinearity gives a meaningful metric between homogeneous image
+ coordinates $\vec x$, $\vec x'$:~ the norm $\norm{\vec x \times \vec
+ x'}^2$ ~ ``neglecting the 3rd entry'':
+
+\centerline{$d_{\text{colin}}(\vec x,\vec x')^2 = (yw'-wy')^2 + (wx'-xw')^2 $}
+
+~
+
+\item $d_{\text{colin}}(\vec x,P \vec X)$ measures the distance of a world point
+ $\vec X$ to the \emph{view line} of $\vec x$! (along the projection plane)
+
+\show[.5]{colinearityError.png}
+
+~
+
+\item Related to image error:
+
+\centerline{$d_{\text{image}}(\vec x',\vec x)^2 = (x'/w'-x/w)^2 + (y'/w'-y/w)^2
+= d_{\text{colin}}^2/(ww')^2$}
+
+~
+
+$\to$ Colinearity error weights far points more than near points! 
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Camera calibration -- cost formulation}{
+
+\item The Colinearity cost can be expressed as
+
+\centerline{$\norm{A p} \comma p=\mat{c}{P^1 \\ P^2 \\ P^3} \in \RRR^{12}$}
+
+where each pair $(\vec x_i,P \vec X_i)$ contributes two rows
+
+$\mat{ccc}{0 & -w_i \vec X_i^\T &      y_i \vec X_i^\T \\
+                w_i \vec X_i^\T & 0 & -x_i \vec X_i^\T}$
+to the matrix $A$
+
+~
+
+~
+
+\item The minimum w.r.t.\ constraint $\norm{p}=1$ is the smallest
+eigenvector of $A$ or $A^\T A$
+
+~
+
+~
+
+
+{\tiny{
+Problem find $x$ to miminize $\norm{A x}$ subject to
+$\norm{x}=1$.
+
+Use SVD to compute $A = UD V^\T$ or $A^\T A = V D^2 V^\T$. Define
+ $y=V^\T x$.
+
+Now we want to minimize $\norm{D y}$ subject to $\norm{y} =1$.
+
+Solution: $y = (0,0,\dots,1)^\T$ (smallest eigenvalue). $x=V^\T y=$ last column of V.
+
+}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Generality of this principle}{
+
+\emph{We just learnt how in principle to formulate a cost function comparing}
+
+~
+
+-- image points $\{\vec x_i\}$ with projected world points $\{P \vec X_i\}$
+
+-- or image points $\{\vec x_i\}$ with transformed other image points
+$\{H \vec x_i'\}$
+
+%% -- or projected world points $\{P \vec X_i\}$ with other proj.\
+%%    world points $\{P' \vec X_i'\}$
+
+~
+
+\emph{and solve w.r.t.\ transformations $P$ or $H$}
+
+~\mypause
+
+\item Many applications!
+
+-- world points, image points $\to$ camera calibration
+
+-- left image points, right image points $\to$ find relative camera
+transform
+
+-- image points at time $t$, image points at time $t+\D$ ~ $\to$ ~ motion!
+
+-- image points, object points $\to$ find relative camera-object
+   transf.\
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%^
+
+\slide{Typical calibration setup}{
+
+The checker board:
+
+\showh[.4]{checkerBoard}
+\qquad
+\showh[.4]{checkerBoard2}
+
+~
+
+You know the world points $\{\vec X_i\}$ are on a planar grid.
+
+The algorithm will compute the camera's pose (and internal parameters)
+w.r.t.\ the board.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Decomposing $P$ into $K$ and $T$}{
+
+\item Given $P$, how can we get $K$ and $T$?
+
+~
+
+\item Recall $P = \mat{cc}{K R^\T & -K R^\T t \\ 0 & 1}$
+
+~
+
+\item[1)] Compute $R$ by decomposing $K R^\T$ using the
+RQ-decomposition (R upper-tiangular, Q=orthogonal)
+
+\item[2)] Compute $t$ using $t = -(K R^\T)^\1 (-K R^\T t)$, or
+
+$t_X = ~1/W \det \mat{ccc}{P_{:,2} & P_{:,3} & P_{:,4}}$
+
+$t_Y = -1/W \det \mat{ccc}{P_{:,1} & P_{:,3} & P_{:,4}}$ 
+
+$t_Z = ~1/W \det \mat{ccc}{P_{:,1} & P_{:,2} & P_{:,4}}$
+
+$W = -\det \mat{ccc}{P_{:,1} & P_{:,2} & P_{:,3}}$
+
+(column vectors!)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Stereo depth estimation}{
+
+\item We're given two image points $\vec x^\lft, \vec x^\rgh$ and
+camera matrices $P^\lft, P^\rgh$; find the world point $\vec X$
+such that
+
+$$\vec x^\lft \times P^\lft \vec X \overset!= 0 \quad\text{and}\quad \vec
+x^\rgh \times P^\rgh \vec X \overset!=0$$
+
+~
+
+\item Solution using SVD exactly as for camera calibration
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Object localization}{
+
+\showh[.2]{sift1}
+\qquad
+\showh[.6]{sift2}
+
+\hfill (Lowe, 2004)
+
+~
+
+\item Problem:
+
+-- we found some object points $\vec x_i$ in the image
+
+-- we find correspondancies to a set of points $\vec X_i$ in object
+ coordinates
+
+-- Problem: find $T$ (that is, the relative object (or camera) transformation)
+
+~
+
+\item In principle the same as for stereo
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{3D Multiple view calibration}{
+
+\item Problem: ~ (also called \emph{Bundle adjustment})
+
+-- we have $n$ cameras $P^j$
+
+-- we are given $N$ image points $\vec x^j_i$ in the $j$th camera for the
+   $i$th point
+
+-- we \emph{do not} know the 3D world coordinates of the perceived
+   points
+
+\emph{Find the camera matrices $P^j$ and 3D points $X_i$ that minimize
+   the \textbf{image errors}
+$$\min_{\{P^j,\vec X_i\}} \sum_{ij} \norm{\PP(P^j \vec X_i) - \PP(\vec x^j_i)}^2$$}
+
+$\To$ 3d reconstruction from multiple images
+
+~
+
+\item See details in \emph{Hartley \& Zisserman, Chapter 18}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{3D Multiple view calibration}{
+
+\item We can formulate the problem also using \textbf{colinearity}:
+
+Find $\{P^j,\vec X_i,\l^j_i\}$ such that
+$$\l^j_i \vec x^j_i \approx P^j \vec X_i $$
+
+\item Here,  $\l^j_i$ is the projective depth of $\vec X_i$ in camera
+$j$
+
+\item If $\l^j_i$ \emph{were} known, solve the linear equation
+$$\L = \mat{c}{P^1 \\ \vdots \\ P^n}~ \mat{ccc}{\vec X_1 & \cdots &
+\vec X_N} \comma \L_{ji} = \l^j_i \vec x^j_i$$
+
+This is solved with a rank 4 SVD $\L = U D V^\T$ where $UD$ contains
+the column vector of $P$'s and $V^\T=\mat{ccc}{\vec X_1 & \cdots &
+\vec X_N}$
+
+\item What if $\l^j_i$ are unknown? Initialize with $\l^j_i=1$ and
+iterate! (Keep their average scaled to 1.)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{}{
+
+%% \show{roboCubCamera}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Augmented Reality Markers}{
+
+%% \centerline{\url{http://www.hitl.washington.edu/artoolkit/}}
+
+%% \show[1.2]{augmentedRealityMarkers}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Standard Methods}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+~
+
+\item Last lecture:
+
+-- Geometry of world points \& image points
+
+%~~ \demo{camera calibration}
+
+~\mypause
+
+\item \emph{How can we gain a ``scene understanding?''}
+
+What does ``scene understanding'' mean anyway?
+
+~\mypause
+
+1) The scene as a set of points
+
+{\small (Keypoint detection, features, correspondance, tracking, point clouds)}
+
+~
+
+2) The scene as (patches of) pixel values
+
+{\small (difference image, motion, disparity, color filter, segmentation)}
+
+~
+
+3) Integrative views for ``scene perception''?
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{1) The scene as a set of points}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Keypoint detection}{
+
+OpenCV example ~ ({\tiny\url{http://opencv.willowgarage.com/wiki/}})
+
+~
+
+\showh[.4]{cvtColor}
+\qquad
+\showh[.4]{SurfDescriptorExtractor}
+
+~
+
+{\small
+\begin{semiverbatim}
+SurfFeatureDetector detector(hessian, octaves, layers);
+
+detector.detect(input, keypoints, descriptors);
+\end{semiverbatim}
+}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Keypoint detection}{
+
+\item Find ``interesting/significant points in the
+image''
+
+-- characteristic structure (typically high-contrast corner)
+
+-- independent of the scaling
+
+-- methods: difference of Gaussians, Hessian-Laplace, Harris
+
+~
+
+\centerline{$\to ~ \{\vec x_i\}$}
+
+~
+
+~
+
+{\tiny Roughly (using the Hessian):
+
+-- Compute the Hessian $\mat{cc}{\del^2_{xx} I & \del^2_{xy} I\\\
+\del^2_{xy} I & \del^2_{yy} I}$ of the image pixel values $I(x,y)$
+
+~
+
+-- Find maxima w.r.t.\ the Hessian's determinant (=volume
+   transformation)
+
+~~ and trace (=Laplacian)
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Keypoint features}{
+
+\item Keypoint feature/descriptor:
+
+-- Describe the keypoint in a way that you can match it in another
+   image
+
+-- Compute high-dimensional feature $f_i \in \RRR^n$
+
+-- SIFT (scale-invariant feature transform)
+
+~~ {\tiny \url{http://www.cs.berkeley.edu/~malik/cs294/lowe-ijcv04.pdf}}
+
+-- SURF (speeded up robust feature)
+
+~~ {\tiny \url{ftp://ftp.vision.ee.ethz.ch/publications/articles/eth_biwi_00517.pdf}}
+
+~
+
+\centerline{$\to ~ \{f_i\}$ ~ each $f_i\in\RRR^n$ (often $n=128$ or $64$)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{SURF descriptor}{
+
+~
+
+\showh[.4]{surfDetector}
+\qquad
+\showh[.4]{surf}
+
+~
+
+-- feature $f_i\in\RRR^{64}$ ~ (4 numbers for each of $4\times4$
+   squares)
+
+-- GPU implementations available, e.g. CUDA SURF
+
+~~ {\tiny \url{http://www.d2.mpi-inf.mpg.de/surf}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Using Keypoint Detection and Features}{
+
+\item Two images, compute keypoints $\{\vec x_i^1\}, \{\vec x_i^2\}$
+and features $\{f_i^1\}, \{f_i^2\}$
+
+\showh[.2]{sift1}
+\qquad
+\showh[.6]{sift2}
+
+~
+
+\item {\color{red}\emph{Correspondance problem:}} which points $\vec
+x_i^1$ corresponds to which $\vec x_i^2$?
+
+$\to$ Feature matching: find pairs $(\vec
+x_i^1, \vec x_j^2)$ with similar features $f_i^1 \approx f_j^2$
+
+~~ {\small (use Approximate Nearest Neighbor methods (kd-trees))}
+
+~
+
+$\to$ Do the usual geometry...
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Tracking keypoints}{
+
+\mov{gpuklt}{10-RoboticsLecture/Lukas-Kanade-tracker-gpuklt.avi}
+
+~
+
+(GPU implementation of the Kanade-Lucas-Tomasi tracker)
+
+{\tiny\url{http://www.cs.unc.edu/~ssinha/Research/GPU_KLT/}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Point Clouds}{
+
+~
+
+\showh[.45]{pr2}
+\quad
+\showh[.45]{pointCloud}
+
+~
+
+Point clouds from laser: we directly get depth!
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\show[.85]{PCL_logo}
+\hfill{\tiny\url{http://www.ros.org/wiki/pcl}}
+
+Based on point clouds (from laser), estimate surfaces, extract local
+   features, detect objects.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Keypoints, features, point clouds --- Summary}{
+
+\item Scene is abstracted as a set of points with features
+
+~
+
+\item If points are coherent (e.g., with stored points of known
+object)
+
+$\to$ Object detection and pose estimation ~ (e.g., Lowe)
+
+$\to$ Track points over time $\to$ motion estimation
+
+~
+
+\item If points are 3D (from laser or stereo)
+
+$\to$ Shape estimation
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{2) The scene as (patches of) pixel values}{
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Difference of images}{
+
+\item Think of the image as a pixel value matrix $I\in\RRR^{H\times W}$
+
+$I_{yx}$ is the pixel value at $(x,y)$
+
+\emph{Note: height ($y$-coordinate) is the leading index!}
+
+~
+
+\item Given two images $I^1$ and $I^2$, we can take the difference
+
+$I^{\text{diff}} = I^2 - I^1$
+
+~
+
+\demo{vision\_opencvOnline}
+
+~\mypause
+
+-- Simple motion detection: $\D I = I^t - I^{t\1}$
+
+-- Background substraction: $I^1$ = constant background, $I^2$ image
+
+-- Disparity, motion estimation...
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Disparity maps}{
+
+\hspace*{-5mm}\showh[.66]{disparity1}
+\showh[.32]{disparity2}
+
+~
+
+\item For all vertical displacements $\vec d$ compare $I^\lft$ and $I^\rgh_{\text{translated by $\vec d$}}$
+
+~~ where difference small $\to$ likelihood for disparity $\vec d$
+
+\item If we know the cameras $P^\lft$ and $P^\rgh$: ~ disparity map $\to$ depth map
+
+~
+
+\item OpenCV example:
+
+{\small\tt
+ Mat input\_left, input\_right, disperaties;\\
+ StereoBM bm;\\
+ bm(input\_left, input\_right, disperaties);\\
+}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Motion estimation ~ (Lucas-Kanade like)}{
+
+~
+
+\mov{tree benchmark}{07-bmvc/inf.avi}
+\qquad
+\mov{car segmentation}{07-bmvc/seg-xvid.avi}
+
+\hspace*{-14mm}{\tiny\url{http://ipvs.informatik.uni-stuttgart.de/mlr/marc/publications/07-willert-ICMLA.pdf}}
+
+~
+
+\item For all $\vec v$ compare $I^t$ and $I^{t\1}_{\text{translated by $\vec v$}}$
+
+~~ where difference small $\to$ likelihood for motion vector $\vec v$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Segmentation}{
+
+~
+
+\item motion based
+
+~
+
+\item color based
+
+~
+
+\item texture based
+
+\demo{vision\_segmentation}  \anchor{10,0}{\showh[.6]{felzenzwalb}}
+
+\hfill{\tiny \url{http://people.cs.uchicago.edu/~pff/segment/}}
+
+~
+
+Graph cut minimization (P. Felzenszwalb, D. Huttenlocher:
+\emph{Efficient Graph-Based Image Segmentation})
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Operating directly on pixel values/patches --- Summary}{
+
+\item Scene as a collection of pixel values \& patches with different
+motions/textures/disparities/depth etc
+
+-- No notion of keypoints or 3D objects, but 2D segments/patches
+
+~
+
+\item Interresting low level abilities:
+
+-- Motion detection \& estimation ~ $\to$ ~ e.g., attention
+
+-- Disparity ~ $\to$ ~ rough depth impression
+
+-- Segmentation ~ $\to$ ~ decomposing the scene, simple tracking
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{3) Integrative views for ``scene perception''?}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{3) Integrative views for ``scene perception''?}{
+
+\item Computer Vision offers many tools
+
+-- Different features focussing on different aspects of the scene
+
+~
+
+\item Can they be integrated in a ``scene understanding?''
+
+What does ``scene understanding'' mean anyway?
+
+~
+
+\emph{Describe the scene/environment in a way relevant for
+behavior.}
+
+-- Vision \emph{for} grasping, manipulation, planning
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Gibson's notion of affordances}{
+
+\item Reference:
+
+{\tiny
+Erol Sahin, Maya Çakmak, Mehmet R. Dogar, Emre Ugur and Göktürk Üçoluk:
+\emph{To Afford or Not to Afford: A New Formalization of Affordances Toward
+Affordance-Based Robot Control} Adaptive Behavior 2007 15: 447.
+
+}
+
+~
+
+\item ``J. J. Gibson (1904–1979) coined the term
+affordance to refer to the action possibilities that objects offer to
+an organism in an environment.''
+
+\begin{quote}\tiny … an affordance is neither an objective property nor a subjective
+property; or both if you like. An affordance cuts across
+the dichotomy of subjective-objective and helps us to understand
+its inadequacy. It is equally a fact of the environment
+and a fact of behavior. It is both physical and psychical, yet
+neither. An affordance points both ways, to the environment
+and to the observer. (J. J. Gibson, 1979/1986, p. 129)
+\end{quote}
+
+~\mypause
+
+\item Proposed definition:
+
+\cen{$(\<\text{effect}\>, \<(\text{entity, behavior})\>)$}
+
+... like STRIP rules
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Affordance perception}{
+
+\item The ``affordance discussion'' emphasizes that the way an agent
+should \emph{perceive} its environment should be based on affordances
+instead of appearance
+
+\item This implies that perception is NOT a field of computer
+vision only
+
+Actually, this type of perception can only be researched by
+autonomous robotics or psychology
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Map building}{
+
+\item The term ``spatial cognition'' is often used for map building:
+
+{\tiny  K. M. Wurm, A. Hornung, M. Bennewitz, C. Stachniss, and W. Burgard.
+  \emph{Octomap: A probabilistic, ﬂexible, and compact 3d map representation
+  for robotic systems.} ICRA 2010 workshop.
+
+}
+
+\twocol{.45}{.45}{
+\show{OctTree1}
+}{
+\showh{OctTree2}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Map building}{
+
+\item Map building from a freely moving camera
+
+-- SLAM has become a big topic in the vision community..
+
+-- PTAM (Parallel Tracking and Mapping) parallelizes computations...
+
+~
+
+\mov{PTAM1}{10-RoboticsLecture/ptam1.avi}
+\mov{PTAM2}{10-RoboticsLecture/ptam2.avi}
+\mov{DTAM}{11-DTAM-Davidson.avi}
+\mov{KinectFusion}{11-KinectFusion-Davidson}
+
+~
+
+G Klein, D Murray: \emph{Parallel Tracking and Mapping for Small AR Workspaces}
+{\tiny\hfill\url{http://www.robots.ox.ac.uk/~gk/PTAM/}}
+
+Newcombe, Lovegrove \& Davison: \emph{DTAM: Dense Tracking and Mapping
+in Real-Time} ICCV 2011.
+{\tiny\hfill\url{http://www.doc.ic.ac.uk/~rnewcomb/}}
+
+\item Generally:
+see \tiny\url{http://www2.imperial.ac.uk/robotvision/website/php/}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Segmentation/Annotation of point clouds}{
+
+\item Reference
+
+{\tiny \emph{Contextually Guided Semantic Labeling and Search for 3D
+Point Clouds}, Abhishek Anand, Hema S. Koppula, Thorsten Joachims,
+Ashutosh Saxena. IJRR, 2012.
+
+}
+
+~
+
+\mov{\show[.6]{12-pointCloudLabelling}}{12-PointCloudLabelling.mp4}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Robot Perception example}{
+
+~
+
+\show[1]{danicaSceneRepresentation}
+
+\hfill{(IROS 2010)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Robot Perception example}{
+
+~
+
+\show[.9]{danicaSceneRepresentation2}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Robot Perception example}{
+
+~
+
+\show[1]{danicaSceneRepresentation3}
+
+\show[.5]{danicaSceneRepresentation4}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Attention}{
+
+\mov{attention 1}{10-RoboticsLecture/visualAttention1.mpg}
+\mov{attention 2}{10-RoboticsLecture/visualAttention2.mpg}
+
+\hfill{\tiny\url{http://ilab.usc.edu/bu/}}
+
+~
+
+\item \emph{Saliency Map:}
+
+-- Describes where image seems ``interesting''
+
+-- High saliency: constrast/peaks in color, intensity, motion, orientations
+
+-- Saliency decreases when reagions have been attended
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Attention}{
+
+\item Reference
+
+{\tiny O. Erler: \emph{Aufmerksamkeitsgetriebene objektexploration für
+autonom lernende roboter}. MSc Thesis, FU Berlin, 2011.
+
+}
+
+\show{erler1}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\show{erler2}
+
+~
+
+~
+
+\show{erler3}
+
+}
+
+%% \slide{Visual Servoing}{
+
+%% \item ``Visual Kinematics''
+
+%% a) Assume the camera is mounted on an articulated robot:
+
+%% Let $\phi:~ q \to \vec{\hat x}$ map from joint angles to the image point
+%% {\color{red}$\vec x = P(q) \vec X$} of a fixed 3D point. $P(q)$ because the
+%% camera's pose depends on $q$.
+
+%% $\to$ derive Jacobian, treat as task variable!
+
+%% ~\mypause
+
+%% b) Assume a reference point (e.g., LED) is mounted on
+%% the endeffector:
+
+%% Let $\phi:~ q \to \vec{\hat x}$ map from joint angles to the image point
+%% {\color{red}$\vec x = P \vec X(q)$} of the endeffector's reference point. $\vec X(q)$ because the
+%% endeffector's pose depends on $q$.
+
+%% $\to$ derive Jacobian, treat as task variable!
+
+%% ~
+
+%% \item We can also consider image coordinates as task variables and
+%% incorporate into our control schemes.
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Perception via physical manipulation}{
+
+Dov Katz and Oliver Brock 2010: \emph{Manipulating Articulated Objects
+With Interactive Perception}
+
+~
+
+\show{brockPush1}
+
+~
+
+\show{brockPush2}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Learning/perceiving kinematic models}{
+
+\item Reference:
+
+{\tiny \emph{Learning kinematic models for articulated objects}
+Jürgen Sturm, Vijay Pradeep, Cyrill Stachniss, Christian Plagemann,
+Kurt Konolige, Wolfram Burgard, IJCAI 2009.
+
+}
+
+\show{09-sturm}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Fusion \& Calibration}{
+
+\item Most approaches rely on only one sensor. Why?
+
+~
+
+\item Reference:
+
+{\tiny \emph{Automatic Online Calibration of Cameras and Lasers}
+Jesse Levinson and Sebastian Thrun, RSS 2013.
+
+}
+
+Does continuous online multi sensor (cams \& lasers) calibration \&
+fusion
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Perception from the general POMDP perspective}{
+
+\item Think of perception as actions.
+
+\item Actually, the POMDP formulation says exactly what we have to
+perceive in order to optimally fulfill a task -- but hardly feasible
+exactly
+
+\item Reference:
+
+{\tiny
+Kaelbling \& Lozano-Pérez: \emph{Integrated Task and Motion Planning
+in Belief Space} IJRR, 2013.
+
+}
+
+\show{13-Tomas-BelPlan1}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\show{13-Tomas-BelPlan2}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{What a mess}{
+
+\item People use
+\begin{items}
+\item Keypoints $\to$ object recognition
+\item Moving keypoints $\to$ rigid part detection/kinematic models
+\item Texture \& depth $\to$ segment
+\item Point Cloud $\to$ 3d mesh-map
+\item Point Cloud $\to$ OctTrees
+\item Point Cloud features $\to$ mesh segments \& labels
+\item Attention
+\item Interaction to segment objects, analyze kinematics
+\item Affordance-based representations
+\end{items}
+
+~
+
+\item Most approaches are \emph{feed forward}
+
+\item What is an integrative view?
+
+~
+
+\cen{Where is the BIG GRAPHICAL MODEL of Scene Perception?}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Spatial Cognition}{
+
+\item A comment on priors, from the perspective of CogSci...
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Spatial Cognition}{
+
+~
+
+\show[.9]{intraub1}
+\hfill{\emph{Encyclopedia of Cognitive Science, 4, pp. 524 - 527}}
+
+{\small (see also: Intraub (2010). Rethinking Scene Perception: A Multisource
+Model.)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Spatial Cognition}{
+
+Boundary extension:
+
+\show{intraub3}
+
+~
+
+Top-Down:
+
+\show[.6]{intraub2}
+
+~
+
+Change blindness examples:
+{\tiny \url{http://nivea.psycho.univ-paris5.fr/\#CB}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\slide{}{\label{lastpage}
+
+\item Perception means (probabilistic) \emph{inference}
+
+~
+
+\centerline{\color{blue}$P(\text{perception}|\text{appearance})
+ \propto P(\text{appearance}|\text{perception})~ \underbrace{P(\text{perception})}_{\text{prior}}$}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot

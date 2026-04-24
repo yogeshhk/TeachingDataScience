@@ -1,0 +1,138 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Fine tuning Large Language Models with Hugging Face Transformer Library}
+
+
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What is Fine-tuning?}
+  \begin{itemize}
+    \item Fine-tuning is the process of adapting a pre-trained language model to a specific task or domain
+    \item It involves updating the model's parameters using a smaller, task-specific dataset
+    \item This allows the model to learn task-specific patterns and knowledge
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Hugging Face Transformer Library}
+  \begin{itemize}
+    \item Provides a unified interface to various pre-trained models and datasets
+    \item Supports a wide range of tasks, including text classification, summarization, translation, and more
+    \item Offers easy-to-use APIs for fine-tuning and inference
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Text Summarization}
+  \begin{itemize}
+    \item Task: Generate a concise summary of a given text
+    \item Model: BART (Bidirectional and Auto-Regressive Transformer)
+    \item Dataset: CNN/Daily Mail dataset (for training and evaluation)
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 1: Load Pre-trained Model and Tokenizer}
+
+Load the pre-trained BART model and tokenizer for CNN news summarization
+  \begin{lstlisting}
+from transformers import BartForConditionalGeneration, BartTokenizer
+
+model = BartForConditionalGeneration.from_pretrained('facebook/bart-large-cnn')
+tokenizer = BartTokenizer.from_pretrained('facebook/bart-large-cnn')
+  \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Preprocess Data}
+
+  \begin{itemize}
+    \item Load the CNN/Daily Mail dataset and preprocess the data
+    \item Tokenize the input articles and target summaries
+    \item Create model input tensors with padding and truncation
+  \end{itemize}
+  
+  \begin{lstlisting}
+from datasets import load_dataset
+
+dataset = load_dataset('cnn_dailymail', '3.0.0')
+
+def preprocess_data(examples):
+    inputs = examples['article']
+    targets = examples['highlights']
+    model_inputs = tokenizer(inputs, max_length=1024, truncation=True, return_tensors='pt')
+    
+    labels = tokenizer(targets, max_length=128, truncation=True, return_tensors='pt').input_ids
+    labels = [[-100 if token == tokenizer.pad_token_id else token for token in label] for label in labels]
+    model_inputs['labels'] = labels
+    
+    return model_inputs
+  \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 3: Fine-tune the Model}
+
+  \begin{itemize}
+    \item Set up training arguments, including output directory, number of epochs, batch sizes, and more
+    \item Create a Trainer object with the model, training arguments, datasets, and tokenizer
+    \item Call the `train()` method to start fine-tuning the model
+  \end{itemize}
+  \begin{lstlisting}
+from transformers import TrainingArguments, Trainer
+training_args = TrainingArguments(
+    output_dir='./results',
+    num_train_epochs=3,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
+    warmup_steps=500,
+    weight_decay=0.01,
+    logging_dir='./logs',
+    logging_steps=10,
+)
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=dataset['train'],
+    eval_dataset=dataset['validation'],
+    tokenizer=tokenizer,
+)
+trainer.train()
+  \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 4: Evaluate and Generate Summaries}
+
+  \begin{itemize}
+    \item Evaluate the fine-tuned model on the validation set
+    \item Load a few test articles and generate summaries using beam search
+    \item Print the generated summaries
+  \end{itemize}
+  
+  \begin{lstlisting}
+eval_results = trainer.evaluate()
+print(f'Evaluation results: {eval_results}')
+
+test_data = dataset['test']
+batch = tokenizer(test_data['article'][:4], return_tensors='pt', truncation=True, padding=True)
+summaries = model.generate(**batch, max_length=128, num_beams=4, early_stopping=True)
+for summary in summaries:
+    print(tokenizer.decode(summary, skip_special_tokens=True, clean_up_tokenization_spaces=False))
+  \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conclusion}
+  \begin{itemize}
+    \item Hugging Face Transformer library simplifies the process of fine-tuning large language models
+    \item Fine-tuning allows adapting pre-trained models to specific tasks and domains
+    \item The text summarization use case demonstrates the end-to-end process
+  \end{itemize}
+\end{frame}

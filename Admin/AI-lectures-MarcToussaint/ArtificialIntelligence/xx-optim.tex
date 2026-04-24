@@ -1,0 +1,565 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Artificial Intelligence}
+\renewcommand{\coursepicture}{course_ai}
+\renewcommand{\coursedate}{Winter 2019}
+\renewcommand{\topic}{Optimization}
+
+\slides[(slides based on Stuart Russell's AI course)]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Outline}{
+
+\item Local Search
+
+\item Iterated Local Search
+
+\item Simulated annealing \& Genetic algorithms (briefly)
+
+\item General formulation of optimization problems
+
+\item LP, QP, ILP, non-linear program
+
+\item ILP formulations of $n$-queens, CSP, TSP
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Optimization problem: Definition}
+\slide{Optimization problems}{
+
+We have $n$ variables $x_i$, ~ continuous $x\in\RRR^n$, or discrete $x_i \in
+  \{1,..,d\}$, or \emph{mixed}
+
+%% may be continuous $x\in\RRR^n$, or discrete $x_i \in
+%%   \{1,..,d\}$, or \emph{mixed}
+
+~
+
+An optimization problem (or \defn{mathematical program}) is defined by
+$$ \min_x f(x) \st g(x)\le 0,~ h(x)=0 $$
+where $g:~ \RRR^n \to \RRR^k$ defines $k$ inequality constraints,\al and
+$h:~\RRR^n \to \RRR^l$ defines $l$ equality constraints
+
+~
+
+Optimization is a central thread through all of science:
+\begin{items}
+\item Machine Learning, Robotics, Computer Vision
+\item Engineering, Control Theory
+\item Economics, Operations Research
+\item Physics, Chemistry, Molecular Biology
+\item Social Sciences
+\end{items}
+Computational modelling of natural phenomena often via optimality principles
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+Stefan Funke gives an excellent lecture on \emph{Discrete Optimization} (WS)
+\begin{items}
+\item max-flow and min-cut on graphs
+\item Linear Programs, esp.\ Simplex methods
+\item Integer Linear Programming and LP-relaxations
+\end{items}
+
+~
+
+I offer a lecture on \emph{Continuous Optimization} (SS)
+\begin{items}
+\item Gradient and Newton methods
+\item Lagrangian, log-barrier, augmented lagrangian methods, primal-dual
+\item Local \& stochastic search, global optimization, Bayesian optimization
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Iterative improvement}{
+
+The majority of optimization methods iteratively manipulate $x$
+  to \emph{monotonely improve $x$}, e.g.:
+\begin{items}
+\item line search, backtracking, trust region methods
+\item gradient-based, (Quasi-) Newton methods
+\item interior point methods, Simplex method
+\item primal-dual Newton
+\item local search, pattern search, Nelder-Mead
+\end{items}
+Exceptions:
+\begin{items}
+\item \emph{Global Optimization}, Bayesian Optimization
+\item stochastic search, simulated annealing, evolutionary algorithms
+\end{items}
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Iterative improvement algorithms}{
+
+%% In many optimization problems, \emph{path} is irrelevant;\\
+%% the goal state itself is the solution
+
+%% Then state space = set of ``complete'' configurations;\\
+%% find \emph{optimal} configuration, e.g., TSP\\
+%% or, find configuration satisfying constraints, e.g., timetable
+
+%% In such cases, can use \defn{iterative improvement} algorithms;\\
+%% keep a single ``current'' state, try to improve it
+
+%% Constant space, suitable for online as well as offline search
+
+\key{Local Search}
+\slide{Local search ~ (greedy downhill, hill climbing)}{
+
+We assume there is a finite neighborhood $\NN(x)$ defined
+for every $x$
+
+~
+
+Greedy local search (variant 1):
+
+\begin{algo}
+\Require Initial $x$, function $f(x)$
+\Ensure Local minimum $\hat x$ of $f(x)$
+\Repeat
+\State $\hat x \gets x$
+\State $x \gets \argmin_{y\in\NN(x)} f(y)$
+\Until $f(\hat x) \le f(x)$
+\end{algo}
+
+~
+
+~
+
+Variant 2: $x \gets $ the ``first'' $y\in\NN(x)$ such that $f(y) < f(x)$
+
+
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Travelling Salesman Problem (TSP)}
+\slide{Example: Travelling Salesman Problem (TSP)}{
+
+Goal: Find the shortest closed tour visiting $n$ cities.
+
+Start with any complete tour; modify 2 arcs to make the tour shorter
+
+\vspace*{0.3in}
+
+\show[0.7]{russell/tsp-sequence.pdf}
+
+Variants of this approach get within 1\% of optimum very quickly with
+thousands of cities
+
+In TSP, this neighborhood is called 2-opt (modifying 2 arcs).\\ 3-opt or 4-opt are larger
+neighborhoods.
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Example: $n$-queens}{
+
+Goal: Put $n$ queens on an $n \times n$ board with no two queens
+on the same\\
+row, column, or diagonal
+
+Start with any configuration of $n$ queens; move a queen to reduce number of conflicts
+
+\vspace*{0.3in}
+
+\show[1.0]{russell/4queens-iterative.pdf}
+
+Almost always solves $n$-queens problems almost instantaneously\\
+for very large $n$, e.g., $n\eq 1 million$
+
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Hill-climbing (or gradient ascent/descent)}{
+
+%% ``Like climbing Everest in thick fog with amnesia''
+
+%% \input{russell/hill-climbing-algorithm}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Local optima, plateaus}
+\slide{Local search contd.}{
+
+Useful to consider \defn{solution space landscape}
+
+~
+
+\show[0.7]{russell/hill-climbing.pdf}
+
+\defn{Random-restart local search} overcomes local optima problem---trivially complete
+
+\defn{Random sideways moves} escape from plateaus, but loop on flat optima
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Iterated Local Search}
+\slide{Iterated Local Search ~ ($\not=$ random restarts)}{
+
+Random restarts may be rather expensive, sampling initial $x$
+is fully uninformed
+
+\emph{Idea}: Escape local minimum $x$ by restarting in a \textbf{meta-neighborhood} $\NN^*(x)$
+
+\begin{algo}
+\Require Initial $x$, function $f(x)$
+\Ensure Local minimum $\hat x$ of $f(x)$
+\Repeat
+\State For all meta-neigbors $y_i\in\NN^*(x)$ compute $\hat y_i \gets \texttt{LocalSearch}(y_i)$
+\State $x \gets \argmin_{y\in\{\hat y_1,..,\hat y_I\}} f(y)$
+\Until $x$ converges
+\end{algo}
+
+~
+
+$\texttt{LocalSearch}$ uses a simple/quick neighborhood $\NN(x)$
+
+The meta-neighborhood $\NN^*(x)$ enables \emph{large jumps} towards alternative local
+optima
+
+Variant 2: $x \gets $ the ``first'' $y_i\in\NN^*(x)$ such that $f(\hat
+y_i) < f(x)$
+
+Stochastic variant: Meta-neighborhood $\NN^*(x)$ is replaced by a transition prob.\ $q^*(y|x)$
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: Tavelling Salesman Problem}{
+
+\texttt{LocalSearch} uses the simple  2-opt or 3-opt neighborhood ($\to$ quick)
+
+Iterated Local Search uses 4-opt meta-neighborhood (double bridges)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Simulated Annealing}
+\slide{Simulated annealing}{
+
+\emph{Idea}: Escape local minimum by allowing some ``bad'' moves\al
+\emph{but gradually decrease their size and frequency}
+
+
+%\input{russell/simulated-annealing-algorithm}
+
+
+\begin{algo}
+\Require initial $x$, function $f(x)$, proposal distribution $q(y|x)$,
+initial temp.\ $T$
+\Ensure Global minimum $\hat x$ of $f(x)$
+\Repeat
+\State Sample $y$ from the neighborhood of $x$, ~ $y \sim q(y|x)$
+\State Acceptance probability $A=\min\big\{1,~ e^{\frac{f(x)-f(y)}{T}}  \frac{q(x|y)}{q(y|x)}\big\}$
+%=\min\big\{1,~ \frac{e^{-f(y)/T} q(x|y)}{e^{-f(x)/T} q(y|x)}\big\}
+\State With probability $A$ update $x \gets y$
+\State Decrease $T$, e.g.\ $T \gets (1-\epsilon) T$ for small $\epsilon$
+\Until $T=0$ or $x$ converges
+\end{algo}
+
+~
+
+Typically $q(x|y) = q(y|x)$
+
+The new sample $y$ is always accepted if $y$ is better
+than $x$ ~ ($f(y)\le f(x)$)
+
+If $y$ is worse than $x$, only accept with probability $e^{\frac{f(x)-f(y)}{T}}$
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Properties of simulated annealing}{
+
+At fixed ``temperature'' $T$, state occupation probability reaches\\
+Boltzman distribution
+{$$
+p(x) = \alpha e^{\frac{-f(x)}{kT}}
+$$}
+$T$ decreased slowly enough $\Longrightarrow$ always reach best state
+$x^*=\argmin_x f(x)$\\
+because {$e^{\frac{-f(x^*)}{kT}} / e^{\frac{-f(x)}{kT}} 
+= e^{\frac{f(x)-f(x^*)}{kT}} \gg 1$} for small $T$
+
+\emph{Is this necessarily an interesting guarantee}
+
+Devised by Metropolis et al., 1953, for physical process modelling
+
+%Widely used in VLSI layout, airline scheduling, etc.
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Local beam search ~ (maintain $k$ candidates)}{
+
+\emph{Idea}: keep $k$ candidates instead of 1; choose top $k$ of all their successors
+
+Not the same as $k$ searches run in parallel!\\
+Searches that find good candidates recruit other searches to join them
+
+\emph{Problem}: quite often, all $k$ candidates end up on same local hill
+
+\emph{Idea}: choose $k$ successors randomly, biased towards good ones
+
+%Observe the close analogy to natural selection!
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Genetic Algorithms}
+\slide{Genetic algorithms}{
+
+= stochastic local beam search + generate successors from \emph{pairs} of candidates
+
+~
+
+\show[1.]{russell/genetic.pdf}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Genetic algorithms contd.}{
+
+GAs require solutions encoded as strings (\defn{GPs} use \emph{trees} or \emph{programs})
+
+Crossover helps \emph{iff substrings are meaningful components}
+
+\vspace*{0.2in}
+
+\show[0.9]{russell/8queens-crossover.pdf}
+
+GAs $\neq$ evolution: e.g., real genes encode replication machinery!
+
+~
+
+\emph{Move general view:}\\
+keeping multiple candidates allows us to use\\ more general
+neighborhoods $\NN(x_1,..,x_K)$ or meta-neighborhoods
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Continuous state spaces}{
+
+%% Suppose we want to site three airports in Romania:\al
+%% -- 6-D state space defined by $(x_1,y_2)$, $(x_2,y_2)$, $(x_3,y_3)$\al
+%% -- objective function $f(x_1,y_2,x_2,y_2,x_3,y_3)$ = \\
+%%    sum of squared distances from each city to nearest airport
+
+%% \defn{Discretization} methods turn continuous space into discrete space,\\
+%% e.g., \defn{empirical gradient} considers $\pm \delta$ change in each coordinate
+
+%% \defn{Gradient} methods compute 
+%% {$$
+%%  \nabla f=\left(
+%%   \frac{\partial f}{\partial x_1},\frac{\partial f}{\partial y_1},
+%%   \frac{\partial f}{\partial x_2},\frac{\partial f}{\partial y_2},
+%%   \frac{\partial f}{\partial x_3},\frac{\partial f}{\partial y_3}
+%%  \right)
+%% $$}
+%% to increase/reduce $f$, e.g., by 
+%% $\x \leftarrow \x + \alpha \nabla f(\x)$
+
+%% Sometimes can solve for $\nabla f(\x) = 0$ exactly (e.g., with one city).\\
+%% \defn{Newton--Raphson} (1664, 1690) iterates 
+%% $\x \leftarrow \x - \H^{-1}_f(\x) \nabla f(\x)$\\
+%% to solve $\nabla f(\x) = 0$, where $\H_{ij}\eq \partial^2 f/\partial x_i \partial x_j$
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{A glimpse at general optimization problems}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{LP, QP, ILP, NLP}
+\slide{Optimization problems}{
+
+\defn{Linear Program (LP)}
+$$\min_x~ c^\T x \st G x \le h,~ Ax=b$$
+\vspace*{-4ex}\begin{items}
+\item Simplex Algorithm, Interior point method (Log-barrier),
+  Augmented Lagrangian, primal-dual
+\item LP in standard form: $\min_x~ c^\T x \st x \ge 0,~ Ax=b$
+\end{items}
+
+\defn{Quadratic Program (QP)} ~ ($Q$ is positive definite)
+$$\min_x~ \frac{1}{2} x^\T Q x + c^\T x   \st   G x \le h,~ Ax=b$$
+\vspace*{-4ex}\begin{items}
+\item Log-barrier, Augmented Lagrangian, primal-dual Newton
+\end{items}
+
+\defn{Integer Linear Program (ILP)}
+$$\min_x~ c^\T x \st Ax=b,~ x_i \in\{1,..,d_i\}$$
+\vspace*{-4ex}\begin{items}
+\item LP-relaxations \& backtracking, specialized methods, graph cut methods
+\end{items}
+
+\defn{Non-linear program} ~ (Convex Program: $f,g$ convex and $h$ linear)
+$$ \min_x~ f(x) \st g(x)\le 0,~ h(x)=0 $$
+\vspace*{-4ex}\begin{items}
+\item Sequential Quadratic Programming (SQP), Log-barrier, Augmented Lagrangian, primal-dual
+\end{items}
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\centerline{\large\textbf{The art is in finding a reduction}}
+
+~
+
+How can a real-world problem be encoded as an optimization problem?
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Slack Variables}
+\key{\protect{$n$}-queens as ILP}
+\slide{Example: \protect{$n$}-queens as Integer Linear Program}{
+
+binary indicator variables $x_{ij}$ for a queen at position $(i,j)$, $i,j=1,..,n$
+
+Constraints:
+\begin{items}\small
+\item row constraints $\forall_i:~ \sum_j x_{ij} \le 1$
+\item column constraints $\forall_j:~ \sum_i x_{ij} \le 1$
+\item diagonal cnstr. $\forall_{i\in\{-n+1,..,n-1\}}:~ \sum_{j:j,i+j\in\{1,..,n\}} x_{i+j,j} \le 1$
+\item diagonal cnstr. $\forall_{i\in\{-n+1,..,n-1\}}:~
+\sum_{j:j,i-j\in\{1,..,n\}} x_{i-j,j} \le 1$
+\end{items}
+
+Objective Function:
+arbitrary (e.g.\ $f(x) = 1$)! We encoded everything in the
+constraints!
+
+~
+
+\emph{Better alternative}: Optimize the number of constraint violations:\\
+instead of ``$\le 1$'' write ``$\le 1 + \xi_k$'' in all constraints\\
+the \defn{slack variables} $\xi=(\xi_1,..,\xi_K)$ become part of the state\\
+add the constraints $\xi_k\ge 0$\\
+objective function $f(x,\xi) = \sum_k \xi_k$\\
+related to \defn{Phase I optimization} of finding a feasible $x$
+
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{TSP as ILP}
+\slide{Example: TSP as Integer Linear Program}{
+
+binary indicator variables $x_{ij}$ for $(ij)\in$ tour\\
+  city-visit-times $t_i\in\{1,..,n\}$
+
+Objective:\\
+ cost $f(x) = \sum_{ij} c_{ij} x_{ij}$ of the tour
+
+Constraints:
+\begin{items}
+\item Columns sum to 1:~ $\forall_j: \sum_i x_{ij}=1$
+\item Rows sum to 1:~ $\forall_i: \sum_j x_{ij}=1$
+\item city-visit-times $t_i$ must fulfill:\\ \cen{$\forall_{2\le i\not=j\le
+n}:~ t_i-t_j \le n-2-(n-1) x_{ij}$}
+\end{items}
+
+~
+
+(There are alternative formulations.)
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{CSP as ILP}
+\slide{Example: CSP as Integer Linear Program}{
+
+binary indicator variables $x_{iv} = [X_i=v]$ for every CSP variable
+$X_i$
+
+Constraints:
+\begin{items}
+\item ``$X_i$ can have only one value'':~ $\forall_i:~ \sum_v x_{iv} = 1$ ~(cf.\ probabilities..)
+\item If $[X_i=v \wedge X_j=w]$ is constraint-violating, add a constraint $x_{iv} + x_{jw} \le 1$
+\item Do this for EVERY forbidden local configuration (MANY
+constraints)
+\end{items}
+
+Objective Function:\\
+arbitrary (e.g.\ $f(x) = 1$)! We encoded everything in the
+constraints!
+
+~
+
+\emph{Better alternative}:\\
+Translate the constraints into soft constraints $x_{iv} + x_{jw} \le 1 + \xi_k$\\
+Minimize $\sum_k \xi_k \st \xi_k\ge 0$
+
+~
+
+(There exists a more efficient formulation for  MaxSAT in conjunctive normal form.)
+%, each clause contributes
+%% an additional variable and a term in the objective function; each
+%% clause contributes a constraint
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Summary}{
+
+Many problems can be reduced to optimization problems
+
+Local Search, esp.\ Iterated Local Search is often effective in
+practice
+
+In continuous domains, when gradients, Hessians are given $\to$ full field of optimization
+
+Ongoing research in global \& Bayesian optimization
+
+}
+
+\slidesfoot
+
+
+
+
+
+
+

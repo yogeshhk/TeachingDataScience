@@ -1,0 +1,184 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Graphs \& Graph Neural Networks}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why Graphs? A Progression}
+
+See how data gets more connected as we move up:
+
+\begin{itemize}
+\item \textbf{Tabular}: rows are completely independent --- e.g. house prices, sensor readings.
+\item \textbf{Sequences}: each point depends on its previous points --- e.g. time series, text.
+\item \textbf{Images}: each pixel depends on a fixed-size spatial neighbourhood --- e.g. 3$\times$3 window.
+\item \textbf{Graphs}: any node can connect to any other, no fixed order, cycles allowed, directed or undirected --- the most general case.
+\end{itemize}
+
+\vspace{0.2cm}
+
+\begin{center}
+\includegraphics[width=0.55\linewidth,keepaspectratio]{gdl3}
+\end{center}
+
+{\em Data has shape, and shape has a meaning.}
+
+{\tiny (Ref: https://distill.pub/2021/understanding-gnns/)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Message Passing: Passing Notes in Class}
+
+\begin{block}{Intuition}
+Imagine a classroom. Each student (node) knows something. To understand better, students \textbf{pass notes} (messages) to their neighbours. After a round of note-passing, each student \textbf{updates their understanding}. Repeat for several rounds --- information spreads further each round.
+\end{block}
+
+\begin{itemize}
+  \item Each node starts with its own \textbf{feature vector} (what it already knows).
+  \item At every layer, each node \textbf{collects messages} from its immediate neighbours.
+  \item It \textbf{aggregates} those messages (sum, mean, or max --- like averaging the notes).
+  \item It \textbf{updates} its own representation using the aggregated messages.
+  \item After $k$ layers, each node ``knows about'' its \textbf{$k$-hop neighbourhood}.
+\end{itemize}
+
+\vspace{0.1cm}
+{\small This is the essence of every Graph Neural Network, regardless of type.}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Permutation Invariance: Order Should Not Matter}
+
+\begin{itemize}
+\item A GNN must process graph data \textbf{independently of how we number the nodes}.
+\item Relabelling node 1 as node 5 must not change the prediction.
+\item All possible node orderings form the \textbf{Permutation Group} ($n!$ orderings for $n$ nodes).
+\item The functions we design must satisfy:
+  \begin{itemize}
+    \item \textbf{Permutation Invariance:} shuffling nodes does not change the result.
+    $f(PX,\,PAP^T) = f(X,\,A)$
+    \item \textbf{Permutation Equivariance:} shuffling nodes before or after gives the same result.
+    $f(PX,\,PAP^T) = P\,f(X,\,A)$
+  \end{itemize}
+\item \textbf{Analogy:} the number of friends in a group does not change if you list the names in a different order.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Neighbourhood Aggregation in Detail}
+
+\begin{itemize}
+\item Let $\mathcal{N}_i$ be the set of neighbours of node $i$: $X_{\mathcal{N}_i} = \{x_j : j \in \mathcal{N}_i\}$.
+\item A hidden representation $h_b$ for node $b$ is computed via: $h_b = g(x_b,\; X_{\mathcal{N}_b})$.
+\end{itemize}
+
+Different choices of aggregation function $g$ give different GNN flavours:
+
+\begin{itemize}
+\item \textbf{Convolutional GNNs (GCN):} average neighbours, apply linear transform --- like a graph version of a CNN filter.
+\item \textbf{Attentional GNNs (GAT):} learn a different \emph{importance weight} for each neighbour, like Transformer attention.
+\item \textbf{Message Passing GNNs (MPNN):} the general framework --- message, aggregate, update. Most GNNs are special cases.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.55\linewidth,keepaspectratio]{gdl10}
+\end{center}
+
+{\tiny (Ref: https://petar-v.com/talks/5G-CS224W.pdf)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Common GNN Architectures at a Glance}
+
+\begin{itemize}
+  \item \textbf{GCN} (Kipf \& Welling, 2017): Convolution via normalised adjacency matrix. Simple and effective baseline.
+  \item \textbf{GAT} (Velickovic et al., 2018): Attention-weighted neighbour aggregation. Handles heterogeneous edge importance.
+  \item \textbf{GraphSAGE} (Hamilton et al., 2017): Samples a fixed neighbourhood; works on huge graphs inductively.
+  \item \textbf{GIN} (Xu et al., 2019): Theoretically the most expressive GNN; provably distinguishes most graph structures.
+  \item \textbf{Graph Transformer} (Dwivedi et al., 2020+): Adapts self-attention to graph structure. Current state of the art on many benchmarks.
+  \item \textbf{Spectral GNNs}: Operate in the frequency domain via the graph Laplacian (ChebNet, etc.).
+  \item \textbf{Hyperbolic GNNs}: Embed graphs in hyperbolic space --- great for tree-like hierarchies.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Three Levels of GNN Tasks}
+
+\begin{itemize}
+\item \textbf{Node-level:} Predict a property for each node.\\
+  {\small Example: classify users as fraudulent / legitimate in a transaction graph.}
+\vspace{0.2cm}
+\item \textbf{Edge-level:} Predict whether an edge should exist, or what its value is.\\
+  {\small Example: recommend a product to a user (user--product graph).}
+\vspace{0.2cm}
+\item \textbf{Graph-level:} Predict a property for the \emph{whole} graph.\\
+  {\small Example: predict if a molecular graph is toxic or safe.}
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.55\linewidth,keepaspectratio]{gdl9}
+\end{center}
+
+{\tiny (Ref: https://petar-v.com/talks/5G-CS224W.pdf)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GCN in 10 Lines: PyTorch Geometric Quickstart}
+
+{\small Two GCN layers on the Cora citation network (node classification, 7 classes). \\
+This is the full working model --- PyG handles all the graph plumbing for you.}
+
+{\tiny (Ref: PyTorch Geometric quickstart guide)}
+
+\begin{lstlisting}[language=Python, style=mystyle, basicstyle=\tiny\ttfamily]
+import torch
+import torch.nn.functional as F
+from torch_geometric.nn import GCNConv
+from torch_geometric.datasets import Planetoid
+
+dataset = Planetoid(root='/tmp/Cora', name='Cora')   # citation network
+
+class GCN(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = GCNConv(dataset.num_features, 16)
+        self.conv2 = GCNConv(16, dataset.num_classes)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = F.relu(self.conv1(x, edge_index))   # message pass layer 1
+        x = self.conv2(x, edge_index)            # message pass layer 2
+        return F.log_softmax(x, dim=1)
+\end{lstlisting}
+
+
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building Blocks Shared by All GDL Architectures}
+
+All GDL architectures --- CNNs, GNNs, Spherical CNNs --- share the same four-layer blueprint:
+
+\begin{itemize}
+\item \textbf{Linear equivariant layer} (e.g. convolution): respects the symmetry of the data domain.
+\item \textbf{Non-linear activation layer}: adds expressiveness while preserving equivariance.
+\item \textbf{Local pooling layer} (e.g. max pooling): imposes local invariance; creates multi-scale representations.
+\item \textbf{Global pooling layer} (e.g. graph readout): imposes global invariance for graph-level tasks.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{gdl15}
+\end{center}
+
+{\tiny (Ref: A Brief Introduction to Geometric Deep Learning - Jason McEwen)}
+
+\end{frame}

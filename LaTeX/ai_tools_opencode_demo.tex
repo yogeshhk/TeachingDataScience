@@ -1,0 +1,1669 @@
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{}
+% \begin{center}
+% {\Large OpenCode: End-to-End SDLC Workshop Demo}\\[1em]
+% {\large Building a LangChain Chatbot from Zero to Production}\\[0.5em]
+% {\normalsize \textit{A hands-on demo script using OpenCode as your AI pair programmer}}
+% \end{center}
+% \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% WORKSHOP OVERVIEW
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Workshop Overview}
+\textbf{What we will build:} A chatbot with two interfaces: CLI and Streamlit: powered by LangChain + Groq LLM.
+
+\textbf{What we will learn:}
+  \begin{itemize}
+    \item How to use OpenCode across the \textbf{full SDLC}: from specs to deployment
+    \item \textbf{Custom commands}, \textbf{skills}, \textbf{rules}, \textbf{MCP servers}, \textbf{agents}
+    \item Writing code, tests, and docs: \textit{all from the terminal}
+    \item How to be precise with prompts so OpenCode does what you intend
+  \end{itemize}
+
+% \textbf{Project:} \texttt{mychatbot/}: a self-contained Python package
+  % \begin{itemize}
+    % \item \texttt{mychatbot/cli.py}: Rich-powered CLI chatbot loop
+    % \item \texttt{mychatbot/app.py}: Streamlit multi-turn chatbot
+    % \item \texttt{mychatbot/chain.py}: LangChain chain abstraction
+    % \item \texttt{tests/}: pytest unit \& integration tests
+    % \item \texttt{docs/}: auto-generated specs and API docs
+  % \end{itemize}
+
+\textbf{Duration:} 90–120 minutes end-to-end.
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{SDLC Stages We Will Cover}
+\begin{center}
+\begin{tabular}{|p{0.7cm}|l|l|}
+\hline
+\textbf{Stage} & \textbf{Activity} & \textbf{OpenCode Feature} \\
+\hline
+1 & Project bootstrap \& init & \texttt{/init}, AGENTS.md \\
+2 & Requirements \& specs & Custom agent, Markdown \\
+3 & Architecture design & Plan mode, \texttt{@workspace} \\
+4 & Implementation & Build mode, \texttt{@file:} \\
+5 & Testing (unit + synthetic) & Custom command, MCP \\
+6 & Debugging & Debug agent, \texttt{/undo} \\
+7 & Refactoring & Rules, skills \\
+8 & Documentation & Docs agent \\
+9 & Code review & Review agent \\
+10 & GitHub workflow & MCP GitHub server \\
+\hline
+\end{tabular}
+\end{center}
+
+{\small Each stage = one demo block. Run them sequentially or jump to any stage.}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 0: SETUP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Environment Setup}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Installation:  All Platforms}
+  \begin{itemize}
+	\item \textbf{Desktop App:} Download directly from opencode.ai/download for a native desktop experience.
+    \item \textbf{Linux/macOS:} \lstinline!$ curl -fsSL https://opencode.ai/install | sh!
+	\item Install $Node$ so that $npm$ is avaiable for further installations
+	\item \textbf{Windows npm:} \lstinline|npm i -g opencode-ai@latest| 
+    % \item \textbf{macOS (Homebrew):} \lstinline|brew install sst/tap/opencode|
+    % \item \textbf{Windows (Chocolatey):} \lstinline|choco install opencode|
+    % \item \textbf{Windows (Scoop):} \lstinline|scoop install opencode|
+    % \item \textbf{Arch Linux (paru):} \lstinline|paru -S opencode-bin|
+    % \item Verify installation: \lstinline|opencode --version|
+	\item If installed using npm on Windows 11 then 
+		\begin{itemize}
+			\item Installation directory: \lstinline|%USERPROFILE%\AppData\ Roaming\ npm\node_modules\opencode-ai\|
+			
+			\item Configuration and data (session data, logs, and authentication tokens): 
+			\lstinline|%USERPROFILE%\.local\share\opencode\auth.json|
+			
+			\item Global plugins: 
+			\lstinline|%USERPROFILE%\.config\ opencode\plugins\|
+			
+			\item Global configuration file for user-wide settings (providers, models, etc.): 
+			\lstinline|%USERPROFILE%\.config\opencode\opencode.json|
+		\end{itemize}
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pre-requisites Checklist}
+Before starting, verify:
+  \begin{itemize}
+	\item Start with empty folder, switch to that
+	\item Conda env installed, activated: \lstinline|conda --version|
+    \item OpenCode installed: \lstinline|opencode --version|
+    \item Node.js $\geq$ 18 for MCP servers: \lstinline|node --version|
+    \item Python $\geq$ 3.10 and pip: \lstinline|python --version|
+    \item (Optional) Groq API key: \href{https://console.groq.com}{\texttt{console.groq.com}} (free tier available)
+    \item A GitHub Personal Access Token (for MCP GitHub stage)
+    \item Git configured: \lstinline|git config --global user.name "Your Name"|
+  \end{itemize}
+
+\textbf{Set environment variables (add to \texttt{.bashrc}/\texttt{.zshrc}):}
+\begin{lstlisting}
+export GROQ_API_KEY="gsk_..." # or your preferred LLM
+export GITHUB_TOKEN="ghp_..."
+\end{lstlisting}
+
+\textbf{Install Python deps we'll use:}
+\begin{lstlisting}
+pip install langchain langchain-groq streamlit 
+pip install pytest pytest-mock faker rich
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{(Optional) Connect OpenCode to Your LLM Provider}
+\textbf{Launch OpenCode and connect Groq (or Anthropic/OpenAI):}
+\begin{lstlisting}
+# Create project directory first
+mkdir mychatbot; cd mychatbot 
+
+# Init Git, a must, else it searches upper folders
+git init
+
+# Launch OpenCode
+opencode
+\end{lstlisting}
+
+Inside TUI (Optional: if you want to change the default):
+\begin{lstlisting}
+/connect
+# Select: groq
+# Paste: your GROQ_API_KEY
+
+/models
+# Select: groq/llama-3.3-70b-versatile
+\end{lstlisting}
+
+\textbf{Pro Tip:} You can also use free (NO API KEY) model \texttt{opencode/big-pickle} or any other model you wish. OpenCode lets you change models mid-session with \texttt{/models}.
+
+\textbf{Verify the connection:}
+\begin{lstlisting}
+# In TUI:
+Say "Hello, which model are you?"
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{(Optional) Connect OpenCode to Local Models via LM Studio}
+\textbf{Install and set up LM Studio:}
+
+  \begin{itemize}
+	\item Download LM Studio from https://lmstudio.ai
+	\item Install and launch the application
+	\item Go to: Search tab -> search "qwen2.5-7b"
+	\item Download: Qwen2.5-7B-Instruct (GGUF, Q4 recommended)
+  \end{itemize}
+
+\textbf{Start the local OpenAI-compatible server:}
+
+  \begin{itemize}
+	\item In LM Studio: click "Local Server" tab (left sidebar)
+	\item Select your downloaded model from the dropdown
+	\item Click "Start Server" (default: http://localhost:1234)
+	\item Verify: server status shows "Running"
+	\item {Pro Tip:} LM Studio is \textbf{100\% free, local, and offline} -- no API key needed. Use \texttt{/models} mid-session to switch models anytime. Lower VRAM? Try \texttt{qwen2.5-3b} or a smaller quant.
+  \end{itemize}
+  
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{(Optional) Connect OpenCode to Local Models via LM Studio}
+\textbf{Set Qwn as default model in global opencode.json:}
+
+\begin{lstlisting}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": true,
+  "server": {
+    "port": 4096
+  },
+  "default_agent": "plan",
+  "model": "lmstudio/qwen2.5-coder-7b-instruct",
+  "provider": {
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LM Studio (local)",
+      "options": {
+        "baseURL": "http://localhost:1234/v1"
+      },
+      "models": {
+        "qwen2.5-coder-7b-instruct": {
+          "name": "Qwen2.5 Coder 7b"
+        }
+      }
+    }
+  },
+}
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 1: PROJECT BOOTSTRAP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Project Bootstrap}
+
+{\normalsize Teaching OpenCode about your project}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Run /init: Generate AGENTS.md}
+The first command in any new project. Scans the directory and writes the AI's instruction manual.
+
+Make sure 'Plan' mode is on. Inside TUI (project is still empty, .git is there though, that's fine). Question for clarification will come, answer them. Once ok, then change to 'Build' mode and ask to create generic 'AGENTS.md'
+
+
+\begin{lstlisting}
+/init
+\end{lstlisting}
+
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Create Project}
+
+% Put following lines:	
+% \begin{lstlisting}
+% This is a Python project called mychatbot.
+% It provides:
+  % 1. A CLI chatbot (cli.py) using LangChain + Groq LLM
+  % 2. A Streamlit web chatbot (app.py)
+  % 3. A reusable chain module (chain.py)
+% Tech stack: Python 3.11, LangChain, langchain-groq,
+  % Streamlit, Rich, pytest.
+% Coding conventions: black formatter, type hints,
+  % docstrings on all public functions.
+% \end{lstlisting}
+
+% If plan looks fine, switch to 'Build' mode and say ``Plan looks fine. Please create the files''
+
+% OpenCode writes files and \texttt{AGENTS.md}, then commit it to Git. Every future session reads it automatically.
+% % \begin{lstlisting}
+% % git add AGENTS.md && git commit -m "chore: add AGENTS.md"
+% % \end{lstlisting}
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Inspect}
+% Inspect all files one by one, see code compiles and runs based on the instructions in README.
+
+% \begin{lstlisting}
+% ```bash
+% python cli.py
+% ```
+
+% ### Web Chatbot
+% ```bash
+% streamlit run app.py
+% ```
+
+% The web app will open at http://localhost:8501
+
+% ## Testing
+
+% ```bash
+% # Run all tests
+% pytest
+
+% # Run a single test
+% pytest tests/test_chain.py::TestGetChatHistory::test_empty_messages
+% pytest -k "test_create_chain"
+% \end{lstlisting}
+% \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Inspect, update AGENTS.md}
+Open \texttt{AGENTS.md} and extend/update it with project-specific rules:
+
+\begin{lstlisting}
+## Project: mychatbot
+
+## Tech Stack
+- Python 3.11
+- LangChain 0.3+
+- langchain-groq
+- Streamlit 1.35+
+- Rich (CLI output)
+- pytest + pytest-mock
+
+## Build Commands
+- Install: `pip install -e ".[dev]"`
+- Tests: `pytest tests/ -v`
+
+## Conventions
+- Type hints on all functions
+- Docstrings (Google style) on all public functions
+- No hardcoded API keys:  always read from env vars
+
+## File Map
+- tests/            :  pytest test suite
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 2: REQUIREMENTS AND SPECS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Requirements \& Specification}
+
+{\normalsize Using OpenCode to write elaborate specs }
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Setup: Specs Custom Agent}
+Create a dedicated \textbf{Specs agent}:  read-only, focused on producing Markdown docs:
+\begin{lstlisting}
+# Create the agents directory
+mkdir -p .opencode/agents
+
+# Create the Specs agent file
+.opencode/agents/specs.md
+
+---
+name: specs
+description: >
+  Technical specification writer. Produces clear,
+  structured Markdown spec docs from user stories
+  or feature descriptions. Read-only:  never modifies
+  source code. Model: claude-sonnet for quality writing.
+model: anthropic/claude-sonnet-4-5
+mode: subagent
+tools:
+  read: true
+  write: true       # can write .md files to docs/
+  bash: false
+  edit: false
+temperature: 0.3
+---
+You are a senior technical writer and software architect.
+When asked to write a spec, produce a Markdown document
+covering: Overview, Goals, Non-Goals, User Stories,
+Functional Requirements, Non-Functional Requirements,
+Data Models, API/Interface Contracts, and Open Questions.
+Always save output to docs/specs/<feature>.md.
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generate the Project Spec with @specs}
+Switch to \textbf{Plan mode} first (Tab key), then invoke the Specs subagent:
+
+In TUI (Build mode, Tab to switch):
+
+\begin{lstlisting}
+@specs Write a technical specification for mychatbot.
+It should cover:
+- The CLI chatbot interface (multi-turn conversation,
+  history, exit command)
+- The Streamlit web chatbot (session state, streaming)
+- The shared LangChain chain module (model config,
+  system prompt injection, memory management)
+- Environment variable requirements
+- Error handling expectations
+Save to docs/specs/mychatbot-spec.md
+\end{lstlisting}
+
+\textbf{Result:} \texttt{docs/specs/mychatbot-spec.md}:  a structured specification that will guide implementation.
+
+\textbf{Key Point:} Writing the spec first catches design issues before any code is written. The spec also becomes part of your project context for future OpenCode sessions.
+
+\begin{lstlisting}
+git add docs/ 
+git commit -m "docs: add mychatbot spec"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Expected Spec Output }
+The Specs (docs/specs/mychatbot-spec.md) should produce a document like:
+
+\begin{lstlisting}
+# mychatbot Technical Specification
+
+## Overview
+mychatbot is a Python package providing two interfaces
+for multi-turn LLM conversations via Groq's API.
+
+## User Stories
+- As a developer, I want a CLI chatbot so I can test
+  prompts without leaving the terminal.
+- As a user, I want a Streamlit UI for a browser-based
+  conversation experience.
+
+## Functional Requirements
+### chain.py
+- FR-1: Accept model name and system prompt as config
+- FR-2: Maintain conversation history (ConversationBuffer)
+- FR-3: Return streaming responses
+
+### cli.py
+- FR-4: Read GROQ_API_KEY from environment
+- FR-5: Display user/assistant turns with Rich formatting
+- FR-6: Exit on /exit or Ctrl+C
+
+## Data Models
+### Message
+- role: Literal["user", "assistant", "system"]
+- content: str
+
+## Open Questions
+- OQ-1: Should we support multi-model routing?
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 3:  ARCHITECTURE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Architecture Design}
+
+{\normalsize Plan mode + workspace context}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Use Plan Mode to Design Architecture}
+Stay in \textbf{Plan mode} (Tab). Use \texttt{@workspace} to give OpenCode full project context:
+
+In TUI (Plan mode):
+
+
+\begin{lstlisting}
+@workspace Based on docs/specs/mychatbot-spec.md,
+propose the directory structure and module design
+for mychatbot. Specifically:
+1. What goes in chain.py? Show the class interface.
+2. How should cli.py call chain.py?
+3. How should app.py manage Streamlit session state?
+4. What should pyproject.toml look like?
+Do NOT write any code yet:  just describe the plan.
+\end{lstlisting}
+
+\textbf{What OpenCode does:} Reads the spec, proposes a coherent architecture. You review and iterate on the plan before any files are created.
+
+\textbf{Typical plan output includes:}
+  \begin{itemize}
+    \item Class interfaces with method signatures
+    \item Dependency injection patterns (no hardcoded model in chain)
+    \item Streamlit \texttt{st.session\_state} design
+    \item pyproject.toml entry point declaration
+  \end{itemize}
+
+\textbf{If you disagree with any part, say so and iterate!}
+\begin{lstlisting}
+Actually, use a functional API in chain.py (not a class).
+Return a callable that takes messages and returns a string.
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Setup: Project Rules File (Global Coding Standards)}
+Before writing code, set up a \textbf{global rules file}:  personal standards that apply to all your projects:
+
+
+\begin{lstlisting}
+mkdir -p ~/.config/opencode
+%USERPROFILE%\.config\opencode\AGENTS.md
+---
+## My Personal Coding Standards (Global Rules)
+
+### Python
+- Always use type hints. No untyped functions.
+- Use f-strings, not .format() or %
+- Prefer pathlib.Path over os.path
+- Never catch bare `except:`:  always specify exception type
+- Every module must have a module-level docstring
+
+### Git
+- Commit messages: conventional commits format
+  (feat:, fix:, chore:, docs:, test:, refactor:)
+- No direct commits to main:  always branch
+
+### Testing
+- One test file per source file (test_chain.py for chain.py)
+- Use pytest fixtures, not setUp/tearDown
+- Cover happy path, edge cases, and error cases
+
+### Output
+- When generating code, show the full file content
+- When editing, always confirm what changed and why
+\end{lstlisting}
+
+These rules apply to \textit{every} project you work on with OpenCode.
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 4:  IMPLEMENTATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Implementation}
+
+{\normalsize Build mode:  writing the actual code}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create Project}
+Switch to \textbf{Build mode} (Tab). Build the project structure suggested by the 'Plan'. It may do on its own: pip install -e ".[dev]". So make sure you have already set the conda env you want installations to go in.
+
+Something like:
+
+\begin{lstlisting}
+Create the project scaffold for mychatbot:
+- pyproject.toml 
+- src/__init__.py  (version = "0.1.0")
+- src/mychatbot/chain.py     (empty module with docstring)
+- src/mychatbot/cli.py       (empty module with docstring)
+- src/mychatbot/app.py       (empty module with docstring)
+- tests/__init__.py
+- tests/test_chain.py  (empty test file)
+- tests/test_cli.py    (empty test file)
+- .gitignore           (Python standard)
+\end{lstlisting}
+
+
+\textbf{After populating the files:}
+\begin{lstlisting}
+git add .
+git commit -m "populated basic project files"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implement/Update chain.py}
+In TUI (Build mode):
+
+\begin{lstlisting}
+@file:src/mychatbot/chain.py
+Implement the LangChain chain module. Requirements:
+- Function: make_chain(model_name: str,
+    system_prompt: str = "You are a helpful assistant",
+    temperature: float = 0.7) -> callable
+- The returned callable takes list[dict] (messages with
+  role/content keys) and returns str
+- Use ChatGroq from langchain_groq
+- Use ChatPromptTemplate with system + human messages
+- Support conversation history: prepend all prior messages
+- Read GROQ_API_KEY from os.environ (raise clear error
+  if missing)
+- Include full type hints and Google-style docstring
+- Handle groq API errors with informative messages
+
+--
+(Optional) Review the generated code. Ask OpenCode to explain its choices, something like:
+Why did you use ChatPromptTemplate instead of
+MessagesPlaceholder? Is there a better approach
+for multi-turn history?
+
+--
+git add mychatbot/chain.py
+git commit -m "feat: implement LangChain chain factory"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Update cli.py}
+In TUI (Build mode):
+
+\begin{lstlisting}
+@file:src/mychatbot/cli.py
+Implement the CLI chatbot. 
+Requirements:
+- main() function (entry point)
+- Use Rich: Console for output, Panel for welcome message,
+  Markdown for rendering assistant responses
+- Show user input with a styled [You] prompt
+- Show assistant output with [mychatbot] prefix in green
+- Maintain conversation history across turns as
+  list[dict] with role/content
+- Commands: /exit or /quit to end, /clear to reset history
+- Ctrl+C gracefully exits with "Goodbye!" message
+- Call make_chain() from mychatbot.chain
+- Model and system prompt configurable via env vars:
+  mychatbot_MODEL (default: llama-3.3-70b-versatile)
+  mychatbot_SYSTEM_PROMPT (default: helpful assistant)
+- Show token count or turn count if available
+
+--
+git add src/mychatbot/cli.py
+git commit -m "feat: implement Rich CLI chatbot"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implement app.py (Streamlit)}
+In TUI (Build mode):
+
+\begin{lstlisting}
+@file:src/mychatbot/app.py
+Implement the Streamlit chatbot app. 
+Requirements:
+- st.set_page_config: title="mychatbot", layout="centered"
+- st.session_state["messages"] for conversation history
+- st.session_state["chain"] to cache the chain callable
+  (init once, reuse across reruns)
+- Display chat history using st.chat_message bubbles
+- st.chat_input for user input
+- Show a spinner while waiting for the model response
+- Sidebar: model selector dropdown
+  (llama-3.3-70b-versatile, llama-3.1-8b-instant,
+   mixtral-8x7b-32768) and system prompt text area
+- "Clear conversation" button in sidebar
+- Handle missing GROQ_API_KEY with st.error and st.stop()
+
+--
+# Quick test:
+streamlit run src/mychatbot/app.py
+
+git add src/mychatbot/app.py
+git commit -m "feat: implement Streamlit chatbot UI"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Demo Checkpoint:  Run the Chatbot}
+Verify both interfaces work before moving to testing:
+
+\textbf{CLI:}
+\begin{lstlisting}
+python -m src/mychatbot/cli
+
+# Try:
+You: What is LangChain?
+You: Can you give me a code example?
+You: /clear
+You: /exit
+\end{lstlisting}
+
+\textbf{Streamlit:}
+\begin{lstlisting}
+streamlit run src mychatbot/app.py
+# Open: http://localhost:8501
+# Change model in sidebar
+# Type a question, observe streaming
+# Click "Clear conversation"
+\end{lstlisting}
+
+\textbf{If something breaks:} Use \texttt{/undo} in OpenCode to revert the last change, rephrase your instruction, and retry. OpenCode will show you exactly what changed.
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 5:  TESTING
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Testing with Synthetic Data}
+
+{\normalsize Custom commands + skills for test generation}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create a Testing Skill}
+\textbf{Skills} are loaded on-demand. Create a \texttt{pytest-patterns} skill for consistent test generation:
+
+\begin{lstlisting}
+mkdir -p .opencode/skills/pytest-patterns
+cat > .opencode/skills/pytest-patterns/SKILL.md << 'EOF'
+---
+name: pytest-patterns
+description: >
+  Best practices and patterns for writing pytest tests
+  for this project. Use when generating or reviewing
+  Python unit tests.
+license: MIT
+---
+## Pytest Patterns for mychatbot
+
+### Fixtures
+- Use `@pytest.fixture` for shared setup
+- `mock_chain` fixture: returns a MagicMock callable
+  that returns "Mocked response"
+- `sample_messages` fixture: list of user/assistant dicts
+
+### Mocking
+- Mock `mychatbot.chain.ChatGroq` to avoid real API calls
+- Use `pytest.raises` for exception testing
+- Use `monkeypatch` for env var testing
+
+### Synthetic Data (Faker)
+- Import `faker.Faker` for realistic fake data
+- Generate fake user messages, conversation histories
+- Use `@pytest.mark.parametrize` for data-driven tests
+
+### Coverage Target: 85%+
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create the /test-gen Custom Command}
+\textbf{Custom commands} = reusable prompt shortcuts. Create one for test generation:
+
+\begin{lstlisting}
+mkdir -p .opencode/commands
+cat > .opencode/commands/test-gen.md << 'EOF'
+---
+description: >
+  Generate comprehensive pytest tests for a source file.
+  Uses pytest-patterns skill. Pass the source file path
+  as the argument.
+agent: build
+---
+Generate comprehensive pytest tests for $ARGUMENTS.
+
+Before writing tests:
+1. Read the pytest-patterns skill for this project
+2. Read the source file to understand all functions/classes
+3. Read the existing test file (if any) to avoid duplicates
+
+Write tests covering:
+- Happy path for each public function
+- Edge cases (empty input, None, boundary values)
+- Error cases (missing env vars, invalid model names,
+  API failures:  mock the LLM calls, no real API use)
+- Use Faker to generate synthetic conversation data for
+  multi-turn history tests
+
+Output: complete updated test file, no placeholders.
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generate Tests with Synthetic Data}
+In TUI (Build mode):
+\begin{lstlisting}
+/test-gen src/mychatbot/chain.py
+
+# OpenCode will generate something like:
+
+# tests/test_chain.py
+import pytest
+from unittest.mock import patch, MagicMock
+from faker import Faker
+from mychatbot.chain import make_chain
+
+fake = Faker()
+
+@pytest.fixture
+def mock_chat_groq():
+    with patch("mychatbot.chain.ChatGroq") as mock:
+        instance = mock.return_value
+        instance.invoke.return_value.content = "Hello!"
+        yield mock
+
+@pytest.fixture
+def sample_conversation():
+    """Synthetic multi-turn conversation using Faker."""
+    return [
+        {"role": "user",    "content": fake.sentence()},
+        {"role": "assistant","content": fake.paragraph()},
+        {"role": "user",    "content": fake.question()},
+    ]
+
+def test_make_chain_returns_callable(mock_chat_groq, monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    chain = make_chain("llama-3.3-70b-versatile")
+    assert callable(chain)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generate Tests for cli.py and Run Suite}
+
+CLI tests will cover:
+  \begin{itemize}
+    \item \texttt{/exit} command terminates the loop
+    \item \texttt{/clear} resets the conversation history
+    \item Missing \texttt{GROQ\_API\_KEY} raises \texttt{EnvironmentError}
+    \item \texttt{KeyboardInterrupt} (Ctrl+C) exits gracefully
+    \item Rich console output contains expected text
+  \end{itemize}
+
+
+In TUI (Build mode):
+\begin{lstlisting}
+
+/test-gen src/mychatbot/cli.py
+
+# Run the full test suite:
+
+pytest tests/ -v --tb=short
+
+# Expected: all green, no real API calls made
+
+# With coverage:
+pytest tests/ --cov=mychatbot --cov-report=term-missing
+# Target: >85% coverage
+
+# If tests fail, In TUI:
+The test test_make_chain_missing_key is failing with:
+KeyError: 'GROQ_API_KEY'. Paste the traceback.
+OpenCode reads the test + source and proposes the fix.
+
+git add tests/
+git commit -m "test: add unit tests with synthetic data"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create a /test-run Command (Bonus)}
+Automate full test + coverage + report in one command. This is the power of custom commands: complex multi-step workflows reduced to a single slash command. The entire team can use the same command once it's committed to Git:
+
+\begin{lstlisting}
+cat > .opencode/commands/test-run.md << 'EOF'
+---
+description: >
+	Run the full test suite and summarize resulagent: build
+---
+Run the full test suite for this project:
+
+1. Execute: `pytest tests/ -v --tb=short --cov=src/mychatbot
+   --cov-report=term-missing 2>&1`
+2. Parse the output and give me:
+   - Pass/fail count
+   - Coverage percentage per module
+   - List of any failing tests with the error message
+   - Three specific suggestions to improve coverage
+     for any module below 85%
+
+# Usage:
+/test-run
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 6:  DEBUGGING
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Debugging}
+
+{\normalsize Debug agent + /undo workflow}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create a Debug Agent}
+A Debug agent has \textbf{read + bash only}:  it investigates, never modifies:
+\begin{lstlisting}
+cat > .opencode/agents/debug.md << 'EOF'
+---
+name: debug
+description: >
+  Investigates bugs and runtime errors. Read-only:
+  never modifies files. Uses bash to run tests and
+  inspect state. Outputs a structured findings report.
+model: anthropic/claude-sonnet-4-5
+mode: subagent
+tools:
+  bash: true
+  read: true
+  grep: true
+  glob: true
+  write: false
+  edit: false
+temperature: 0.1
+steps: 20
+---
+You are a meticulous debugger. When given an error:
+1. Read relevant source files
+2. Trace the error from the stack trace
+3. Run targeted bash commands to reproduce the issue
+4. Identify the root cause
+5. Suggest a minimal fix (do NOT apply it:  report only)
+
+Output format:
+## Root Cause
+## Affected Files
+## Minimal Reproduction
+## Suggested Fix
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Debug Workflow Demo}
+\textbf{Scenario:} The CLI crashes when the user types a very long message.
+
+\textbf{Step 1:  Invoke debug agent:}
+In TUI (Build):
+
+\begin{lstlisting}
+@debug The CLI chatbot crashes when the user enters a
+message longer than ~4000 characters. Here's the error:
+
+groq.BadRequestError: Error code: 400
+  Request too large for model
+  llama-3.3-70b-versatile in 5 requests per minute
+  
+Stack trace:
+  File "src/mychatbot/chain.py", line 34, in __call__
+    response = self.llm.invoke(messages)
+
+# Debug agent output: Root cause identified:  no token limit validation before sending to API.
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Debug Workflow Demo}
+\textbf{Scenario:} The CLI crashes when the user types a very long message.
+
+\textbf{Step 2:  Apply fix in Build mode:}
+In TUI (Build):
+
+\begin{lstlisting}
+@file:src/mychatbot/chain.py
+Add input validation: if the total character count of
+all messages exceeds 12000 chars, truncate the oldest
+messages (not the system message) until it fits.
+Raise a warning via the logging module when truncation occurs.
+\end{lstlisting}
+
+\textbf{Step 3:  If the fix is wrong, use /undo:}
+\begin{lstlisting}
+/undo  # reverts the edit, restores previous state
+# Rephrase and retry
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 7:  REFACTORING
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Refactoring}
+
+{\normalsize Using rules and skills for consistent improvements}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create a Refactoring Skill}
+\begin{lstlisting}
+mkdir -p .opencode/skills/refactor-patterns
+cat > .opencode/skills/refactor-patterns/SKILL.md << 'EOF'
+---
+name: refactor-patterns
+description: >
+  Patterns and criteria for safe refactoring of Python code.
+  Use when asked to refactor or improve code quality.
+---
+## Refactoring Rules
+
+### Safety First
+- Never change public API signatures without updating
+  all callers and the spec doc
+- Run tests before and after to confirm no regression
+
+### Python Improvements to Look For
+- Replace dict literals for message objects with
+  a TypedDict or dataclass
+- Extract magic strings (model names, env var names)
+  into constants at module level
+- Replace print() with logging module (configurable level)
+- Move configuration into a Config dataclass
+  (not scattered kwargs)
+
+### Code Smell Checklist
+- Functions longer than 40 lines: consider splitting
+- Duplicate code across cli.py and app.py: extract to utils
+- Nested if/else depth > 3: refactor to early returns
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Refactor: Extract Shared Config}
+In TUI (Build mode):
+
+\begin{lstlisting}
+@workspace
+Read the .opencode/skills/refactor-patterns skill, then:
+1. Identify duplicated configuration logic between
+   src/mychatbot/cli.py and src/mychatbot/app.py (both read mychatbot_MODEL and
+   mychatbot_SYSTEM_PROMPT from env vars)
+2. Create src/mychatbot/config.py with a Config dataclass
+   that reads all env vars in one place
+3. Update src/mychatbot/cli.py and src/mychatbot/app.py to import and use Config
+4. Add a test for Config in tests/test_config.py
+   covering defaults and env var overrides
+
+Use @file: to read each file before editing.
+Show me the plan before making any changes.
+
+# Review the plan, then approve to proceed:
+# If plan looks good:
+Looks good. Go ahead and implement it.
+
+# After implementation, if not done already, run tests:
+pytest tests/ -v
+
+git add .
+git commit -m "refactor: extract Config dataclass"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Refactor: Add Structured Logging}
+In TUI (Build mode):
+
+\begin{lstlisting}
+@workspace
+Replace all print() debug statements in src/mychatbot/
+with Python's logging module:
+- Create a logger = logging.getLogger(__name__)
+  at the top of each module
+- Use logging.INFO for user-facing info
+- Use logging.DEBUG for internal state
+- Use logging.ERROR for caught exceptions
+- In src/mychatbot/cli.py, configure basicConfig with level from
+  env var LOG_LEVEL (default: WARNING)
+- Do NOT change any Rich console output:  that stays
+Only replace bare print() debug statements.
+
+# Point to note: The global rules file (AGENTS.md) already says ``Never catch bare except'':  OpenCode will respect this without being told again.
+# Verify nothing broke:
+pytest tests/ -v
+
+git add .
+git commit -m "refactor: replace print with logging"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 8:  DOCUMENTATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Documentation}
+
+{\normalsize Docs agent + auto-generated README}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create a Docs Agent}
+\begin{lstlisting}
+cat > .opencode/agents/docs.md << 'EOF'
+---
+name: docs
+description: >
+  Documentation writer. Generates README, API docs,
+  usage guides, and changelog entries. Can write
+  Markdown files but cannot modify Python source.
+model: anthropic/claude-sonnet-4-5
+mode: subagent
+tools:
+  read: true
+  write: true
+  bash: false
+  edit: false
+temperature: 0.4
+---
+You are a technical documentation expert. When asked
+to generate docs:
+- Read all relevant source files first
+- Use the existing spec in docs/specs/ as the source
+  of truth for intended behavior
+- Write clear, copy-pasteable code examples
+- Include a "Quick Start" section in every README
+- Use GitHub-flavored Markdown
+- Never invent features not present in the source code
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generate README and API Docs}
+In TUI (Build):
+
+\begin{lstlisting}
+@docs Generate a complete README.md for src/mychatbot:
+- Badges: Python version, license (MIT), tests passing
+- Description: one paragraph
+- Features: bullet list
+- Installation: pip install, env var setup
+- Quick Start: CLI example and Streamlit launch command
+- Configuration: table of all env vars with defaults
+- Development: how to run tests, format, lint
+- Contributing section
+- License section
+
+Then generate docs/api.md covering the public API
+of src/mychatbotchain.py and src/mychatbotconfig.py with usage examples.
+
+# Also create a /docs command for future use:
+cat > .opencode/commands/docs.md << 'EOF'
+---
+description: >
+	Generate/update documentation for a module 
+agent: docs
+---
+Generate complete documentation for $ARGUMENTS.
+Read the source file, update or create the corresponding
+doc in docs/. Follow the existing README style.
+
+git add README.md docs/ && git commit -m "docs: generate README and API docs"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generate CHANGELOG and Version Bump}
+
+In TUI (Build):
+
+\begin{lstlisting}
+@docs Generate a CHANGELOG.md for src/mychatbot in
+Keep-a-Changelog format.
+Run `git log --oneline` to get the commit history,
+then group commits into sections:
+- Added (feat: commits)
+- Fixed (fix: commits)
+- Changed (refactor: commits)
+- Documentation (docs: commits)
+Tag this as version 0.1.0 with today's date.
+
+# Creating a custom /changelog command:
+cat > .opencode/commands/changelog.md << 'EOF'
+---
+description: >
+	Update CHANGELOG from recent git commits
+agent: docs
+---
+Run `git log --oneline --since="$ARGUMENTS"` to get
+recent commits. Update CHANGELOG.md with a new
+version section grouping commits by type:
+feat->Added, fix->Fixed, refactor->Changed, docs->Docs.
+Suggest a semantic version bump based on the changes.
+
+
+# Usage: /changelog "1 week ago"
+# Usage: /changelog "last tag"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 9:  CODE REVIEW
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Code Review}
+
+{\normalsize Review agent + permissions}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create a Review Agent with Strict Permissions}
+\begin{lstlisting}
+cat > .opencode/agents/review.md << 'EOF'
+---
+name: review
+description: >
+  Code reviewer. Performs a thorough code review covering
+  correctness, security, performance, style, and test
+  coverage. Read-only:  cannot modify any files.
+model: anthropic/claude-sonnet-4-5
+mode: subagent
+tools:
+  read: true
+  grep: true
+  glob: true
+  bash: false
+  write: false
+  edit: false
+permission:
+  "*": deny  # deny everything not explicitly listed
+  "read": allow
+  "grep": allow
+  "glob": allow
+temperature: 0.2
+steps: 30
+---
+Perform a code review. For each file, check:
+1. Correctness: logic bugs, off-by-one, type errors
+2. Security: hardcoded secrets, injection, unvalidated input
+3. Performance: unnecessary loops, blocking calls
+4. Style: matches project conventions in AGENTS.md
+5. Test coverage: untested branches or edge cases
+Output: structured report with severity (Critical/Major/Minor)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Run a Full Code Review}
+In TUI (Build):
+
+\begin{lstlisting}
+@review Review the entire src/mychatbot codebase.
+Focus on:
+1. Security: are API keys ever logged or printed?
+2. Error handling: are all Groq API errors caught?
+3. Streamlit: any session state race conditions?
+4. Tests: what branches are not covered?
+5. Type correctness: any missing type hints?
+
+For each issue, note:
+- File and line number
+- Severity: Critical / Major / Minor
+- What the issue is
+- How to fix it
+
+# Apply review findings:
+# After reading the review report:
+Apply all Critical and Major fixes identified in
+the review report. For each fix, show what changed.
+
+# Create a /review command:
+cat > .opencode/commands/review.md << 'EOF'
+---
+description: >
+	Full code review of $ARGUMENTS (or workspace)
+agent: review
+---
+Review $ARGUMENTS for correctness, security,
+performance, and style. Group by severity.
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 10:  MCP: GITHUB INTEGRATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large GitHub Workflows via MCP}
+
+{\normalsize Connecting OpenCode to external services}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Configure the GitHub MCP Server}
+MCP (Model Context Protocol) lets OpenCode call external tools. GitHub MCP gives it access to repos, issues, and PRs.
+
+\textbf{Step 1:  Create project opencode.json with MCP config:}
+\begin{lstlisting}
+cat > .opencode/opencode.json << 'EOF'
+{
+  "mcp": {
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "$GITHUB_TOKEN"
+      }
+    }
+  },
+  "permission": {
+    "github_*": "ask",
+    "bash": {
+      "git push *": "ask",
+      "git commit *": "allow",
+      "git add *": "allow"
+    }
+  }
+}
+
+# Step 2:  Create a GitHub repo and push:
+# Create repo on GitHub (manually or via gh CLI)
+gh repo create mychatbot --public --source=. --push
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GitHub MCP Workflows}
+With the GitHub MCP server active, OpenCode can manage your repo:
+
+\textbf{Create issues from code review findings, in TUI: (Build):}
+\begin{lstlisting}
+
+Create GitHub issues for each Critical and Major finding
+from the code review we just ran. Title each issue
+clearly, add labels: "bug" for Critical, "enhancement"
+for Major. Assign them all to me.
+\end{lstlisting}
+
+\textbf{Create a feature branch and PR:}
+\begin{lstlisting}
+Create a feature branch called "feat/add-streaming"
+then implement streaming responses in chain.py using
+LangChain's streaming callback. When done, create a
+GitHub PR with:
+- Title: "feat: add streaming responses"
+- Body: description of changes, testing done,
+  link to relevant issue
+
+# Auto-respond to PR comments:
+# Non-interactive mode (usable in CI/GitHub Action):
+opencode run "Read the latest unresolved PR comment
+on PR #1 and either apply the requested change or
+post a response explaining why we shouldn't."
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Configure Additional MCP Servers}
+OpenCode supports many MCP servers. Add them to \texttt{opencode.json}:
+
+\begin{lstlisting}
+{
+  "mcp": {
+    "github": { /* ... as before ... */ },
+
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem",
+               "/home/user/mychatbot"]
+    },
+
+    "brave-search": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": { "BRAVE_API_KEY": "$BRAVE_API_KEY" }
+    }
+  }
+}
+
+# With Brave Search MCP, you can:
+# In TUI:
+Search for the latest LangChain 0.3 changelog and
+tell me if any of our chain.py code needs updating.
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% BONUS:  ADVANCED TOPICS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Bonus: Advanced Techniques}\\[0.5em]
+{\normalsize Plugins, variants, and CI integration}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Model Variants:  Use the Right Model for the Task}
+Define model variants so you can pick the right model for each stage:
+
+\begin{lstlisting}
+# ~/.config/opencode/opencode.json (global config)
+{
+  "model": "anthropic/claude-sonnet-4-5",
+  "modelVariants": {
+    "fast": {
+      "model": "groq/llama-3.1-8b-instant",
+      "temperature": 0.1
+    },
+    "smart": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "temperature": 0.3
+    },
+    "local": {
+      "model": "ollama/llama3.2",
+      "temperature": 0.5
+    }
+  }
+}
+\end{lstlisting}
+
+\textbf{Switch variants:} \texttt{/models} → pick from list, or \texttt{opencode -m groq/llama-3.1-8b-instant}
+
+\textbf{Practical guide:}
+  \begin{itemize}
+    \item \textbf{fast/local}:  test generation, simple edits, quick questions
+    \item \textbf{smart}:  architecture design, complex refactoring, security review
+    \item \textbf{local (Ollama)}:  sensitive codebases, air-gapped environments
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Non-Interactive Mode in CI/CD}
+OpenCode's \texttt{opencode run} enables AI-powered CI workflows:
+
+\textbf{GitHub Actions example (.github/workflows/ai-review.yml):}
+\begin{lstlisting}
+name: AI Code Review
+on: [pull_request]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install -g opencode-ai
+      - name: Run AI review on changed files
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CHANGED=$(git diff --name-only origin/main HEAD \
+                    | grep '\.py$' | tr '\n' ' ')
+          opencode run "Review these changed Python files
+            for bugs and style issues: $CHANGED.
+            Post findings as a GitHub PR comment
+            using the github MCP tool."
+\end{lstlisting}
+
+\textbf{Other CI uses:}
+  \begin{itemize}
+    \item Auto-generate test stubs for new functions in a PR
+    \item Update CHANGELOG on every merge to main
+    \item Check that new public functions have docstrings
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom Tool:  Python Linting Integration}
+Create a custom TypeScript tool that wraps Python tools:
+
+\begin{lstlisting}
+// .opencode/tools/python-lint.ts
+import { tool } from "@opencode-ai/plugin"
+import { execSync } from "child_process"
+
+export const lint = tool({
+  description: "Run ruff linter on a Python file or directory",
+  args: {
+    path: tool.schema.string().describe(
+      "File or directory to lint (relative to project root)"
+    )
+  },
+  async execute({ path }, context) {
+    try {
+      const result = execSync(
+        `ruff check ${path} --output-format=json`,
+        { cwd: context.worktree, encoding: "utf8" }
+      )
+      const issues = JSON.parse(result)
+      return issues.length === 0
+        ? "No lint issues found."
+        : `Found ${issues.length} issues:\n` +
+          issues.map((i: any) =>
+            `  ${i.filename}:${i.location.row} [${i.code}] ${i.message}`
+          ).join("\n")
+    } catch (e: any) {
+      return e.stdout || e.message
+    }
+  }
+})
+\end{lstlisting}
+
+\textbf{Usage:} \lstinline|Lint mychatbot/ and fix all E501 (line too long) errors|
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Session Sharing and Team Collaboration}
+OpenCode sessions can be shared as read-only URLs:
+
+\begin{lstlisting}
+# Share your debugging session:
+/share
+# Returns: https://opencode.ai/s/abc123...
+
+# Team member opens it in their browser and sees the
+# full conversation: the bug, the debug agent's analysis,
+# the fix applied, and the tests that now pass.
+\end{lstlisting}
+
+\textbf{Practical team uses:}
+  \begin{itemize}
+    \item Share a debugging session in Slack instead of a long explanation
+    \item Attach a session URL to a GitHub issue as context
+    \item Onboarding: share a ``How I navigate this codebase'' session
+    \item Architecture decision records: the conversation \textit{is} the ADR
+  \end{itemize}
+
+\textbf{Resuming shared patterns:}
+\begin{lstlisting}
+# Keep a known-good session for common workflows
+opencode run --title "mychatbot-debug-template" \
+  "Read AGENTS.md and docs/specs/mychatbot-spec.md.
+   You are now ready to debug mychatbot issues."
+
+# Resume it anytime:
+opencode -c  # resumes most recent
+opencode session list | grep mychatbot-debug
+opencode session continue <id>
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SUMMARY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Workshop Summary}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What We Built}
+\textbf{Project \texttt{mychatbot/}:  complete from scratch:}
+  \begin{itemize}
+    \item \texttt{src/mychatbot/chain.py}:  LangChain + Groq chain factory
+    \item \texttt{src/mychatbot/cli.py}:  Rich CLI chatbot with history
+    \item \texttt{src/mychatbot/app.py}:  Streamlit multi-turn chatbot
+    \item \texttt{src/mychatbot/config.py}:  Centralized env-based config
+    \item \texttt{tests/}:  Full pytest suite with synthetic Faker data
+    \item \texttt{docs/specs/mychatbot-spec.md}:  Technical specification
+    \item \texttt{README.md} + \texttt{docs/api.md}:  Auto-generated docs
+    \item \texttt{CHANGELOG.md}:  Conventional commit-based changelog
+  \end{itemize}
+
+\textbf{OpenCode config committed to repo:}
+  \begin{itemize}
+    \item \texttt{AGENTS.md}:  Project intelligence file
+    \item \texttt{.opencode/agents/}:  specs, debug, docs, review agents
+    \item \texttt{.opencode/skills/}:  pytest-patterns, refactor-patterns
+    \item \texttt{.opencode/commands/}:  /test-gen, /test-run, /review, /docs, /changelog
+    \item \texttt{.opencode/tools/python-lint.ts}:  Custom lint tool
+    \item \texttt{.opencode/opencode.json}:  MCP GitHub + permissions
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{OpenCode SDLC Cheat Sheet}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Task} & \textbf{OpenCode Command/Technique} \\
+\hline
+Bootstrap project & \texttt{/init} $\to$ AGENTS.md \\
+Write spec & \texttt{@specs} subagent \\
+Design architecture & Plan mode + \texttt{@workspace} \\
+Write code & Build mode + \texttt{@file:} \\
+Generate tests & \texttt{/test-gen <file>} (custom cmd) \\
+Run test suite & \texttt{/test-run} (custom cmd) \\
+Debug an error & \texttt{@debug} subagent \\
+Undo a bad change & \texttt{/undo} \\
+Refactor safely & refactor-patterns skill \\
+Generate README & \texttt{@docs} subagent \\
+Update CHANGELOG & \texttt{/changelog "last week"} \\
+Code review & \texttt{@review} subagent \\
+Create GitHub issue & GitHub MCP \\
+Create PR & GitHub MCP \\
+Lint code & python-lint custom tool \\
+Share a session & \texttt{/share} \\
+Resume a session & \texttt{opencode -c} \\
+\hline
+\end{tabular}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Key Lessons from the Workshop}
+  \begin{itemize}
+    \item \textbf{AGENTS.md is your multiplier.} Write it carefully and every session starts smarter. Commit it to Git:  your whole team benefits.
+    \item \textbf{Plan before Build.} For anything non-trivial, use Plan mode to review the approach. Avoid costly rewrites.
+    \item \textbf{Use \texttt{@mentions} to be precise.} \texttt{@file:} focuses the agent; \texttt{@workspace} gives it breadth. Use the right scope.
+    \item \textbf{Custom commands save time.} Once you've typed the same prompt three times, make it a \texttt{/command}. Share it via Git.
+    \item \textbf{Skills keep context lean.} Don't put everything in AGENTS.md. Lazy-load test patterns, refactor rules, and domain knowledge via skills.
+    \item \textbf{Agents enforce boundaries.} A read-only Review agent cannot accidentally delete code. Permissions are your safety net.
+    \item \textbf{MCP extends reach.} GitHub, databases, search:  connect them once and the agent can act across your entire stack.
+    \item \textbf{\texttt{/undo} is your safety net.} Never fear a bad edit. One command reverts it.
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercises for Self-Study}
+  \begin{itemize}
+    \item \textbf{Exercise 1:} Add a \texttt{/exit} history command to cli.py that saves conversation to \texttt{~/.mychatbot\_history.json}. Use \texttt{/test-gen} to cover it.
+    \item \textbf{Exercise 2:} Create a ``Security'' agent that only checks for API key leaks, SQL injection patterns, and unvalidated inputs. Test it on an intentionally buggy snippet.
+    \item \textbf{Exercise 3:} Add a PostgreSQL MCP server and a \texttt{/db-query} custom command. Have the chatbot store conversation logs in a database.
+    \item \textbf{Exercise 4:} Implement a multi-model skill that routes short queries to \texttt{llama-3.1-8b-instant} and complex queries to \texttt{claude-sonnet-4-5}. 
+    \item \textbf{Exercise 5:} Set up the GitHub Action for AI code review on your own repository. Trigger a PR and observe the auto-review.
+    \item \textbf{Exercise 6:} Use \texttt{opencode run} in non-interactive mode to auto-generate release notes from the last 10 commits and post them as a GitHub release.
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Resources}
+  \begin{itemize}
+    \item \textbf{OpenCode Docs:} \href{https://opencode.ai/docs}{\texttt{opencode.ai/docs}}
+    \item \textbf{GitHub:} \href{https://github.com/opencode-ai/opencode}{\texttt{github.com/opencode-ai/opencode}}
+    \item \textbf{LangChain + Groq:} \href{https://python.langchain.com/docs/integrations/chat/groq/}{\texttt{python.langchain.com/docs/integrations/chat/groq}}
+    \item \textbf{Groq Console (API keys):} \href{https://console.groq.com}{\texttt{console.groq.com}}
+    \item \textbf{MCP Server Registry:} \href{https://github.com/modelcontextprotocol/servers}{\texttt{github.com/modelcontextprotocol/servers}}
+    \item \textbf{Streamlit Docs:} \href{https://docs.streamlit.io}{\texttt{docs.streamlit.io}}
+    \item JP Caparas, ``The definitive guide to OpenCode'', Dev Genius / reading.sh, Feb 2026.
+    \item NXCode.io, ``OpenCode Tutorial 2026: Install \& Setup After Anthropic Block.''
+  \end{itemize}
+
+\begin{center}
+\textit{Workshop complete. You now have a production-ready OpenCode workflow.}\\[0.5em]
+\textbf{Happy coding!}
+\end{center}
+\end{frame}

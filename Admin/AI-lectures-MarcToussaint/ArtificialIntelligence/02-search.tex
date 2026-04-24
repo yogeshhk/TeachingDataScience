@@ -1,0 +1,1274 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Artificial Intelligence}
+\renewcommand{\coursepicture}{course_ai}
+\renewcommand{\coursedate}{Winter 2019}
+\renewcommand{\topic}{Search}
+\renewcommand{\keywords}{}
+
+\slides[(slides based on Stuart Russell's AI course)]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\story{
+
+Search algorithms are a core tool for sequential decision making! 
+They a standard method of choice for complex domains, like the game
+of Go, or certain POMDPs, but Mixed-Integer Programming or other combinatorial problems. Search algorithms provide a robust framework for decision making -- the real smarts is often within the heuristic that guides and prioritizes search. Major parts of classical AI research is about intelligent heuristics. And machine learning methods are often used to  learn heuristics or evaluation functions. This embeds learning capabilities in a robust decision making framework.
+
+Learning about search tree algorithms is an important background for
+several reasons:
+\begin{itemize}
+\item The concept of decision trees, which represent the space of
+possible future decisions and state transitions, is generally
+important for thinking about decision problems.
+\item In probabilistic domains, tree
+search algorithms are a special case of Monte-Carlo methods to
+estimate some expectation, typically the so-called Q-function. The
+respective Monte-Carlo Tree Search algorithms are the state-of-the-art
+in many domains.
+\item Tree search is also the background for backtracking in CSPs as
+well as forward and backward search in logic domains.
+\item \textbf{Heuristics \& bounds} are fundamental in AI. Abstraction \& simplification is often best formalized in terms of heuristics \& bounds.
+Related concepts are: Heuristics in A*, Branch \& Bound for
+Mixed-Integer Programming, Multi-Bound Tree Search in Logic Geometric
+Programming, Angelic Semantics, Optimism (=lower bound) in the face of
+Uncertainty. Learning about tree search is the starting point to
+appreciate such concepts.
+\end{itemize}
+
+We will cover the basic tree search methods (breadth, depth, iterative
+deepening) and eventually \Astar
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{What is AI?}{
+
+\item AI is a research field
+
+~%\pause
+
+\item AI research is about systems that take decisions
+\begin{items}
+\item \textbf{Here: sequential decisions}
+\end{items}
+
+~%\pause
+
+\item ... systems that take optimal/desirable decisions
+\begin{items}
+\item \textbf{Here: sequential decisions towards a ``goal''}
+\end{items}
+
+~%\pause
+
+\item ... systems that take optimal decisions on the basis of all available information
+\begin{items}
+\item \textbf{Here: The decision process is fully known}
+
+(later in the lecture: Reinforcement Learning)
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Outline}{
+
+\item Problem formulation \& examples
+
+\item Basic search algorithms
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Problem Formulation \& Examples}{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Problem-solving agents}{
+
+%% Restricted form of general agent:
+
+%% \input{russell/simple-PS-agent-algorithm}
+
+%% Note: this is \emph{offline} problem solving; solution executed ``eyes closed.''\\
+%% \emph{Online} problem solving involves acting without complete knowledge.
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: Romania}{
+
+\show[1.]{russell/romania-distances.pdf}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Example: Romania}
+\slide{Example: Romania}{
+
+\item initial state: $s_0=$Arad
+
+\item goal: be in Bucharest,~ {$\SS_{\text{goal}} = \{\text{Bucharest}\}$}
+
+\item problem formulation:
+\begin{items}
+\item states: various cities,~ {$\SS = \{ \text{Arad, Timisoara,}\dots \}$}
+\item decisions: drive between cities, {$\AA = \{ \text{edges between states} \}$}
+\item problem: find sequence of cities, e.g., Arad, Sibiu, Fagaras, Bucharest
+minimize costs with cost function, {$(s,a) \mapsto c$}
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Problem types}{
+
+%% \small
+
+%% \emph{Deterministic, fully observable} ~ \textit{(``single-state problem'')}\\
+%%     Agent knows exactly which state it will be in; solution is a sequence\\
+%%     First state and world known $\to$ the agent does not rely on observations
+
+%% \emph{Non-observable} ~ \textit{(``conformant problem'')}\\
+%%     Agent may have no idea where it is; solution (if any) is a sequence
+
+%% \emph{Nondeterministic} and/or \emph{partially observable} ~ \textit{(``contingency problem'')}\\
+%% percepts provide \emph{new} information about current state\\
+%% solution is a \defn{reactive plan} or a \defn{policy} \\
+%% often \emph{interleave} search, execution
+
+%% \emph{Unknown state space} ~ \textit{(``exploration problem'')}
+
+
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \key{Example: Vacuum World}
+%% \slide{Example: vacuum world}{
+
+%% ~
+
+%% \twocol{.6}{.4}{
+%% \emph{Deterministic, fully observable}, start in \#5. \emph{Solution} 
+%% }{
+%% \show[0.5]
+%% \show{russell/vacuum2-space.pdf}
+%% }
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Example: vacuum world}{
+
+%% ~
+
+%% \begin{tabular}{lr}
+%% \hbox{\begin{minipage}[t]{0.6\columnwidth}
+%% \emph{Deterministic, fully observable}, start in \#5. \emph{Solution} 
+%% \\
+%% {$[Right,Suck]$}
+%% \\[0.5\baselineskip]
+%% \emph{Non-observable}, start in {$\{1,2,3,4,5,6,7,8\}$}\\
+%% e.g., {$Right$} goes to {$\{2,4,6,8\}$}. \emph{Solution}
+%% \end{minipage}}
+%% &
+%% \hbox{\begin{minipage}[t]{0.4\columnwidth}
+%% \show[0.5]
+%% \raisebox{-0.35\columnwidth}[0pt][0pt]{\show{russell/vacuum2-space.pdf}}
+%% \end{minipage}}
+%% \end{tabular}
+
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Example: vacuum world}{
+
+%% ~
+
+%% \begin{tabular}{lr}
+%% \hbox{\begin{minipage}[t]{0.6\columnwidth}
+%% \emph{Deterministic, fully observable}, start in \#5. \emph{Solution} 
+%% \\
+%% {$[Right,Suck]$}
+%% \\[0.5\baselineskip]
+%% \emph{Non-observable}, start in {$\{1,2,3,4,5,6,7,8\}$}\\
+%% e.g., {$Right$} goes to {$\{2,4,6,8\}$}. \emph{Solution}
+%% \\
+%% {$[Right,Suck,Left,Suck]$}
+%% \\[0.5\baselineskip]
+%% \emph{Non-deterministic}, start in \#5\\
+%% Murphy's Law: {$Suck$} can dirty a clean carpet\\
+%% Local sensing: dirt, location only.\\
+%% \emph{Solution}
+%% \end{minipage}}
+%% &
+%% \hbox{\begin{minipage}[t]{0.4\columnwidth}
+%% \show[0.5]
+%% \raisebox{-0.35\columnwidth}[0pt][0pt]{\show{russell/vacuum2-space.pdf}}
+%% \end{minipage}}
+%% \end{tabular}
+
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Example: vacuum world}{
+
+%% ~
+
+%% \begin{tabular}{lr}
+%% \hbox{\begin{minipage}[t]{0.6\columnwidth}
+%% \emph{Deterministic, fully observable}, start in \#5. \emph{Solution} 
+%% \\
+%% {$[Right,Suck]$}
+%% \\[0.5\baselineskip]
+%% \emph{Non-observable}, start in {$\{1,2,3,4,5,6,7,8\}$}\\
+%% e.g., {$Right$} goes to {$\{2,4,6,8\}$}. \emph{Solution}
+%% \\
+%% {$[Right,Suck,Left,Suck]$}
+%% \\[0.5\baselineskip]
+%% \emph{Non-deterministic}, start in \#5\\
+%% Murphy's Law: {$Suck$} can dirty a clean carpet\\
+%% Local sensing: dirt, location only.\\
+%% \emph{Solution}
+%% \\
+%% {$[Right,\keyword{if}\ dirt\ \keyword{then}\ Suck]$}
+%% \end{minipage}}
+%% &
+%% \hbox{\begin{minipage}[t]{0.4\columnwidth}
+%% \show[0.5]
+%% \raisebox{-0.35\columnwidth}[0pt][0pt]{\show{russell/vacuum2-space.pdf}}
+%% \end{minipage}}
+%% \end{tabular}
+
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Problem Definition: Deterministic, fully observable}
+\slide{Deterministic, fully observable search problem}{
+
+\item A \defn{deterministic, fully observable search problem} is defined by four items:
+\begin{items}
+\item \defn{initial state}~ {$s_0\in\SS$} \quad e.g., {$s_0=\text{Arad}$}
+\item \defn{successor function}~ {${succ}:~ \SS\to \SS^*$} maps to set of decisions
+
+e.g., {${succ}(\text{Arad}) = \{\text{Sibiu, Timisoara, Zerind}\}$}
+\item \defn{goal states}~ {$\SS_\text{goal}\subseteq\SS$},~
+ e.g., {$\SS_\text{goal} = \{\text{Bucharest}\}$}
+\item \defn{step cost function}~ {$cost(s,s')$}, assumed to be {$\geq 0$},
+
+e.g., traveled distance, number of actions executed, etc.
+
+the path cost is the sum of step costs
+\end{items}
+
+~
+
+\item A \defn{solution} is a sequence of decisions leading from $s_0$ to a goal
+
+\item An \defn{optimal solution} is a solution with minimal path costs
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Selecting a state space}{
+
+%% Real world is absurdly complex \\
+%% $\Rightarrow$ state space must be \emph{abstracted} for problem solving
+
+%% (Abstract) state = set of real states
+
+%% (Abstract) action = complex combination of real actions\\
+%%    e.g., ``Arad $\rightarrow$ Zerind'' represents a complex set\nnl
+%%    of possible routes, detours, rest stops, etc. \\
+%% For guaranteed realizability, \emph{any} real state ``in Arad''\al
+%% must get to \emph{some} real state ``in Zerind''
+
+%% (Abstract) solution = \\
+%%    set of real paths that are solutions in the real world
+
+%% Each abstract action should be ``easier'' than the original problem!
+
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Example: vacuum world state space graph}{
+
+%% \show[0.8]{russell/vacuum2-paths.pdf}
+
+%% \emph{states}: \pause integer dirt and robot locations (ignore dirt \emph{amounts} etc.)\\
+%% \emph{actions}: \pause {$Left$}, {$Right$}, {$Suck$}, {$NoOp$}\\
+%% \emph{goal test}: \pause no dirt\\
+%% \emph{path cost}: \pause 1 per action (0 for {$NoOp$})
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: The 8-puzzle}{
+
+~
+
+\show[0.6]{russell/8puzzle.pdf}
+
+~
+
+\emph{states}: \pause integer locations of tiles (ignore intermediate positions)
+
+\emph{decisions}: \pause move blank left, right, up, down (ignore unjamming etc.)
+
+\emph{goal test}: \pause = goal state (given)
+
+\emph{path cost}: \pause 1 per move
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Example: robotic assembly}{
+
+%% \show[0.7]
+%% \show{russell/stanford-arm+blocks.pdf}
+
+%% \emph{states}: real-valued coordinates of robot joint angles\\
+%% parts of the object to be assembled
+
+%% \emph{actions}: continuous motions of robot joints
+
+%% \emph{goal test}: complete assembly \emph{with no robot included!}
+
+%% \emph{path cost}: time to execute
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Basic Tree Search Algorithms}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Tree search algorithms}{
+
+%% Basic idea:\al
+%% offline, simulated exploration of state space\al
+%% by generating successors of already-explored states\nnl
+%% (a.k.a.~\defn{expanding} states)
+
+%% %\input{russell/informal-ts-algorithm}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Tree search example}{
+
+\vspace*{0.3in}
+
+\show[1.0]{russell/search-map1c}
+
+}
+
+%%%%%%%%%%%% Overlay %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Tree search example}{
+
+\vspace*{0.3in}
+
+\show[1.0]{russell/search-map2c}
+
+}
+
+%%%%%%%%%%%% Overlay %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Tree search example}{
+
+\vspace*{0.3in}
+
+\show[1.0]{russell/search-map3c}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Tree search implementation: states vs nodes}
+\slide{Implementation: states vs.~nodes}{
+
+\item A \defn{state} is a (representation of a) ``physical'' configuration
+
+\item A \defn{node} is a data structure constituting part of a search tree
+\begin{items}
+\item includes {parent}, {children}, {depth}, {path
+    cost} {$g(x)$}
+\end{items}
+    
+(States do not have parents, children, depth, or path cost!)
+
+~
+
+%% \show[0.65]{russell/state-vs-node.pdf}
+
+%% ~
+
+\item The {\sc Expand} function creates new nodes, filling in the various
+fields and using the {\sc SuccessorFn} of the
+problem to create the corresponding states.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Implementation: general tree search}{
+
+%\input{russell/tree-search-algorithm}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Tree Search: General Algorithm}
+\slide{Implementation: general tree search}{
+
+\begin{algorithmic}[1]\tiny
+\Procedure {TreeSearch}{$s_0$, $\SS_\text{goal}$, succ, cost}
+\State root $\gets$ Node(state=$s_0$, parent=nil, cost=0, depth=0)
+\State fringe $\gets \<$root$\>$
+\While {fringe is not empty}
+\State $n \gets$ fringe.pop() \Comment{pop node from fringe}
+\State if($n$.state$\in\SS_\text{goal}$) \textbf{return} $n$ \Comment{goal check}
+\State fringe.insert(~ \textsc{Expand}($n$, succ, cost) ~) \Comment{expand}
+\State optional: if $n$.children=$\{\}$, destroy it and also check ancestors
+\EndWhile
+\State \textbf{return} nil
+\EndProcedure
+\Statex
+\Procedure {Expand}{$n$, succ, cost}
+\State successors $\gets \{\}$
+\For{$s\in$ succ($n$.state)}
+\State $n'\gets$ Node(state=$s$, parent=$n$, cost=$n$.cost+c($n$.state, $s$), depth=$n$.depth+1)
+\State successors.append($n'$)
+\EndFor
+\State \textbf{return} successors
+\EndProcedure
+\end{algorithmic}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Search strategies}{
+
+\item A strategy is defined by picking the \emph{ordering of the fringe}
+
+\item Strategies are evaluated along the following dimensions:
+\begin{items}
+\item \defn{completeness}---does it always find a solution if one exists?
+\item \defn{time complexity}---number of nodes generated/expanded
+\item \defn{space complexity}---maximum number of nodes in memory
+\item \defn{optimality}---does it always find a least-cost solution?
+\end{items}
+
+\item Time and space complexity are measured in terms of
+\begin{items}
+\item {$b$} = maximum branching factor of the search tree
+\item {$d$} = depth of the least-cost solution
+\item {$m$} = maximum depth of the state space (may be {$\infty$})
+\end{items}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Summary of Search Strategies}{
+
+\item Breadth-first: fringe is a FIFO
+\item Depth-first: finge is a LIFO
+\item Iterative deepening search: repeat depth-first for increasing depth limit
+\item Uniform-cost: sort fringe by $g$
+\item \Astar: sort by $f=g+h$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Uninformed search strategies}{
+
+%% \item \defn{Uninformed} strategies use only the information available
+%% in the problem definition
+%% \begin{items}
+%% \item Breadth-first search
+%% \item Uniform-cost search
+%% \item Depth-first search
+%% \item Depth-limited search
+%% \item Iterative deepening search
+%% \end{items}
+
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Breadth-first search (BFS)}
+\slide{Breadth-first search}{
+
+\item Pick shallowest unexpanded node
+
+\item \emph{Implementation}:
+
+\textbf{fringe} is a \textbf{FIFO} queue, i.e., new successors go at end
+
+\only<1>{\show[0.5]{russell/bfs-progress1c}}
+\only<2>{\show[0.5]{russell/bfs-progress2c}}
+\only<3>{\show[0.5]{russell/bfs-progress3c}}
+\only<4>{\show[0.5]{russell/bfs-progress4c}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Complexity of BFS}
+\slide{Properties of breadth-first search}{
+
+\emph{Complete} \pause Yes (if {$b$} is finite)
+
+\emph{Time} \pause {$1+b+b^2+b^3+\ldots +b^d + b(b^d-1)= O(b^{d+1})$}, i.e., exp.~in {$d$}
+
+\emph{Space} \pause {$O(b^{d+1})$} (keeps every node in memory)
+
+\emph{Optimal} \pause Yes, if cost-per-step=1; not optimal otherwise
+
+~
+
+\emph{Space} is the big problem; can easily generate nodes at 100MB/sec,
+so 24hrs = 8640GB.
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Depth-first search (DFS)}
+\slide{Depth-first search}{
+
+\item Pick deepest unexpanded node
+
+\item \emph{Implementation}:
+
+\textbf{fringe} = \textbf{LIFO} queue, i.e., put successors at front
+
+\item \textbf{\emph{Note: The pictures push nodes in non-alphabetical order!}}
+
+~
+
+\only<1>{\show[0.5]{russell/dfs-progress01c}}
+\only<2>{\show[0.5]{russell/dfs-progress02c}}
+\only<3>{\show[0.5]{russell/dfs-progress03c}}
+\only<4>{\show[0.5]{russell/dfs-progress04c}}
+\only<5>{\show[0.5]{russell/dfs-progress05c}}
+\only<6>{\show[0.5]{russell/dfs-progress06c}}
+\only<7>{\show[0.5]{russell/dfs-progress07c}}
+\only<8>{\show[0.5]{russell/dfs-progress08c}}
+\only<9>{\show[0.5]{russell/dfs-progress09c}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Depth-first search}{
+
+%% Pick deepest unexpanded node
+
+%% \emph{Implementation}:\\
+%% \textbf{fringe} = LIFO queue, i.e., put successors at front
+
+%% \show[0.5]
+%% \show{\sfile{figures}{dfs-progress10}}
+
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Depth-first search}{
+
+%% Pick deepest unexpanded node
+
+%% \emph{Implementation}:\\
+%% \textbf{fringe} = LIFO queue, i.e., put successors at front
+
+%% \show[0.5]
+%% \show{\sfile{figures}{dfs-progress11}}
+
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Depth-first search}{
+
+%% Pick deepest unexpanded node
+
+%% \emph{Implementation}:\\
+%% \textbf{fringe} = LIFO queue, i.e., put successors at front
+
+%% \show[0.5]
+%% \show{\sfile{figures}{dfs-progress12}}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Complexity of DFS}
+\slide{Properties of depth-first search}{
+
+\emph{Complete} \pause Yes for $m<\infty$, no otherwise (e.g.\ problems with loops)
+
+\emph{Time} \pause {$O(b^m)$}: terrible if {$m$} is much larger than {$d$}\\  but if solutions are dense, may be much faster than breadth-first
+
+\emph{Space} \pause {$O(bm)$}, i.e., linear space!
+
+\emph{Optimal} \pause No
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Depth-limited search}{
+
+\item depth-first search with depth limit {$l$},
+
+i.e., nodes at depth {$l$} have no successors
+
+\item Optional: \emph{Recursive implementation} using the stack as LIFO:
+
+%\input{russell/recursive-dls-algorithm}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Iterative deepening search}{
+
+%\input{russell/ids-algorithm}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Iterative deepening search}{
+
+~
+
+\begin{algorithmic}[1]\tiny
+\Procedure {IterativeDeepeningSearch}{$s_0$, $\SS_\text{goal}$, succ, cost}
+\For{depth $d = 0,1,..$}
+\State $n \gets$ \textsc{DepthLimitedSearch}($d$)
+\State if $n\not=$nil return $n$
+\EndFor
+\EndProcedure
+\end{algorithmic}
+
+~
+
+\item \textsc{DepthLimitedSearch}($d$) is the same as \textsc{TreeSearch} but where \textbf{Expand} returns $\{\}$ for $n$.depth=$d$, and cleanup is done.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Iterative deepening search}{
+
+\vspace*{0.3in}
+
+\only<1>{\show[1.0]{russell/ids-progress1c}}
+\only<2>{\show[1.0]{russell/ids-progress2c}}
+\only<3>{\show[1.0]{russell/ids-progress3c}}
+\only<4>{\show[1.0]{russell/ids-progress4c}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Complexity of Iterative Deepening Search}
+\slide{Properties of iterative deepening search}{
+
+\emph{Complete} \pause Yes
+
+\emph{Time} \pause {$(d+1)b^0 + d b^1 + (d-1)b^2 + \ldots + b^d = O(b^d)$}
+
+\emph{Space} \pause {$O(bd)$}
+
+\emph{Optimal} \pause Yes, if step cost = 1
+
+Can be modified to explore uniform-cost tree
+
+\item Numerical comparison for {$b=10$} and {$d=5$}, solution at far left leaf:
+{\begin{eqnarray*}
+N(\mbox{IDS}) &=& 50 + 400 + 3\,000 + 20\,000 + 100\,000 = 123\,450 \\
+N(\mbox{BFS}) &=& 10 + 100 + 1\,000 + 10\,000 + 100\,000 + 999\,990 = 1\,111\,100
+\end{eqnarray*}}
+
+\item IDS does better because other nodes at depth {$d$} are not expanded
+
+\item BFS can be modified to apply goal test when a node is \emph{generated}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Summary of algorithms}{
+
+~\small
+
+\begin{tabular}{|l|ccc|}
+\hline
+\raisebox{-0.5\baselineskip}[0pt][0pt]{Criterion} & Breadth- & Depth- & Iterative \\ 
+& First &   First & Deepening \\
+\hline
+\rule{0pt}{3ex}Complete? & Yes (if $b<\infty$) & if $m<\infty$ & Yes (if $b<\infty$) \\
+        Time      & $b^{d+1}$ & $b^m$ & $b^d$ \\
+        Space     & $b^{d+1}$ & $bm$ & $bd$ \\
+ Step-Optimal?  & Yes & No & Yes \\
+\hline
+\end{tabular}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Graph search and repeated states}
+\slide{Loops: Repeated states}{
+
+\item Failure to detect repeated states can turn a linear problem into an
+exponential one!
+
+\vspace*{0.3in}
+
+\show[0.7]{russell/ribbon-space.pdf}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Graph search}{
+
+%\input{russell/graph-search-algorithm}
+
+~
+
+But: storing all visited nodes leads again to exponential space complexity (as for BFS)
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Graph search}{
+
+\item Slight modification of TreeSearch: lines 7 and 8
+
+\begin{algorithmic}[1]\tiny
+\Procedure {GraphSearch}{$s_0$, $\SS_\text{goal}$, succ, cost}
+\State root $\gets$ Node(state=$s_0$, parent=nil, cost=0, depth=0)
+\State fringe $\gets \<$root$\>$
+\State closed $\gets \{\}$
+\While {fringe is not empty}
+\State $n \gets$ fringe.pop() \Comment{pop node from fringe}
+\If{$n$.state $\not\in$ closed}
+\State closed.add( $n$.state )
+\State if($n$.state$\in\SS_\text{goal}$) \textbf{return} $n$ \Comment{goal check}
+\State fringe.insert(~ \textsc{Expand}($n$, succ, cost) ~) \Comment{expand}
+\EndIf
+\State optional: if $n$.children=$\{\}$, destroy it and also check ancestors
+\EndWhile
+\State \textbf{return} nil
+\EndProcedure
+\end{algorithmic}
+
+~
+
+But: storing all visited nodes leads again to exponential space complexity (as for BFS)
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Summary}{
+
+\item In BFS (or uniform-cost search), the fringe propagates layer-wise, containing nodes of similar distance-from-start (cost-so-far), leading to optimal paths but exponential space complexity {$O(b^{d+1})$}
+
+\item In DFS, the fringe is like a deep light beam sweeping over the tree, with space complexity ${O(bm)}$. Iteratively deepening it also leads to optimal paths.
+
+\item Graph search can be exponentially more efficient than tree search, but storing the visited nodes leads to exponential space complexity as BFS.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{\protect{\Astar} Search}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Best-first Search}
+\slide{Best-first Search (Prioritized Search)}{
+
+\item Use a \defn{priority} {$f(n)$} to sort nodes in the fringe
+\begin{items}
+\item actually {$f(n)$} is neg-priority: nodes with lower $f(n)$
+have higher priority
+\end{items}
+
+\item {$f(n)$} should reflect which nodes \emph{could} be on an
+optimal path
+\begin{items}
+\item \emph{could} is optimistic -- the lower {$f(n)$} the more
+optimistic you are that $n$ is on an optimal path
+\item[$\Rightarrow$] Pick the node with highest priority
+\end{items}
+
+\item {Implementation}:
+\begin{items}
+\item Plain \textsc{TreeSearch} with fringe being a priority queue (increasing $f$-value, pop() returns first)
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Special Cases}{
+
+\item Two quantities typically define the priority
+\begin{items}
+\item The \defn{cost-so-far} $g(n)$ = $n$.cost
+\item A \defn{heuristic} $h(n)$ which estimates cost-to-go
+\end{items}
+
+~
+
+\item Special cases of Best-First Search are:
+\begin{items}
+\item uniform-cost search ($f=g$)
+\item greedy search ($f=h$)
+\item {\Astar} search ($f=g+h$)
+\end{items}
+
+\small (Uniform-cost search is equal to \Astar when choosing a zero heuristic $h(n)=0$)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \key{Greedy Search}
+%% \slide{Greedy search}{
+
+%% \item We set the priority function equal to a heuristic 
+%% {$f(n) = h(n)$}\\
+%% $h(n)$ = estimate of cost from {$n$} to the closest goal
+
+%% \item E.g., {$h_{{\rm SLD}}(n)$} = straight-line distance from {$n$} to Bucharest
+
+%% \item Greedy search expands the node that \emph{appears} to be closest to goal
+
+
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Romania with step costs in km}{
+
+%% \vspace*{0.3in}
+
+%% \show[1.0]{russell/romania2.pdf}
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Greedy search example}{
+
+%% \vspace*{0.3in}
+
+%% \only<1>{\show[0.2]{russell/greedy-progress01c}}
+%% \only<2>{\show[1.0]{russell/greedy-progress02c}}
+%% \only<3>{\show[1.0]{russell/greedy-progress03c}}
+%% \only<4>{\show[1.0]{russell/greedy-progress04c}}
+
+%% }
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \key{Complexity of Greedy Search}
+%% \slide{Properties of greedy search}{
+
+%% \emph{Complete} \pause No--can get stuck in loops, e.g.,\\
+%% Iasi $\rightarrow$ Neamt $\rightarrow$ Iasi $\rightarrow$ Neamt $\rightarrow$\\
+%% Complete in finite space with repeated-state checking
+
+%% \emph{Time} \pause {$O(b^m)$}, but a good heuristic can give dramatic improvement
+
+%% \emph{Space} \pause {$O(b^m)$}---keeps all nodes in memory
+
+%% \emph{Optimal} \pause No
+
+%% ~
+
+%% Greedy search does not care about the 'past' (the cost-so-far).
+
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{\protect{\Astar} search}
+\slide{\protect{\Astar} search}{
+
+\item \emph{Combine information from the past and the
+future}
+\begin{items}
+\item neg-priority = cost-so-far + estimated cost-to-go
+\end{items}
+
+\item The evaluation function is {$f(n) = g(n) + h(n)$}, with
+\begin{items}
+\item {$g(n)$} = \defn{cost-so-far} to reach {$n$}
+\item {$h(n)$} = estimated \defn{cost-to-go} from {$n$}
+\item {$f(n)$} = estimated total cost of path through {$n$} to
+goal
+\end{items}
+
+\item {\Astar} search uses an \defn{admissible}
+heuristic. $h$ admissible $\iff$
+\begin{items}
+\item {$h(n) \leq h^*(n)$}, where {$h^*(n)$} is the \emph{true optimal} cost-to-go from {$n$}
+\item {$h(n)\geq 0$}, and {$h(G)=0$} for any goal {$G$}
+\end{items}
+
+\item E.g., {$h_\text{Euclidean-distance}(n)$} never overestimates the actual road distance
+
+\item {Theorem}: {\Astar} search is optimal
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: Romania}{
+
+\show[1.]{russell/romania-distances.pdf}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{{\Astar} search example}{
+
+\vspace*{0.3in}
+
+\only<1>{\show[0.2]{russell/astar-progress01c}}
+\only<2>{\show[1.0]{russell/astar-progress02c}}
+\only<3>{\show[1.0]{russell/astar-progress03c}}
+\only<4>{\show[1.0]{russell/astar-progress04c}}
+\only<5>{\show[1.0]{russell/astar-progress05c}}
+\only<6>{\show[1.0]{russell/astar-progress06c}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{\protect{\Astar} Optimality}
+\slide{Proof of optimality of {\Astar}}{
+
+\small
+
+\item Suppose some suboptimal goal {$G_2$} has been generated and is in
+the fringe (but has not yet been pop'ed and goal tested!). We want to proof: \emph{Any node on a shortest path
+to an optimal goal {$G$} will be expanded before {$G_2$} is pop'ed.}
+
+\item Let {$n$} be an unexpanded node on a shortest path to $G$.
+
+\show[0.45]{russell/astar-proof.pdf}
+
+\vspace*{-5mm}
+\begin{align*}
+f(G_2) &= g(G_2) && \text{since $h(G_2) = 0$} \\
+       &> g(G)  && \text{since $G_2$ is suboptimal} \\
+      &\ge f(n) && \text{since $h$ is admissible} 
+\end{align*}
+
+\item Since {$f(n) < f(G_2)$}, {\Astar} will expand
+$n$ before {$G_2$} is pop'ed. This is true for any $n$ on the shortest
+path. At some time
+$G$ is added to the fringe, and since {$f(G)=g(G)<f(G_2)=g(G_2)$} it
+will pop {$G$} before {$G_2$}.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Complexity of \protect{\Astar}}
+\slide{Properties of {\Astar}}{
+
+\emph{Complete} \pause Yes, unless there are infinitely many nodes with {$f \leq f(G)$}
+
+\emph{Time} \pause Exponential in [relative error in {$h$} $\times$ length of soln.]
+
+\emph{Space} \pause Exponential. Keeps all nodes in memory
+
+\emph{Optimal} \pause Yes
+
+{\Astar} expands all nodes with {$f(n) < C^*$}\\
+{\Astar} expands some nodes with {$f(n) = C^*$}\\
+{\Astar} expands no nodes with {$f(n) > C^*$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Consistent (or Monotone) Heuristics}{
+
+~
+
+\item A heuristic is \defn{consistent} (or monotone) iff 
+\anchor{40,-40}{\showh[0.2]{russell/consistency.pdf}}
+$$
+  h(n) \le c(n,n') + h(n')
+$$
+\begin{items}
+\item Most admissible heuristics are consitent; only slightly more strict
+\end{items}
+
+~
+
+\item If {$h$} is consistent, we have\
+\begin{align*}
+f(n') &= g(n') + h(n') \\
+      &= g(n) + c(n,a,n') + h(n') \\
+      &\ge g(n) + h(n) \\
+      &= f(n)
+\end{align*}
+I.e., {$f(n)$} is nondecreasing along any path of the tree (or in the graph, if we do graph search.)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{\protect{\Astar} Optimality}
+\slide{Optimality of {\Astar} with Consistent Heuristic}{
+
+\item {Lemma}: {\Astar} expands nodes in order of increasing {$f$} value$^*$
+
+Gradually adds ``{$f$}-contours'' of nodes (cf.\ breadth-first adds layers)\\
+Contour {$i$} has all nodes with {$f=f_i$}, where {$f_i < f_{i+1}$}
+
+~
+
+\show[0.75]{russell/f-circles.pdf}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Admissible heuristics}
+\slide{Admissible heuristics}{
+
+\item E.g., for the 8-puzzle:
+\begin{items}
+\item {$h_1(n)$} = number of misplaced tiles
+\item {$h_2(n)$} = total \defn{Manhattan} distance\\
+ (i.e., no. of squares from desired location of each tile)
+\end{items}
+
+\show[0.5]{russell/8puzzle.pdf}
+
+~
+
+\emph{$h_1(S)$ =} \only<2>{6}\\
+\emph{$h_2(S)$ =} \only<2>{4+0+3+3+1+0+2+1 = 14}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Dominance}{
+
+\item If {$h_2(n) \geq h_1(n)$} for all {$n$} (both admissible)
+then {$h_2$} \defn{dominates} {$h_1$} and is better for search
+
+~
+
+\item Typical search costs:
+
+\begin{tabular}{ll}
+$d=14$ & IDS = 3,473,941 nodes \\
+       & A$^*(h_1)$ = 539 nodes \\
+       & A$^*(h_2)$ = 113 nodes \\
+$d=24$ & IDS $\approx$ 54,000,000,000 nodes \\
+       & A$^*(h_1)$ = 39,135 nodes \\
+       & A$^*(h_2)$ = 1,641 nodes 
+\end{tabular}
+
+~
+
+\item Given any admissible heuristics {$h_a$}, {$h_b$},
+{$$
+  h(n) = \max(h_a(n),h_b(n))
+$$}
+is also admissible and dominates {$h_a$}, {$h_b$}
+
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Relaxed problems}{
+
+\item Admissible heuristics can be derived from the \emph{exact}
+solution cost of a \emph{relaxed} version of the problem
+
+\item If the rules of the 8-puzzle are relaxed so that a tile can move
+\emph{anywhere}, then {$h_1(n)$} gives the shortest solution
+
+\item If the rules are relaxed so that a tile can move to \emph{any adjacent
+square}, then {$h_2(n)$} gives the shortest solution
+
+\item Key point: the optimal solution cost of a relaxed problem
+is no greater than the optimal solution cost of the real problem
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Heuristics in AI research}{
+
+\url{https://ipc2018.bitbucket.io/}
+
+\url{http://www.plg.inf.uc3m.es/ipc2011-deterministic/attachments/Results/ipc2011-booklet.pdf}
+
+~
+
+\item Comments (as an outsider!)
+\begin{items}
+\item The state-of-the-art planners are often just A* (or similar), but with crazily clever heuristics! The smarts is all in the heuristics!
+\item State-of-the-art heuristics automatically analyze the problem description for structure, such as landmarks. Based on this structure, they define heuristics.
+
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Branch \& Bound}{
+
+\item In A*, $f(n)$ is a \emph{lower} bound of the \emph{partial solution} represented by $n$
+
+\item In Branch \& Bound we also want to have an upper bound. If that bound is higher than the lowest full solution cost so far, we don't expand anymore
+
+\item Otherwise it is essentially A*
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Relaxed problems contd.}{
+
+%% Well-known example: \defn{travelling salesperson problem} (TSP)\\
+%% Find the shortest tour visiting all cities exactly once
+
+%% \vspace*{0.3in}
+
+%% \show[1.]{russell/tsp-mst.pdf}
+
+%% \defn{Minimum spanning tree} can be computed in {$O(n^2)$}\\
+%% and is a lower bound on the shortest (open) tour
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Memory-bounded \protect{\Astar}}
+\slide{Memory-bounded \protect{\Astar}}{
+
+\item As with BFS, {\Astar} has exponential space complexity
+
+\item Iterative-deepening {\Astar}, works for integer path costs, but problematic for real-valued
+
+\item (Simplified) Memory-bounded {\Astar} (SM\Astar):
+\begin{items}
+\item Expand as usual until a memory bound is reach
+\item Then, whenever adding a node, remove the \emph{worst} node $n'$ from the tree
+\item worst means: the $n'$ with highest $f(n')$
+\item To not loose information, \emph{backup} the measured step-cost $cost(\tilde n,a,n')$ to improve the heuristic $h(\tilde n)$ of its parent
+\end{items}
+
+
+SM\Astar{} is complete and optimal if the depth of the optimal path is within the memory bound
+
+%% Well-known example: \defn{travelling salesperson problem} (TSP)\\
+%% Find the shortest tour visiting all cities exactly once
+
+%% \vspace*{0.3in}
+
+%% \show[0.75]
+%% \show{russell/tsp-mst.pdf}
+
+%% \defn{Minimum spanning tree} can be computed in {$O(n^2)$}\\
+%% and is a lower bound on the shortest (open) tour
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Summary}{
+
+%% \item Combine information from the past and the future
+
+%% \item A heuristic function {$h(n)$} represents information about the future
+
+%% it estimates cost-to-go optimistically
+
+%% \item Good heuristics can dramatically reduce search cost 
+
+%% \item
+%% %% Greedy best-first search expands lowest {$h$}
+%% %% \begin{items}
+%% %%   \item incomplete and not always optimal
+%% %% \end{items}
+
+%% {\Astar} search expands lowest {$f = g+h$}
+%% \begin{items}
+%%   \item neg-priority = cost-so-far + estimated cost-to-go
+%%   \item complete and optimal
+%%   \item also optimally efficient (up to tie-breaks, for forward
+%%   search)
+%% \end{items}
+
+%% \item Admissible heuristics can be derived from exact solution of relaxed problems
+
+%% \item Memory-bounded startegies exist
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Outlook}{\label{lastpage}
+
+\item Tree search with \emph{partial observations}
+\begin{items}
+\item we discuss this in a fully probabilistic setting later
+\end{items}
+
+\item Tree search for \emph{games}
+\begin{items}
+\item minimax extension to tree search
+\item probabilistic Monte-Carlo tree search methods for games
+\end{items}
+
+}
+
+\slidesfoot

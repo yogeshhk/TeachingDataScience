@@ -1,0 +1,629 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  RAG FRAMEWORK
+%  Sections: Ingestion -> Retrieval -> Generation -> Evaluation
+%  Self-contained: no overlap with intro, advanced, or conclusions files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large RAG Framework}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Pipeline: End-to-End View}
+
+% \begin{block}{Three sequential stages}
+% \textbf{Ingestion} (offline)
+% $\;\longrightarrow\;$
+% \textbf{Retrieval} (online)
+% $\;\longrightarrow\;$
+% \textbf{Generation} (online)
+% \end{block}
+
+% \vspace{0.4em}
+\begin{itemize}
+  \item \textbf{Ingestion:} Load documents $\rightarrow$ chunk $\rightarrow$ embed $\rightarrow$ store in vector database. Done once; re-run only when knowledge changes.
+  \item \textbf{Retrieval:} Transform user query $\rightarrow$ embed $\rightarrow$ search vector DB $\rightarrow$ rerank top-$k$ chunks.
+  \item \textbf{Generation:} Combine retrieved chunks with the query into a prompt $\rightarrow$ LLM produces a grounded answer with citations.
+\end{itemize}
+
+% \vspace{0.3em}
+% \begin{center}
+% \includegraphics[width=\linewidth,keepaspectratio]{rag15}
+% \end{center}
+
+% {\tiny (Ref: Knowledge Brain RAG - Abhinav Kimothi)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  SECTION 1: INGESTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 1: Ingestion}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ingestion Overview}
+
+\textbf{Goal:} Convert raw, heterogeneous documents into a searchable vector index.
+
+\vspace{0.3em}
+\begin{center}
+\small
+\texttt{Raw Docs}
+$\;\xrightarrow{\text{Load}}\;$
+\texttt{Text + Metadata}
+$\;\xrightarrow{\text{Chunk}}\;$
+\texttt{Chunks}
+$\;\xrightarrow{\text{Embed}}\;$
+\texttt{Vectors}
+$\;\xrightarrow{\text{Store}}\;$
+\texttt{Vector DB}
+\end{center}
+
+\vspace{0.4em}
+\begin{itemize}
+  \item \textbf{Offline step:} Run once at setup; re-run only when source documents change.
+  \item \textbf{Quality cascade:} Every step feeds the next. Poor chunking $\Rightarrow$ poor embeddings $\Rightarrow$ poor retrieval $\Rightarrow$ poor answers. Fix problems here, not in the LLM.
+  \item \textbf{Key metadata to preserve} at load time: source filename, URL, page number, timestamp: needed later for source citations in generated answers.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 1: Loading Data}
+
+\textbf{What can be loaded into a RAG system?}
+
+\begin{columns}
+  \begin{column}[T]{0.5\linewidth}
+    \begin{itemize}
+      \item Web pages \& HTML
+      \item PDFs, Word (.docx), PowerPoint
+      \item Source code (Python, Java \ldots)
+      \item Structured data: JSON, CSV
+    \end{itemize}
+  \end{column}
+  \begin{column}[T]{0.5\linewidth}
+    \begin{itemize}
+      \item REST APIs
+      \item File directories
+      \item SQL / NoSQL databases
+      \item Email, Slack, Confluence \ldots
+    \end{itemize}
+  \end{column}
+\end{columns}
+
+\vspace{0.5em}
+\textbf{Frameworks:}
+\begin{itemize}
+  \item \textbf{LangChain}: \texttt{DocumentLoader} classes for each source; normalises to a \texttt{Document(page\_content, metadata)} object.
+  \item \textbf{LlamaIndex}: \texttt{Reader} connectors with the same interface.
+  \item \textbf{Docling} (IBM): structure-aware loader for PDFs and Office documents; preserves tables, headings, and images instead of extracting raw character streams.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Chunking: Why}
+
+\textbf{Why must documents be split into chunks?}
+
+\begin{itemize}
+  \item \textbf{Context window limit:} LLMs accept at most $N$ tokens per call (4K--128K depending on model). A 200-page PDF cannot fit in a single prompt.
+  \item \textbf{Retrieval precision:} The embedding of a 10-page chapter encodes \textit{everything}: the similarity score is diluted. A focused 300-token chunk about one topic scores much higher against a precise query.
+  \item \textbf{Cost:} Fewer tokens per retrieval call = lower inference cost.
+\end{itemize}
+
+\vspace{0.3em}
+\textbf{The chunking trade-off:}
+
+\begin{center}
+\small
+\begin{tabular}{|p{2.2cm}|p{1.2cm}|p{3.2cm}|}
+\hline
+\textbf{Chunk size} & \textbf{Retrieval precision} & \textbf{Context richness} \\
+\hline
+Too small ($<$100 tokens)  & Very high & Answer may be split across chunks \\
+Balanced (256--512 tokens) & Good      & $\approx$ 1 paragraph; general-purpose \\
+Too large ($>$1500 tokens) & Low       & Rich context; diluted similarity score \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.2em}
+\textbf{Overlap:} A 10--20\% token overlap between adjacent chunks prevents an answer from being cut exactly at a boundary and disappearing from retrieval.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Chunking: Strategies}
+
+\begin{itemize}
+  \item \textbf{Fixed-size (character split):} Split every $N$ characters. Simple and fast; may cut mid-sentence.
+
+  \item \textbf{Recursive character split:} Tries paragraph break $\rightarrow$ sentence break $\rightarrow$ word break in order until target size is met. \textbf{Recommended default} for generic text (LangChain \texttt{RecursiveCharacterTextSplitter}).
+
+  \item \textbf{Token-based split:} Counts actual LLM tokens using the target model's tokenizer (e.g., HuggingFace \texttt{AutoTokenizer}). More accurate than character count for models with variable token sizes.
+
+  \item \textbf{Sentence-aware split:} Splits only at sentence boundaries (spaCy). Preserves full sentences; produces variable chunk sizes.
+
+  \item \textbf{Semantic split:} Groups consecutive sentences by embedding similarity; creates cohesive topic-based chunks. Best quality; computationally heavier.
+
+  \item \textbf{Structure-aware split:} Honours document format: Markdown headings (\texttt{\#}), HTML tags, code blocks, LaTeX environments. Critical for structured documents.
+\end{itemize}
+
+\vspace{0.2em}
+\textbf{Practical tip:} Always test two or three chunk sizes against a representative query set before committing. Use RAGAS Context Precision as the discriminating metric.
+
+{\tiny (Ref: Mastering RAG: Advanced Chunking Techniques - Pratik Bhavsar)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 3: Embeddings}
+
+\textbf{What is an embedding?}
+An embedding converts a text chunk into a dense vector $\mathbf{v} \in \mathbb{R}^d$ (typically $d = 384$--$1536$) such that \textit{semantically similar texts are geometrically close}.
+
+\vspace{0.3em}
+\textbf{How retrieval uses embeddings:}
+\[
+  \text{similarity}(q, c_i) = \cos(\mathbf{q}, \mathbf{v}_i)
+    = \frac{\mathbf{q} \cdot \mathbf{v}_i}{\|\mathbf{q}\|\,\|\mathbf{v}_i\|}
+\]
+Both the query and every stored chunk are embedded. The top-$k$ chunks with highest cosine similarity to the query are retrieved.
+
+\vspace{0.3em}
+\textbf{Popular embedding models:}
+\begin{columns}
+  \begin{column}[T]{0.5\linewidth}
+    \begin{itemize}
+      \item \textbf{Sentence-BERT / all-MiniLM-L6-v2}: Lightweight, fast, open-source.
+      % \item \textbf{E5-large / BGE-large}: Top MTEB scorers; open-source.
+      \item \textbf{OpenAI text-embedding-3-small}: Strong general-purpose; API-based.
+    \end{itemize}
+  \end{column}
+  \begin{column}[T]{0.5\linewidth}
+    \begin{itemize}
+      % \item \textbf{Cohere Embed v3}: Multilingual; API-based.
+      \item \textbf{word2vec / GloVe / fastText}: Word-level; context-free; mostly superseded.
+      \item \textbf{Domain fine-tuned}: BioBERT (medical), LegalBERT (legal): win in specialist domains.
+    \end{itemize}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Choosing an Embedding Model}
+
+\textbf{No universal answer.} Use the \textbf{MTEB Leaderboard} (Massive Text Embedding Benchmark, Hugging Face) as the starting point. It benchmarks models across 7 tasks including Retrieval, Reranking, and Semantic Similarity.
+
+\vspace{0.3em}
+\textbf{Decision factors:}
+\begin{itemize}
+  \item \textbf{Accuracy vs.\ speed:} Large models score higher on MTEB but are slower. \texttt{all-MiniLM-L6-v2} is $5\times$ faster than large BERT with modest accuracy loss.
+  \item \textbf{Domain:} General models work for most cases; fine-tune or use a domain model for specialised vocabulary (medical, legal, code).
+  \item \textbf{Cost:} API-based models (OpenAI, Cohere) charge per token. Open-source models run free locally.
+  \item \textbf{Multilingual:} Use \texttt{multilingual-e5} or Cohere multilingual for non-English documents.
+  \item \textbf{Max input length:} Each model has a token limit (e.g., 512 tokens for MiniLM). Chunks longer than this are truncated, losing information.
+\end{itemize}
+
+\vspace{0.2em}
+\textbf{Creating embeddings:} LangChain \texttt{OpenAIEmbeddings} / \texttt{HuggingFaceEmbeddings}; LlamaIndex \texttt{resolve\_embed\_model}.
+
+{\tiny (Ref: https://huggingface.co/spaces/mteb/leaderboard)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 4: Vector Databases}
+
+\textbf{What is a vector database?}
+A specialised datastore for high-dimensional vectors. It enables fast \textit{approximate nearest-neighbour (ANN)} search, plus features a plain in-memory index (FAISS) cannot provide: persistent storage, metadata filtering, access control, and scalability.
+
+\vspace{0.3em}
+\begin{center}
+\small
+\begin{tabular}{|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{2.5cm}|}
+\hline
+\textbf{Database} & \textbf{Type} & \textbf{Best for} & \textbf{Notes} \\
+\hline
+FAISS      & Library        & Local prototyping    & No persistence; no metadata \\
+ChromaDB   & Open-source    & Local dev / testing  & Easy LangChain integration \\
+Qdrant     & Open-source    & Production OSS       & Rich filtering; on-prem or cloud \\
+Weaviate   & Open-source    & Hybrid search        & Keyword + vector built-in \\
+Pinecone   & Managed SaaS   & Large-scale cloud    & Fully managed; pay-per-use \\
+% pgvector   & PG extension   & Existing Postgres    & SQL + vector in one DB \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.3em}
+\textbf{Choosing:} Prototype with ChromaDB or FAISS. For production, weigh: accuracy vs.\ query speed, local vs.\ cloud, metadata filtering needs, and operational cost.
+
+\textbf{Storing embeddings (LangChain example):}
+\begin{center}
+\texttt{Chroma.from\_documents(chunks, embedding\_model)}
+\end{center}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  SECTION 2: RETRIEVAL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 2: Retrieval}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Retrieval Overview}
+
+\textbf{Goal:} Given a user query, return the $k$ most relevant chunks from the vector store.
+
+\vspace{0.3em}
+\begin{center}
+\small
+\texttt{User Query}
+$\;\xrightarrow{\text{Transform}}\;$
+\texttt{Better Query/Queries}
+$\;\xrightarrow{\text{Search}}\;$
+\texttt{Candidates}
+$\;\xrightarrow{\text{Rerank + Filter}}\;$
+\texttt{Top-}$k$\texttt{ Chunks}
+\end{center}
+
+\vspace{0.4em}
+\begin{itemize}
+  \item \textbf{Why transform the query first?} Raw user queries are often short, ambiguous, or use different terminology than the indexed documents. Transforming them before search dramatically improves recall.
+  \item \textbf{Why rerank after search?} Embedding similarity is a coarse, approximate signal. A cross-encoder reranker scores query--chunk pairs \textit{jointly} and produces a much more accurate relevance ordering.
+\end{itemize}
+
+% \begin{center}
+% \includegraphics[width=\linewidth,keepaspectratio]{rag23}
+% \end{center}
+
+% {\tiny (Ref: Knowledge Brain RAG - Abhinav Kimothi)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Query Transformations}
+
+Rewriting or expanding the query before search aligns it better with indexed document language.
+
+\begin{itemize}
+  \item \textbf{Multi-query Expansion:} LLM generates 3--5 alternative phrasings of the same question. Each is searched independently; results are union-merged and deduplicated.
+    \textit{Higher recall: catches documents that match some phrasings but not others.}
+
+  \item \textbf{Query Rewriting:} LLM rephrases a poorly formed query into a clear, search-friendly statement. Fixes typos, jargon, or ambiguous pronouns.
+
+  \item \textbf{Query Compression:} In a multi-turn conversation, the full chat history is condensed into one standalone question before retrieval. Removes noise from earlier turns.
+
+  \item \textbf{HyDE (Hypothetical Document Embedding):} LLM generates a plausible fake answer to the query; that answer is embedded and used as the search vector instead of the raw query. Answer-to-answer similarity is stronger than short query-to-document similarity.
+
+  \item \textbf{Query Routing:} A classifier directs the query to the most appropriate data source (vector DB, SQL database, web search, calculator) based on detected intent.
+\end{itemize}
+
+{\tiny (Ref: https://arxiv.org/pdf/2212.10496.pdf)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Retrieval Methods}
+
+\begin{itemize}
+  \item \textbf{Dense (Similarity) Search:} Embed query $\rightarrow$ cosine/dot-product search over all chunk vectors. Default in most RAG systems.
+
+  \item \textbf{Sparse (Keyword) Search:} BM25 / TF-IDF over token frequencies. Excellent for exact-match terms: product codes, proper nouns: that dense search misses.
+
+  \item \textbf{Hybrid Search:} Combines dense + sparse scores (e.g., Reciprocal Rank Fusion). Semantic understanding \textit{plus} lexical precision. Generally outperforms either alone.
+
+  \item \textbf{Maximum Marginal Relevance (MMR):} Selects chunks that are relevant \textit{and} diverse. Iteratively picks the next chunk that maximises relevance minus overlap with already-selected chunks. Reduces redundancy in retrieved context.
+
+  % \item \textbf{Multi-Vector Retrieval:} Stores multiple vectors per document (e.g., full-chunk vector + summary vector + hypothetical-question vectors). Query matches summaries; original text is returned.
+
+  \item \textbf{Contextual Compression:} Retrieved chunks are passed through an LLM extractor that returns only the sentences most relevant to the query, reducing noise before generation.
+
+  \item \textbf{Time-weighted Retrieval:} Combines semantic score with a recency bonus so fresher documents are preferred when similarity scores are close.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reranking \& Post-Retrieval Filtering}
+
+\textbf{Why rerank?}
+First-pass vector search scores query and chunk \textit{independently}. A cross-encoder scores the (query, chunk) \textit{pair jointly}, giving far higher accuracy: but is too slow to run over the full corpus, so it runs only on the top-$k$ candidates.
+
+\[
+  s_i = \text{CrossEncoder}(\text{query} \oplus \text{chunk}_i)
+\]
+
+\textbf{Sentence Window Retrieval:} Index at fine sentence granularity for precise matching, but return the surrounding $\pm N$ sentence window to the LLM for fuller context.
+
+\vspace{0.3em}
+\textbf{Post-retrieval filtering options:}
+\begin{itemize}
+  \item \textbf{Score threshold:} Drop chunks below a minimum relevance score.
+  \item \textbf{Metadata filter:} Keep only chunks from a specific date range, document type, or author.
+  \item \textbf{Deduplication:} Remove near-identical chunks before passing to the LLM to avoid redundancy.
+  \item \textbf{Auto-merging:} If $>$50\% of a parent document's child chunks are retrieved, replace them with the full parent chunk for richer context.
+\end{itemize}
+
+{\tiny (Ref: https://www.pinecone.io/learn/series/rag/rerankers/)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Retrieval: End-to-End Example (LangChain)}
+
+\textbf{Full pipeline: load $\rightarrow$ chunk $\rightarrow$ embed $\rightarrow$ store $\rightarrow$ retrieve}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{enumerate}
+      \item Load text with \texttt{TextLoader}
+      \item Split: \texttt{RecursiveCharacterTextSplitter}\\
+            chunk=512, overlap=50
+      \item Embed: \texttt{all-MiniLM-L6-v2}
+      \item Store in \texttt{Chroma} vector DB
+      \item Retrieve: \texttt{similarity\_search}, $k=4$
+    \end{enumerate}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain.document_loaders import TextLoader
+from langchain.text_splitter import (
+    RecursiveCharacterTextSplitter)
+from langchain_community.embeddings import (
+    HuggingFaceEmbeddings)
+from langchain_community.vectorstores import Chroma
+
+docs = TextLoader("manual.txt").load()
+
+chunks = RecursiveCharacterTextSplitter(
+    chunk_size=512, chunk_overlap=50
+).split_documents(docs)
+
+embed = HuggingFaceEmbeddings(
+    model_name="all-MiniLM-L6-v2")
+db = Chroma.from_documents(chunks, embed)
+
+results = db.similarity_search(
+    "What is the return policy?", k=4)
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  SECTION 3: GENERATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 3: Generation}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generation: Prompt Construction}
+
+\textbf{The LLM sees exactly what you put in the prompt.} Prompt quality determines answer quality.
+
+\vspace{0.3em}
+\textbf{Standard RAG prompt structure:}
+\begin{enumerate}
+  \item \textbf{System instruction:} Sets role and grounding rules.
+  \newline \textit{Example: ``Answer only from the provided context. If the answer is not in the context, say `I don't know.' Do not add external knowledge.''}
+  \item \textbf{Retrieved context:} The top-$k$ chunks, each labelled with its source file and page.
+  \item \textbf{User query:} The original question.
+\end{enumerate}
+
+\vspace{0.3em}
+\textbf{Context window budget} (example for a 4K-token model):
+\begin{center}
+\small
+\begin{tabular}{lrr}
+\hline
+\textbf{Component} & \textbf{Typical tokens} & \textbf{Budget \%} \\
+\hline
+System prompt     & 100--300   & 5--8\% \\
+Retrieved chunks  & 1500--2500 & 60--70\% \\
+User query        & 20--100    & $<$3\% \\
+Reserved for answer & 300--800 & 15--20\% \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.2em}
+\textbf{Lost-in-the-middle:} LLMs attend less to chunks in the middle of long contexts. Place the most relevant chunk \textit{first or last} in the context block.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Generation: Response Synthesis Strategies}
+
+\textbf{How should the LLM combine multiple retrieved chunks into one answer?}
+
+\begin{itemize}
+  \item \textbf{Stuffing (default):} Concatenate all chunks into one prompt and generate one answer in a single LLM call. Simple and fast; fails when total tokens exceed the context window.
+
+  \item \textbf{Map-Reduce:} Process each chunk separately with the LLM to produce partial answers (map); then merge all partial answers in a second LLM call (reduce). Handles large corpora; more expensive.
+
+  \item \textbf{Summarise-then-Generate:} Summarise the retrieved context first; pass the condensed summary to the LLM. Reduces token cost; risks losing fine-grained details.
+
+  \item \textbf{Iterative Refinement:} Start with an answer from chunk 1; pass it together with chunk 2 to the LLM for refinement; repeat. Final answer incorporates all evidence. Higher quality; sequential latency.
+\end{itemize}
+
+\vspace{0.3em}
+\textbf{Fine-tuning the generation layer} (if base quality is still insufficient):
+\begin{itemize}
+  \item \textbf{Encoder fine-tuning:} Improve embedding quality for the domain.
+  \item \textbf{RA-DIT:} Joint fine-tuning of LLM + retriever on (query, context, answer) triplets.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  SECTION 4: EVALUATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 4: Evaluation}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What to Evaluate and Why}
+
+\textbf{A RAG pipeline has two independently failure-prone components. Evaluate them separately.}
+
+\vspace{0.3em}
+\begin{columns}
+  \begin{column}[T]{0.5\linewidth}
+    \textbf{Retrieval quality}
+    \begin{itemize}
+      \item Did the retriever fetch the right chunks?
+      \item How much noise is in the top-$k$?
+      \item Did it miss any required documents?
+    \end{itemize}
+    \vspace{0.2em}
+    \textit{Fix: chunking, embedding model, query transformation, reranking}
+  \end{column}
+  \begin{column}[T]{0.5\linewidth}
+    \textbf{Generation quality}
+    \begin{itemize}
+      \item Is the answer grounded in the context?
+      \item Does it actually answer the question?
+      \item Does it match the known correct answer?
+    \end{itemize}
+    \vspace{0.2em}
+    \textit{Fix: system prompt, LLM choice, synthesis strategy}
+  \end{column}
+\end{columns}
+
+\vspace{0.4em}
+\textbf{Evaluation data required:}
+\begin{itemize}
+  \item Test \textbf{queries} representative of real user questions.
+  \item \textbf{LLM response} for each query.
+  \item \textbf{Retrieved context} used for each query.
+  \item (For labelled metrics) A \textbf{ground truth} answer per query.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAGAS: Evaluation Framework}
+
+\textbf{RAGAS} is an open-source framework that evaluates a RAG pipeline \textit{without needing human annotations for most metrics}: it uses an LLM as the judge.
+
+\vspace{0.3em}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{llm_eval11}
+\end{center}
+
+{\tiny (Ref: Evaluating LLM Models for Production Systems: Methods and Practices - Andrei Lopatenko)}
+
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{RAGAS: Faithfulness \& Answer Relevancy}
+
+% \textbf{Faithfulness}: measures hallucination.
+% \[
+  % \text{Faithfulness} = \frac{\text{Claims in response verifiable from retrieved context}}{\text{Total claims in response}}
+% \]
+% \textit{Does the LLM stick to the evidence, or does it add facts of its own?}\\
+% Score $<0.7$ typically signals hallucination. No ground truth needed.
+
+% \vspace{0.5em}
+% \textbf{Answer Relevancy}: measures whether the response addresses the question.
+% \[
+  % \text{Answer Relevancy} = \frac{1}{N}\sum_{i=1}^{N} \cos\!\bigl(\mathbf{q}_{\text{orig}},\, \mathbf{q}_{i}^{\text{gen}}\bigr)
+% \]
+% An LLM regenerates $N$ hypothetical questions from the response and compares them to the original query via cosine similarity. Low score = off-topic response. No ground truth needed.
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{RAGAS: Context Recall \& Context Precision}
+
+% \textbf{Context Recall}: did the retriever find all the evidence needed?
+% \[
+  % \text{Context Recall} = \frac{\text{Ground truth sentences attributable to retrieved context}}{\text{Total sentences in ground truth}}
+% \]
+% \textit{Low recall $\Rightarrow$ retriever is missing documents.} Fix: increase $k$, re-embed, improve chunking.\\
+% Requires \textbf{ground truth}.
+
+% \vspace{0.5em}
+% \textbf{Context Precision}: is the retrieved context free of noise?
+% \[
+  % \text{Context Precision} = \frac{\displaystyle\sum_{k=1}^{K} \text{Precision@}k \cdot \mathbf{1}[\text{chunk}_k \text{ relevant}]}{\text{Total relevant chunks in top-}K}
+% \]
+% \textit{Low precision $\Rightarrow$ irrelevant chunks confuse the LLM.} Fix: reranking, metadata filtering, smaller $k$.\\
+% Requires \textbf{ground truth}.
+
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{RAGAS: Context Relevancy \& Answer Correctness}
+
+% \textbf{Context Relevancy}: signal-to-noise ratio of retrieved context.
+% \[
+  % \text{Context Relevancy} = \frac{\text{Sentences in retrieved context relevant to the query}}{\text{Total sentences in retrieved context}}
+% \]
+% \textit{Measures query-level usefulness of the context. No ground truth needed.}
+
+% \vspace{0.5em}
+% \textbf{Answer Correctness}: end-to-end quality against ground truth.
+% \[
+  % \text{Answer Correctness} = w_1 \cdot F_1(\text{facts}) \;+\; w_2 \cdot \cos(\mathbf{e}_{\text{gen}}, \mathbf{e}_{\text{gt}})
+% \]
+% Combines factual $F_1$ overlap with semantic similarity of embeddings. Default $w_1 = w_2 = 0.5$.
+% \textit{Primary end-to-end benchmark metric. Requires ground truth.}
+
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAGAS Metrics: Summary}
+
+\begin{center}
+\small
+\begin{tabular}{|p{2cm}|p{2.5cm}|p{2.5cm}|}
+\hline
+\textbf{Metric} & \textbf{What it measures} &  \textbf{Fix if low} \\
+\hline
+Faithfulness       & Hallucination          & Grounding prompt \\
+Answer Relevancy   & On-topic response      & Query / prompt \\
+Context Recall     & Retriever coverage     & $\uparrow k$, re-embed \\
+Context Precision  & Retriever noise        & Rerank, filter \\
+Context Relevancy  & Context signal/noise   & Rerank, filter \\
+Answer Correctness & End-to-end quality     & Full pipeline \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.3em}
+{\small
+\textbf{No-label quick start:} Run Faithfulness + Answer Relevancy + Context Relevancy continuously in production.\\
+\textbf{Labelled offline eval:} Add Context Recall, Context Precision, Answer Correctness on a curated test set.}
+
+\end{frame}

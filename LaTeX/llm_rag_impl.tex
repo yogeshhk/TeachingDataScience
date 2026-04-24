@@ -1,0 +1,560 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  RAG PIPELINE: END-TO-END IMPLEMENTATION
+%
+%  Tools : LangChain v0.1 (v1 API), DocstringLoader, HuggingFace Embeddings,
+%           ChromaDB, HuggingFaceHub LLM, RAGAS
+%  Data  : local faq.txt
+%  Goal  : academic walk-through of every pipeline step with runnable code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large RAG Pipeline: End-to-End Implementation}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementation Overview}
+
+\textbf{Goal:} Build a question-answering system over a local \texttt{faq.txt} file and measure its quality with RAGAS: using only open-source components.
+
+\vspace{0.4em}
+\begin{center}
+\small
+\texttt{faq.txt}
+$\xrightarrow{\text{1. Load}}$
+\texttt{Documents}
+$\xrightarrow{\text{2. Chunk}}$
+\texttt{Chunks}
+$\xrightarrow{\text{3. Embed}}$
+\texttt{Vectors}
+$\xrightarrow{\text{4. Store}}$
+\texttt{ChromaDB}
+$\xrightarrow{\text{5. Retrieve}}$
+\texttt{Context}
+$\xrightarrow{\text{6. Generate}}$
+\texttt{Answer}
+$\xrightarrow{\text{7. Evaluate}}$
+\texttt{RAGAS Scores}
+\end{center}
+
+% \vspace{0.4em}
+% \begin{center}
+% \small
+% \begin{tabular}{lll}
+% \hline
+% \textbf{Step} & \textbf{Tool} & \textbf{LangChain class} \\
+% \hline
+% Load \& Parse    & DocstringLoader         & \texttt{langchain.document\_loaders} \\
+% Chunk            & Recursive char splitter & \texttt{langchain.text\_splitter} \\
+% Embed            & HuggingFace MiniLM      & \texttt{langchain.embeddings} \\
+% Store            & ChromaDB                & \texttt{langchain.vectorstores} \\
+% Retrieve         & Similarity search       & \texttt{VectorStoreRetriever} \\
+% Generate         & HuggingFaceHub LLM      & \texttt{langchain.llms} \\
+% Chain            & RetrievalQA             & \texttt{langchain.chains} \\
+% Evaluate         & RAGAS                   & \texttt{ragas} \\
+% \hline
+% \end{tabular}
+% \end{center}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Data: faq.txt}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{itemize}
+      \item A plain-text FAQ file: the simplest possible real-world knowledge source.
+      \item Each entry follows a \textbf{Q:} / \textbf{A:} format; entries are separated by a blank line.
+      \item Plain text is ideal for an academic demo: no PDF parsing complexity, no OCR errors, fully reproducible.
+      \item The same pattern scales to any \texttt{.txt}, \texttt{.md}, or \texttt{.rst} knowledge base.
+      \item DocstringLoader will read the entire file into a single LangChain \texttt{Document} object; the splitter then breaks it into per-entry chunks.
+    \end{itemize}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+\begin{lstlisting}[language=bash, basicstyle=\tiny]
+# faq.txt  (excerpt)
+
+Q: What is RAG?
+A: Retrieval-Augmented Generation (RAG)
+   combines a retrieval system with a
+   language model. The retriever fetches
+   relevant documents; the LLM generates
+   an answer grounded in those documents.
+
+Q: Why use RAG instead of fine-tuning?
+A: RAG keeps knowledge outside the model
+   weights, so it can be updated without
+   retraining. Fine-tuning is expensive
+   and risks forgetting prior knowledge.
+
+Q: What is a vector database?
+A: A database optimised for storing and
+   searching high-dimensional embedding
+   vectors using approximate nearest-
+   neighbour (ANN) algorithms.
+
+Q: What is chunking?
+A: Splitting documents into smaller pieces
+   so each piece fits in the LLM context
+   window and carries a focused meaning.
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Dependencies and Setup}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{itemize}
+      \item \textbf{langchain} v0.1: the v1 stable API used throughout this demo.
+      \item \textbf{sentence-transformers}: local embedding model; no API key needed.
+      \item \textbf{chromadb}: lightweight local vector store; persists to disk.
+      \item \textbf{huggingface\_hub}: access to open-source LLMs via Inference API.
+      \item \textbf{ragas}: reference-free RAG evaluation framework.
+      \item \textbf{datasets}: required by RAGAS to build the evaluation dataset object.
+      \item Set \texttt{HUGGINGFACEHUB\_API\_TOKEN} in your environment (free tier is sufficient for demos).
+    \end{itemize}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+\begin{lstlisting}[language=bash, basicstyle=\tiny]
+# Create a virtual environment (recommended)
+conda create -n rag-demo
+conda activate rag-demo
+
+# Install dependencies
+pip install langchain==0.1.20
+pip install langchain-community==0.0.38
+pip install sentence-transformers==2.7.0
+pip install chromadb==0.5.0
+pip install huggingface_hub==0.23.0
+pip install ragas==0.1.9
+pip install datasets==2.19.0
+
+# Set your HuggingFace token
+export HUGGINGFACEHUB_API_TOKEN="hf_..."
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 1: Load and Parse with DocstringLoader}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{itemize}
+      \item \textbf{DocstringLoader} reads a text file and returns a list of LangChain \texttt{Document} objects, each carrying \texttt{page\_content} and \texttt{metadata}.
+      \item Unlike the bare \texttt{TextLoader}, DocstringLoader preserves \textbf{paragraph structure}: blank-line boundaries become natural document boundaries.
+      \item Each \texttt{Document} automatically receives \texttt{source} metadata pointing to the file path, useful for citations in the final answer.
+      \item Printing the first document confirms the content was loaded correctly before proceeding.
+    \end{itemize}
+  {\tiny (Ref: https://python.langchain.com/v0.1/docs/modules/data\_connection/document\_loaders/)}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain.document_loaders import TextLoader
+
+
+loader = TextLoader(
+    file_path="faq.txt",
+    encoding="utf-8"
+)
+documents = loader.load()
+
+print(f"Loaded {len(documents)} document(s)")
+print("--- First document:")
+print(documents[0].page_content[:300])
+print("Metadata:", documents[0].metadata)
+
+# Expected output:
+# Loaded 1 document(s)
+#: First document:
+# Q: What is RAG?
+# A: Retrieval-Augmented Generation ...
+# Metadata: {'source': 'faq.txt'}
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Chunking the Document}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{itemize}
+      \item \textbf{RecursiveCharacterTextSplitter} is the recommended default for plain text: it tries paragraph, then sentence, then word boundaries before falling back to characters.
+      \item \texttt{chunk\_size=300}: each chunk covers roughly one FAQ entry (question + answer).
+      \item \texttt{chunk\_overlap=50}: a 50-character tail is repeated in the next chunk, preventing an answer from being split across a boundary.
+      \item \texttt{separators} list prioritises blank lines (\texttt{\textbackslash n\textbackslash n}) so each Q\&A pair stays together.
+      \item Inspect chunk count and the first chunk to verify boundaries are sensible.
+    \end{itemize}
+  {\tiny (Ref: https://python.langchain.com/v0.1/docs/modules/data\_connection/text\_splitting/)}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain.text_splitter import  RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=300,
+    chunk_overlap=50,
+    separators=["\n\n", "\n", " ", ""]
+)
+
+chunks = splitter.split_documents(documents)
+
+print(f"Total chunks: {len(chunks)}")
+print("\n--- Chunk 0:")
+print(chunks[0].page_content)
+print("\n--- Chunk 1:")
+print(chunks[1].page_content)
+
+# Each chunk should contain one Q&A pair.
+# chunk_overlap ensures no answer is lost
+# at a boundary.
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 3: Embed and Store in ChromaDB}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{itemize}
+      \item \textbf{HuggingFaceEmbeddings} wraps the \texttt{sentence-transformers} library. \texttt{all-MiniLM-L6-v2} maps text to 384-dimensional vectors: lightweight and fast on CPU.
+      \item \textbf{Chroma.from\_documents()} embeds every chunk and stores vectors plus original text on disk under \texttt{./chroma\_db}.
+      \item \texttt{persist\_directory} enables loading the index in future sessions without re-embedding.
+      \item Printing the collection count confirms all chunks were indexed successfully.
+    \end{itemize}
+  {\tiny (Ref: https://python.langchain.com/v0.1/docs/integrations/vectorstores/chroma/)}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import Chroma
+
+# Local embedding model - no API key needed
+embedding_model = HuggingFaceEmbeddings(
+    model_name="all-MiniLM-L6-v2",
+    model_kwargs={"device": "cpu"}
+)
+
+# Build and persist the vector store
+vectorstore = Chroma.from_documents(
+    documents=chunks,
+    embedding=embedding_model,
+    persist_directory="./chroma_db"
+)
+vectorstore.persist()
+
+count = vectorstore._collection.count()
+print(f"Indexed {count} chunks in ChromaDB")
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 4: Retriever and Prompt Template}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{itemize}
+      \item \texttt{as\_retriever(search\_kwargs=\{"k": 3\})} returns a \texttt{VectorStoreRetriever} that runs cosine similarity search and returns the top-3 chunks.
+      \item The \textbf{PromptTemplate} injects both \texttt{\{context\}} (retrieved chunks) and \texttt{\{question\}} (user query) into a single formatted string.
+      \item The grounding instruction: ``\textit{use only the provided context}'': is the key safeguard against hallucination. If the answer is absent from context, the model is instructed to say so.
+      \item \texttt{input\_variables} must match exactly the placeholder names used in the template string.
+    \end{itemize}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain.prompts import PromptTemplate
+
+# Retriever: return top-3 similar chunks
+retriever = vectorstore.as_retriever(
+    search_type="similarity",
+    search_kwargs={"k": 3}
+)
+
+# Grounded prompt template
+template = """You are a helpful assistant.
+Answer the question using ONLY the context
+provided below. If the answer is not in
+the context, say "I don't know."
+
+Context:
+{context}
+
+Question: {question}
+
+Answer:"""
+
+prompt = PromptTemplate(
+    input_variables=["context", "question"],
+    template=template
+)
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 5: LLM and RetrievalQA Chain}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{itemize}
+      \item \textbf{HuggingFaceHub} calls the HuggingFace Inference API: no local GPU needed. \texttt{google/flan-t5-large} is a compact instruction-following model well-suited to Q\&A.
+      \item \texttt{max\_new\_tokens=256} caps response length; \texttt{temperature=0} makes output deterministic: important for reproducible academic experiments.
+      \item \textbf{RetrievalQA.from\_chain\_type()} wires the retriever, prompt, and LLM into a single callable object.
+      \item \texttt{return\_source\_documents=True} exposes which chunks were used, enabling manual inspection and RAGAS evaluation.
+    \end{itemize}
+  {\tiny (Ref: https://python.langchain.com/v0.1/docs/modules/chains/)}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain.llms import HuggingFaceHub
+from langchain.chains import RetrievalQA
+
+# Open-source LLM via HuggingFace Inference API
+llm = HuggingFaceHub(
+    repo_id="google/flan-t5-large",
+    model_kwargs={
+        "temperature": 0,
+        "max_new_tokens": 256
+    }
+)
+
+# Wire retriever + prompt + LLM into one chain
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=retriever,
+    return_source_documents=True,
+    chain_type_kwargs={"prompt": prompt}
+)
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 6: Query the Pipeline}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{itemize}
+      \item Calling \texttt{qa\_chain()} with a query string triggers the full pipeline in one step: embed query $\rightarrow$ retrieve top-3 chunks $\rightarrow$ format prompt $\rightarrow$ LLM generates answer.
+      \item The result dict contains \texttt{"result"} (the answer string) and \texttt{"source\_documents"} (the retrieved \texttt{Document} objects).
+      \item Printing source documents lets you verify the retriever fetched relevant chunks: the first diagnostic step when answers look wrong.
+      \item Inspect \texttt{page\_content} of each source doc to confirm it contains evidence for the answer.
+    \end{itemize}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+query = "What is RAG and why is it useful?"
+
+result = qa_chain({"query": query})
+
+print("Question:", query)
+print("\nAnswer:", result["result"])
+print("\n--- Retrieved chunks:")
+for i, doc in enumerate(
+        result["source_documents"], 1):
+    print(f"\n[Chunk {i}]")
+    print(doc.page_content[:200])
+
+# Sample output:
+# Answer: RAG combines a retrieval system
+# with a language model. It is useful
+# because knowledge can be updated without
+# retraining the model weights.
+#
+# [Chunk 1]
+# Q: What is RAG?
+# A: Retrieval-Augmented Generation ...
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 7: RAGAS Evaluation Dataset}
+
+\begin{columns}
+  \begin{column}[T]{0.6\linewidth}
+    \begin{itemize}
+      \item RAGAS requires four parallel lists for evaluation:
+        \begin{itemize}
+          \item \textbf{questions}: the test queries.
+          \item \textbf{answers}: LLM responses from our pipeline.
+          \item \textbf{contexts}: the retrieved chunk texts for each query (list of lists).
+          \item \textbf{ground\_truths}: known correct answers (list of lists); needed for Recall and Correctness metrics.
+        \end{itemize}
+      \item Run the pipeline for each test question in a loop; collect the answer and source document texts.
+      \item Wrap everything in a HuggingFace \texttt{Dataset} object: the format RAGAS \texttt{evaluate()} expects.
+    \end{itemize}
+  {\tiny (Ref: https://docs.ragas.io/en/stable/getstarted/evaluation/)}
+  \end{column}
+  \begin{column}[T]{0.4\linewidth}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from datasets import Dataset
+
+test_questions = [
+    "What is RAG?",
+    "Why use RAG instead of fine-tuning?",
+    "What is a vector database?",
+    "What is chunking in RAG?"
+]
+ground_truths = [
+    ["RAG combines retrieval with an LLM."],
+    ["RAG updates knowledge without retraining."],
+    ["A DB for storing embedding vectors."],
+    ["Splitting documents into smaller pieces."]
+]
+
+answers, contexts = [], []
+for q in test_questions:
+    res = qa_chain({"query": q})
+    answers.append(res["result"])
+    contexts.append([
+        d.page_content
+        for d in res["source_documents"]
+    ])
+
+eval_dataset = Dataset.from_dict({
+    "question":     test_questions,
+    "answer":       answers,
+    "contexts":     contexts,
+    "ground_truths": ground_truths
+})
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 8: RAGAS Metrics and Results}
+
+\begin{columns}
+  \begin{column}[T]{0.65\linewidth}
+    \begin{itemize}
+      \item \textbf{faithfulness}: are all claims in the answer verifiable from retrieved context? Scores below 0.7 indicate hallucination.
+      \item \textbf{answer\_relevancy}: does the answer address the question? Low score means the response is off-topic.
+      \item \textbf{context\_recall}: did the retriever fetch all evidence present in the ground truth?
+      \item \textbf{context\_precision}: what fraction of retrieved chunks was actually useful?
+      \item All scores are in $[0,1]$; higher is better. For a clean FAQ, scores above 0.85 are achievable with default settings.
+    \end{itemize}
+  {\tiny (Ref: https://docs.ragas.io/en/stable/concepts/metrics/)}
+
+    % \vspace{0.2em}
+    % \begin{center}
+    % \small
+    % \begin{tabular}{ll}
+    % \hline
+    % \textbf{Metric} & \textbf{Sample} \\
+    % \hline
+    % Faithfulness      & 0.92 \\
+    % Answer Relevancy  & 0.88 \\
+    % Context Recall    & 0.87 \\
+    % Context Precision & 0.90 \\
+    % \hline
+    % \end{tabular}
+    % \end{center}
+  \end{column}
+  \begin{column}[T]{0.35\linewidth}
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from ragas import evaluate
+from ragas.metrics import faithfulness, answer_relevancy, context_recall, context_precision
+
+# RAGAS uses an LLM internally as judge.
+# Default judge model: gpt-3.5-turbo.
+# For a fully local setup use a local LLM:
+# from ragas.llms import LangchainLLMWrapper
+# ragas_llm = LangchainLLMWrapper(llm)
+
+result = evaluate(
+    dataset=eval_dataset,
+    metrics=[
+        faithfulness,
+        answer_relevancy,
+        context_recall,
+        context_precision
+    ]
+)
+
+# Print scores as a pandas DataFrame
+df = result.to_pandas()
+print(df[["question",
+          "faithfulness",
+          "answer_relevancy",
+          "context_recall",
+          "context_precision"]])
+\end{lstlisting}
+  \end{column}
+\end{columns}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Key design decisions and their rationale}
+
+\begin{itemize}
+  \item \textbf{\texttt{chunk\_size=300}, \texttt{k=3}:} Each FAQ entry fits in one chunk; 3 chunks give enough context without overflowing the prompt.
+  \item \textbf{Grounding instruction in prompt:} The single highest-impact step to reduce hallucination: forces the LLM to stay within retrieved evidence.
+  \item \textbf{\texttt{temperature=0}:} Makes every run deterministic; essential for reproducible academic experiments.
+  \item \textbf{RAGAS without ground truth:} \textit{faithfulness} and \textit{answer\_relevancy} need no labels: run them in production for continuous monitoring.
+  \item \textbf{Scaling up:} Replace \texttt{faq.txt} with any document set; swap \texttt{Chroma} for Qdrant or Pinecone; replace \texttt{flan-t5-large} with any LangChain-compatible LLM.
+\end{itemize}
+
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Complete Pipeline Summary}
+
+% \begin{center}
+% \small
+% \begin{tabular}{clll}
+% \hline
+% \textbf{Step} & \textbf{What happens} & \textbf{Class used} & \textbf{Key parameter} \\
+% \hline
+% 1 & Load \texttt{faq.txt}     & \texttt{TextLoader}                       & \texttt{encoding="utf-8"} \\
+% 2 & Chunk text                & \texttt{RecursiveCharacterTextSplitter}    & \texttt{chunk\_size=300} \\
+% 3 & Embed chunks              & \texttt{HuggingFaceEmbeddings}            & \texttt{all-MiniLM-L6-v2} \\
+% 4 & Store vectors             & \texttt{Chroma.from\_documents()}         & \texttt{persist\_directory} \\
+% 5 & Retrieve top-3            & \texttt{VectorStoreRetriever}             & \texttt{k=3} \\
+% 6 & Format prompt             & \texttt{PromptTemplate}                   & grounding instruction \\
+% 7 & Generate answer           & \texttt{HuggingFaceHub}                   & \texttt{flan-t5-large} \\
+% 8 & Evaluate                  & \texttt{ragas.evaluate()}                 & 4 metrics \\
+% \hline
+% \end{tabular}
+% \end{center}
+
+% \end{frame}

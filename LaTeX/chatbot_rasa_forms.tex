@@ -1,0 +1,111 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Forms}
+
+{\tiny (Ref: https://rasa.com/docs/rasa/core/forms/)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{What is a Form?}
+\begin{itemize}
+\item Most common pattern in chatbot, is to collect a few pieces of information from a user in order to do something (book a restaurant, call an API, search a database, etc.). 
+\item This is also called slot filling.
+\item If you need to collect multiple pieces of information in a row, use FormAction. 
+\item This is a single action which contains the logic to loop over the required slots and ask the user for this information. 
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{How to use Form?}
+
+\begin{itemize}
+\item Add form name to the domain file
+\begin{lstlisting}
+forms:
+  - restaurant_form
+actions:
+  ...
+\end{lstlisting}
+\item Include the FormPolicy in your policy configuration file.
+\begin{lstlisting}
+policies:
+  - name: "FormPolicy"
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Form Basics}
+\begin{itemize}
+\item Using a FormAction, you can describe all of the happy paths with a single story.
+\begin{lstlisting}
+## happy path
+* request_restaurant
+    - restaurant_form
+    - form{"name": "restaurant_form"}
+    - form{"name": null}
+\end{lstlisting}
+\item The User intent is ``request\_restaurant''
+\item The the form action ``restaurant\_form''
+\item With form{"name": "restaurant\_form"} the form is activated
+\item With form{"name": null} the form is deactivated again
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Form Action}
+\begin{itemize}
+\item The FormAction will only request slots which haven’t already been set. 
+\item If a user starts the conversation with : ``I’d like a vegetarian Chinese restaurant for 8 people''
+\item then they won’t be asked about the ``cuisine'' and ``num\_people'' slots.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{restaurant\_form}
+In actions.py for class restaurant\_form define following methods:
+\begin{itemize}
+\item name: the name of this action
+\item required\_slots: a list of slots that need to be filled for the submit method to work.
+\item submit: what to do at the end of the form, when all the slots have been filled.
+\end{itemize}
+\begin{lstlisting}
+def name(self) -> Text:
+    """Unique identifier of the form"""
+
+    return "restaurant_form"
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{restaurant\_form}
+actions.py
+\begin{lstlisting}
+@staticmethod
+def required_slots(tracker: Tracker) -> List[Text]:
+    """A list of required slots that the form has to fill"""
+
+    return ["cuisine", "num_people", "outdoor_seating", "preferences", "feedback"]
+def submit(self,dispatcher: CollectingDispatcher,
+    tracker: Tracker,domain: Dict[Text, Any],) -> List[Dict]:
+    """Define what the form has to do
+        after all required slots are filled"""
+
+    # utter submit template
+    dispatcher.utter_template("utter_submit", tracker)
+    return []
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{frame}[fragile]\frametitle{Form Action}
+\begin{itemize}
+\item Every time the form action gets called, it will ask the user for the next slot in required\_slots which is not already set. 
+\item It does this by looking for a template called ``utter\_ask\_{slot\_name}'', 
+\item So you need to define these in your domain file for each required slot.
+\item Once all the slots are filled, the submit() method is called, where you can to query a restaurant API.
+\end{itemize}
+\end{frame}

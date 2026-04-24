@@ -1,0 +1,1177 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\topic}{Mobile Robotics}
+
+\slides
+
+%\newcommand{\+}{\myplus}
+%\renewcommand{\-}{\,\text{-}\,}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Darpa challenge}
+\slide{}{
+
+\show[1]{06-darpaGrandChallenge}
+
+{\hfill\tiny\url{http://www.darpa.mil/grandchallenge05/}}
+
+\mov{DARPA Grand Challenge 2005}{10-RoboticsLecture/2005-DARPA_Grand_Challenge_Final_Part_2.avi}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\show[1]{07-DarpaUrbanChallenge}
+
+
+{\hfill\tiny\url{http://www.darpa.mil/grandchallenge/index.asp}}
+
+\mov{DARPA Grand Urban Challenge
+2007}{10-RoboticsLecture/2007-The_Robot_Champion_of_DARPA_s_Urban_Challenge.avi}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\show[1]{2009-Quadcopter-movie.png}
+
+{\hfill\tiny\url{http://www.slawomir.de/publications/grzonka09icra/grzonka09icra.pdf}}
+
+\mov{Quadcopter Indoor Localization}{10-RoboticsLecture/2009-Quadcopter-SLAM.avi}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\show[.9]{10-STAIR}
+
+{\hfill\tiny\url{http://stair.stanford.edu/multimedia.php}}
+
+\mov{STAIR: STanford Artificial Intelligence Robot}{10-RoboticsLecture/10-STAIR_office_stapler.avi}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Types of Robot Mobility}{\center
+
+\showh[.3]{pioneer}
+\qquad\qquad\showh[.2]{mars-nasa-opportunity}
+
+~
+
+\showh[.2]{asimoWalk}
+\qquad\qquad\showh[.4]{quadcopter}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \slide{Types of Robot Mobility}{\center
+
+%% \showh[.7]{omnidrive}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item Each type of robot mobility corresponds to a 
+
+\cen{system equation $x_{t\po} = x_t + \tau f(x_t,u_t)$}
+
+%{\small(e.g., see lecture ``Dynamics \& non-holonomic systems'')}
+
+or, if the dynamics are stochastic,
+
+\medskip
+
+\eqbox{\large $P(x_{t\po} \| u_t, x_t) = \NN(x_{t\po} \| x_t + \tau f(x_t,u_t), \S)$}
+
+~
+
+\item We considered control, path finding, and trajectory optimization
+
+~
+
+For this we always assumed to know the state $x_t$ of the robot (e.g., its
+posture/position)!
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Outline}{
+
+\item PART I:
+
+A core challenge in mobile robotics is \textbf{state
+estimation}
+
+$\to$ Bayesian filtering \& smoothing
+
+~~~ particles, Kalman
+
+~
+
+\item PART II:
+
+Another challenge is to \textbf{build a map} while exploring
+
+$\to$ SLAM (simultaneous localization and mapping)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{State Estimation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{State Estimation Problem}{
+
+\item Our sensory data does not provide sufficient information to determine
+our location.
+
+~
+
+\item Given the local sensor readings $y_t$, the current state $x_t$ (location, position) is
+\emph{uncertain}.
+
+~
+
+-- which hallway?
+\anchor{100,-55}{\showh[.2]{hallway}}
+
+-- which door exactly?
+
+-- which heading direction?
+
+~
+
+~
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{State Estimation Problem}{
+
+\twocol{.5}{.5}{
+\item What is the probability of being in front of room 154, given we
+  see what is shown in the image?
+
+~
+
+\item What is the probability given that we were just in front of room
+  156?
+
+~
+
+\item What is the probability given that we were in front of room 156
+  and moved 15 meters?
+}{
+\show{hallway}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Recall Bayes' theorem}{
+
+\Large
+
+~
+
+\cen{$P(X|Y) = \frac{P(Y|X)~ P(X)}{P(Y)}$}
+
+~
+
+\cen{$\text{posterior} =
+\frac{\text{likelihood} ~\cdot~ \text{prior}}{\text{(normalization)}}$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Applying Bayes' rule to state estimation}
+\slide{}{
+
+\item How can we apply this to the\newline
+ State Estimation Problem?
+\anchor{100,-100}{\showh[.3]{hallway}}
+
+
+~\mypause
+
+~
+
+~
+
+Using Bayes Rule:
+
+{$P(\text{location} \| \text{sensor})
+= \frac{P(\text{sensor} \| \text{location})
+  P(\text{location})}{P(\text{sensor})}$}
+
+\show[.6]{localization}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Bayes Filter}
+\slide{Bayes Filter}{
+
+$x_t$ = state (location) at time $t$
+
+$y_t$ = sensor readings at
+  time $t$
+
+$u_{t\1}$ = control command (action, steering, velocity) at
+  time $t\1$
+
+~
+
+\item Given the history $y_{0:t}$ and $u_{0:t\1}$, we want to compute the probability
+  distribution over the state at time $t$
+
+~
+
+\eqbox{\large $p_t(x_t) := P(x_t \| y_{0:t}, u_{0:t\1})$}
+
+~
+
+\item Generally:
+
+\show[.6]{filtering}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Bayes Filter}{
+
+\vspace*{-5mm}
+\begin{align*}
+p_t&(x_t) := P(x_t \| y_{0:t}, u_{0:t\1}) \\
+\onslide<2->{&= c_t~ P(y_t \| x_t, y_{0:t\1}, u_{0:t\1})~ P(x_t \| y_{0:t\1}, u_{0:t\1})\\}
+\onslide<3->{&= c_t~ P(y_t \| x_t)~ P(x_t \| y_{0:t\1}, u_{0:t\1})\\}
+\onslide<4->{&= c_t~ P(y_t \| x_t)~ \int_{x_{t\1}} P(x_t,x_{t\1} \| y_{0:t\1}, u_{0:t\1})~ dx_{t\1}\\}
+\onslide<5->{&= c_t~ P(y_t \| x_t)~ \int_{x_{t\1}} P(x_t \| x_{t\1}, y_{0:t\1},
+u_{0:t\1})~ P(x_{t\1} \| y_{0:t\1}, u_{0:t\1})~ dx_{t\1}\\}
+\onslide<6->{&= c_t~ P(y_t \| x_t)~ \int_{x_{t\1}} P(x_t \| x_{t\1}, u_{t\1})~ P(x_{t\1} \| y_{0:t\1}, u_{0:t\1})~ dx_{t\1}\\}
+\onslide<7->{&= c_t~ {\color{red}P(y_t \| x_t)}~ \int_{x_{t\1}} {\color{red}P(x_t
+  \| u_{t\1}, x_{t\1})}~ p_{t\1}(x_{t\1})~ dx_{t\1}}
+\end{align*}
+
+\only<2>{using Bayes rule $P(X|Y,Z) = c~ P(Y|X,Z)~ P(X|Z)$ with some
+normalization constant $c_t$}
+
+\only<3>{uses conditional independence of the observation on past observations
+and controls}
+
+\only<4>{by definition of the marginal}
+
+\only<5>{by definition of a conditional}
+
+\only<6>{given $x_{t\1}$, $x_t$ depends only on the controls $u_{t\1}$ (Markov Property)}
+
+\only<7>{
+\item A Bayes filter updates the posterior belief $p_t(x_t)$ in each
+  time step using the:
+
+~~ observation model ~ $P(y_t \| x_t)$
+
+~~ transition model ~ $P(x_t \| u_{t\1}, x_{t\1})$
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Bayes Filter}{
+
+\cen{\large $p_t(x_t)
+~\propto~ \underbrace{P(y_t \| x_t)}_\text{new information}~ \underbrace{\int_{x_{t\1}} P(x_t
+  \| u_{t\1}, x_{t\1})~ \underbrace{p_{t\1}(x_{t\1})}_\text{old
+    estimate}~ dx_{t\1}}_{\text{predictive estimate } \hat p_t(x_t)}$}
+
+~
+
+1. We have a belief $p_{t\1}(x_{t\1})$ of our previous position 
+
+~
+
+2. We use the motion model to predict the current
+position
+
+\cen{$\hat p_t(x_t) \propto \int_{x_{t\1}} P(x_t \| u_{t\1}, x_{t\1})~ p_{t\1}(x_{t\1})~ dx_{t\1}$}
+
+~
+
+3. We integetrate this with the current observation to get a better
+belief
+
+\cen{$p_t(x_t) \propto P(y_t \| x_t)~ \hat p_t(x_t)$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item Typical transition model $P(x_t \| u_{t\1}, x_{t\1})$ in robotics:
+
+~
+
+\show[.6]{motionModel1}
+
+~
+
+(from \emph{Robust Monte Carlo localization for mobile robots}
+Sebastian Thrun, Dieter Fox, Wolfram Burgard, Frank Dellaert)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Odometry: Filtering without observations}
+\slide{Odometry (``Dead Reckoning''): Filtering without observations}{
+
+\item The predictive distributions $\hat p_t(x_t)$ \emph{without
+  integrating observations} (removing the $P(y_t|x_t)$ part from the
+  Bayesian filter)
+
+~
+
+\show[.5]{motionModel2}
+
+~
+
+(from \emph{Robust Monte Carlo localization for mobile robots}
+Sebastian Thrun, Dieter Fox, Wolfram Burgard, Frank Dellaert)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+Again, predictive distributions $\hat p_t(x_t)$ \emph{without
+  integrating landmark observations}
+
+~
+
+\show{filtering2}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+The Bayes-filtered distributions $p_t(x_t)$ integrating landmark observations
+
+~
+
+\show{filtering3}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Bayesian Filters}{
+
+\item How to represent the belief $p_t(x_t)$:
+
+~
+
+~
+
+\item Gaussian
+\anchor{30,-70}{\showh[.3]{gaussian}}
+
+~
+
+~
+
+~
+
+~
+
+\item Particles
+
+\show{particles.png}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Recall: Particle Representation of a Distribution}{
+
+\item Weighed set of $N$ particles $\{ (x^i, w^i) \}_{i=1}^N$
+
+~
+
+\cen{$p(x) \approx q(x) := \sum_{i=1}^N w^i \d(x,x^i)$}
+
+~
+
+~
+
+\show[.6]{particleRepresentation}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Particle Filter = Bayes Filter with Particles}
+\slide{Particle Filter := Bayesian Filtering with Particles}{
+
+(Bayes Filter: $p_t(x_t) ~\propto~ P(y_t \| x_t) \int_{x_{t\1}}
+P(x_t \| u_{t\1}, x_{t\1})~ p_{t\1}(x_{t\1})~ dx_{t\1}$~)
+
+~
+
+\show[.7]{particleFiltering}
+
+1. Start with $N$ particles $\{ (x^i_{t\1}, w^i_{t\1}) \}_{i=1}^N$
+
+2. Resample particles to get $N$ weight-1-particles: $\{ \hat
+x^i_{t\1} \}_{i=1}^N$
+
+3. Use motion model to get new ``predictive'' particles $\{ x^i_t
+\}_{i=1}^N$
+
+~~~ each $x^i_t \sim P(x_t \| u_{t\1}, \hat x^i_{t\1})$
+
+4. Use observation model to assign new weights $w^i_t \propto P(y_t \| x^i_t)$
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\item ``Particle Filter''
+
+~
+
+aka \emph{Monte Carlo Localization} in the mobile robotics community
+
+~
+
+\emph{Condensation Algorithm} in the vision community
+
+~
+
+\item Efficient resampling is important:
+
+Typically ``Residual Resampling'':
+
+~
+
+{\small Instead of sampling directly $\hat n^i \sim
+  \text{Multi}(\{Nw_i\})$ set $\hat n^i = \lfloor N w_i \rfloor +
+\bar n_i$ with $\bar n_i \sim \text{Multi}(\{Nw_i-\lfloor N w_i \rfloor\})$
+
+Liu \& Chen (1998): Sequential Monte Carlo Methods for Dynamic Systems.
+
+Douc, Capp\'e \& Moulines: Comparison of Resampling Schemes for Particle Filtering.
+
+}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example:~ Quadcopter Localization}{
+
+\show[1]{2009-Quadcopter-movie.png}
+
+{\hfill\tiny\url{http://www.slawomir.de/publications/grzonka09icra/grzonka09icra.pdf}}
+
+\mov{Quadcopter Indoor Localization}{10-RoboticsLecture/2009-Quadcopter-SLAM.avi}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Typical Pitfall in Particle Filtering}{
+
+\item Predicted particles $\{ x^i_t
+\}_{i=1}^N$ have very low observation likelihood $P(y_t \| x^i_t)
+\approx 0$
+
+(``particles die over time'')
+
+~
+
+\item Classical solution: generate particles also with other than
+  purely forward proposal $P(x_t \| u_{t\1}, x_{t\1})$:
+
+~
+
+-- Choose a proposal that depends on the new observation $y_t$, ideally approximating
+$P(x_t \| y_t, u_{t\1}, x_{t\1})$
+
+~
+
+-- Or mix particles sampled directly from $P(y_t \| x_t)$ and from
+$P(x_t \| u_{t\1}, x_{t\1})$.
+
+{\tiny(\emph{Robust Monte Carlo
+localization for mobile robots.}  Sebastian Thrun, Dieter Fox, Wolfram
+Burgard, Frank Dellaert)\\}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Kalman Filter = Bayes Filter with Gaussian}
+\slide{Kalman filter := Bayesian Filtering with Gaussians}{
+
+Bayes Filter: $p_t(x_t) ~\propto~ P(y_t \| x_t) \int_{x_{t\1}}
+P(x_t \| u_{t\1}, x_{t\1})~ p_{t\1}(x_{t\1})~ dx_{t\1}$~
+
+~
+
+\item Can be computed analytically for linear-Gaussian observations
+  and transitions:
+
+$P(y_t \| x_t) = \NN(y_t \| C x_t + c, W)$
+
+$P(x_t \| u_{t\1}, x_{t\1}) = \NN(x_t \| A(u_{t\1})~ x_{t\1} + a(u_{t\1}), Q)$
+
+~
+
+\providecommand{\+}{\myplus}
+\renewcommand{\-}{\,\text{-}\,}
+\tiny
+
+Defition:\\
+$\NN(x \| a,A) = \frac{1}{|2\pi A|^{1/2}}~ \exp\{-\half (x\-a)^\T~ A^\1~ (x\-a)\}$
+
+Product:\\
+$\NN(x \| a,A)~ \NN(x \| b,B) 
+ = \NN(x \| B(A\+B)^\1a + A(A\+B)^\1b ,A(A\+B)^\1B)~~ \NN(a\|b,A+B)$
+
+``Propagation'':\\
+$\int_y \NN(x \| a + Fy, A)~ \NN(y \| b, B)~ dy
+ = \NN(x \| a + Fb, A+FBF^\T)$
+
+Transformation:\\
+$ \NN(F x + f \| a,A)
+ = \frac{1}{|F|}~ \NN(x \| ~ F^\1 (a-f),~ F^\1 AF^\mT) $
+
+~
+
+(more identities: see ``Gaussian identities'' {\tiny\url{http://ipvs.informatik.uni-stuttgart.de/mlr/marc/notes/gaussians.pdf}})
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Kalman filter equations}
+\slide{Kalman filter derivation}{
+
+\tiny
+\begin{align*}
+&\quad p_t(x_t) = \NN(x_t \| s_t, S_t) \\
+&\quad P(y_t \| x_t) = \NN(y_t \| C x_t + c, W) \\
+&\quad P(x_t \| u_{t\1}, x_{t\1}) = \NN(x_t \| A x_{t\1} + a, Q) \\
+p_t&(x_t) \propto
+P(y_t \| x_t) \int_{x_{t\1}} P(x_t \| u_{t\1}, x_{t\1})~ p_{t\1}(x_{t\1})~ dx_{t\1} \\
+&= \NN(y_t \| C x_t + c, W)~ \int_{x_{t\1}}
+ \NN(x_t \| A x_{t\1} + a, Q)~
+ \NN(x_{t\1} \| s_{t\1}, S_{t\1})~ dx_{t\1} \\
+&= \NN(y_t \| C x_t + c, W)~
+ \NN(x_t \| \underbrace{A s_{t\1} + a}_{=:\hat
+ s_t},~ \underbrace{Q + A S_{t\1} A^\T}_{=:\hat S_t}) \\
+&= \NN(C x_t + c \| y_t , W)~
+ \NN(x_t \| \hat s_t, \hat S_t) \\
+&= \NN[x_t \| C^\T W^\1(y_t-c) ,~ C^\T W^\1 C] ~
+ \NN(x_t \| \hat s_t, \hat S_t) \\
+&= \NN(x_t \| s_t, S_t) \cdot\<\text{terms indep. of $x_t$}\> \\
+S_t
+&= (C^\T W^\1 C+\hat S_t^\1)^\1
+ = \hat S_t
+ - \underbrace{\hat S_t C^\T(W+C \hat S_t C^\T)^\1}_{\text{``Kalman gain'' $K$}} C \hat S_t \\
+s_t
+&= S_t [C^\T W^\1(y_t-c) + \hat S_t^\1 \hat s_t]
+ = \hat s_t + K(y_t-C \hat s_t-c)
+\end{align*}
+The second to last line uses the general Woodbury identity.
+
+The last line uses $S_t C^\T W^\1=K$ and $S_t\hat S_t^\1=\Id-K C$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Extended KF, Unscented Transform}
+\slide{Extended Kalman filter (EKF) and Unscented Transform}{
+
+Bayes Filter: $p_t(x_t) ~\propto~ P(y_t \| x_t) \int_{x_{t\1}}
+P(x_t \| u_{t\1}, x_{t\1})~ p_{t\1}(x_{t\1})~ dx_{t\1}$~
+
+~
+
+\item Can be computed analytically for linear-Gaussian observations
+  and transitions:
+
+$P(y_t \| x_t) = \NN(y_t \| C x_t + c, W)$
+
+$P(x_t \| u_{t\1}, x_{t\1}) = \NN(x_t \| A(u_{t\1}) x_{t\1} + a(u_{t\1}), Q)$
+
+~
+
+\item If $P(y_t \| x_t)$ or $P(x_t \| u_{t\1}, x_{t\1})$ are not
+  linear:
+
+$P(y_t \| x_t) = \NN(y_t \| g(x_t), W)$
+
+$P(x_t \| u_{t\1}, x_{t\1}) = \NN(x_t \| f(x_{t\1},u_{t\1}), Q)$
+
+-- approximate $f$ and $g$ as locally linear (\emph{Extended Kalman Filter})
+
+-- or sample locally from them and reapproximate as Gaussian
+(\emph{Unscented Transform})
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Bayes smoothing}{
+
+~
+
+\show{filtering}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Bayes smoothing}{
+
+\item Let $\PP=y_{0:t}$ past observations, 
+ $\FF=y_{t\po:T}$ future observations
+\begin{align*}
+P(x_t \| \PP, \FF, u_{0:T})
+% &= \frac{P(\FF \| x_t, \PP, u_{0:T})~ P(x_t\|\PP, u_{0:T})}{P(\FF\|\PP, u_{0:T})} \\
+&\propto
+P(\FF \| x_t, \PP, u_{0:T})~ P(x_t\|\PP, u_{0:T}) \\
+&=
+\underbrace{P(\FF \| x_t, u_{t:T})}_{=:\b_t(x_t)}~ \underbrace{P(x_t\|\PP, u_{0:t\1})}_{=:p(x_t)}
+\end{align*}
+{\hspace*{-9mm}\color{red}\emph{Bayesian smoothing fuses a forward filter $p_t(x_t)$ with a backward
+``filter'' $\b_t(x_t)$}}
+
+~\mypause
+
+\item Backward recursion (derivation analogous to the Bayesian filter)
+\begin{align*}
+\b_t(x_t)
+&:=
+P(y_{t\po:T} \| x_t, u_{t:T}) \\
+%% &=
+%% \int_{x_{t\po}} P(y_{t\po:T}, x_{t\po} \| x_t, u_{t:T})~ dx_{t\po}
+%% \comment{def.\ of marginal}\\
+%% &= 
+%% \int_{x_{t\po}} P(y_{t\po:T} \| x_{t\po}, x_t, u_{t:T})~ P(x_{t\po} \| x_t, u_{t:T})~ dx_{t\po}
+%% \comment{def.\ of conditional}\\
+%% &= 
+%% \int_{x_{t\po}} P(y_{t\po:T} \| x_{t\po}, u_{t\po:T})~ P(x_{t\po} \| x_t, u_t)~ dx_{t\po}
+%% \comment{conditional independenciet} \\
+%% &= 
+%% \int_{x_{t\po}} P(y_{t\pT:T}, y_{t\po} \| x_{t\po}, u_{t\po:T})~ P(x_{t\po} \| x_t, u_t)~ dx_{t\po}\\
+%% &= 
+%% \int_{x_{t\po}} P(y_{t\pT:T}\| y_{t\po}, x_{t\po}, u_{t\po:T})~ P(y_{t\po} \| x_{t\po}, u_{t\po:T})~  P(x_{t\po} \| x_t, u_t)~ dx_{t\po}
+%% \comment{def.\ of conditional} \\
+%% &= 
+%% \int_{x_{t\po}} P(y_{t\pt:T}\| x_{t\po}, u_{t\po:T})~ P(y_{t\po} \| x_{t\po})~  P(x_{t\po} \| x_t, u_t)~ dx_{t\po}
+%% \comment{conditional independenciet} \\
+&= 
+\int_{x_{t\po}} \b_{t\po}(x_{t\po})~ P(y_{t\po} \| x_{t\po})~ P(x_{t\po} \| x_t, u_t)~ dx_{t\po}
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Simultaneous Localization and Mapping (SLAM)}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Localization and Mapping}{
+
+\item The Bayesian filter requires an observation model $P(y_t \| x_t)$
+
+~
+
+\item A \textbf{map} is something that provides the
+observation model:
+
+\emph{A map tells us for each $x_t$ what the sensor readings $y_t$ might
+look like}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Types of maps}{
+
+~
+
+\hspace*{-8mm}\twocol{.5}{.5}{
+\textbf{Grid map}
+
+%\show[.5]{murphyGridMap}
+\show[.5]{gridMap2}
+
+{\tiny
+
+K. Murphy (1999): \emph{Bayesian map learning\\ in dynamic
+environments.}
+
+%% {\hfill\tiny\url{http://www.cs.ubc.ca/~murphyk/Papers/map_nips99.pdf}\\}
+
+Grisetti, Tipaldi, Stachniss, Burgard, Nardi:\\
+\emph{Fast and Accurate SLAM with\\
+Rao-Blackwellized Particle Filters}
+
+%% {\hfill\tiny\url{http://www.informatik.uni-freiburg.de/~stachnis/pdf/grisetti07jras.pdf}\\}
+
+}
+
+~
+
+\textbf{Laser scan map}
+
+\show[.8]{2009-Quadcopter-movie.png}
+
+}{
+
+\textbf{Landmark map}
+
+%\show{victoria}
+%\showh[.4]{FastSLAM-vic1}
+\show[.8]{FastSLAM-vic2}
+
+
+%% {\hfill\tiny\url{http://www-personal.acfr.usyd.edu.au/nebot/victoria_park.htm}}
+
+\mov{Victoria Park data set}{10-RoboticsLecture/vic_park_turn_in_out.mpg}
+
+{\tiny M. Montemerlo, S. Thrun, D. Koller, \& B. Wegbreit (2003): \emph{FastSLAM
+2.0: An improved particle filtering algorithm for simultaneous
+localization and mapping that provably converges.} IJCAI, 1151--1156.
+
+}
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Definition of a map, definition of SLAM problem}
+\slide{Simultaneous Localization and Mapping Problem}{
+
+\item Notation:
+
+$x_t$ = state (location) at time $t$
+
+$y_t$ = sensor readings at time $t$
+
+$u_{t\1}$ = control command (action, steering, velocity) at time $t\1$
+
+$m$ = the map; \emph{formally: a map is the parameters that define $P(y_t \| x_t, m)$}
+
+~
+
+\item Given the history $y_{0:t}$ and $u_{0:t\1}$, we want to compute
+the belief over the pose {\color{red}AND THE MAP} $m$ at time $t$
+
+~
+
+\cen{\large $p_t(x_t,m) := P(x_t, m \| y_{0:t}, u_{0:t\1})$}
+
+~
+
+\item We assume to know the:
+
+-- transition model ~ $P(x_t \| u_{t\1}, x_{t\1})$
+
+-- observation model ~ $P(y_t \| x_t, {\color{red}m})$ ~ \emph{(defined
+   by the map)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{SLAM: classical ``chicken or egg problem''}{
+
+\item  If we knew the state trajectory $x_{0:t}$ we could efficiently compute the belief over the map
+$$P(m \| x_{0:t}, y_{0:t}, u_{0:t\1})$$
+
+~
+
+\item If we knew the map we could use a Bayes filter to compute the belief over the state
+$$P(x_t \| m, y_{0:t}, u_{0:t\1})$$
+
+~\mypause
+
+\item SLAM requires to tie state estimation and map building together:
+
+1) Joint inference on $x_t$ and $m$ ~ ($\to$ Kalman-SLAM)
+
+2) Tie a state hypothesis (=particle) to a map hypothesis \\ ~~~
+($\to$ particle SLAM)
+
+3) Frame everything as a graph optimization problem ~ ($\to$ graph SLAM)
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Joint Bayes Filter over state and map (Kalman SLAM)}
+\slide{Joint Bayesian Filter over $x$ and $m$}{
+
+\item A (formally) straight-forward approach is the joint
+Bayesian filter
+
+~
+
+\cen{$p_t(x_t,m)
+~\propto~
+ P(y_t \| x_t,m)~
+ \int_{x_{t\1}} P(x_t \| u_{t\1}, x_{t\1})~ p_{t\1}(x_{t\1},m)~ dx_{t\1}$}
+
+~
+
+~
+
+But: How represent a belief over high-dimensional $x_t,m$?
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{Map uncertainty}{
+
+\item In the case the map $m=(\t_1,..,\t_N)$ is a set of $N$ landmarks,
+   $\t_j \in\RRR^2$
+
+~
+
+\show[.5]{landmarkUncertainties}
+
+~
+
+\item Use Gaussians to represent the uncertainty of landmark positions
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{(Extended) Kalman Filter SLAM}{
+
+\item Analogous to Localization with Gaussian for the pose belief
+   $p_t(x_t)$
+
+-- But now: joint belief $p_t(x_t,\t_{1:N})$ is $3+2N$-dimensional Gaussian
+
+-- Assumes the map $m=(\t_1,..,\t_N)$ is a set of $N$ landmarks,
+   $\t_j \in\RRR^2$
+
+-- Exact update equations (under the Gaussian assumption)
+
+-- Conceptually very simple
+
+~
+
+\item Drawbacks:
+
+-- Scaling (full covariance matrix is $O(N^2)$)
+
+-- Sometimes non-robust (uni-modal, ``data association problem'')
+
+-- Lacks advantages of Particle Filter\\
+~~ (multiple hypothesis, more robust to non-linearities)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Particle SLAM}
+\key{Particles carry their own history, their own map}
+\slide{SLAM with particles}{
+
+\cen{\textbf{Core idea: Each particle carries its own map
+belief}}
+
+~\mypause
+
+\item Use a conditional representation ``$p_t(x_t,m) = p_t(x_t)~
+p_t(m\|x_t)$''
+
+{\small(This notation is flaky... the below is more precise)}
+
+~
+
+\item As for the Localization Problem use particles to represent
+the \emph{pose belief} $p_t(x_t)$
+
+Note: Each particle actually ``has a history $x^i_{0:t}$'' --
+a whole trajectory!
+
+~
+
+\item For each particle separately, estimate the \emph{map belief} $p^i_t(m)$
+conditioned on the particle history $x^i_{0:t}$.
+
+The conditional beliefs $p^i_t(m)$ may be factorized over grid points or
+landmarks of the map
+
+~
+
+K. Murphy (1999): \emph{Bayesian map learning in dynamic
+environments.}
+
+{\hfill\tiny\url{http://www.cs.ubc.ca/~murphyk/Papers/map_nips99.pdf}\\}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Map estimation for a \protect\emph{given} particle history}{
+
+\item Given $x_{0:t}$ (e.g.\ a trajectory of a particle), what is the
+posterior over the map $m$?
+
+~
+
+$\to$ simplified Bayes Filter:
+$$p_t(m)
+:= P(m \| x_{0:t}, y_{0:t}) \propto P(y_t \| m, x_t)~ p_{t\1}(m)$$
+
+(no transtion model: assumption that map is constant)
+
+~
+
+\item In the case of landmarks (FastSLAM):
+
+$m = (\t_1,..,\t_N)$
+
+$\t_j$ = position of the $j$th landmark, $j\in\{1,..,N\}$
+
+$n_t$ = which landmark we observe at time $t$, ~ $n_t\in\{1,..,N\}$
+
+~
+
+We can use a separate (Gaussian) Bayes Filter for each $\t_j$
+
+{\tiny conditioned on $x_{0:t}$, each $\t_j$ is independent from each
+$\t_k$:
+
+$$P(\t_{1:N} \| x_{0:t}, y_{0:n}, n_{0:t} ) = \prod_j P(\t_j \|
+x_{0:t}, y_{0:n}, n_{0:t} )$$
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Particle likelihood in SLAM}{
+
+\item Particle likelihood for Localization Problem:
+
+\cen{$w^i_t = P(y_t \| x^i_t)$}
+
+(determins the new importance weight $w^i_t$
+
+~
+
+\item In SLAM the map is uncertain $\to$ each particle is weighted
+with the \emph{expected} likelihood:
+
+\cen{$w^i_t = \int P(y_t \| x^i_t, m)~ p_{t-1}(m)~ d m$}
+
+~
+
+\item In case of landmarks (FastSLAM):
+
+\cen{$w^i_t = \int P(y_t \| x^i_t, \t_{n_t}, n_t)~ p_{t-1}(\t_{n_t})~ d \t_{n_t}$}
+
+~
+
+
+\item Data association problem (actually we don't know $n_t$):
+
+For each particle separately choose $n^i_t = \argmax_{n_t} w^i_t(n_t)$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Particle-based SLAM summary}{
+
+\item We have a set of $N$ particles $\{ (x^i, w^i) \}_{i=1}^N$ to
+represent the pose belief $p_t(x_t)$
+
+~
+
+\item For each particle we have a separate map belief $p^i_t(m)$; in
+the case of landmarks, this factorizes in $N$ separate 2D-Gaussians
+
+~
+
+\item Iterate
+
+1. Resample particles to get $N$ weight-1-particles: $\{ \hat
+x^i_{t\1} \}_{i=1}^N$
+
+2. Use motion model to get new ``predictive'' particles $\{ x^i_t
+\}_{i=1}^N$
+
+{\color{blue}3. Update the map belief $p^i_m(m) \propto P(y_t \| m, x_t)~
+p^i_{t\1}(m)$ for each particle}
+
+4. Compute new importance weights $w^i_t \propto \int P(y_t \| x^i_t,
+m)~ p_{t-1}(m)~ d m$\\ ~~~ using the observation model {\color{blue}and the map belief}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Demo: Visual SLAM}{
+
+\item Map building from a freely moving camera
+
+~
+
+\show{visualSlam}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Demo: Visual SLAM}{
+
+\item Map building from a freely moving camera
+
+~
+
+-- SLAM has become a big topic in the vision community..
+
+
+-- features are typically landmarks $\t_{1:N}$ with SURF/SIFT features
+
+-- PTAM (Parallel Tracking and Mapping) parallelizes computations...
+
+~
+
+\mov{PTAM1}{10-RoboticsLecture/ptam1.avi}
+\mov{PTAM2}{10-RoboticsLecture/ptam2.avi}
+\mov{DTAM}{11-DTAM-Davidson.mp4}
+\mov{KinectFusion}{11-KinectFusion-Davidson.mp4}
+\mov{LSD-SLAM}{14-LSD-slam.mp4}
+
+~
+
+Klein \& Murray: \emph{Parallel Tracking and Mapping for Small AR Workspaces}
+{\tiny\hfill\url{http://www.robots.ox.ac.uk/~gk/PTAM/}}
+
+Newcombe, Lovegrove \& Davison: \emph{DTAM: Dense Tracking and Mapping
+in Real-Time} ICCV 2011.
+{\tiny\hfill\url{http://www.doc.ic.ac.uk/~rnewcomb/}}
+
+Engel, Sch\"ops \& Cremers: LSD-SLAM: Large-Scale Direct Monocular SLAM, ECCV 2014.
+{\tiny\hfill\url{http://vision.in.tum.de/_media/spezial/bib/engel14eccv.pdf}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Graph-based SLAM}
+\slide{Alternative SLAM approach: Graph-based}{
+
+\show[.5]{filtering3}
+
+
+\item Represent the previous trajectory as a graph
+
+-- nodes = estimated
+   positions \& observations
+
+-- edges = transition \& step estimation based on scan matching
+
+\item Loop Closing: check if some nodes might coincide $\to$ new edges
+
+\item Classical Optimization:
+
+The whole graph defines an optimization problem: Find poses that
+minimize sum of edge \& node errors
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Loop Closing Problem}{
+
+(Doesn't explicitly exist in Particle Filter methods: If particles
+cover the belief, then ``data association'' solves the ``loop
+closing problem'')
+
+\show[.4]{SLAMloopClosing}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Graph-based SLAM}{
+
+\showh[.4]{graph-basedSlam1}
+\qquad
+\showh[.4]{graph-basedSlam2}
+
+~
+
+{\tiny \emph{Life-long Map Learning for Graph-based
+SLAM Approaches in Static Environments}
+Kretzschmar, Grisetti, Stachniss}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{A comment...}{
+
+%% \item It is sometimes said:
+
+%% ``SLAM is \textbf{one of the most fundamental problems} for
+%% robots to become truly autonomous.''
+
+%% ~
+
+%% I certainly don't agree!!
+
+%% There are much much deeper problems around in robotics...
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{SLAM code}{\label{lastpage}
+
+\item Graph-based and grid map methods:
+
+\url{http://openslam.org/}
+
+~
+
+~
+
+\item Visual SLAM
+
+see previous links
+
+e.g. \url{http://ewokrampage.wordpress.com/}
+
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot
+
+

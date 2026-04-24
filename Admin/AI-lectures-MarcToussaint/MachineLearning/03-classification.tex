@@ -1,0 +1,910 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Machine Learning}
+\renewcommand{\coursepicture}{course_ml}
+\renewcommand{\coursedate}{Summer 2019}
+\renewcommand{\topic}{Classification \& Structured Output}
+\renewcommand{\keywords}{Structured output, structured input,
+discriminative function, joint input-output features, Likelihood
+Maximization, Logistic regression, binary \& multi-class case,
+conditional random fields}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Structured ouput and structured input}
+\slide{Structured Output \& Structured Input}{
+
+\item regression:
+\begin{align*}
+\RRR^d &\to \RRR \qquad\qquad
+\end{align*}
+
+\item structured output:
+\begin{align*}
+\RRR^d &\to \text{binary class label } \{0,1\}  \\
+\RRR^d &\to \text{integer class label } \{1,2,..,M\} \\
+\RRR^d &\to \text{sequence labelling } y_{1:T} \\
+\RRR^d &\to \text{image labelling } y_{1:W,1:H} \\
+\RRR^d &\to \text{graph labelling } y_{1:N}
+\end{align*}
+
+\item structured input:
+\begin{align*}
+\text{relational database} &\to \RRR && \\
+\text{labelled graph/sequence} &\to \RRR && \\
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{The discriminative function}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Discriminative function}
+\slide{Discriminative Function}{
+
+\item Represent a discrete-valued function
+$F:~ \RRR^d\to Y$ via a \textbf{discriminative function}
+$$f:~ \RRR^d \times Y \to \RRR$$
+such that
+
+\eqbox{$F:~ x \mapsto \argmax_y f(x,y)$}
+
+That is, a discriminative function $f(x,y)$ maps an input $x$ to an output
+$$\hat y(x) = \argmax_y f(x,y)$$
+
+\item A discriminative function $f(x,y)$ has high value if $y$ is a
+correct answer to $x$; and low value if $y$ is a false answer
+
+\item In that way a discriminative function discriminates correct
+labelling from wrong ones
+
+}
+
+
+
+%% \slide{Discriminative function}{
+
+%% \showh[.4]{discriminativeFct1}
+%% \qquad
+%% \showh[.4]{discriminativeFct2}
+
+%% ~
+
+%% Left: shows the three functions $f(x,1)$, $f(x,2)$, $f(x,3)$ that
+%% discriminate the three classes (along diagonal axis).
+
+%% ~
+
+%% {\tiny Sometimes it is helpful to think of $f(x,y)$ as $M$ separate
+%% functions for each class $y\in\{1,..,M\}$ -- the highest one
+%% determines the class prediction $\hat y$\\}
+
+%% ~
+%% \hfill{\tiny\texttt{plot[-3:3] -x-2,0,x-2 ~ splot[-3:3][-3:3] -x-y-2,0,x+y-2 }}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example Discriminative Function}{
+
+~
+
+\item Input: $x\in\RRR^2$; output $y\in\{1,2,3\}$
+
+displayed are $p(y\=1|x)$, $p(y\=2|x)$, $p(y\=3|x)$
+
+\show[.7]{codepics/quad3Class2}
+
+\tiny
+
+(here already ``scaled'' to the interval [0,1]... explained later)
+
+~
+
+\item You can think of $f(x,y)$ as $M$ separate
+functions, one for each class $y\in\{1,..,M\}$. The highest one
+determines the class prediction $\hat y$
+
+\item More examples: \texttt{plot[-3:3] -x-2,0,x-2~ splot[-3:3][-3:3] -x-y-2,0,x+y-2}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{How could we parameterize a discriminative function?}{
+
+\item Linear in features!
+\begin{items}
+\item Same features, different parameters for each output: $f(x,y) = \phi(x)^\T \b_y$
+\item More general input-output features:
+$f(x,y) = \phi(x,y)^\T \b$
+\end{items}
+
+~\small
+
+\item Example for joint features: Let $x\in\RRR$ and $y\in\{1,2,3\}$,
+might be
+
+$\phi(x,y) = {\tiny \mat{c}{
+1~~ ~ [y=1]\\
+x~~ ~ [y=1]\\
+x^2 ~ [y=1]\\
+1~~ ~ [y=2]\\
+x~~ ~ [y=2]\\
+x^2 ~ [y=2]\\
+1~~ ~ [y=3]\\
+x~~ ~ [y=3]\\
+x^2 ~ [y=3]}}
+$, \quad which is equivalent to $f(x,y) = \mat{c}{1\\x\\x^2}^\T \b_y$
+
+~
+
+\item Example when both $x,y\in\{0,1\}$ are discrete:
+{\tiny
+$$\phi(x,y) = \mat{c}{1\\ {[x=0]}{[y=0]}\\ {[x=0]}{[y=1]}\\ {[x=1]}{[y=0]}\\{[x=1]}{[y=1]}}$$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Notes on features}{
+
+\item Features ``connect'' input and output. Each $\phi_j(x,y)$ allows $f$
+to capture a certain dependence between $x$ and $y$
+
+\item If both $x$ and $y$ are discrete, a feature $\phi_j(x,y)$ is typically
+a joint indicator function (logical function), indicating a certain
+``event''
+
+\item Each weight $\b_j$ mirrors how important/frequent/infrequent a certain
+dependence described by $\phi_j(x,y)$ is
+
+\item $-f(x,y)$ is also called energy, and the
+is also called \textbf{energy-based modelling}, esp.\ in
+neural modelling
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Loss functions for classification}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Accuracy, Precision, Recall}
+\slide{What is a good objective to train a classifier?}{
+
+\item \textbf{Accuracy, Precision \& Recall:}
+
+For data size $n$, \emph{false positives} (FP), \emph{true
+positives} (TP), we define:
+
+~
+
+\begin{items}
+\item accuracy = $\frac{\text{TP+TN}}{n}$
+
+\item precision = $\frac{\text{TP}}{\text{TP+FP}}$ $\qquad\quad$ {\tiny (TP+FP = classifier positives)}
+
+\item recall (TP-rate) = $\frac{\text{TP}}{\text{TP+FN}}$ $\quad$ {\tiny (TP+FN = data positives)}
+
+\item FP-rate = $\frac{\text{FP}}{\text{FP+TN}}$ $\qquad\qquad$ {\tiny (FP+TN = data negatives)}
+\end{items}
+
+~
+
+\item Such metrics be our actual objective. But they are not differentiable.
+
+For the purpose of ML, we need to define a ``proxy'' objective that is nice to optimize.
+
+~
+
+\item Bad idea: Squared error regression
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Bad idea: Squared error regression of class indicators}{
+
+\item Train $f(x,y)$ to be the indicator function for class $y$
+
+{\tiny that is, $\forall y:$ train $f(x,y)$ on the regression data $D=\{ (x_i,I(y\=y_i)) \}_{i=1}^n$:
+
+~~ train $f(x,1)$ on value 1 for all $x_i$ with $y_i=1$ and on 0 otherwise
+
+~~ train $f(x,2)$ on value 1 for all $x_i$ with $y_i=2$ and on 0 otherwise
+
+~~ train $f(x,3)$ on value 1 for all $x_i$ with $y_i=3$ and on 0 otherwise
+
+...
+
+}
+
+\pause
+
+\item This typically fails: ~ (see also Hastie 4.2)
+
+\cen{\showh[.25]{indicatorRegression1}
+\qquad
+\showh[.25]{indicatorRegression2}}
+
+{\small
+
+Although the optimal separating boundaries are linear and linear
+discriminating functions could represent them, the linear
+functions trained on class indicators fail to discriminate.
+
+}
+\cen{\emph{$\to$ squared error regression on class indicators is the ``wrong objective''}}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\key{Log-likelihood}
+\key{Neg-log-likelihood}
+\slide{Log-Likelihood}{
+
+\item The discriminative function $f(y,x)$ not only defines the class prediction $F(x)$; we can additionally also define probabilities,
+
+\eqbox{$p(y\|x) = \frac{e^{f(x,y)}}{\sum_{y'} e^{f(x,y')}}$}
+
+~
+
+\item Maximizing Log-Likelihood: ~ (minimize neg-log-likelihood, nll)
+
+\eqbox{$L^\text{nll}(\b) = -\sum_{i=1}^n \log p(y_i \| x_i)$}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Cross entropy}
+\key{one-hot-vector}
+\slide{Cross Entropy}{
+
+\item This is the same as log-likelihood for categorical data, just a notational trick, really.
+
+\item The categorical data $y_i\in\{1,..,M\}$ are class labels. But assume they are encoded in a \textbf{one-hot-vector}
+
+$$\hat y_i = \vec{e}_{y_i} = (0,..,0,1,0,...,0) \comma \hat y_{iz} = [y_i=z]$$
+
+Then we can write the neg-log-likelihood as
+%
+$$L^\text{nll}(\b) = -\sum_{i=1}^n \sum_{z=1}^M \hat y_{iz} \log p(z \| x_i) = \sum_{i=1}^n H(\hat y_i,~ p(\cdot, x_i))$$
+
+where $H(p,q) = -\sum_z p(z) \log q(z)$ is the so-called cross entropy between two normalized multinomial distributions $p$ and $q$.
+
+~
+
+\item As a side note, the cross entropy measure would also work if the target $\hat y_i$ are probabilities instead of one-hot-vectors.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Hinge loss}
+\slide{Hinge loss}{
+
+\item For a data point $(x,y^*)$, the \textbf{one-vs-all hinge loss} ``wants'' that $f(y^*,x)$ is larger than any other $f(y,x)$, $y\not=y^*$, by a margin of 1.
+
+In other terms, it penalizes when $f(y^*,x) < f(y,x) + 1$, $y\not=y^*$.
+
+\item It penalizes linearly, therefore the one-vs-all hinge loss is defined as
+
+$$L^\text{hinge}(f) =  \sum_{y\not=y^*} [1 - (f(y^*,x)-f(y,x))]_+$$
+
+~
+
+\item This is related to \textbf{Support Vector Machines} (only data points inside the margin induce an error and
+gradient), and also to the \textbf{Perceptron Algorithm}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Logistic regression}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Logistic regression (multi-class)}
+\slide{Logistic regression: Multi-class case}{
+
+\item Data $D=\{(x_i,y_i)\}_{i=1}^n$ with $x_i \in \RRR^d$ and
+$y_i \in \{1,..,M\}$
+
+\item We choose $f(x,y) = \phi(x)^\T \b_y$ with separate parameters $\b_y$ for each $y$
+%% {\tiny
+%% $$\phi(x,y) = \mat{c}{\phi(x)~ [y=1]\\ \phi(x)~ [y=2]\\ \vdots
+%% \\ \phi(x)~ [y=M]}$$}
+%% where $\phi(x)$ are arbitrary features. We have $M$ (or $M\1$)
+%% parameters $\b$
+
+%% \hfill{\tiny(optionally we may set $f(x,M)=0$ and drop the last
+%% entry)}
+
+\item Conditional class probabilties
+$$p(y\|x)
+ = \frac{e^{f(x,y)}}{\sum_{y'} e^{f(x,y')}}
+\qquad \oto \qquad f(x,y)-f(x,z) = \log \frac{p(y\|x)}{p(z\|x)}$$
+
+\hfill{\tiny(the discriminative functions model ``\emph{log-ratios}'')}
+
+\item Given data $D=\{(x_i,y_i)\}_{i=1}^n$, we minimize the regularized neg-log-likelihood
+
+\medskip
+\eqbox{$L^\text{logistic}(\b)
+= - \sum_{i=1}^n \log p(y_i \| x_i) + {\color{red} \l\norm{\b}^2}$}
+
+~
+
+\small
+Written as cross entropy ~ (with one-hot encoding $\hat y_{iz} = [y_i=z]$):%
+$$L^\text{logistic}(\b)
+= - \sum_{i=1}^n 
+ \sum_{z=1}^M [y_i=z] \log p(z \| x_i) + {\color{red} \l\norm{\b}^2} $$
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Optimal parameters $\b$}{
+
+\item Gradient:
+$$\frac{\del L^\text{logistic}(\b)}{\del \b_c}^\T
+ = \sum_{i=1}^n (p_{ic} - y_{ic}) \phi(x_i) + 2\l I \b_c
+ = X^\T (p_c - y_c) + 2\l I \b_c$$
+where $p_{ic} = p(y\=c\|x_i)$
+
+\medskip
+
+{\tiny which is non-linear in $\b$  $~\To~$ $\del_\b L=0$ does not have an analytic
+solution
+
+}
+
+~
+
+\item Hessian:
+$$H
+ = \frac{\del^2 L^\text{logistic}(\b)}{\del \b_c\del \b_d}
+  = X^\T W_{cd} X + 2 [c=d]~ \l I$$
+where $W_{cd}$ is diagonal with $W_{cd,ii} = p_{ic} ([c=d]-p_{id})$
+
+~
+
+\item Newton algorithm: iterate
+
+\medskip
+\eqbox{$\b \gets \b
+ - H^\1~
+ \frac{\del L^\text{logistic}(\b)}{\del \b}^\T$}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+polynomial (quadratic) ridge 3-class logistic regression:
+
+\hspace*{-10mm}
+\showh[.4]{codepics/quad3Class}
+\showh[.7]{codepics/quad3Class2}
+
+~
+
+\hfill{\tiny\texttt{
+ ./x.exe -mode 3 -d 2 -n 200 -modelFeatureType 3 -lambda 1e+1}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\item Note, if we have $M$ discriminative functions $f(x,y)$, w.l.o.g., we can always choose one of them to be constantly zero. E.g.,
+
+$$f(x,M) \equiv 0 \text{~or~} \b_M\equiv 0$$
+
+The other functions then have to be greater/less relative to this baseline.
+
+~
+
+\item This is usually not done in the multi-class case, \emph{but almost always in the binary case}.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Logistic regression (binary)}
+\slide{Logistic regression: Binary case}{
+
+\small
+
+\item In the binary case, we have ``two functions'' $f(x,0)$ and
+$f(x,1)$. \textbf{W.l.o.g.\ we may fix $f(x,0)=0$ to zero.} Therefore we choose features
+$$\phi(x,y) = \phi(x)~ [y=1] $$
+with arbitrary input features $\phi(x) \in \RRR^k$
+\item We have
+{\small
+ $$f(x,1) = \phi(x)^\T \b \comma
+ \hat y = \argmax_y f(x,y) = \left\{\arr{cc}{
+0 & \text{else} \\
+1 & \text{if } \phi(x)^\T \b>0}\right.$$\\}
+
+\item and conditional class probabilities
+$$p(1\|x)
+ = \frac{e^{f(x,1)}}{e^{f(x,0)}+e^{f(x,1)}}
+ = \s(f(x,1))\anchor{0,-25}{\showh[.3]{codepics/sigmoid}}$$
+
+with the \emph{logistic sigmoid function} $\s(z) = \frac{e^z}{1+e^z}
+= \frac{1}{e^{-z}+1}$. % for any $z\in\RRR$.
+
+~
+
+\item Given data $D=\{(x_i,y_i)\}_{i=1}^n$, we minimize the regularized neg-log-likelihood
+
+\medskip
+\eqbox{$L^\text{logistic}(\b)
+= - \sum_{i=1}^n \log p(y_i \| x_i) + {\color{red} \l\norm{\b}^2}$}
+\medskip
+
+\cen{\tiny$
+= - \sum_{i=1}^n \[ y_i \log p(1 \| x_i) +
+(1-y_i) \log [1-p(1 \| x_i)]\] + \l\norm{\b}^2$}
+
+%% {\tiny (here with Ridge regularization term $\l\norm{\b}^2$)}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Optimal parameters $\b$}{
+
+\item Gradient (see exercises):
+{\small \begin{align*}
+\frac{\del L^\text{logistic}(\b)}{\del \b}^\T
+&= \sum_{i=1}^n (p_i - y_i) \phi(x_i) + 2\l I \b
+ = X^\T (p - y) + 2\l I \b \\
+& \text{where}\quad p_i := p(y\=1\|x_i)
+\comma
+X
+ = \mat{c}{\phi(x_1)^\T \\ \vdots \\ \phi(x_n)^\T} \in\RRR^{n\times k}
+\end{align*}}
+
+%{\tiny (derivation: exercise)}
+
+~
+
+\item Hessian
+$H
+ = \frac{\del^2 L^\text{logistic}(\b)}{\del \b^2}
+ = X^\T W X + 2 \l I$
+
+$W=\diag(p\circ(1-p))$, that is, diagonal with $W_{ii} = p_i (1-p_i)$
+
+
+~
+
+\item Newton algorithm: iterate
+
+\medskip
+\eqbox{$\b \gets \b
+ - H^\1~
+ \frac{\del L^\text{logistic}(\b)}{\del \b}^\T$}
+
+
+
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% {\tiny
+%% Note: \quad $
+%% \frac{p}{1-p} = e^f ~\To~
+%% %\Leftrightarrow p = \frac{1}{1+e^{-f}}
+%% %\comma
+%% y \log p + (1-y) \log (1-p) %\\
+%% %% &= y \log p + (1-y) \log (p/e^f) \\
+%% %% &= y \log p + \log p - \log e^f - y \log p + y \log e^f \\
+%% %% &= \log p - \log e^f + y \log e^f \\
+%% %% &= \log e^f - \log(1+e^f) - \log e^f + y \log e^f \\
+%% = y \log e^f - \log(1+e^f)
+%% $
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+polynomial (cubic) ridge logistic regression:
+
+\hspace*{-10mm}
+\showh[.4]{codepics/cubicClass}
+\showh[.7]{codepics/cubicClass2}
+
+~
+
+\hfill{\tiny\texttt{
+ ./x.exe -mode 2 -d 2 -n 200 -modelFeatureType 3 -lambda 1e+0}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+RBF ridge logistic regression:
+
+\hspace*{-10mm}
+\showh[.4]{codepics/kernelRidgeClass}
+\showh[.7]{codepics/kernelRidgeClass2}
+
+~
+
+\hfill{\tiny\texttt{
+ ./x.exe -mode 2 -d 2 -n 200 -modelFeatureType 4 -lambda 1e+0 -rbfBias 0 -rbfWidth .2}}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Recap}{
+
+~
+
+\footnotesize
+\hspace*{-10mm}
+\begin{tabular}{p{.23\columnwidth}|p{.35\columnwidth}|p{.37\columnwidth}}
+& ridge regression
+& logistic regression \\
+\hline
+REPRESENTATION
+& $f(x) = \phi(x)^\T \b$
+& $f(x,y) = \phi(x,y)^\T \b$ \\
+\hline
+OBJECTIVE
+& $L^{\text{ls}}(\b) =$\newline
+  \mbox{~}\quad$\sum_{i=1}^n (y_i - f(x_i))^2 + \l\norm{\b}_I^2$
+& $L^\text{logistic}(\b) =$\newline
+  \mbox{~}\quad$ -\sum_{i=1}^n \log p(y_i \| x_i) + \l\norm{\b}_I^2$ \newline
+  \mbox{~}\quad$p(y\|x)\propto e^{f(x,y)}$ \\
+\hline
+SOLVER
+& $\hat \b^\text{ridge} = (X^\T X + \l I)^\1 X^\T y$
+& binary case:\newline
+   $\b \gets \b - (X^\T W X + 2 \l I)^\1~$\newline
+  \mbox{~}\hfill $(X^\T (p - y) + 2\l I \b)$
+\end{tabular}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sublecture{Conditional Random Fields**}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Examples for Structured Output}{
+
+\item Text tagging
+
+{\tiny
+
+$X$ = sentence 
+
+$Y$ = tagging of each word
+
+\url{http://sourceforge.net/projects/crftagger} \\
+
+}
+
+~
+
+\item Image segmentation
+
+{\tiny
+
+$X$ = image
+
+$Y$ = labelling of each pixel
+
+\url{http://scholar.google.com/scholar?cluster=13447702299042713582}
+
+}
+
+~
+
+\item Depth estimation
+
+{\tiny
+
+$X$ = single image
+
+$Y$ = depth map
+
+\url{http://make3d.cs.cornell.edu/}
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{CRFs in image processing}{
+
+%\incpage
+%\newpage
+\hspace*{-7mm}\includegraphics[width=1\columnwidth]{img-mCRF}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{CRFs in image processing}{
+
+\item Google ``conditional random field image''
+
+\begin{items}
+\item Multiscale Conditional Random Fields for Image Labeling
+(CVPR 2004)
+
+\item Scale-Invariant Contour Completion Using Conditional Random Fields
+(ICCV 2005)
+
+\item Conditional Random Fields for Object Recognition (NIPS 2004)
+
+\item Image Modeling using Tree Structured Conditional Random Fields
+(IJCAI 2007)
+
+\item A Conditional Random Field Model for Video Super-resolution
+(ICPR 2006)
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{From Regression to Structured Output}{
+
+%% \item Our first step in regression was to define $f:~ \RRR^d\to\RRR$ as
+%% $$f(x) = \phi(x)^\T \b$$
+%% -- we defined a loss function\\
+%% -- derived optimal parameters $\b$
+
+%% ~
+
+%% ~
+
+%% \cen{How could we \textbf{represent} a discrete-valued function
+%% $F:~ \RRR^d\to Y$?}
+
+%% ~
+
+%% ~\mypause
+
+%% \cen{\Large\textbf{$\to$~ Discriminative Function}}
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Conditional random fields**}
+\slide{Conditional Random Fields (CRFs)}{
+
+\item CRFs are a generalization of logistic binary and multi-class
+classification
+
+\item The output $y$ may be an arbitrary (usually discrete) thing
+(e.g., sequence/image/graph-labelling)
+
+
+\item Hopefully we can maximize efficiently
+$$\argmax_y f(x,y)$$
+over the output!
+
+$\to$ $f(x,y)$ should be \emph{structured} in $y$ so this optimization
+is efficient.
+
+~
+
+\item The name CRF describes that  $p(y | x)
+ \propto e^{f(x,y)}$ defines a probability distribution (a.k.a.\
+ random field) over the output $y$ conditional to the input $x$. The
+ word ``field'' usually means that this distribution is structured (a
+ graphical model; see later part of lecture).
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{CRFs: the structure is in the features}{
+
+\item Assume $y = (y_1,..,y_l)$ is a tuple of individual (local)
+discrete labels
+
+\item We can assume that $f(x,y)$ is linear in features
+$$f(x,y) = \sum_{j=1}^k \phi_j(x,y_{\del j}) \b_j = \phi(x,y)^\T \b$$
+where \textbf{each feature $\phi_j(x,y_{\del j})$ depends only on a
+subset $y_{\del j}$ of labels}. $\phi_j(x,y_{\del j})$ effectively
+couples the labels $y_{\del j}$. Then $e^{f(x,y)}$ is
+a \textbf{factor graph}.
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: pair-wise coupled pixel labels}{
+
+\show[.5]{mrf2}
+
+\item Each black box corresponds to features $\phi_j(y_{\del j})$
+which couple  neighboring pixel labels $y_{\del j}$
+
+\item Each gray box corresponds to features $\phi_j(x_j,y_j)$ which
+couple a local pixel observation $x_j$ with a pixel label $y_j$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{CRFs:~ Core equations}{
+
+\vspace*{-5mm}
+\begin{align*}
+f(x,y)
+ &= \phi(x,y)^\T \b \\
+p(y | x)
+ &= \frac{e^{f(x,y)}}{\sum_{y'} e^{f(x,y')}}
+  = e^{f(x,y) - Z(x,\b)} \\
+Z(x,\b)
+ &= \log \sum_{y'} e^{f(x,y')} \quad\text{(log partition function)}\\
+L(\b)
+ &= - \sum_i \log p(y_i | x_i)
+  = - \sum_i [f(x_i,y_i) - Z(x_i,\b)] \\
+\na Z(x,\b)
+ &= \sum_y p(y|x)~ \na f(x,y) \\
+\he Z(x,\b)
+ &= \sum_y p(y|x)~ \na f(x,y)~ \na f(x,y)^\T
+  - \na Z~ \na Z^\T
+\end{align*}
+
+~
+
+\item This gives the neg-log-likelihood $L(\b)$, its gradient and
+Hessian
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Training CRFs}{\label{lastpage}
+
+\item Maximize conditional likelihood
+
+{\small
+But Hessian is typically too large (Images: $\sim$10\,000
+pixels, $\sim$50\,000 features)
+
+If $f(x,y)$ has a chain structure over $y$, the Hessian is usually
+banded $\to$ computation time linear in chain length
+
+}
+
+~
+
+Alternative: Efficient gradient method, e.g.:
+
+{\tiny Vishwanathan et al.: Accelerated Training of Conditional Random
+Fields with Stochastic Gradient Methods
+
+}
+
+~
+
+\item Other loss variants, e.g., hinge loss as with Support Vector Machines
+
+{\tiny(``Structured output SVMs'')}
+
+~
+
+\item Perceptron algorithm: Minimizes hinge loss using a
+gradient method
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\slide{End of Part I: The Basis}{
+
+%% \cen{\fbox{\begin{minipage}{.28\columnwidth}\center
+%% \textbf{features/kernel}\\\tiny
+%% polynomial\\
+%% RBF\\
+%% sigmoidal\\
+%% kernel
+%% \end{minipage}
+%% &+&
+%% \begin{minipage}{.28\columnwidth}\center
+%% \textbf{regularization}\\{\tiny
+%% Ridge\\
+%% Lasso\\}
+%% \textbf{cross validation}
+%% \end{minipage}
+%% &+&
+%% \begin{minipage}{.28\columnwidth}\center
+%% \textbf{loss}\\\tiny
+%% least squares regression\\
+%% likelihood maximization\\
+%% (logistic regression)\\
+%% (cond.\ random fields)
+%% \end{minipage}}}
+
+%% ~
+
+%% ~
+
+%% \item I consider this to be a core basis for understanding ML methods
+
+%% \begin{itemize}
+%% \item In terms of regression/classification performance, they should be
+%% state-of-the-art (for good choice of features/kernel)
+
+%% \item But in direct form these are not always computationally most
+%% efficient
+%% \end{itemize}
+
+%% ~
+
+%% \item \textbf{Part 2} will consider a multitude of ideas to extend this
+
+%% ~
+
+%% \item \textbf{Part 3} will introduce to the Bayesian formalism, which
+%% allows to derive the same core methods from another prespective---and
+%% extend them
+
+%}
+
+%% % \show[.4]{bigHammer}
+
+%% ~
+
+%% ~
+
+
+%% \item Optimization in these methods can become computationally heavy (due
+%% to matrix inversion scaling in $O(n^3)$).
+
+%% Alternatives:
+
+%% $\to$ (stochastic) gradient descent or other approximate optimization
+
+%% $\to$ local/lazy methods: models around local neighborhood, using
+%% nearest-neighbor smoothing kernels
+
+%% $\to$ efficient alternatives like SVMs (Hinge loss)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot

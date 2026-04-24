@@ -1,0 +1,204 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Decision Tree for Regression - Synthetic Data}
+
+{\tiny (Ref: mlcourse.ai Assignment 3 – Open Machine Learning Course ) }
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Import Libraries}
+\begin{lstlisting}
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import accuracy_score
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Synthetic Data}	
+\begin{lstlisting}
+X = np.linspace(-2, 2, 7)
+y = X ** 3
+
+plt.scatter(X, y)
+plt.xlabel(r'$x$')
+plt.ylabel(r'$y$');		 
+\end{lstlisting}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{synthdt1}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feature Splitting}	
+\begin{itemize}
+\item Let's make several steps to build the decision tree. 
+\item Let's choose the symmetric thresholds equal to 0, 1.5 and -1.5 for partitioning. 
+\item In the case of a regression task, the leaf outputs mean answer for all observations (instances) in this leaf.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feature Splitting}	
+\begin{itemize}
+\item Let's start from tree of depth 0 that contains all train instances. 
+\item How will predictions of this tree look like for $x \in [-2, 2]$? 
+\item Create the appropriate plot using a pen, paper and Python if it is needed (without using sklearn).
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Predictions}	
+\begin{lstlisting}
+xx = np.linspace(-2, 2, 100)
+predictions = [np.mean(y) for x in xx]
+
+X = np.linspace(-2, 2, 7)
+y = X ** 3
+
+plt.scatter(X, y);
+plt.plot(xx, predictions, c='red');
+\end{lstlisting}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{synthdt2}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feature Splitting}	
+\begin{itemize}
+\item Let's split the data according to the following condition  $x<0$ . 
+\item It gives us the tree of depth 1 with two leaves. 
+\item Let's create a similar plot for predictions of this tree.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Predictions}	
+\begin{lstlisting}
+xx = np.linspace(-2, 2, 200)
+predictions = [np.mean(y[X < 0]) if x < 0 else np.mean(y[X >= 0])
+              for x in xx]
+
+X = np.linspace(-2, 2, 7)
+y = X ** 3
+
+plt.scatter(X, y);
+plt.plot(xx, predictions, c='red');
+\end{lstlisting}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{synthdt3}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Decision Tree Theory (Recap)}	
+\begin{itemize}
+\item Variance: $\large Q(X, y, j, t) = D(X, y) - \dfrac{|X_l|}{|X|} D(X_l, y_l) - \dfrac{|X_r|}{|X|} D(X_r, y_r)$
+\item Where $\large D(X, y)$ is variance of answers  $y$  for all instances in $\large X$ 
+
+$\large D(X) = \dfrac{1}{|X|} \sum_{j=1}^{|X|}(y_j – \dfrac{1}{|X|}\sum_{i = 1}^{|X|}y_i)^2$
+
+\item Here $\large y_i = y(x_i)$ is answer for $x_i$ instance.
+
+\item Feature index $j$  and threshold  $t$  are chosen to maximize the value of criterion  $\large Q(X, y, j, t)$ for each split.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Regression Variance}	
+\begin{lstlisting}
+def regression_var_criterion(X, y, t):
+    X_left, X_right = X[X < t], X[X >= t]
+    y_left, y_right = y[X < t], y[X >= t]
+    return np.var(y) - X_left.shape[0] / X.shape[0] * \
+           np.var(y_left) - X_right.shape[0] / X.shape[0] * \
+            np.var(y_right)
+			
+thresholds = np.linspace(-1.9, 1.9, 100)
+crit_by_thres = [regression_var_criterion(X, y, thres) for thres in thresholds]
+
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Regression Variance}	
+\begin{lstlisting}
+
+plt.plot(thresholds, crit_by_thres)
+plt.xlabel('threshold')
+plt.ylabel('Regression criterion');			
+\end{lstlisting}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{synthdt4}
+\end{center}
+
+Question 1. Is the threshold value $t=0$  optimal according to the variance criterion?
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Regression Variance}	
+Answer 1. NO.
+
+There is no single minimum value but quite a few. Thus \ldots
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feature Splitting}	
+\begin{itemize}
+\item Let's make splitting in each of the leaves' nodes. 
+\item In the left branch (where previous split was $x<0$ ) using the criterion  $[x < -1.5]$ , in the right branch (where previous split was  $x \geqslant 0$ ) with the following criterion  $[x < 1.5]$ . 
+\item It gives us the tree of depth 2 with 7 nodes and 4 leaves. Create the plot of these tree predictions for $x \in [-2, 2]$.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Regression Variance}	
+\begin{lstlisting}
+xx = np.linspace(-2, 2, 200)
+
+def prediction(x, X, y):
+    if x >= 1.5:
+        return np.mean(y[X >= 1.5])
+    elif x < 1.5 and x >= 0:
+        return np.mean(y[(X >= 0) & (X < 1.5)])
+    elif x >= -1.5 and x < 0:
+        return np.mean(y[(X < 0) & (X >= -1.5)])
+    else:
+        return np.mean(y[X < -1.5])
+    
+    
+predictions = [prediction(x, X, y) for x in xx]
+
+X = np.linspace(-2, 2, 7)
+y = X ** 3
+
+plt.scatter(X, y);
+plt.plot(xx, predictions, c='red');
+
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Regression Variance}	
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{synthdt5}
+\end{center}
+
+Question 2. How many segments are there on the plot of tree predictions in the interval [-2, 2] (it is necessary to count only horizontal lines)?
+
+Answer 2. 4
+
+\end{frame}
+

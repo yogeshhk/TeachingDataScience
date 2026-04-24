@@ -1,0 +1,134 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Implementation using Langchain}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What is Graph RAG?}
+  \begin{itemize}
+    \item Enhances traditional RAG by incorporating knowledge graphs.
+    \item Moves beyond vector similarity to structured entity relationships.
+    \item Enables LLMs to reason over graph-based data structures.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Installation}
+  \begin{itemize}
+    \item Install required packages:
+  \end{itemize}
+  \begin{lstlisting}[language=bash]
+pip install --upgrade --quiet \
+  langchain langchain-community \
+  langchain-core langchain-experimental \
+  networkx json-repair
+  \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Importing Modules}
+  \begin{itemize}
+    \item Import essential modules:
+  \end{itemize}
+  \begin{lstlisting}[language=python]
+from langchain_experimental.graph_transformers import LLMGraphTransformer
+from langchain_experimental.graphs import GraphQAChain
+from langchain_community.graphs.networkx_graph import NetworkxEntityGraph
+from langchain_core.documents import Document
+from langchain_google_genai import GoogleGenerativeAI
+import google.generativeai as genai
+  \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Setting Up the LLM}
+  \begin{itemize}
+    \item Initialize the LLM (e.g., Google Generative AI):
+  \end{itemize}
+  \begin{lstlisting}[language=python]
+  GOOGLE_API_KEY = ''
+  genai.configure(api_key=GOOGLE_API_KEY)
+llm = GoogleGenerativeAI(model="gemini-pro",api_key=GOOGLE_API_KEY)
+  \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Preparing the Text}
+  \begin{itemize}
+    \item Load and prepare the input text:
+  \end{itemize}
+  \begin{lstlisting}[language=python]
+text = "Marie Curie was a Polish and naturalized-French physicist and chemist..."
+doc = Document(page_content=text)  # LLMGraphTransformer requires Document objects
+  \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Transforming Text to Graph Documents}
+  \begin{itemize}
+    \item Convert text into graph documents:
+  \end{itemize}
+  \begin{lstlisting}[language=python]
+transformer = LLMGraphTransformer(llm=llm)
+graph_documents = transformer.convert_to_graph_documents([doc])
+  \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Specifying Entities and Relationships}
+  \begin{itemize}
+    \item Define allowed node types and relationship types; pass them to the constructor:
+  \end{itemize}
+  \begin{lstlisting}[language=python]
+allowed_nodes = ["Person", "Country", "Organization"]
+allowed_relationships = ["nationality", "located_in", "worked_at", "spouse", "mother"]
+# Pass allowed_nodes/relationships in constructor, not convert method
+transformer_filtered = LLMGraphTransformer(
+    llm=llm,
+    allowed_nodes=allowed_nodes,
+    allowed_relationships=allowed_relationships
+)
+graph_documents_filtered = transformer_filtered.convert_to_graph_documents([doc])
+  \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Creating the Graph Object}
+  \begin{itemize}
+    \item Initialize the graph and add nodes and edges:
+  \end{itemize}
+  \begin{lstlisting}[language=python]
+graph = NetworkxEntityGraph()
+for graph_doc in graph_documents_filtered:
+    for node in graph_doc.nodes:
+        graph.add_node(node)
+    for edge in graph_doc.relationships:
+        graph.add_edge(edge.source.id, edge.target.id, edge.type)
+  \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Performing Graph-Based QA}
+  \begin{itemize}
+    \item Initialize the Graph QA chain and ask questions:
+  \end{itemize}
+  \begin{lstlisting}[language=python]
+qa_chain = GraphQAChain.from_llm(llm=llm, graph=graph)
+response = qa_chain.run("Tell me about Marie Curie")
+print(response)
+  \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Conclusion}
+  \begin{itemize}
+    \item Graph RAG integrates structured knowledge into LLM responses.
+    \item Enhances the depth and accuracy of information retrieval.
+    \item Suitable for complex, relationship-rich data domains.
+  \end{itemize}
+\end{frame}
+
+
+

@@ -1,0 +1,176 @@
+
+\input{../shared/shared}
+
+\renewcommand{\course}{Machine Learning}
+\renewcommand{\exnum}{11}
+
+\exercises
+
+(DS BSc students may skip coding exercise 3, but should be able to draw on the board what the result would look like.)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Sum of 3 dices (3 Points)}
+
+You have 3 dices (potentially fake dices where each one has a
+different probability table over the 6 values). You're given all three
+probability tables $P(D_1)$, $P(D_2)$, and $P(D_3)$. Write down the
+equations and an algorithm (in pseudo code) that computes the
+conditional probability $P(S|D_1)$ of the sum of all three dices
+conditioned on the value of the first dice.
+
+\ifnum\value{solutions}=1
+\begin{solution}
+	
+	A straightforward solution can be found as follows:
+	\begin{align*}
+		P(S | D_1) &= \sum_{D_2, D_3} P(S, D_2, D_3 \mid D_1) \\
+		&= \sum_{D_2, D_3} P(S \mid D_1, D_2, D_3) P(D_2, D_3 
+		\mid D_1) \\
+		&= \sum_{D_2, D_3} P(S \mid D_1, D_2, D_3) P(D_2) P(D_3) 
+		\\
+		&= \sum_{D_2, D_3} \III\[S  = D_1 + D_2 + D_3\] P_2(D_2) 
+		P_3(D_3)
+	\end{align*}
+	
+	
+	For maximum efficiency, we can get rid of a couple more things. We 
+	realize
+	that, within the inner-most loop, the indicator function term 
+	$\III\[S = D_1 +
+	D_2 + D_3\]$ will only assume a value of $1$ at maximum once (or 
+	possibly $0$
+	times). This means that there's really only one value of $D_3$ that 
+	we care
+	about: specifically, the one for which $S = D_1 + D_2 + D_3$. This 
+	allows us at
+	the same time to both remove the indicator term and to avoid looping 
+	through
+	the values of $D_3$ (We assume the functions $P_1(D), P_2(D), 
+	P_3(D)$
+	are defined for inputs $D \not\in \{1, 2, 3, 4, 5, 6\}$, and that in 
+	such
+	cases, $P_1(D) = P_2(D) = P_3(D) = 0$).
+	
+	Thus we find the following:
+	\begin{align*}
+		P(S | D_1) &= \ldots \\
+		&= \sum_{D_2, D_3} \III\[S  = D_1 + D_2 + D_3\] P_2(D_2) 
+		P_3(D_3) \\
+		&= \sum_{D_2} P_2(D_2) P_3(S - D_1 - D_2)
+	\end{align*}
+	
+	In pseudo-code, we compute this as follows
+	
+\end{solution}
+\fi
+
+\begin{algorithm}
+	\begin{algorithmic}
+		\Function{PosteriorProbability}{$S, D_1$}
+		\State $p\gets 0$
+		\For{$D_2$ in $\{1, 2, 3, 4, 5, 6\}$}
+		\State $p\gets p + P_2(D_2)P_3(S - D_1 - D_2)$
+		\EndFor
+		\State \Return $p$
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Product of Gaussians (3 Points)}
+
+A Gaussian distribution over $x\in\RRR^n$ with mean $\m$ and covariance matrix
+$\S$ is defined as
+$$\NN(x \| \m,\S) = \frac{1}{\|2\pi \S\|^{1/2}}~ e^{-\half
+	(x-\m)^\T~ \S^\1~ (x-\m)}$$
+Multiplying probability distributions is a
+fundamental operation, and multiplying two Gaussians is needed in many
+models. From the definition of a n-dimensional Gaussian, prove the general rule
+$$
+\NN(x \| a,A)~ \NN(x \| b,B) 
+\propto \NN(x \| (A^\1+B^\1)^\1 (A^\1 a + B^\1 b) ,(A^\1+B^\1)^\1) ~.
+$$
+where the proportionality $\propto$ allows you to drop all terms independent of $x$.
+
+Note: The so-called canonical form of a Gaussian is defined as
+$\NN[x \| \bar a,\bar A] = \NN(x \| \bar A^\1 \bar a, \bar A^\1)$; in
+this convention the product reads much nicher: $\NN[x \| \bar a,\bar
+A]~ \NN[x \| \bar b,\bar B] \propto \NN[x \| \bar a+\bar b,\bar A+\bar
+B]$. You can first prove this before proving the above, if you like.
+
+\ifnum\value{solutions}=1
+\begin{solution}
+	We use the abbreviations 
+	
+	$d = (A^\1+B^\1)^\1 (A^\1 a + B^\1 b)$
+	
+	$D = (A^\1+B^\1)^\1$
+	
+	for the mean $d$ and covariance 
+	$D$ of the resulting Gaussian.
+	\begin{align*}
+		\NN(x \| a,A)~ &\NN(x \| b,B)  = \underbrace{\frac{1}{\sqrt{\det(2\pi 
+					A)}\sqrt{\det(2\pi B)}}}_{c_1} \exp\left(-\frac{1}{2}\left[(x-a)^\T 
+		A^\1 
+		(x-a)+(x-b)^\T B^\1 
+		(x-b)\right]\right) \\
+		&=c_1 \exp\left(-\frac{1}{2}\left[x^\T 
+		(A^\1 +B^\1)x -2x^\T (A^\1a+B^\1b) +a^\T A^\1 a + b^\T B^\1 
+		b\right]\right)\\
+		&=c_1 \exp\left(-\frac{1}{2}\left[x^\T 
+		(A^\1 +B^\1)x -2x^\T (A^\1a+B^\1b)\right]\right) 
+		\underbrace{\exp\left( 
+			-\frac{1}{2}\left[ a^\T A^\1 
+			a + b^\T B^\1b \right]\right)}_{c_2} \\
+		&=c_1 c_2 \exp\bigg(-\frac{1}{2}[x^\T 
+		\underbrace{(A^\1 +B^\1)}_{D^\1} x -2x^\T \underbrace{(A^\1 
+			+B^\1)}_{D^\1} \underbrace{(A^\1 
+			+B^\1)^\1(A^\1a+B^\1b)}_{d} +d^\T D^\1d]\bigg) 
+		\underbrace{\exp\left( 
+			\frac{1}{2}d^\T D^\1d\right)}_{c_3} \\
+		&=c_1 c_2 c_3 \exp\left(-\frac{1}{2}(x-d)^\T 
+		D^\1(x-d)\right)\\
+		&=c_1 c_2 c_3 \underbrace{\sqrt{\det(2\pi D)}}_{c_4} \NN(x|d,D)
+	\end{align*}
+\end{solution}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exsection{Gaussian Processes (5 Points)}
+
+Consider a Gaussian Process prior $P(f)$ over functions defined by the
+mean function $\m(x)=0$, the $\g$-exponential covariance function
+$$k(x,x') = \exp\{-|(x-x')/l|^\g\}$$ and an observation noise
+$\s=0.1$. We assume $x\in\RRR$ is 1-dimensional. First consider the standard
+squared exponential kernel with $\g=2$ and $l=0.2$.
+
+%% a) Write a routine to draw 10 random functions from the
+%% prior $P(f)$. For this, discretize $x \in[-1,1]$ to 100 points,
+%% compute the covariance matrix for these 100 points and sample.
+
+a) Assume we have two data points $(-0.5,0.3)$ and
+$(0.5,-0.1)$. Display the posterior $P(f|D)$. For this, compute the
+mean posterior function $\hat f(x)$ and the standard deviation
+function $\hat\s(x)$ (on the 100 grid points) exactly as on slide
+08:10, using $\l=\s^2$. Then plot $\hat f$, $\hat f +\hat\s$ and $\hat
+f-\hat \s$ to display the posterior mean and standard deviation. (3 P)
+
+b) Now display the posterior $P(y^*|x^*,D)$. This is only a tiny
+difference from the above (see slide 08:8). The mean is the same, but
+the variance of $y^*$ includes additionally the obseration noise
+$\s^2$. (1 P)
+
+%% d) Sample 10 functions from the posterior $P(f|D)$ and display them.
+
+c) Repeat a) \& b) for a kernel with $\g=1$. (1 P)
+
+%% f) Optional: In case you have the code: compare the posterior $P(f|D)$
+%% with standard Ridge regression using radial basis function features
+%% of width $0.2$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exerfoot

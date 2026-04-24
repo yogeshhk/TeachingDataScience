@@ -1,0 +1,289 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Special Methods}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What we shall see in this part}
+
+  How to define custom behavior for Python's standard operators and
+  functions on user-defined objects.
+
+  
+  (Technically called ``operator overloading.'')
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Python's special methods}
+
+\begin{itemize}
+\item Names that start and end with two underscores e.g., \_\_init\_\_ have a special significance in Python.
+\item However, there is nothing special in the way we define those
+  methods: the syntax is the same as for any other method.
+  \item    Most of the special methods directly map to Python's operators (e.g.,
+  ``\texttt{+}'', ``\texttt{==}'' or ``\texttt{in}'').
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{First Example (1/2)}
+ Let us rename the \texttt{show} method to \texttt{\_\_str\_\_}.
+\begin{lstlisting}
+class Vector(object):
+  """A 2D Vector."""
+  def __init__(self, x, y):
+    self.x = x
+    self.y = y
+    
+  def add(self, other):
+    return Vector(self.x+other.x,
+                  self.y+other.y)
+                  
+  def mul(self, scalar):
+    return Vector(scalar*self.x, scalar*self.y)
+    
+  def __str__(self):
+    return ("<%g,%g>" % (self.x, self.y))
+\end{lstlisting}
+  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{First Example (2/2)}
+\begin{lstlisting}
+>>> from vector2 import Vector
+>>> v = Vector(0,1)
+>>> print(v)
+<0,1>
+\end{lstlisting}
+\begin{itemize}
+\item Now Python's built-in \texttt{print} behaves like the \texttt{show} method did!
+\item Actually, \texttt{print} uses Python's built-in function
+  \texttt{str()} to convert an object to a string, and then prints
+  this string.
+\item By defining the \texttt{\_\_str\_\_} method, we
+    override the default behavior of Python's \texttt{str()} for
+    objects of class \texttt{Vector}.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Second Example: equality testing (1/3)}
+
+\begin{itemize}
+\item  Can we test two instanced of class \texttt{Vector} for equality?
+\begin{lstlisting}
+>>> from vector2 import Vector
+>>> v1 = Vector(0,1)
+>>> v2 = Vector(0,1)
+>>> v1 == v2
+False
+\end{lstlisting}
+
+\item  Python does not know how to test if two user defined objects are  equal.
+
+\item  By default ``\texttt{==}'' behaves like the ``\texttt{is}'' operator on user-defined classes
+\item Two
+  user-defined objects are considered equal if and only if they are
+  the same object.
+
+\item  This can be changed by adding a \texttt{\_\_eq\_\_} method.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Equality \emph{vs} identity}
+  
+  \begin{itemize}
+\item  The \texttt{is} operator returns \texttt{True} if two names refer to
+  the same instance; the \texttt{==} operator compares the
+  \emph{values} of two objects.\footnote{A class can define how
+    exactly the \texttt{==} operator should carry out the comparison.}
+
+  \item  
+  Note that two instances may be equal in any respect yet be
+  different instances: \emph{equality is not identity!}
+\begin{lstlisting}
+>>> dt4 = date(2012,9,28)
+>>> dt5 = date(2012,9,28)
+>>> dt4 == dt5
+True
+>>> dt4 is dt5
+False
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Second Example: equality testing (2/3)}
+      Let us add an eq method.
+\begin{lstlisting}
+class Vector(object):
+  """A 2D Vector."""
+  def __init__(self, x, y):
+    self.x = x
+    self.y = y
+  # (code omitted)
+  def __str__(self):
+    return ("<%g,%g>" % (self.x, self.y))
+  \textbf{def} __eq__(\textbf{self}, other):
+    return (self.x == other.x) and (self.y == other.y)
+\end{lstlisting}
+  
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Second Example: equality testing (3/3)}
+\begin{lstlisting}
+>>> from vector3 import Vector
+>>> v1 = Vector(0,1)
+>>> v2 = Vector(0,1)
+>>> v1 == v2
+True
+\end{lstlisting}
+
+   {\bfseries By defining the eq method, we
+    define the behavior of Python's equality test == for
+    objects of class \texttt{Vector}.}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{3rd Example: vector addition (1/3)}
+  
+
+      The add special method defines the behavior of the
+      ``\texttt{+}'' operator.
+
+      
+      Let's just rename \texttt{add} \\ to \texttt{\_\_add\_\_}.
+\begin{lstlisting}
+class Vector(object):
+  """A 2D Vector."""
+  def __init__(self, x, y):
+    self.x = x
+    self.y = y
+  def __str__(self):
+    return ("<%g,%g>" % (self.x, self.y))
+  def __eq__(self, other):
+    return (self.x == other.x) and (self.y == other.y)
+  \textbf{def} __add__(\textbf{self}, other):
+    return Vector(self.x+other.x, self.y+other.y)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{3rd Example: vector addition (2/3)}
+
+  Now vector addition works with the usual ``\texttt{+}'' operator:
+\begin{lstlisting}
+>>> from vector4 import Vector
+>>> v1 = Vector(1,0)
+>>> v2 = Vector(0,1)
+>>> print (v1 + v2)
+<1,1>
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{3rd Example: vector addition (3/3)}
+
+  What if we add inhomogeneous objects, e.g., a vector and a number?
+\begin{lstlisting}
+>>> from vector4 import Vector
+>>> v1 = Vector(1,0)
+>>> print (v1 + 5.0)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "vector4.py", line 14, in __add__
+    return Vector(self.x+other.x, self.y+other.y)
+AttributeError: 'float' object has no attribute 'x'
+\end{lstlisting}
+
+   In this case, an error is the correct behavior: a vector can only
+  be summed to another vector.
+
+   We shall see in the next part that sometimes it makes sense to
+  allow in homogeneous operations, and how to implement them.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{4th Example: vector multiplication (1/3)}
+      The mul special method defines the behavior of
+      the ``\texttt{*}'' operator.
+\begin{lstlisting}
+class Vector(object):
+  """A 2D Vector."""
+  def __init__(self, x, y):
+    self.x = x
+    self.y = y
+  def __str__(self):
+    return ("<%g,%g>" % (self.x, self.y))
+  def __eq__(self, other):
+    return (self.x == other.x) and (self.y == other.y)
+  def __add__(self, other):
+    return Vector(self.x+other.x, self.y+other.y)
+  \textbf{def} __mul__(\textbf{self}, scalar):
+    return Vector(scalar*self.x, scalar*self.y)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{4th Example: vector multiplication (2/3)}
+  Now vector multiplication works with the usual ``\texttt{*}'' operator:
+\begin{lstlisting}
+>>> from vector5 import Vector
+>>> v1 = Vector(1,2)
+>>> v1 * 3 == Vector(3, 6)
+>>> print (v1 * 2)
+<2,4>
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{4th Example: vector multiplication (3/3)}
+\begin{itemize}
+\item   
+
+  Note that:
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+>>> from vector5 import Vector
+>>> v1 = Vector(1,2)
+>>> 3 * v1
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: unsupported operand type(s) for *: 'int' and 'Vector'
+\end{lstlisting}
+
+\item  Order matters! Our \texttt{\_\_mul\_\_} method requires a \texttt{Vector} instance first, and a number second.
+
+\item  The operation with swapped operands is called \texttt{\_\_rmul\_\_}, but treating this in detail would take us too far!
+
+\item Take-home message: \textbf{Operations defined with special
+    methods are not automatically commutative, transitive or any other
+    property you normally associate with the operators \texttt{+},
+    \texttt{*}, etc.}
+\end{itemize}    
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]{Further reading}
+
+\begin{itemize}
+\item   A good and readable introduction to Python's special methods:
+  \begin{center}
+    \url{http://www.rafekettler.com/magicmethods.html}
+  \end{center}
+\item Special methods hook directly into Python's syntax.  They can
+  enhance readability or make code completely obscure.  Use them
+  sparingly, and remember: \emph{with great power comes great
+    responsibility!}
+\end{itemize}
+
+
+  
+  
+\end{frame}

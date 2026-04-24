@@ -1,0 +1,514 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Optimization}
+\renewcommand{\coursepicture}{optim}
+\renewcommand{\coursedate}{Summer 2015}
+
+\renewcommand{\topic}{Convex Optimization}
+\renewcommand{\keywords}{Convex, quasiconvex, unimodal, convex
+optimization problem, linear program (LP), standard form, simplex
+algorithm, LP-relaxation of integer linear programs, quadratic programming
+(QP), sequential quadratic programming}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Function types: covex, quasi-convex, uni-modal}
+\slide{Function types}{
+
+\item A function is defined \textbf{convex} iff
+$$f(ax + (1\!-\!a)y) \le a~ f(x) + (1\!-\!a)~ f(y)$$
+for all $x,y\in\RRR^n$ and $a\in[0,1]$.
+
+~
+
+\item A function is \textbf{quasiconvex} iff
+$$f(ax + (1\!-\!a)y) \le \max\{f(x), f(y)\}$$
+for any $x,y\in\RRR^m$ and $a\in[0,1]$.
+
+{\tiny ..alternatively, iff every sublevel set $\{ x | f(x)\le \a\}$
+is convex.}
+
+~
+
+\item {}[Subjective!] I call a function \textbf{unimodal} iff it has
+only 1 local minimum, which is the global minimum
+
+{\tiny Note: in dimensions $n>1$ quasiconvexity is stronger than unimodality}
+
+~
+
+\item A general \textbf{non-linear} function is unconstrained and can
+have multiple local minima
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{}{
+
+\cen{convex ~$\subset$~ quasiconvex ~$\subset$~ unimodal ~$\subset$~ general}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Local optimization}{
+
+\item So far I avoided making explicit assumptions about problem
+convexity: To emphasize that all methods we considered -- except for
+Newton -- are applicable also on non-convex problems.
+
+~
+
+\item The methods we considered are \textbf{local} optimization
+methods, which can be defined as
+
+-- a method that adapts the solution locally
+
+-- a method that is guaranteed to converge to a local minimum only
+
+~
+
+\item Local methods are efficient
+
+-- if the problem is (strictly) unimodal ~ (strictly: no plateaux)
+
+-- if time is critical and a local optimum is a sufficiently good
+   solution
+
+-- if the algorithm is restarted very often to hit multiple local
+   optima
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Convex problems}{
+
+\item Convexity is a strong assumption
+
+~
+
+\item But solving convex problems is an important case
+\begin{items}
+\item theoretically ~ (convergence proofs!)
+
+\item many real world applications are actually convex
+
+\item convexity around a local optimum $\to$ efficient local optimization
+\end{items}
+
+~
+
+\item Roughly:
+
+\cen{``global optimization = finding local optima + multiple
+convex problems''}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Convex problems}{
+
+\item A constrained optimization problem
+$$\min_x~ f(x) \st g(x)\le 0,~ h(x) = 0$$
+is called \textbf{convex} iff
+
+-- $f$ is convex
+
+-- each $g_i$, $i=1,..,m$ is convex
+
+-- $h$ is linear:~  $h(x)= Ax-b,~ A\in\RRR^{l\times n}, b\in\RRR^l$
+
+~
+
+~\small
+
+\item Alternative definition:
+
+\cen{$f$ convex and feasible region is a convex set}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Linear program (LP)}
+\key{Quadratic program (QP)}
+\slide{Linear and Quadratic Programs}{
+
+\item Linear Program (LP)
+$$\min_x~ c^\T x \st G x \le h,~ Ax=b$$
+
+LP in standard form
+$$\min_x~ c^\T x \st x \ge 0,~ Ax=b$$
+
+\item Quadratic Program (QP)
+$$\min_x~ \half x^\T Q x + c^\T x   \st   G x \le h,~ Ax=b$$
+where $Q$ is positive definite.
+
+~
+
+\small
+(This is different to a Quadratically Constraint Quadratic Programs (QCQP))
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{LP in standard form}
+\slide{Transforming an LP problem into standard form}{
+
+\item LP problem:
+$$\min_x~ c^\T x \st G x \le h,~ Ax=b$$
+
+\item Define slack variables:
+$$\min_{x,\xi}~ c^\T x \st G x + \xi = h,~ Ax=b,~ \xi\ge 0$$
+
+\item Express $x=x^+ - x^-$ with $x^+,x^-\ge 0$:
+{\small
+\begin{align*}
+\min_{x^+,x^-,\xi}~ &c^\T (x^+-x^-)\\
+& \st G (x^+-x^-) + \xi = h,~ A(x^+-x^-)=b,~ \xi\ge 0,~ x^+\ge 0,~
+ x^-\ge 0
+\end{align*}}
+where $(x^+,x^-,\xi)\in\RRR^{2n+m}$
+
+~
+
+\item Now this is conform with the standard form (replacing
+$(x^+,x^-,\xi)\equiv x$, etc)
+$$\min_x~ c^\T x \st x \ge 0,~ Ax=b$$
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example LPs}{
+
+~
+
+Browse through the exercises 4.8-4.20 of Boyd \& Vandenberghe!
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Linear Programming}{
+
+-- Algorithms
+
+-- Application: LP relaxation of discret problems
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Algorithms for Linear Programming}{
+
+~
+
+\item All of which we know!
+
+-- augmented Lagrangian (LANCELOT software), penalty
+
+-- log barrier  (``interior point method'', ``[central] path following'')
+
+-- primal-dual Newton
+
+~
+
+\item The simplex algorithm, walking on the constraints
+
+~
+
+(The emphasis in the notion of \emph{interior} point methods is to
+distinguish from constraint walking methods.)
+
+~
+
+\item Interior point and simplex methods are comparably efficient
+
+Which is better depends on the problem
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Simplex method}
+\slide{Simplex Algorithm}{
+
+Georg Dantzig (1947)
+
+{\tiny Note: Not to confuse with the Nelder–Mead method (downhill simplex method)}
+
+~
+
+\item We consider an LP in standard form
+$$\min_x~ c^\T x \st x \ge 0,~ Ax=b$$
+
+\item Note that in a linear program the optimum is always
+situated at a corner
+
+~
+
+\show[.4]{simplex}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Simplex Algorithm}{
+
+\show[.4]{simplex}
+
+\item The Simplex Algorithm walks along the edges of the polytope, at
+every corner choosing the edge that decreases $c^\T x$ most
+
+\item This either terminates at a corner, or leads to an unconstrained
+edge ($-\infty$ optimum)
+
+~
+
+\item In practise this procedure is done by ``pivoting on the simplex
+tableaux''
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Simplex Algorithm}{
+
+\item The simplex algorithm is often efficient, but in worst case
+exponential in $n$ and $m$.
+
+~
+
+\item Interior point methods (log barrier) and, more
+recently again, augmented Lagrangian methods have become somewhat more
+popular than the simplex algorithm
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{LP-relaxations of discrete problems}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{LP-relaxations of integer programs}
+\slide{Integer linear programming (ILP)}{
+
+\item An integer linear program (for simplicity binary) is
+$$\min_x~ c^\T x \st Ax=b,~ x_i \in\{0,1\}$$
+
+~
+
+\item Examples:
+\begin{items}
+\item Travelling Salesman: $\min_{x_{ij}} \sum_{ij} c_{ij} x_{ij}$ with
+$x_{ij}\in\{0,1\}$ and constraints $\forall_j: \sum_i x_{ij}=1$
+(columns sum to 1), $\forall_j: \sum_i x_{ji}=1$, $\forall_{ij}:
+t_j-t_i \le n-1+n x_{ij}$ (where $t_i$ are additional integer variables).
+
+
+\item MaxSAT problem: In conjunctive normal form, each clause contributes
+an additional variable and a term in the objective function; each
+clause contributes a constraint
+
+\item Search the web for \emph{The Power of Semidefinite Programming
+Relaxations for MAXSAT}
+\end{items}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{LP relaxations of integer linear programs}{
+
+\item Instead of solving
+$$\min_x c^\T x \st Ax=b,~ x_i \in\{0,1\}$$
+we solve
+$$\min_x c^\T x \st Ax=b,~ x\in[0,1]$$
+
+~
+
+\item Clearly, the relaxed solution will be a \emph{lower bound} on
+the integer solution (sometimes also called ``outer bound'' because $[0,1]\supset\{0,1\}$)
+
+~
+
+\item Computing the relaxed solution is interesting
+
+-- as an ``approximation'' or initialization to the integer problem
+
+-- to be aware of a lower bound
+
+-- in cases where the optimal relaxed solution happens to be
+   integer
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example:~ MAP inference in MRFs}{
+
+\item Given integer random variables $x_i$,
+$i=1,..,n$, a pairwise Markov Random Field (MRF) is defined as
+$$f(x) = \sum_{(ij)\in E} f_{ij}(x_i, x_j) + \sum_i f_i(x_i)$$
+where $E$ denotes the set of edges. Problem: find $\max_x f(x)$.
+
+{\tiny (Note: any general (non-pairwise) MRF can be converted
+into a pair-wise one, blowing up the number of variables)
+
+}
+
+\item Reformulate with indicator variables
+$$b_i(x) = [x_i=x] \comma b_{ij}(x,y) = [x_i=x]~ [x_j=y]$$
+These are $nm + |E|m^2$ binary variables
+
+\item The indicator variables need to fulfil the constraints
+\begin{align*}
+b_i(x), b_{ij}(x,y) &\in\{0,1\} \\
+\sum_x b_i(x) &= 1 &&\text{because $x_i$ takes eactly one value}\\
+\sum_y b_{ij}(x,y) &= b_i(x) &&\text{consistency between indicators}
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example:~ MAP inference in MRFs}{
+
+\item Finding $\max_x f(x)$ of a MRF is then equivalent to
+$$\max_{b_i(x),b_{ij}(x,y)} \sum_{(ij)\in E}\sum_{x,y}
+b_{ij}(x,y)~ f_{ij}(x, y) + \sum_i\sum_x b_i(x)~ f_i(x)$$
+such that
+$$b_i(x), b_{ij}(x,y) \in\{0,1\} \comma \sum_x b_i(x) =
+1 \comma \sum_y b_{ij}(x,y) = b_i(x)$$
+
+~
+
+\item The LP-relaxation replaces the constraint to be
+$$b_i(x), b_{ij}(x,y) \in[0,1] \comma \sum_x b_i(x) =
+1 \comma \sum_y b_{ij}(x,y) = b_i(x)$$
+
+This set of feasible $b$'s is called \textbf{marginal polytope}
+(because it describes the a space of ``probability distributions''
+that are marginally consistent (but not necessarily globally normalized!))
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example:~ MAP inference in MRFs}{
+
+\item Solving the original MAP problem is NP-hard
+
+Solving the LP-relaxation is really efficient
+
+~
+
+\item If the solution of the LP-relaxation turns out to be integer,
+we've solved the originally NP-hard problem!
+
+If not, the relaxed problem can be discretized to be a good
+initialization for discrete optimization
+
+~
+
+\item For binary attractive MRFs (a common case) the solution will always
+be integer
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Quadratic Programming}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Quadratic Programming}{
+
+$$\min_x~ \half x^\T Q x + c^\T x   \st   G x \le h,~ Ax=b$$
+
+%(The dual of a QP is again a QP)
+
+~
+
+\item Efficient Algorithms:
+
+-- Interior point (log barrier)
+
+-- Augmented Lagrangian
+
+-- Penalty
+
+~
+
+\item Highly relevant applications:
+
+-- Support Vector Machines
+
+-- Similar types of max-margin modelling methods
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+\slide{Example: Support Vector Machine}{
+
+\item Primal:
+
+$$\max_{\b, \norm{\b}=1} M \st \forall_i:~ y_i (\phi(x_i)^\T \beta) \ge M$$
+
+\item Dual:
+
+$$\min_{\b}\norm{\b}^2 \st \forall_i:~ y_i (\phi(x_i)^\T \beta) \ge 1$$
+
+~
+
+\cen{
+\showh[.3]{svm_trenngeraden}
+\hspace{1cm}
+\showh[.35]{svm_margin}
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Sequential quadratic programming}
+\slide{Sequential Quadratic Programming}{\label{lastpage}
+
+\item We considered general non-linear problems
+$$\min_x~ f(x) \st g(x)\le 0$$
+where we can evaluate $f(x)$, $\na f(x)$, $\he f(x)$ and  $g(x)$, $\na
+g(x)$, $\he g(x)$ for any $x\in\RRR^n$
+
+\cen{$\to$ Newton method}
+
+~
+
+\item In the unconstrained case, the standard step direction $\d$ is $(\he f(x) + \l \Id)~ \d = - \na f(x)$
+
+~
+
+\item In the constrained case, a natural step direction $\d$ can be found by solving
+the local QP-approximation to the problem
+$$\min_\d~ f(x) + \na f(x)^\T \d + \d^\T \he f(x) \d \st g(x) + \na
+g(x)^\T \d\le 0$$
+
+This is an optimization problem over $\d$ and only requires
+the evaluation of $f(x), \na f(x), \he f(x), g(x), \na g(x)$ once.
+
+}
+
+\slidesfoot

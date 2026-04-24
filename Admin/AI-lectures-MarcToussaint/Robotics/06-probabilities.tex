@@ -1,0 +1,935 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\topic}{Probabilities}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Probabilities as (subjective) information calculus}
+\slide{Probability Theory}{
+
+\item Why do we need probabilities?
+
+~\mypause
+
+-- Obvious: to express inherent (\emph{objective}) stochasticity of the world
+
+~\mypause
+
+\item But beyond this: ~ (also in a ``deterministic world''):
+\begin{items}
+\item lack of knowledge!
+
+\item hidden (latent) variables
+
+\item expressing \emph{uncertainty}
+
+\item expressing \emph{information} ~ (and lack of information)
+
+\item \textbf{Subjective Probability}
+\end{items}
+
+~
+
+\item Probability Theory:~ an information calculus
+      
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Outline}{
+
+\item Basic definitions
+\begin{items}
+\item Random variables
+\item joint, conditional, marginal distribution
+\item Bayes' theorem
+\end{items}
+
+\item Probability distributions:
+\begin{items}
+%\item Binomial \& Beta
+%\item Multinomial \& Dirichlet
+%\item Conjugate priors
+\item Gauss %; Wichart
+%\item Student-t; Dirak; etc
+\item Dirak \& Particles
+\end{items}
+
+%\item Utilities, decision theory, entropy, KLD
+
+%\item Monte Carlo*
+
+\emph{These are generic slides on probabilities I use throughout my
+lecture. Only parts are relevant for this course.}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Frequentist vs Bayesian}
+\slide{Probability: Frequentist and Bayesian}{
+
+\item Frequentist probabilities are defined in the limit of
+an infinite number of trials
+
+{\small \emph{Example:} ``The probability of a particular coin
+landing heads up is 0.43''
+
+}
+
+~
+
+\item Bayesian (subjective) probabilities quantify degrees of belief
+
+{\small \emph{Example:} ``The probability of it raining tomorrow is 0.3''
+
+-- Not possible to repeat ``tomorrow''
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Basic definitions}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Definitions based on sets}
+\slide{Probabilities \& Sets}{
+
+\item \textbf{Sample Space/domain} $\O$, ~ e.g. $\O = \{ 1,2,3,4,5,6\}$
+
+~
+
+\item \textbf{Probability} ~ $P:~ A\subset\O \mapsto [0,1]$
+
+e.g., $P(\{1\}) = \frac{1}{6}$,\quad
+$P(\{4\}) = \frac{1}{6}$,\quad
+$P(\{2,5\}) = \frac{1}{3}$,\quad
+
+~
+
+\item Axioms: $\forall A,B\subseteq\O$
+
+-- Nonnegativity $P(A) \ge 0$
+
+-- Additivity $P(A\cup B) = P(A)+P(B)$ ~ if $A\cap B= \emptyset$
+
+-- Normalization $P(\O) = 1$
+
+~
+
+\item Implications
+
+$0 \le P(A) \le 1$
+
+$P(\emptyset) = 0$
+
+$A\subseteq B \To P(A)\le P(B)$
+
+$P(A\cup B) = P(A)+P(B) - P(A\cap B)$
+
+$P(\O \setminus A) = 1 - P(A)$
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Random variables}
+\slide{Probabilities \& Random Variables}{
+
+
+\item %A \defi{random variable} takes \defi{values} with a certain probability.
+
+For a random variable $X$ with discrete domain $\dom(X) = \O$ we write:
+
+$\forall_{x\in\O}:~ 0\le P(X\=x) \le 1$
+
+$\sum_{x \in \O} P(X\=x) = 1$
+
+~
+
+{\small
+Example: ~ A dice can take values $\O=\{1,..,6\}$.
+
+$X$ is the random variable of a dice throw.
+
+$P(X\=1) \in [0,1]$ is the probability that $X$ takes value $1$.
+
+}
+
+~%\mypause
+
+\item {\small A bit more formally: a random variable is a map from a
+measureable space to a domain (sample space) and thereby introduces a
+probability measure on the domain (``assigns a probability to each
+possible value'')
+
+}
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Probability distribution}
+\slide{Probabilty Distributions}{
+
+\item $P(X\=1) \in \RRR$ denotes a specific probability
+
+$P(X)$ denotes the probability distribution ~ (function over $\O$)
+
+~\mypause
+
+{\small
+
+Example: ~ A dice can take values $\O=\{1,2,3,4,5,6\}$.
+
+By $P(X)$ we discribe the full distribution over possible values
+$\{1,..,6\}$. These are 6 numbers that sum to one, usually stored in a
+\emph{table}, e.g.: $[\frac{1}{6}, \frac{1}{6}, \frac{1}{6}, \frac{1}{6}, \frac{1}{6}, \frac{1}{6}]$
+
+}
+
+~
+
+\item In implementations we typically represent distributions over
+  discrete random variables as tables (arrays) of numbers
+
+~
+
+\item Notation for summing over a RV:
+
+\small
+
+In equation we often need to sum over RVs. We then write
+
+\cen{$\sum_X P(X)~ \cdots$}
+
+as shorthand for the explicit notation $\sum_{x\in\dom(X)} P(X\=x)~ \cdots$
+
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Joint distribution}
+\key{Marginal}
+\key{Conditional distribution}
+\slide{Joint distributions}{
+
+Assume we have \emph{two} random variables $X$ and $Y$
+
+\hspace*{30mm}\show[.25]{jointProbability}
+
+\vspace*{-15mm}
+
+\item Definitions:
+
+
+\emph{Joint:} \quad $P(X,Y)$
+
+\emph{Marginal:} \quad $P(X) = \sum_Y P(X,Y)$
+
+\emph{Conditional:} \quad $P(X|Y) = \frac{P(X,Y)}{P(Y)}$
+
+~
+
+{\small The conditional is normalized: ~ $\forall_Y:~ \sum_X P(X|Y) = 1$}
+
+~
+
+\item 
+$X$ is \emph{independent} of $Y$ iff: $P(X|Y) = P(X)$
+
+{\small (table thinking: all columns of $P(X|Y)$ are equal)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Joint distributions}{
+
+{\small
+\emph{joint:} \quad $P(X,Y)$
+
+\emph{marginal:} \quad $P(X) = \sum_Y P(X,Y)$
+
+\emph{conditional:} \quad $P(X|Y) = \frac{P(X,Y)}{P(Y)}$
+}
+
+~
+
+\item Implications of these definitions:
+
+\emph{Product rule:} \quad $P(X,Y) = P(X|Y)~ P(Y) = P(Y|X)~ P(X)$ 
+
+~
+
+\emph{Bayes' Theorem:} \quad  $P(X|Y) = \frac{P(Y|X)~ P(X)}{P(Y)} $
+
+~
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Bayes' Theorem}
+\slide{Bayes' Theorem}{
+
+\Large\center
+
+$$
+P(X|Y) = \frac{P(Y|X)~ P(X)}{P(Y)}
+$$
+
+~
+
+{$\text{posterior} ~=~
+\frac{\text{likelihood} ~\cdot~ \text{prior}}{\text{normalization}}$\quad}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Multiple RVs, conditional independence}
+\slide{Multiple RVs:}{
+
+\item Analogously for $n$ random variables $X_{1:n}$ (stored as a rank
+  $n$ tensor)
+
+\emph{Joint}: \quad $P(X_{1:n})$
+
+\emph{Marginal}: \quad $P(X_1) = \sum_{X_{2:n}} P(X_{1:n})$,
+
+\emph{Conditional}: \quad $P(X_1|X_{2:n}) = \frac{P(X_{1:n})}{P(X_{2:n})}$
+
+~
+
+\item 
+$X$ is \emph{conditionally independent} of $Y$ given $Z$ iff:
+
+\cen{$P(X|Y,Z) = P(X|Z)$}
+
+~
+
+\item Product rule and Bayes' Theorem:
+
+\small
+
+\hspace*{-8mm}\twocol[.05]{.5}{.5}{\center
+
+$P(X_{1:n}) = \prod_{i=1}^n P(X_i | X_{i\po:n})$
+
+\medskip
+
+$P(X_1|X_{2:n}) = \frac{P(X_2 | X_1, X_{3:n}) ~ P(X_1 |
+  X_{3:n})}{P(X_2 | X_{3:n})}$
+
+}{
+
+$P(X,Z,Y) = P(X|Y,Z)~ P(Y|Z)~ P(Z)$
+
+\medskip
+
+$P(X|Y,Z) = \frac{P(Y|X,Z)~ P(X|Z)}{P(Y|Z)} $
+
+\medskip
+
+$P(X,Y|Z) = \frac{P(X,Z|Y)~ P(Y)}{P(Z)} $
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sublecture{Probability distributions}{
+
+~
+
+\twocol{.4}{.5}{
+\show{Bishop}
+}{
+
+Bishop, C. M.: \emph{Pattern Recognition and Machine Learning}.
+
+Springer, 2006
+
+
+\url{http://research.microsoft.com/en-us/um/people/cmbishop/prml/}
+
+}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slide{}{
+
+\item We skip Bernoulli \& Beta, Multinomial \& Dirichlet..
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\key{Bernoulli and Binomial distributions}
+\slide{Bernoulli \& Binomial}{
+
+\item We have a binary random variable $x \in \{0,1\}$ ~ (i.e.\ $\dom(x)=\{0,1\}$)
+
+The \emph{Bernoulli} distribution is parameterized by a single
+scalar $\m$,
+\begin{align*}
+P(x\=1\|\m)
+&= \m \comma P(x\=0\|\m) = 1-\m \\
+\Bern(x\|\m)
+&= \m^x (1-\m)^{1-x}
+%% \Exp{x}
+%% &= m \comma \Var{x}=\m(1-\m)
+\end{align*}
+
+\item We have a data set of random variables $D=\{x_1,..,x_n\}$,
+each $x_i\in\{0,1\}$. If each $x_i\sim \Bern(x_i\|\m)$ we have
+\begin{align*}
+\hspace*{-6mm}
+P(D\|\m)
+&= \Prod_{i=1}^n \Bern(x_i\|\m) = \Prod_{i=1}^n \m^{x_i} (1-\m)^{1-x_i} \\
+\hspace*{-6mm}
+\argmax_\m~ \log P(D\|\m)
+&= \argmax_\m~ \sum_{i=1}^n x_i \log \m + (1-x_i) \log (1-\m)
+ = \frac{1}{n} \sum_{i=1}^n x_i
+\end{align*}
+
+\item The \emph{Binomial distribution} is the distribution over the count
+ $m=\sum_{i=1}^n x_i$
+\begin{align*}
+\Bin(m\|n,\m)
+&= \mat{c}{n\\m}~ \m^m (1-\m)^{n-m} \comma \mat{c}{n\\m}=\frac{n!}{(n-m)!~ m!}
+%% \Exp{m}
+%% &= n\m \comma \Var{m}=n\m(1-\m)
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Beta}
+\slide{Beta}{
+
+\cen{\textbf{How to express uncertainty over a Bernoulli parameter $\m$}}
+
+\item The \emph{Beta} distribution is over the interval $[0,1]$,
+typically the parameter $\m$ of a Bernoulli:
+\begin{align*}
+\Beta(\m\|a,b)
+&= \frac{1}{B(a,b)}~ \m^{a-1} (1-\m)^{b-1}
+\end{align*}
+with mean $\<\m\>=\frac{a}{a+b}$ and mode $\m^*=\frac{a-1}{a+b-2}$ for $a,b>1$
+
+~
+
+\item The crucial point is:
+\begin{items}
+\item Assume we are in a world with a ``Bernoulli source'' (e.g.,
+binary bandit), but don't know its parameter $\m$
+\item Assume we have a \emph{prior} distribution $P(\m)
+= \Beta(\m\|a,b)$
+\item Assume we collected some data $D=\{x_1,..,x_n\}$,
+$x_i\in\{0,1\}$, with counts $a_D = \sum_i x_i$  of $[x_i\=1]$
+and $b_D = \sum_i (1-x_i)$ of $[x_i\=0]$
+\item The posterior is
+\begin{align*}
+P(\m\|D)
+&= \frac{P(D\|\m)}{P(D)}~ P(\m)
+ \propto \Bin(D\|\m)~ \Beta(\m\|a,b) \\
+&\propto \m^{a_D} (1-\m)^{b_D}~ \m^{a-1} (1-\m)^{b-1}
+ = \m^{a-1+a_D} (1-\m)^{b-1+b_D} \\
+&= \Beta(\m\|a+a_D,b+b_D)
+\end{align*}
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Beta}{
+
+~
+
+\cen{\emph{The prior is $\Beta(\m\|a,b)$, the posterior is
+$\Beta(\m\|a+a_D,b+b_D)$}}
+
+~
+
+\item Conclusions:
+\begin{items}
+\item The semantics of $a$ and $b$ are counts of $[x_i\=1]$ and $[x_i\=0]$,
+respectively
+\item The Beta distribution is conjugate to the Bernoulli~ (explained
+later)
+\item With the Beta distribution we can represent beliefs (state of
+knowledge) about uncertain $\m\in[0,1]$ and know how to update this
+belief given data
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Beta}{
+
+\show{betaDistribution}
+{\hfill\tiny from Bishop}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Multinomial}
+\slide{Multinomial}{
+
+\item We have an integer random variable $x \in \{1,..,K\}$
+
+The probability of a single $x$ can be parameterized by $\m=(\m_1,..,\m_K)$:
+\begin{align*}
+P(x\=k\|\m)
+&= \m_k
+\end{align*}
+with the constraint $\sum_{k=1}^K \m_k=1$ (probabilities need to be normalized)
+
+\item We have a data set of random variables $D=\{x_1,..,x_n\}$,
+each $x_i\in\{1,..,K\}$. If each $x_i\sim P(x_i\|\m)$ we have
+\begin{align*}
+P(D\|\m)
+&= \Prod_{i=1}^n \m_{x_i}
+ = \Prod_{i=1}^n \Prod_{k=1}^K \m_k^{[x_i=k]}
+ = \Prod_{k=1}^K \m_k^{m_k}
+\end{align*}
+where $m_k = \sum_{i=1}^n [x_i\=k]$ is the count of $[x_i\=k]$. The ML
+estimator is
+\begin{align*}
+\argmax_\m~ \log P(D\|\m)
+&= \frac{1}{n} (m_1,..,m_K) 
+\end{align*}
+
+\item The \emph{Multinomial distribution} is this distribution over
+the counts $m_k$
+\begin{align*}
+\Mult(m_1,..,m_K\|n,\m)
+&\propto \Prod_{k=1}^K \m_k^{m_k}
+\end{align*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Dirichlet}
+\slide{Dirichlet}{
+
+\cen{\textbf{How to express uncertainty over a Multinomial parameter $\m$}}
+
+\item The \emph{Dirichlet} distribution is over the $K$-simplex, that
+is, over $\m_1,..,\m_K\in[0,1]$ subject to the constraint
+ $\sum_{k=1}^K \m_k=1$:
+\begin{align*}
+\Dir(\m\|\a)
+&\propto~ \Prod_{k=1}^K \m_k^{\a_k-1}
+\end{align*}
+It is parameterized by $\a = (\a_1,..,\a_K)$, has mean
+$\<\m_i\>=\frac{\a_i}{\sum_j\!\a_j}$ and mode $\m_i^*
+= \frac{\a_i-1}{\sum_j\!\a_j-K}$ for $a_i>1$.
+
+~
+
+\item The crucial point is:
+\begin{items}
+\item Assume we are in a world with a ``Multinomial source'' (e.g.,
+an integer bandit), but don't know its parameter $\m$
+\item Assume we have a \emph{prior} distribution $P(\m)
+= \Dir(\m\|\a)$
+\item Assume we collected some data $D=\{x_1,..,x_n\}$,
+$x_i\in\{1,..,K\}$, with counts $m_k = \sum_i [x_i\=k]$
+\item The posterior is
+\begin{align*}
+P(\m\|D)
+&= \frac{P(D\|\m)}{P(D)}~ P(\m)
+ \propto \Mult(D\|\m)~ \Dir(\m\|a,b) \\
+&\propto \Prod_{k=1}^K \m_k^{m_k}~ \Prod_{k=1}^K \m_k^{\a_k-1}
+ = \Prod_{k=1}^K \m_k^{\a_k-1+m_k} \\
+&= \Dir(\m\|\a+m)
+\end{align*}
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Dirichlet}{
+
+~
+
+\cen{\emph{The prior is $\Dir(\m\|\a)$, the posterior is
+$\Dir(\m\|\a+m)$}}
+
+~
+
+\item Conclusions:
+\begin{items}
+\item The semantics of $\a$ is the counts of $[x_i\=k]$
+\item The Dirichlet distribution is conjugate to the Multinomial
+\item With the Dirichlet distribution we can represent beliefs (state of
+knowledge) about uncertain $\m$ of an integer random variable and know
+how to update this belief given data
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Dirichlet}{
+
+Illustrations for $\a=(0.1,0.1,0.1)$, $\a=(1,1,1)$ and $\a=(10,10,10)$:
+
+\show{dirichletDistribution}
+
+\hfill{\tiny from Bishop}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Motivation for Beta \& Dirichlet distributions}{
+
+\item Bandits:
+\begin{items}
+\item If we have binary [integer] bandits, the Beta [Dirichlet]
+distribution is a way to represent and update beliefs
+\item The belief space becomes discrete: The parameter $\a$ of the
+prior is continuous, but the posterior updates live on a discrete
+``grid'' (adding counts to $\a$)
+\item We can in principle do belief planning using this
+\end{items}
+
+\item Reinforcement Learning:
+\begin{items}
+\item Assume we know that the world is a finite-state MDP, but do not know its
+transition probability $P(s'\|s,a)$. For each $(s,a)$, $P(s'\|s,a)$ is a
+distribution over the integer $s'$
+\item Having a separate Dirichlet distribution for each $(s,a)$ is a
+way to represent our belief about the world, that is, our belief about
+$P(s'\|s,a)$
+\item We can in principle do belief planning using this
+$\to$ \emph{Bayesian Reinforcement Learning}
+\end{items}
+
+\item Dirichlet distributions are also used to model texts (word
+distributions in text), images, or mixture distributions in general
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Conjugate priors}
+\slide{Conjugate priors}{
+
+~
+
+\item Assume you have data $D=\{x_1,..,x_n\}$ with likelihood
+$$P(D \| \t)$$
+that depends on an uncertain parameter $\t$
+
+Assume you have a prior $P(\t)$
+
+~
+
+\item The prior $P(\t)$ is \textbf{conjugate} to the likelihood
+$P(D\|\t)$ iff the posterior
+$$P(\t\|D) \propto P(D\|\t)~ P(\t)$$
+is in the \emph{same distribution class} as the prior $P(\t)$
+
+~
+
+\item Having a conjugate prior is very convenient, because then you
+know how to update the belief given data
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Conjugate priors}{
+
+~
+
+\begin{tabular}{p{.32\columnwidth}|@{\quad}p{.4\columnwidth}}
+likelihood & conjugate \\
+\hline
+Binomial $\Bin(D \| \m)$ & Beta $\Beta(\m \| a,b)$ \\
+Multinomial $\Mult(D \| \m)$ & Dirichlet $\Dir(\m \| \a)$ \\
+Gauss $\NN(x \| \m,\S)$ & Gauss $\NN(\m \| \m_0, A)$ \\
+1D Gauss $\NN(x \| \m,\l^\1)$ & Gamma ${\rm Gam}(\l \| a,b)$ \\
+$n$D Gauss $\NN(x \| \m,\L^\1)$ & Wishart ${\rm Wish}(\L \| W, \n)$ \\
+$n$D Gauss $\NN(x \| \m,\L^\1)$ & Gauss-Wishart $\NN(\m\|\m_0,
+(\b\L)^\1)~ {\rm Wish}(\L \| W, \n)$
+\end{tabular}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Distributions over continuous domain}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Dirac distribution}
+\slide{Distributions over continuous domain}{
+
+\item Let $x$ be a continuous RV. The \defi{probability density
+  function (pdf)} $p(x)\in[0,\infty)$ defines the probability 
+$$P(a\le x \le b) = \int_a^b p(x)~ dx ~ \in[0,1]$$
+
+The \defi{(cumulative) probability distribution} $F(y) = P(x \le y) = \int_{-\infty}^y dx~
+p(x)\in[0,1]$ is the cumulative integral with $\lim_{y\to\infty} F(y) = 1$
+
+~
+
+{\small (In discrete domain: \emph{probability distribution} and
+    \emph{probability mass function} $P(x)\in[0,1]$ are used
+    synonymously.)
+
+}
+
+~
+
+\item Two basic examples:
+
+\textbf{Gaussian}: ~
+$\NN(x \| \m,\S) = \frac{1}{\|2\pi \S\|^{1/2}}~ e^{-\half (x-\m)^\T~ \S^\1~ (x-\m)}$
+
+\textbf{Dirac or $\d$} (``point particle'') ~
+$\d(x) = 0$ except at $x=0$, $\int\d(x)~dx = 1$
+
+$\d(x) = \frac{\del}{\del x} H(x)$ where $H(x) = [x\ge0] =$ Heavyside step function
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Gaussian}
+\slide{Gaussian distribution}{
+
+~
+
+\item 1-dim:~
+$
+\NN(x \| \m,\s^2) = \frac{1}{\|2\pi \s^2\|^{1/2}}~ e^{-\half
+(x-\m)^2/\s^2 }
+$\anchor{25,-10}{\showh[.25]{Figure1_13}}
+
+\item $n$-dim Gaussian in \emph{normal form}:
+%\anchor{10,-6}{\showh[.2]{Figure2_8b}}
+\begin{align*}
+\NN(x \| \m, \S)
+ &= \frac{1}{\|2\pi \S\|^{1/2}}~ \exp\{-\half (x-\m)^\T~ \S^\1~ (x-\m)\}
+\end{align*}
+with \textbf{mean} $\m$ and \textbf{covariance} matrix $\S$. In \emph{canonical form}:
+\begin{align}
+\NN[x \| a, A]
+ = \frac{\exp\{-\half a^\T A^\1a\}}{\|2\pi A^\1\|^{1/2}}~
+   \exp\{-\half x^\T~ A~ x + x^\T a\}
+\end{align}
+with \textbf{precision} matrix $A = \S^\1$ and coefficient $a=\S^\1 \m$
+(and mean $\m = A^\1 a$).
+
+~
+
+\item Gaussian identities: see {\tiny\url{http://ipvs.informatik.uni-stuttgart.de/mlr/marc/notes/gaussians.pdf}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Gaussian identities}{
+
+\providecommand{\+}{\myplus}
+\renewcommand{\-}{\,\text{-}\,}
+\small
+
+Symmetry: \qquad $\NN(x\|a,A) = \NN(a\|x,A) = \NN(x-a\|0,A)$
+
+~
+
+Product:\\
+$\NN(x \| a,A)~ \NN(x \| b,B) 
+ = \NN[x \| A^\1 a+B^\1 b, A^\1 + B^\1]~ \NN(a\|b,A+B)$
+$\NN[x \| a,A]~ \NN[x \| b,B]
+ = \NN[x \| a+b,A+B]~ \NN(A^\1 a \| B^\1 b, A^\1+B^\1)$
+
+~
+
+``Propagation'':\\
+$\int_y \NN(x \| a + Fy, A)~ \NN(y \| b, B)~ dy
+ = \NN(x \| a + Fb, A+FBF^\T)$
+
+~
+
+Transformation:\\
+$ \NN(F x + f \| a,A)
+ = \frac{1}{\|F\|}~ \NN(x \| ~ F^\1 (a-f),~ F^\1 AF^\mT) $
+
+~
+
+Marginal \& conditional:\\
+$\NN\bigg( \arr{c}{x\\ y} \bigg| \arr{c}{a\\ b} ,~ 
+         \arr{cc}{A & C\\ C^\T & B} \bigg)
+ = \NN(x \| a,A) \cdot \NN(y \| b+C^\T A^\1(x\-a),~ B - C^\T A^\1 C)$
+
+~
+
+More Gaussian identities: see {\tiny\url{http://ipvs.informatik.uni-stuttgart.de/mlr/marc/notes/gaussians.pdf}}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \slide{Gaussian prior and posterior}{
+
+%% \item Assume we have data $D = \{x_1,..,x_n\}$, each $x_i\in\RRR^n$,
+%% with likelihood
+%% \begin{align*}
+%% P(D\|\m,\S)
+%% &= \Prod_i \NN(x_i\|\m,\S) \\
+%% \argmax_\m~ P(D\|\m,\S)
+%% &= \frac{1}{n}\sum_{i=1}^n x_i \\
+%% \argmax_\S~ P(D\|\m,\S)
+%% &= \frac{1}{n} \sum_{i=1}^n (x_i-\m)(x_i-\m)^\T
+%% \end{align*}
+
+%% \item Assume we are initially uncertain about $\m$ (but know $\S$). We
+%% can express this uncertainty using again a Gaussian $\NN[\m \|
+%% a,A]$. Given data we have
+%% \begin{align*}
+%% P(\m\|D)
+%% &\propto P(D\|\m,\S)~ P(\m)
+%%  = \Prod_i \NN(x_i\| \m,\S)~ \NN[\m \| a, A] \\
+%% &= \Prod_i \NN[\m\| \S^\1 x_i,\S^\1]~ \NN[\m \| a, A]
+%%  \propto \NN[\m \| \S^\1 \sum_i x_i,~ n\S^\1 + A]
+%% \end{align*}
+%% Note: in the limit $A\to 0$ (uninformative prior) this becomes
+%% \begin{align*}
+%% P(\m\|D)
+%%  &= \NN(\m \| \frac{1}{n}\sum_i x_i, \frac{1}{n}\S)
+%% \end{align*}
+%% which is consistent with the Maximum Likelihood estimator
+
+%% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Motivation for Gaussian distributions}{
+
+\item Gaussian Bandits
+
+\item Control theory, Stochastic Optimal Control
+
+\item State estimation, sensor processing, Gaussian filtering (Kalman
+filtering)
+
+\item Machine Learning
+
+\item etc
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Particle approximation of a distribution}
+\slide{Particle Approximation of a Distribution}{
+
+\item We approximate a distribution $p(x)$ over a continuous domain
+$\RRR^n$
+
+~
+
+\item A particle distribution $q(x)$ is a weighed set  $\SS=\{ (x^i,
+w^i) \}_{i=1}^N$ of $N$ particles
+\begin{items}
+\item each particle has a ``location'' $x^i \in \RRR^n$ and a weight $w^i \in \RRR$
+\item weights are normalized, $\sum_i w^i = 1$
+\end{items}
+$$q(x) := \sum_{i=1}^N w^i~ \d(x-x^i)$$
+where $\d(x-x^i)$ is the $\d$-distribution.
+
+\item Given weighted particles, we can estimate for any (smooth) $f$:
+$$\<f(x)\>_p = \int_x f(x) p(x) dx ~\approx~ \Sum_{i=1}^N w^i f(x^i)$$
+See \emph{An Introduction to MCMC for Machine
+  Learning} \url{www.cs.ubc.ca/~nando/papers/mlintro.pdf}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Particle Approximation of a Distribution}{
+
+Histogram of a particle representation:
+
+\show{particleRepresentation}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Motivation for particle distributions}{
+
+\item Numeric representation of ``difficult'' distributions
+\begin{items}
+\item Very general and versatile
+\item But often needs many samples
+\end{items}
+
+\item Distributions over games (action sequences), sample based planning, MCTS
+
+\item State estimation, particle filters
+
+\item etc
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\key{Student's t, Exponential, Laplace, Chi-squared, Gamma distributions}
+\slide{Some more continuous distributions*}{\label{lastpage}
+
+\begin{tabular}{p{.4\columnwidth}p{.6\columnwidth}}
+Gaussian &
+$\NN(x \| a,A) = \frac{1}{\|2\pi A\|^{1/2}}~ e^{-\half (x-a)^\T~ A^\1~ (x-a)}$
+\\
+Dirac or $\d$ &
+$\d(x) = \frac{\del}{\del x} H(x)$
+\\
+Student's t\newline\tiny
+(=Gaussian for $\nu\to\infty$, otherwise heavy tails) &
+$p(x;\n) \propto [1+\frac{x^2}{\n}]^{-\frac{\n+1}{2}}$
+\\
+Exponential\newline\tiny (distribution over single event time) &
+$p(x;\l) = [x\ge 0]~ \l e^{-\l x}$
+\\
+Laplace\newline\tiny (``double exponential'') &
+$p(x;\m,b) = \frac{1}{2b} e^{-\|x-\m\|/b}$
+\\
+Chi-squared &
+$p(x;k) \propto [x\ge0]~ x^{k/2-1} e^{-x/2}$
+\\
+Gamma &
+$p(x;k,\t) \propto [x\ge0]~ x^{k-1} e^{-x/\t}$
+\end{tabular}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot

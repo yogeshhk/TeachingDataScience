@@ -1,0 +1,359 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Artificial Intelligence}
+\renewcommand{\coursepicture}{course_ai}
+\renewcommand{\coursedate}{Winter 2019}
+\renewcommand{\topic}{Explainable AI}
+\renewcommand{\keywords}{}
+
+\slides
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Explainable AI}{
+
+\item General Concept of Explaination
+\begin{items}
+\item Data, Objective, Method, \& Input
+\item Counterfactuals \& Pearl
+\end{items}
+
+~
+
+\item Fitting interpretable models to black-boxes
+
+~
+
+\item Sensitivity Analysis
+\begin{items}
+\item in general
+\item in NNs: Influence functions, relevance propagation
+\item Relation to Adversarial Examples
+\end{items}
+
+~
+
+\item Post-Hoc Rationalization
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Why care for Explainability}{
+
+{\small (Following Doshi-Velez \& Kim's arguments) }
+
+\item Classical engineering: \textbf{complete} objectives and evaluation
+\begin{items}
+\item formal guarantees $\to$ system achieves well-defined objective $\to$ trust
+\end{items}
+
+~
+
+\item Novel AI applications: \textbf{incomplete} objectives
+\begin{items}
+  \item Ethics, fairness \& unbiasedness, privacy
+  \item Safety and robustness beyond testable/formalizable domains
+  \item Multi-objective trade-offs
+\end{items}
+
+\item In those cases we want interpretable models and predictions
+
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{What does Explainable mean?}{
+
+\item Why did you go to university today?
+
+~\pause
+
+\item In cognitive science: \emph{Counterfactuals}
+
+~\pause
+
+\item A ML decision $y = f(x)$ has four ingredients:
+\begin{items}
+\item The data $D$
+\item The objective $L$
+\item The method/algorithm/hypothesis space: $M$, such that $f = M(L,D)$
+\item The query input $x$
+\end{items}
+
+\item recall Pearl's notion of causality based on \emph{intervention}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Fitting Interpretable models to a Black-Box}{
+
+\item Started in the 80ies: 
+
+\begin{items}
+\item Sun, Ron: \emph{Robust Reasoning: Integrating Rule-Based and Similarity-Based Reasoning.} AI, 1995.
+
+\item Ras, van Gerven \& Haselager (in Spring 2018): ``Unlike  other
+methods in Machine Learning (ML), such as decision trees or Bayesian networks,
+an  explanation  for  a  certain  decision  made  by  a  DNN  cannot  be  retrieved  by
+simply scrutinizing the inference process.''
+
+\item Bastani et al: \emph{Interpreting Blackbox Models via Model Extraction}, 2018:
+
+``We propose to construct global explanations of complex, blackbox models in the form of a decision tree approximating the original model.''
+
+%% Interpretable & Explorable Approximations of Black Box Models
+%% Himabindu Lakkaraju, Ece Kamar, Rich Caruana, Jure Leskovec
+\end{items}
+
+~
+
+\item (Great Work: Causal Generative Neural Networks, Guyon \& Sebag)
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Sensitivity Analysis}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Sensitivity Analysis in Optimization}{
+
+\item Consider a general problem $$x^* = \argmin_x f(x) \st g(x)\le0,~ h(x)=0$$
+\begin{items}
+\item where $x\in\RRR^n,~ f:~ \RRR^n \to \RRR,~ g:~ \RRR^n \to \RRR^m,~ h:~ \RRR^n \to \RRR^{m'}$, all smooth
+\item First compute the optimum
+\item Then explain the optimum
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Sensitivity Analysis in Optimization}{
+
+\item KKT conditions: $x$ optimal $\To \exists \l\in\RRR^m, \n\in\RRR^{m'}$ such that
+\begin{align}
+& \na f(x) + \na g(x)^\T \l + \na h(x)^\T \n = 0\\
+& g(x) \le 0 \comma h(x)=0 \comma \l \ge 0 \\
+& \l \circ g(x) = 0 ~,
+\end{align}
+
+\item Consider infinitesimal variation $\tilde f = f+\e \hat f$,
+$\tilde g = g+\e \hat g$, $\tilde h = h+\e \hat h$; how does $x^*$ vary?
+\begin{items}
+\item The KKT resitual will be 
+$$\hat r = \mat{c}{
+\na \hat f + \na \hat g^\T \l + \na \hat h^\T \n\\
+\hat h \\
+\l \circ \hat g
+}$$
+\item The primal-dual Newton step will be
+$$
+\mat{c}{
+\hat x \\
+\hat \l \\
+\hat \n
+}
+=
+- \mat{ccc}{
+\he f & \na g^\T & \na h^\T \\
+\na h & 0 & 0 \\
+\diag(\l) \na g & \diag(g) & 0 \\
+}^\1~
+\mat{c}{
+\na \hat f + \na \hat g^\T \l + \na \hat h^\T \n\\
+\hat h \\
+\l \circ \hat g
+}
+$$
+\end{items}
+
+\item The new optimum is at $x^* + \hat x$
+\begin{items}
+\item Insight: This derivation implies stability of constraint activity, which is ``standard constraint qualification'' in the optimization literature
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Sensitivity Analysis in Optimization}{
+
+\item Bottom line: We can analyze how changes in the optimization problem translate to changes of the optimium $x^*$
+
+\item Differentiable Optimization
+\begin{items}
+\item Can be embedded in auto-differentiation computation graphs (Tensorflow)
+\item Important implications for Differentiable Physics
+\item \textbf{But:} Not differentiable across constraint activations
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Sensitivity Analysis in Neural Nets}{
+
+\item Let $f:~ \RRR^n \to \RRR$ be a function from some input features $x_i$ to a discriminative value
+
+\item (From Montavan et al:)
+\begin{items}
+\item We aim for a functional understanding, not a ``lower-level mechanistic or algorithmic'' understanding
+\item Features $x_i$ are assumed to be in some human-interpretable domain: e.g., images, text
+\item An explanation is a collection of interpretable features that contributed to the decision
+\end{items}
+
+~
+
+\item Sensitivity Analysis $\oto$ Use gradients to  quantify contribution of features to a value
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Example: Guided Backprop}{
+
+\show{guidedBackprop}
+{\hfill\tiny (Springenberg et al, 2014)}
+
+\begin{items}
+\item Correct backprop for ReLu: $\d^l_i = [x^l_i>0]~ \d^{l\po}_i$ where $\d^{l\po}_i = \frac{d f}{d x^{l\po}_i}$
+\item Guided backprop: $R^l_i =[x^l_i>0]~  [R^{l\po}_i>0]~ R^{l\po}_i$
+\end{items}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Relevance Propagation \& Deep Taylor Decomposition}{
+
+\item Not only gradients, but decompose value in additive relevances per feature
+$$ f = \sum_i R_i $$
+
+\item Deep Taylor Decomposition:
+\begin{items}
+\item ReLu networks are piece-wise linear
+\item[$\to$] exact equations to propagate 1st-order Taylor coefficients through network
+\end{items}
+\show[.4]{deepTaylor1}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Relevance Propagation \& Deep Taylor Decomposition}{
+
+\show{deepTaylor2}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Relevance Propagation \& Deep Taylor Decomposition}{
+
+\show{deepTaylor3}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Feature Inversion}{
+
+\item Try to find a ``minimal image'' that leads to the same value:
+$$ x^* = \argmin_x \norm{f(x) - f(x_\text{orig})}^2 + \RR(x) $$
+\begin{items}
+\item Constrain $x$ to be maskings of the original image $x_\text{orig}$
+\end{items}
+
+~
+
+\show{featureInversion1}
+{\tiny\hfill (Du et  al 2018)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Feature Inversion}{
+
+\show{featureInversion2}
+{\tiny\hfill (Du et  al 2018)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Influence Functions}{
+
+\item Sensitivity w.r.t.\ data set!
+\begin{items}
+\item Leave-one-out retraining
+\item Vary the weighting of a training point (thereby the objective)
+\item Vary a training point itself: input image $x \gets x+\d$
+\item Use linear sensitivity analysis to
+\end{items}
+
+\show[.5]{InfluenceFunctions1}
+{\hfill\tiny (Koh \& Liang, ICML'17)}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Post-Hoc Rationalization}{
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{Post-Hoc Rationalization}{
+
+\item Given an image and a (predicted) classification, \emph{learn} to rationalize it!
+
+\item Data includes explanations!
+\begin{items}
+\item Caltech UCSD Birds 200-2011; 200 classes of bird species; 11,788 images
+\item Plus five sentences for each image! E.g., ``This is a bird with red feathers and has a black face patch''
+\end{items}
+
+\show{postHoc1}
+{\tiny\hfill (Akata et al, 2018)}
+
+\show{postHoc2}
+{\tiny\hfill (Akata et al, 2018)}
+
+%% Generating Post-Hoc Rationales of Deep
+%% Visual Classification Decisions
+%% Zeynep Akata, Lisa Anne Hendricks, Stephan Alaniz, and Trevor Darrell
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slide{References}{\label{lastpage}
+
+\small
+
+\item Koh, Pang Wei, and Percy Liang: \emph{Understanding Black-Box Predictions via Influence Functions.} ArXiv:1703.04730
+
+\item Escalante, Hugo Jair, Sergio Escalera, Isabelle Guyon, Xavier Baró, Yağmur Güçlütürk, Umut Güçlü, and Marcel van Gerven: \emph{Explainable and Interpretable Models in Computer Vision and Machine Learning.} Springer Series on Challenges in Machine Learning, 2018.
+
+\item Zeynep Akata, Lisa Anne Hendricks, Stephan Alaniz, and Trevor Darrell:
+\emph{Generating Post-Hoc Rationales of Deep Visual Classification
+Decisions.} Springer 2018
+
+\item Montavon, Gr\'egoire, Wojciech Samek, and Klaus-Robert M\"uller: \emph{Methods for Interpreting and Understanding Deep Neural Networks.} Digital Signal Processing 73, 2018
+
+\item Springenberg, Jost Tobias, Alexey Dosovitskiy, Thomas Brox, and Martin Riedmiller: \emph{Striving for Simplicity: The All Convolutional Net.} ArXiv:1412.6806
+
+\item Du, Mengnan, Ninghao Liu, Qingquan Song, and Xia Hu: \emph{Towards Explanation of DNN-Based Prediction with Guided Feature Inversion.} ArXiv:1804.00506
+spangenberg
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\slidesfoot

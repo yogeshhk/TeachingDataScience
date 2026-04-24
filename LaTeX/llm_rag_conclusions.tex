@@ -1,0 +1,174 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Conclusions}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{So, What is RAG?}
+
+\begin{itemize}
+\item A new paradigm for generation tasks, combining retrieval and generation models.
+\item Motivation: Overcoming limitations of pure generative models in factual consistency, efficiency, and diversity.
+\item Impact: Improved performance in text summarization, question answering, and other NLP tasks.
+\end{itemize}	
+
+
+
+		\begin{center}
+		\includegraphics[width=0.8\linewidth,keepaspectratio]{rag48}
+		
+		
+		\end{center}
+
+{\tiny (Ref: A Crash Course on Building RAG Systems -Daily Dose)}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Workflow}
+
+
+
+		\begin{center}
+		\includegraphics[width=0.8\linewidth,keepaspectratio]{rag49}
+		
+		
+		\end{center}
+
+{\tiny (Ref: A Crash Course on Building RAG Systems -Daily Dose)}
+
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Architecture}
+
+
+		\begin{center}
+		\includegraphics[width=0.5\linewidth,keepaspectratio]{chatgpt47}
+		\end{center}
+
+{\tiny (Ref: Overview of Large Language Models - Aman AI)}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Architecture: The Two Pipelines}
+
+\begin{itemize}
+  \item \textbf{Indexing Pipeline (offline):}
+  \begin{enumerate}
+    \item Load documents from diverse sources.
+    \item Split into chunks (chunk size: 256--512 tokens typical).
+    \item Embed each chunk $\rightarrow$ dense vector $\mathbf{v} \in \mathbb{R}^d$.
+    \item Store $(\mathbf{v}, \text{chunk text}, \text{metadata})$ in a vector database.
+  \end{enumerate}
+  
+  \item \textbf{Query Pipeline (online, per user request):}
+  \begin{enumerate}
+    \item Embed user query $\mathbf{q} \in \mathbb{R}^d$.
+    \item Find top-$k$ chunks: $\arg\max_i \cos(\mathbf{q}, \mathbf{v}_i)$.
+    \item Build prompt: \texttt{[System] + [Retrieved chunks] + [User query]}.
+    \item LLM generates a grounded answer.
+  \end{enumerate}
+
+  \item \textbf{Evaluation Pipeline (optional):}
+  Assess Faithfulness and Context Precision using RAGAS on a test set.
+\end{itemize}
+
+{\tiny (Ref: RAG Architecture -- Abhinav Kimothi)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Core RAG Bottleneck}
+      \begin{itemize}
+        \item 90\% of RAG systems fail due to poor retrieval.
+        \item Better LLMs do not fix bad retrieval.
+        \item Naive RAG: Chunk, embed, retrieve top\_k,  too simplistic.
+        \item Poor retrieval causes hallucinations, omissions, and vague outputs.
+        \item Quality of generation depends on quality of retrieved context.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 1: Fix the Basics}
+      \begin{itemize}
+        \item Use dynamic chunking that respects document structure.
+        \item Tune chunk size to avoid loss or fragmentation.
+        \item Apply metadata filtering to narrow semantic scope.
+        \item Combine vector search with keyword filters (hybrid).
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Advanced Retrieval Techniques}
+      \begin{itemize}
+        \item Apply re-ranking (learned or rule-based).
+        \item Use small-to-big retrieval: start with sentences.
+        \item Employ recursive retrieval methods like LlamaIndex.
+        \item Use multi-hop and agentic retrieval for complex queries.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 3: Evaluate or Die Trying}
+      \begin{itemize}
+        \item Don’t iterate blindly,  evaluate systematically.
+        \item Use end-to-end evaluation with ground truths or feedback.
+        \item Run component-level evals using MRR, NDCG, success@k.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 4: Fine-Tuning: A Last Resort}
+      \begin{itemize}
+        \item Fine-tune only if domain is highly specific or LLM is weak.
+        \item Ensure retrieval and prompting are fully optimized first.
+        \item Be aware of added cost, latency, and system complexity.
+      \end{itemize}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pros and Cons of RAG}
+
+\textbf{Pros:}
+\begin{itemize}
+\item \textbf{No retraining required}: plug any LLM into the pipeline.
+\item \textbf{Grounded responses}: answer is traceable to source documents.
+\item \textbf{Knowledge stays current}: update the vector store, not the model.
+\item \textbf{Lower hallucination rate} than a standalone LLM on domain-specific queries.
+\item \textbf{Source attribution}: users can verify where the answer came from.
+\end{itemize}
+
+\textbf{Cons:}
+\begin{itemize}
+\item \textbf{Added latency}: retrieval + LLM call is slower than LLM alone.
+\item \textbf{Retrieval can fail}: bad chunking or embeddings means the right context is never found.
+\item \textbf{Context window limits}: only a finite number of chunks can be injected.
+\item \textbf{Garbage-in, garbage-out}: quality of answers depends on quality of the document corpus.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Challenges and Future Directions}
+
+\begin{itemize}
+\item \textbf{Multi-modal RAG:} Extend retrieval to images, tables, audio, and video (using CLIP-style embeddings or captioning models).
+\item \textbf{Long-Context RAG:} As LLMs support 1M+ token windows, the trade-off between retrieval and direct context injection will shift.
+\item \textbf{Self-Correcting RAG:} Systems that can detect their own retrieval failures and automatically re-query (Self-RAG, CRAG).
+\item \textbf{Graph RAG:} Using knowledge graphs instead of flat vector stores to capture entity relationships and improve multi-hop reasoning.
+\item \textbf{Privacy-Preserving RAG:} Federated retrieval across siloed enterprise systems without data leakage.
+\item \textbf{Bias Mitigation:} Ensuring retrieved documents do not introduce selection bias into generated answers.
+\end{itemize}
+
+\end{frame}

@@ -1,0 +1,172 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Create a Blockchain}\\
+{\small Ref: Learn with Udemy Courses : Blockchain A-z}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Installations}
+\begin{itemize}
+\item Install Anaconda-Python 3.6
+\item Install packages: postman, Flask 0.12.2
+\item Have some IDE like Spider, Pycharm etc.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Creating a Blockchain}
+\begin{itemize}
+\item Create class Blockchain
+\item Initialize the chain as empty list and create first/genesis block with some `proof` and None (ie '0') previous hash.
+\item A block can get added if they come up with has that is same as given proof.
+\item Each block will be a dict with keys as: index, timestamp, proof, previous\_hash and data
+\end{itemize}
+
+\begin{lstlisting}
+class Blockchain:
+    def __init__(self):
+        self.chain = []
+        self.create_block(proof=1, previous_hash='0')
+
+    def create_block(self, proof, previous_hash):
+        block = {'index': len(self.chain)+1,
+                 'timestamp': str(datetime.datetime.now()),
+                 'proof': proof,
+                 'previous_hash': previous_hash
+                 }
+        self.chain.append(block)
+        return block
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Proof of Work}
+\begin{itemize}
+\item To add a new block to the blockchain, the miner (the adder) needs to solve the `proof`. Needs to be non-symmetrical, order independent, square to make it 
+\item Meaning s/he needs to generate a hash that matches with the string given as `proof`.
+\item The proof problem has to be challenging to solve (or hard to find)  but easy to verify.
+\item Its hard as not many can solve it so value of the blockchain is not diluted.
+
+\end{itemize}
+
+\begin{lstlisting}
+def proof_of_work(self, previous_proof):
+		new_proof = 1
+		check_proof = False
+		while check_proof is False:
+				hash_operation = hashlib.sha256(str(new_proof**2 - previous_proof**2).encode()) .hexdigest()
+				if hash_operation[:4] == '0000': # leading 0's ie 4
+						check_proof = True
+				else:
+						new_proof += 1
+				return new_proof
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Chain Validity}
+\begin{itemize}
+\item Check ALL blocks of the chain to see if they are valid
+\item Check: hash of previous block should match with the 'previous\_hash' field in the current block.
+\item Check: hash of the whole current block has 4 leading 0's.
+\end{itemize}
+
+\begin{lstlisting}
+def is_chain_valid(self, chain):
+		block_index = 1
+		previous_block = chain[0]
+		while block_index < len(chain):
+				block = chain[block_index]
+				if block['previous_hash'] != self.hash(previous_block):
+						return False
+				previous_proof = previous_block['proof']
+				proof = block['proof']
+				hash_operation = hashlib.sha256(str(proof**2 - previous_proof**2).encode()) .hexdigest()
+				if hash_operation[:4] != '0000':
+						return False
+				block_index += 1
+				previous_block = block
+		return True
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create Web App}
+\begin{itemize}
+\item Web App to interact with blockchain, on web
+\item For now, interacting with local blockchain.
+\item Start Flask server, put url + routing in browser, the callback gets called.
+\item To mine a new block, get previous proof, create new proof, then create new block.
+\end{itemize}
+
+\begin{lstlisting}
+@app.route('/mine_block', methods=['GET'])
+def mine_block():
+    previous_block = blockcahin.get_previous_block()
+    previous_proof = previous_block['previous_proof']
+    proof = blockcahin.proof_of_work(previous_proof)
+    previous_hash = blockcahin.hash(previous_block)
+    block = blockcahin.create_block(proof, previous_hash)
+    response = {'message': 'Congrats, you mined a block',
+                'index': block['index'],
+                'timestamp': block['timestamp'],
+                'proof': block['proof'],
+                'previous_hash': block['previous_hash']}
+    return jsonify(response), 200
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Display Blockchain}
+\begin{itemize}
+\item Send GET request to get full blockchain
+\item Display it in postman
+\end{itemize}
+
+\begin{lstlisting}
+@app.route('/mine_block', methods=['GET'])
+def mine_block():
+    previous_block = blockcahin.get_previous_block()
+    previous_proof = previous_block['previous_proof']
+    proof = blockcahin.proof_of_work(previous_proof)
+    previous_hash = blockcahin.hash(previous_block)
+    block = blockcahin.create_block(proof, previous_hash)
+    response = {'message': 'Congrats, you mined a block',
+                'index': block['index'],
+                'timestamp': block['timestamp'],
+                'proof': block['proof'],
+                'previous_hash': block['previous_hash']}
+    return jsonify(response), 200
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Demo}
+\begin{itemize}
+\item Run `blockchain.py` with localhost and port as 5000
+\item Go to Postman and fire get\_chain first to see genesis block, then `mine\_block` to add block and then `get\_chain` again to see bigger chain.
+\end{itemize}
+\begin{lstlisting}
+{
+    "chain": [
+        {
+            "index": 1,
+            "previous_hash": "0",
+            "proof": 1,
+            "timestamp": "2022-09-27 14:58:09.070311"
+        },
+        {
+            "index": 2,
+            "previous_hash": "32853ba4e5fa299f55ce64e0fdc14deafb3e4067985d5d6f919c348197f84768",
+            "proof": 2,
+            "timestamp": "2022-09-27 15:46:12.540411"
+        }
+    ],
+    "length": 2
+}
+\end{lstlisting}
+
+\end{frame}

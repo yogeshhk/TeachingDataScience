@@ -1,0 +1,152 @@
+\input{../shared/shared}
+
+\renewcommand{\course}{Robotics}
+\renewcommand{\coursepicture}{roboticsLecture}
+\renewcommand{\coursedate}{Winter 2014}
+\renewcommand{\exnum}{6}
+
+\exercises
+
+
+\exsection{Fun with Euler-Lagrange}
+
+\show[.3]{2dracer}
+
+Consider an inverted pendulum mounted on a wheel in the 2D x-z-plane;
+similar to a Segway. The exercise is to derive the Euler-Lagrange
+equation for this system.
+
+Tips:
+\begin{itemize}
+\item Strictly follow the scheme we discussed on slide 03:23.
+\item Use the generalized coordinates
+\begin{align}
+q=(x,\t)
+\end{align}
+with $x$ is the position of the wheel and $\t$ the angle of the
+pendulum relative to the world-vertical.
+\item The system can be parameterized by
+\begin{items}
+\item $m_A, I_A, m_B, I_B$: masses and inertias of bodies $A$ (=wheel)
+  and $B$ (=pendulum)
+\item $r$: radius of the wheel
+\item $l$: length of the pendulum (height of its COM)
+\end{items}
+\item Describe the \textbf{pose} of every body (depending on $q$) by
+the $(x,z,\p)$ coordinate: its position in the x-z-plane, and its
+rotation relative to the world-vertical. Accordingly represent the
+(linear and angular) velocities as a 3-vector.
+\item In this 3-dim space, the mass matrix of every body is
+\begin{align}
+M_i = \mat{ccc}{m_i & 0 & 0 \\ 0 & m_i & 0 \\ 0 & 0 & I_i}
+\end{align}
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\exsection{Optional: PD control to hold an arm steady}
+
+In our code, in @03-dynamics@ you find an example (rename
+@main.problem.cpp@ to @main.cpp@). Please change
+@../02-pegInAHole/pegInAHole.ors@ to @pegArm.ors@. You will find an
+arm with three joints that is swinging freely under gravity (ignoring
+collisions).
+
+a) Apply direct PD control (\emph{without} using $M$ and $F$) to each
+joint separately and try to find parameters $K_p$ and $K_d$
+(potentially different for each joint) to hold the arm steady, i.e.,
+$q^*=0$ and $\dot q^*=0$. Bonus: If you are successful, try the same for the
+arm in @pegArm2.ors@.
+
+Play with @setDynamicsSimulationNoise@ and check stability.
+
+%% (Bonus) Try to use a PID controller that also includes the integral error
+%% \begin{align*}
+%% u = K_p (q^* - q) + K_d (\dot q^* - \dot q) + K_i \int_{s=0}^t (q^* - q(s))~ ds ~.
+%% \end{align*}
+
+b) As above, try to hold the arm steady at $q^*=0$ and $\dot q^*=0$. But
+now use the knowledge of $M$ and $F$ in each time step. For this,
+decide on a desired wavelength $\l$ and damping behavior $\xi$ and
+compute the respective $K_p$ and $K_d$ (assuming $m=1$), the same for
+each joint. Use the PD equation to determine desired accelerations
+$\ddot q^*$ (slide 03:31) and use inverse dynamics to determine the
+necessary $u$.
+
+%Try this for both,  @pegArm.ors@ and @pegArm2.ors@.
+
+
+%% \section*{Reading}
+
+%% In the last exercise you tried to apply PD torque control directly on
+%% each joint of a robot. That worked somehow, but
+%% leads to a ``hanging'' and somewhat oscillating pose. Slides 04:19 and
+%% 04:22 tell us how we can perfectly control the robot if we know its
+%% dynamics.
+
+%% Slide 04:19 shows how the dynamics of most physical systems (not only
+%% robots) can be written in the form $M(q)~ \ddot q + F(q,\dot q) = u$,
+%% where the mass matrix $M$ and the forces $F$ depend on the current
+%% pose $q$ and velocities $\dot q$ of the robot. If we know the
+%% kinematics of the robot and its mass distribution (inertial tensor for
+%% each link), there exists an algorithm (Newton-Euler algorithm) that
+%% can compute $M$ and $F$ efficiently; the details are not important.
+
+%% The are two important consequences of this:
+%% \begin{itemize}
+%% \item If you know how you want to accelerate $\ddot q$ the robot, then
+%% the equation $M(q)~ \ddot q + F(q,\dot q) = u$ tells you which torques
+%% to apply on each joint.
+%% \item We can now apply PD control on the accelerations instead of the
+%% torque controls of the robot!
+%% \end{itemize}
+%% The latter means that we use a PD controller to determine the
+%% desired acceleration of a joint
+%% $$\ddot q_t^\text{desired} = K_p(q^* - q) + K_d(\dot q^* - \dot q)$$
+%% and then use the system dynamics to compute the necessary controls
+%% $u$. With this we annihilated all problems with external forces or
+%% couplings between joints. Use this to solve the following exercise.
+
+%% (Comment: Even if we don't know the robot's dynamics exactly, it is
+%% usually better to approximate $M$ and $F$ roughly (e.g., using linear
+%% approximation from the most reacent samples) and use the approximate
+%% $M$ and $F$ together with PD acceleration control.)
+
+%% \section*{Reading}
+
+%% A PD controller can not only be used to stabalize a system around a
+%% fixed target $q^*,\dot q^*$. It can also be used to follow a moving
+%% target $q^*_t$, which is called a \emph{reference trajectory}. From a
+%% given a reference trajectory $q^\text{ref}_{0:T}$ of joint angles only, we
+%% compute the velocity as $\dot q^\text{ref}_t=(q_{t\po}-q_{t-1})/(2\tau)$ and the
+%% acceleration as $\ddot q_t^\text{ref} = (q_{t\1} + q_{t\po} -
+%% 2q_t)/\tau^2$. The last equation on slide 04:22 shows how we can use
+%% PD acceleration control to follow such a reference trajectory. Use
+%% this to finally solve the full-fleged, noisy, dynamic peg-in-a-hole
+%% problem in the next exercise.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \exsection{The dynamic peg-in-a-hole problem}
+
+%% In the exercise 3 you generated nice collision-free
+%% trajectories for peg-in-a-hole using inverse kinematics.
+
+%% a) Follow these reference trajectories using PD acceleration control
+%% (slide 05:31) and thereby solve the peg-in-a-hole problem with a noisy
+%% dynamic system.
+
+%% b) Increase noise into the dynamic system (change to
+%% @setDynamicSimulationNoise(2.);@). Record the trajectory of the 3rd
+%% joint (@q(2)@) and plot it. Tune the PD parameters to get an
+%% oscillatory behavior.
+
+%% %% c) Keep the reference trajectory as is (assuming $q_0=0$) but perturb
+%% %% the initial condition of the arm manually by changing the 3rd
+%% %% joint. As above, record the trajectory of the 3rd joint (@q(2)@) and
+%% %% plot it and play with the PD parameters to get the 3 types of
+%% %% behaviors.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\exerfoot
