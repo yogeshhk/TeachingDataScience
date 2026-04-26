@@ -3,8 +3,8 @@ from adk.models import GeminiModel
 
 def web_search(query: str) -> str:
     """Search the web for information."""
-    # Implementation using search API
-    pass
+    # Stub: replace with a real search API (e.g. googlesearch-python, SerpAPI)
+    return f"Web search results for: {query}"
 
 def get_stock_data(symbol: str) -> dict:
     """Get comprehensive stock data."""

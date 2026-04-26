@@ -46,7 +46,7 @@ def run_evaluation():
         contexts.append(context_str)
         
         # Generation
-        prompt = f"Context: {context_str}\n\nQuestion: {query}"
+        prompt = f"Context: {' '.join(context_str)}\n\nQuestion: {query}"
         ans = llm.invoke(prompt).content
         answers.append(ans)
         

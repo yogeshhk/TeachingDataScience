@@ -10,7 +10,7 @@
 %% WORKSHOP OVERVIEW
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Workshop Overview}
-\textbf{What we will build:} A chatbot with two interfaces: CLI and Streamlit, powered by LangChain + Groq LLM.
+\textbf{What we will build:} A chatbot with two interfaces: CLI and Streamlit, powered by LangChain + Groq LLM. We'll deploy it live to Vercel.
 
 \textbf{What we will learn:}
   \begin{itemize}
@@ -18,6 +18,7 @@
     \item \textbf{CLAUDE.md}, \textbf{custom commands}, \textbf{skills}, \textbf{subagents}, \textbf{hooks}, \textbf{MCP servers}, \textbf{plugins}
     \item Writing code, tests, and docs: \textit{all from the terminal}
     \item How Plan mode, permission system, and hooks enforce quality automatically
+    \item \textbf{Deploying to production} using GitHub and Vercel integration
   \end{itemize}
 
 \textbf{Duration:} 90--120 minutes end-to-end.
@@ -45,6 +46,7 @@
 11 & Hooks \& automation & Hooks system (new!) \\
 12 & .claude/ production setup & Rules, deny perms, skills \\
 13 & Plugins & Plugin packaging (new!) \\
+14 & Deployment to Vercel & GitHub integration, live hosting \\
 \hline
 \end{tabular}
 }
@@ -94,16 +96,27 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Pre-requisites Checklist}
-Before starting, verify:
+Before starting, verify all of the following:
+
+\textbf{Essential Software Installations:}
   \begin{itemize}
     \item Start with empty folder, switch to that directory
     \item Conda env installed, activated: \lstinline|conda --version|
     \item Claude Code installed: \lstinline|claude doctor|
-    \item Node.js $\geq$ 18 for MCP servers: \lstinline|node --version|
+    \item \textbf{Node.js $\geq$ 18 (required):} \lstinline|node --version| shows v18 or higher
+    \item \textbf{npm installed:} \lstinline|npm --version| shows a version number
+    \item \textbf{Git installed:} \lstinline|git --version| shows git version 2.x
     \item Python $\geq$ 3.10 and pip: \lstinline|python --version|
-    \item (Optional) Groq API key: \href{https://console.groq.com}{\texttt{console.groq.com}}% (free tier available)
-    \item A GitHub Personal Access Token %(for MCP GitHub stage)
     \item Git configured: \lstinline|git config --global user.name "Your Name"|
+  \end{itemize}
+
+\textbf{Accounts \& Subscriptions:}
+  \begin{itemize}
+    \item \textbf{Claude Pro subscription} (required for Claude Code)
+    \item \textbf{GitHub account} (for version control and deployment)
+    \item \textbf{Vercel account} (use same email as GitHub for seamless integration)
+    \item (Optional) Groq API key: \href{https://console.groq.com}{\texttt{console.groq.com}}
+    \item GitHub Personal Access Token for MCP integration
   \end{itemize}
 
 \textbf{Set environment variables:}
@@ -1820,6 +1833,294 @@ EOF
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 14: DEPLOYMENT TO VERCEL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 14: Deployment to Vercel}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why Vercel for Deployment?}
+\textbf{Vercel} provides seamless deployment for modern web applications with:
+  \begin{itemize}
+    \item \textbf{Zero-config deployment} from GitHub repositories
+    \item \textbf{Automatic HTTPS} and CDN distribution
+    \item \textbf{Continuous deployment} -- every git push triggers a new build
+    \item \textbf{Preview deployments} for pull requests
+    \item \textbf{Serverless functions} for backend API routes
+    \item \textbf{Free tier} sufficient for most demo and small production apps
+  \end{itemize}
+
+\textbf{Perfect for our chatbot project:}
+  \begin{itemize}
+    \item Streamlit app runs in serverless environment
+    \item Environment variables kept secure (API keys not in code)
+    \item Live URL to share with anyone
+    \item Auto-scales based on traffic
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pre-Deployment Checklist}
+Before deploying to Vercel, ensure you have:
+
+\textbf{Code Ready:}
+  \begin{itemize}
+    \item All code committed to Git: \lstinline|git status| shows clean
+    \item Tests passing: \lstinline|/test-run| completes successfully
+    \item \texttt{requirements.txt} or \texttt{package.json} present with all dependencies
+    \item \texttt{README.md} documentation complete
+  \end{itemize}
+
+\textbf{Accounts Set Up:}
+  \begin{itemize}
+    \item GitHub account created and logged in
+    \item Vercel account created with \textbf{same email} as GitHub
+    \item Repository pushed to GitHub: \lstinline|git remote -v| shows GitHub URL
+  \end{itemize}
+
+\textbf{Environment Configuration:}
+  \begin{itemize}
+    \item API keys not hardcoded in source files
+    \item App designed to accept API keys via environment variables or UI input
+    \item \texttt{.env} files listed in \texttt{.gitignore} (never commit secrets!)
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 1: Push Your Code to GitHub}
+\textbf{Create a new repository and push your code:}
+
+\begin{lstlisting}
+# If not already initialized:
+git init
+git add .
+git commit -m "Initial commit: chatbot ready for deployment"
+
+# Create repo on GitHub (via web or CLI):
+gh repo create mychatbot --public --source=. --remote=origin
+
+# Or add remote manually:
+git remote add origin https://github.com/YOUR_USERNAME/mychatbot.git
+
+# Push to GitHub:
+git branch -M main
+git push -u origin main
+
+# Verify:
+git remote -v
+# Should show: origin https://github.com/YOUR_USERNAME/mychatbot.git
+\end{lstlisting}
+
+\textbf{Pro Tip:} Use descriptive commit messages. Vercel deployment logs will reference them.
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Connect Vercel to GitHub}
+\textbf{Authorize Vercel to access your GitHub repositories:}
+
+  \begin{enumerate}
+    \item Go to \url{https://vercel.com/dashboard}
+    \item Click \textbf{``Add New...''} $\to$ \textbf{``Project''}
+    \item Click \textbf{``Continue with GitHub''} (if not already connected)
+    \item GitHub will ask for permissions:
+      \begin{itemize}
+        \item Grant Vercel access to repositories
+        \item You can limit to specific repos or allow all
+      \end{itemize}
+    \item Return to Vercel dashboard
+  \end{enumerate}
+
+\textbf{What this does:}
+  \begin{itemize}
+    \item Enables Vercel to clone your repo
+    \item Sets up webhooks for automatic deployments on push
+    \item Allows preview deployments for pull requests
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 3: Import and Configure Your Project}
+\textbf{Import your repository into Vercel:}
+
+  \begin{enumerate}
+    \item Vercel shows list of your GitHub repositories
+    \item Find and click your repository (e.g., \texttt{mychatbot})
+    \item Click \textbf{``Import''}
+    \item Configure project settings:
+      \begin{itemize}
+        \item \textbf{Project Name:} Auto-filled from repo name (editable)
+        \item \textbf{Framework Preset:} Vercel auto-detects (e.g., ``Other'' for Streamlit)
+        \item \textbf{Root Directory:} Leave as \texttt{./} unless monorepo
+        \item \textbf{Build Command:} Usually auto-detected or leave empty
+        \item \textbf{Output Directory:} Usually auto-detected
+      \end{itemize}
+  \end{enumerate}
+
+\textbf{Environment Variables (if needed):}
+  \begin{itemize}
+    \item For our chatbot: \textbf{leave empty} (users provide API keys in UI)
+    \item For apps needing secrets: Add them here (e.g., \texttt{GROQ\_API\_KEY})
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 4: Deploy!}
+\textbf{Trigger the deployment:}
+
+  \begin{enumerate}
+    \item Click \textbf{``Deploy''} button
+    \item Vercel starts building:
+      \begin{itemize}
+        \item Clones repository
+        \item Installs dependencies from \texttt{requirements.txt} / \texttt{package.json}
+        \item Runs build commands
+        \item Deploys to global CDN
+      \end{itemize}
+    \item Wait 2--5 minutes (watch build logs in real-time)
+    \item You'll see \textbf{``Congratulations! Your site is live''}
+  \end{enumerate}
+
+\textbf{Your app is now live at:}
+\begin{center}
+\texttt{https://YOUR-PROJECT-NAME.vercel.app}
+\end{center}
+
+\textbf{Example:}
+\begin{lstlisting}
+https://mychatbot-abc123.vercel.app
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 5: Test Your Live Application}
+\textbf{Verify deployment success:}
+
+  \begin{enumerate}
+    \item Click the deployment URL from Vercel dashboard
+    \item Test all features:
+      \begin{itemize}
+        \item For CLI chatbot: Functionality might need adaptation for web
+        \item For Streamlit app: Test chat interface, conversation history, API key input
+      \end{itemize}
+    \item Check for errors in Vercel deployment logs if something breaks
+    \item Test on mobile and desktop browsers
+  \end{enumerate}
+
+\textbf{Share your app:}
+\begin{lstlisting}
+# Your live URL:
+https://mychatbot-abc123.vercel.app
+
+# Share on social media, with friends, in your portfolio!
+# Example: "Built a Groq-powered chatbot with Claude Code.
+#          Try it live: https://mychatbot-abc123.vercel.app"
+\end{lstlisting}
+
+?? \textbf{Congratulations! Your application is live on the internet!}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Continuous Deployment in Action}
+\textbf{Every git push now triggers automatic deployment:}
+
+\begin{lstlisting}
+# Make changes to your code:
+echo "# Updated README" >> README.md
+
+# Commit and push:
+git add README.md
+git commit -m "docs: update README"
+git push origin main
+
+# Vercel automatically:
+# 1. Detects the push via webhook
+# 2. Starts a new build
+# 3. Deploys to production if build succeeds
+# 4. Sends you a notification
+\end{lstlisting}
+
+\textbf{Preview Deployments for Pull Requests:}
+  \begin{itemize}
+    \item Create a branch: \lstinline|git checkout -b feature/new-ui|
+    \item Push changes: \lstinline|git push origin feature/new-ui|
+    \item Open PR on GitHub
+    \item Vercel creates a \textbf{preview URL} unique to that PR
+    \item Test changes before merging to main!
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Managing Your Deployment}
+\textbf{Vercel Dashboard Features:}
+  \begin{itemize}
+    \item \textbf{Deployments:} View all builds, rollback to previous versions
+    \item \textbf{Analytics:} Track visitors, page views, performance
+    \item \textbf{Logs:} Real-time function logs for debugging
+    \item \textbf{Settings:} Custom domains, environment variables, integrations
+  \end{itemize}
+
+\textbf{Common Post-Deployment Tasks:}
+
+\begin{lstlisting}
+# Add a custom domain:
+# Vercel Dashboard > Settings > Domains > Add
+# Example: mychatbot.com -> mychatbot-abc123.vercel.app
+
+# Update environment variables:
+# Vercel Dashboard > Settings > Environment Variables
+# Add/edit variables, then redeploy
+
+# Rollback to previous deployment:
+# Vercel Dashboard > Deployments > Select deployment > 
+# Three dots > Promote to Production
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Troubleshooting Deployment Issues}
+\textbf{Build Fails:}
+  \begin{itemize}
+    \item Check build logs in Vercel dashboard
+    \item Common causes: Missing dependencies, wrong Python/Node version
+    \item Solution: Update \texttt{requirements.txt}, add \texttt{runtime.txt} for Python version
+  \end{itemize}
+
+\textbf{App Crashes at Runtime:}
+  \begin{itemize}
+    \item Check Function logs in Vercel dashboard
+    \item Common causes: Missing environment variables, API rate limits
+    \item Solution: Add env vars, handle errors gracefully
+  \end{itemize}
+
+\textbf{Deployment Timeout:}
+  \begin{itemize}
+    \item Vercel free tier has 10-second execution limit for functions
+    \item Streamlit apps might need optimization
+    \item Solution: Reduce dependencies, optimize cold start time
+  \end{itemize}
+
+\textbf{Get Help:}
+\begin{lstlisting}
+# Vercel Discord: https://vercel.com/discord
+# Vercel Docs: https://vercel.com/docs
+# GitHub Issues on your repo
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SUMMARY
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
@@ -1854,6 +2155,13 @@ EOF
     \item \texttt{.mcp.json}: Shared MCP server definitions (team)
     \item \texttt{mychatbot-plugin/}: Packaged plugin for team distribution
   \end{itemize}
+
+\textbf{Deployed to Production:}
+  \begin{itemize}
+    \item Live application hosted on Vercel at \texttt{https://YOUR-APP.vercel.app}
+    \item Continuous deployment from GitHub (every push = new build)
+    \item Shareable URL for portfolio and demonstrations
+  \end{itemize}
 \end{frame}
 
 
@@ -1884,6 +2192,7 @@ Block bad commands & PreToolUse hook \\
 Run tests on stop & Stop hook \\
 Create GitHub issue & GitHub MCP \\
 Create PR & GitHub MCP \\
+Deploy to Vercel & GitHub push + Vercel integration \\
 Enforce code style auto & Path-scoped rule (\texttt{.claude/rules/}) \\
 Block destructive cmds & Deny rules (\texttt{settings.json}) \\
 Auto security review & Auto-triggered skill \\

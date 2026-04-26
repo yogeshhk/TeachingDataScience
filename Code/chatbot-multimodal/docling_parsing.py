@@ -12,8 +12,8 @@ from dataclasses import dataclass
 from enum import Enum
 import base64
 from io import BytesIO
-import json # Ensure this is present
-from pathlib import Path # ADD THIS IMPORT
+import json
+from pathlib import Path
 import pandas as pd
 from langchain_groq import ChatGroq
 import os
@@ -122,7 +122,6 @@ class DoclingParser:
                     temperature=0.3,
                     max_tokens=150
                 )
-                self.text_model.to(self.device)
                 logger.info(f"Loaded text model: {text_model_name}")
         except Exception as e:
             logger.warning(f"Failed to load text model: {e}. Using fallback.")

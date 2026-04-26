@@ -52,7 +52,7 @@ chain = GraphQAChain.from_llm(
 )
 
 question = """Places to visit near Hyderabad?"""
-chain.run(question)
+print(chain.invoke(question))
 
 question = """Is Mumbai far away from Varanasi?"""
-chain.run(question)
+print(chain.invoke(question))

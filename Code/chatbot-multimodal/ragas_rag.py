@@ -64,7 +64,7 @@ def get_rag_response_and_context(rag_pipeline: RAGPipeline, question: str) -> Tu
     """
     try:
         # Step 1: Retrieve documents using the RAG system's retriever
-        retrieved_docs: List[Document] = rag_pipeline.rag_system.retriever.get_relevant_documents(question)
+        retrieved_docs: List[Document] = rag_pipeline.rag_system.retriever.invoke(question)
 
         # Ragas expects a list of strings for contexts, which are the content of the retrieved documents
         contexts = [doc.page_content for doc in retrieved_docs]

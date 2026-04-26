@@ -28,9 +28,8 @@ from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
 from langchain_community.vectorstores import FAISS
-from langchain_community.llms import HuggingFacePipeline
 
 from docling_parsing import BaseChunk, TextChunk, TableChunk, ImageChunk, CodeChunk, ChunkType
 
@@ -359,25 +358,17 @@ class MultiModalRAG:
             ("human", "Question: {question}")
         ])
 
-        # 2. Define the chain components
-        # A custom runnable to process the retrieved documents (which is done by the retriever)
-        processed_context_runnable = RunnableLambda(
-            lambda docs, question: self._process_retrieved_documents(docs, question),
-            # Bind the original query to the RunnableLambda
-        ).with_config(run_name="CustomContextProcessor")
-
         # 3. Construct the RAG Chain
         rag_chain = (
             {
-                "context": self.retriever | RunnablePassthrough(), # Get docs from retriever
-                "question": RunnablePassthrough() # Pass the original query through
+                "context": self.retriever | RunnablePassthrough(),
+                "question": RunnablePassthrough()
             }
-            # Custom processing logic: takes docs from 'context' and query from 'question'
             | RunnablePassthrough.assign(
-                context=lambda x: processed_context_runnable.invoke(x['context'], x['question'])
+                context=lambda x: self._process_retrieved_documents(x['context'], x['question'])
             )
-            | prompt 
-            | self.llm 
+            | prompt
+            | self.llm
             | StrOutputParser()
         )
         

@@ -6,7 +6,7 @@ class GroqResumeParser:
     """
     A class to parse resumes using the GROQ API with Google's Gemma LLM.
     """
-    def __init__(self, api_key: str, model: str = "gemma-7b-it"):
+    def __init__(self, api_key: str, model: str = "gemma2-9b-it"):
         """
         Initializes the GroqResumeParser.
 
