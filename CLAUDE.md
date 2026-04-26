@@ -104,6 +104,55 @@ A repo-wide `Code/.gitignore` covers `__pycache__/`, `.ipynb_checkpoints/`, `.en
 ### Security note
 `Code/google-adk/my_agent/.env` is gitignored but contains a real `GOOGLE_API_KEY` on disk — rotate it in Google Cloud Console.
 
+## Test Suite
+
+All Python-script directories have a `test_*.py` file runnable with `pytest` in the `genai` conda environment.
+
+### Running tests
+
+Run a single suite:
+```bash
+conda activate genai
+cd Code/<subdir>
+python -m pytest test_*.py -v
+```
+
+Run all suites together (from repo root):
+```bash
+conda run -n genai python -m pytest \
+  Code/graphrag/test_graphrag.py \
+  Code/parsing/test_parsing.py \
+  Code/agno/test_agno.py \
+  Code/google-adk/test_tools.py \
+  Code/chatbot-faqs/test_chatbot_faqs.py \
+  Code/chatbot-multimodal/test_models.py \
+  Code/omni-rag/test_omnirag.py \
+  -v
+```
+
+### Test files per directory
+
+| Directory | Test file | Tests | What's covered |
+|-----------|-----------|-------|----------------|
+| `chatbot-faqs/` | `test_chatbot_faqs.py` | 14 | CSV loading, similarity threshold, cosine similarity logic |
+| `chatbot-multimodal/` | `test_models.py` | 19 | Pydantic chunk models, DoclingParser device selection, null-safe heading join |
+| `omni-rag/` | `test_omnirag.py` | 9 | Context list-join fix, OmniIngestor structure (mocked), ragas/datasets imports |
+| `parsing/` | `test_parsing.py` | 12 | GroqResumeParser: empty-key validation, default model, mock API call |
+| `graphrag/` | `test_graphrag.py` | 9 | `distance()` boundary conditions, networkx/pandas integration |
+| `google-adk/` | `test_tools.py` | 10 | Tool functions (web_search, get_stock_price, etc.) with mocked yfinance |
+| `agno/` | `test_agno.py` | 7 | agno package imports, syntax validation of all .py files |
+
+### Test design notes
+- No real API calls — all LLM/embedding clients are mocked with `unittest.mock`.
+- No model downloads — `transformers` model-loading calls are patched at the function level.
+- The `google-adk` tests mock the `adk` package (not installed on all machines).
+- The omni-rag `TestOmniIngestorStructure` tests skip gracefully if a `datasets` circular import occurs when running in a combined pytest session (they pass in isolation).
+- `ragas` and `google-adk` packages were added to the `genai` env during the April 2026 upgrade pass.
+
+### Known environment notes
+- `ragas 0.4.3` upgraded `openai` from 1.x → 2.x — verify `langchain-openai` compatibility if issues arise.
+- A broken system-Python `faiss` install exists at `C:\Users\yoges\AppData\Roaming\Python\Python310\site-packages\faiss\` and conflicts if imported outside the conda env.
+
 ## Memory
 Do not store, write, or update any memory files in the global `~/.claude/projects/` directory unless the user explicitly confirms or allows it in the current conversation.
 
