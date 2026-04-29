@@ -19,9 +19,13 @@ Copyright (C) 2019 Yogesh H Kulkarni
 *	LaTeX directory 
 	* Has tex sources along with necessary images
 	*	Naming: subject_maintopic_subtopic.tex eg maths_linearalgebra_matrices.tex
-	*	Main_[|Seminar|Workshop|Course]_[Presentation/CheatSheet].tex are the driver files
-	* Seminar is of about 1 hour, Workshop is about 1 day and Course is of 1 week/semester
-	*	They in-turn contain common content files, which include the actual source files
+	*	Driver files: `Main_[Seminar|Workshop|Course]_<Subject>_[Presentation|CheatSheet].tex`
+	*	Content hierarchy (4 levels):
+		*	**Course** (40hr): `course_*_content.tex` → chains `workshop_*_content` files
+		*	**Workshop** (4–16hr): `workshop_*_content.tex` → chains `seminar_*_content` files
+		*	**Seminar** (1hr): `seminar_*_content.tex` → inputs raw `<domain>_<topic>.tex` files
+		*	**Raw topic files**: `<domain>_<topic>.tex` — individual slide sets, never edited by the hierarchy layer
+	*	Every Seminar and Workshop has both a `_Presentation.tex` (Beamer slides) and a `_CheatSheet.tex` (two-column landscape notes) sharing the same content file
 	*	Make specific bat files compile the appropriate sources
 *	Code directory 
 	*	Has running python or ipython notebook files with necessary images and data

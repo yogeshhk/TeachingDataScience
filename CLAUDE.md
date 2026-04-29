@@ -30,21 +30,44 @@ make_all.bat
 
 ## LaTeX Architecture
 
-Every deliverable has two output forms sharing the same content:
+### 4-level content hierarchy
+
+```
+Course (40hr)     Main_Course_*_{Presentation,CheatSheet}.tex
+                    └─ course_*_content.tex
+                         └─ \input{workshop_*_content}  (+ course-specific extras)
+
+Workshop (4-16hr) Main_Workshop_*_{Presentation,CheatSheet}.tex
+                    └─ workshop_*_content.tex
+                         └─ \input{seminar_*_content}  (seminar layer only)
+
+Seminar (1hr)     Main_Seminar_*_{Presentation,CheatSheet}.tex
+                    └─ seminar_*_content.tex
+                         └─ \input{<domain>_<topic>}  (raw topic files)
+```
+
+Every deliverable has two output forms sharing the same content file:
 - `Main_*_Presentation.tex` — Beamer slides (`\documentclass{beamer}`, uses `template_presentation.tex`)
 - `Main_*_CheatSheet.tex` — Two-column landscape notes (`\documentclass{article}`, uses `template_cheatsheet.tex`)
 
-Both driver files `\input{}` a shared `*_content.tex` file (e.g., `seminar_artificialintelligence_tools_content.tex`) which in turn `\input{}`s individual topic files (e.g., `ai_tools_claudecode_intro.tex`).
+CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `multicols{2}`.
+
+`\usepackage{beamerarticle}` in `template_cheatsheet.tex` makes Beamer `\begin{frame}` environments compile correctly in article mode — no frame stripping needed.
 
 ### Naming conventions
 - Topic files: `<domain>_<topic>.tex` (e.g., `maths_linearalgebra_matrices.tex`)
 - Content aggregators: `<type>_<subject>_content.tex`
 - Driver files: `Main_[Course|Seminar|Workshop]_<Subject>_[Presentation|CheatSheet].tex`
   - Seminar ≈ 1 hour, Workshop ≈ 1 day, Course ≈ 1 week/semester
+- Every Seminar and Workshop **must** have both a `_Presentation.tex` and a `_CheatSheet.tex` driver
+
+### Known issues
+- `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
+- `workshop_python_content.tex` and `workshop_maths4ml_content.tex` still use raw files (not yet routed via seminar layer — deferred)
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
-2. `\input{<domain>_<topic>}` inside the relevant `*_content.tex`
+2. `\input{<domain>_<topic>}` inside the relevant `seminar_*_content.tex`
 3. Place supporting images in `LaTeX/images/` (5000+ images already there, mostly PDFs)
 
 ### Frame boilerplate
