@@ -108,7 +108,7 @@ Do not create `venv/` or `.venv/` folders — use conda environments only.
 | GenAI / Agents | `langchain/`, `langgraph/`, `llamaindex/`, `crewai/`, `agents/`, `agno/`, `google-adk/` |
 | RAG Applications | `chatbot-faqs/`, `chatbot-multimodal/`, `omni-rag/`, `parsing/`, `graphrag/` |
 | LLM Fine-tuning | `fine-tuning/`, `ludwig/`, `gemma/` |
-| Document Parsing | `docling/` |
+| Document Parsing | `docling/`, `opendataloader/` |
 | Deep Learning | `keras/`, `dl_tf2/`, `pytorch/`, `deep_rl/` |
 | Classical ML | `ml/`, `math/`, `python/` |
 | NLP | `nlp/`, `dnlp/`, `spacy/` |
@@ -175,6 +175,7 @@ conda run -n genai python -m pytest \
 ### Known environment notes
 - `ragas 0.4.3` upgraded `openai` from 1.x → 2.x — verify `langchain-openai` compatibility if issues arise.
 - A broken system-Python `faiss` install exists at `C:\Users\yoges\AppData\Roaming\Python\Python310\site-packages\faiss\` and conflicts if imported outside the conda env.
+- `opendataloader-pdf` and `langchain-opendataloader-pdf` are installed in the `genai` env (added May 2026). The library wraps a Java JAR — **Java 11+ must be on PATH** before any tutorial runs. Install via `conda install -n genai -c conda-forge openjdk=11`. Tutorial 09 (OCR) additionally requires the hybrid backend started in a separate terminal: `opendataloader-pdf-hybrid --port 5002 --force-ocr`.
 
 ## Memory
 Do not store, write, or update any memory files in the global `~/.claude/projects/` directory unless the user explicitly confirms or allows it in the current conversation.
