@@ -1,0 +1,223 @@
+% Module 5a: Computing with Qubits -- Classical Query Algorithms and Search
+% Estimated slides: 35 | Duration: ~2.5 hours
+% Key topics: Oracle model, query complexity, Deutsch algorithm,
+%             Deutsch-Jozsa, Bernstein-Vazirani, Grover's search, amplitude amplification
+% Labs: Grover's search for 3 qubits in Qiskit; oracle construction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Module 5a: Computing with Qubits}\\[0.5em]
+{\large Classical Query Algorithms and Quantum Search}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What Makes a Quantum Algorithm?}
+\begin{itemize}
+\item Quantum algorithms are not just classical algorithms running on quantum hardware
+\item They exploit superposition, interference, and entanglement to solve problems differently
+\item Three paradigms: query model (oracle-based), phase estimation, variational
+\item Not all problems have quantum speedup --- the problem must have exploitable structure
+\item Quantum speedups range from quadratic ($O(\sqrt{N})$) to exponential ($O(\log N)$ vs $O(N)$)
+\item Understanding complexity tells us where quantum helps
+\end{itemize}
+% Suggested diagram: Venn diagram: problems solvable by classical vs quantum; intersection
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quantum Complexity: BQP}
+\begin{itemize}
+\item Classical complexity: P (polynomial time), NP (verifiable in polynomial time)
+\item \textbf{BQP}: Bounded-error Quantum Polynomial time --- problems solvable by quantum in poly time
+\item BQP contains P (all classical poly-time problems are easy for quantum too)
+\item BQP is believed to contain some problems not in P (factoring, quantum simulation)
+\item NP-complete problems are NOT known to be in BQP --- quantum doesn't solve NP
+\item Grover's gives quadratic speedup for unstructured search (NP search), not exponential
+\end{itemize}
+% Suggested diagram: Complexity class hierarchy: P inside BQP inside NP(?), NP-hard outside
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Oracle Model}
+\begin{itemize}
+\item Many quantum algorithms work with a ``black box'' function (oracle)
+\item Oracle $f$: takes an input, returns a yes/no or a value
+\item We count the number of queries (calls to $f$) to measure algorithm efficiency
+\item Classical: must call $f$ many times to learn its behavior
+\item Quantum: can query the oracle on a superposition of all inputs simultaneously
+\item The magic: use interference to extract global properties with fewer queries
+\end{itemize}
+% Suggested diagram: Oracle as a black box; classical sequential queries vs quantum parallel query
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quantum Phase Kickback: The Core Trick}
+\begin{itemize}
+\item Key mechanism used by most oracle-based quantum algorithms
+\item Idea: when an oracle acts on an eigenstate, the eigenvalue is ``kicked back'' to control
+\item In practice: put the target qubit in $|-\rangle = (|0\rangle - |1\rangle)/\sqrt{2}$
+\item Applying a boolean oracle $f$ flips the phase of the query qubit if $f(x)=1$
+\item The phase difference is invisible classically but detectable via interference
+\item This converts phase information into amplitude information we can measure
+\end{itemize}
+% Suggested diagram: Phase kickback circuit diagram showing control and target qubit states
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Deutsch Algorithm: The Simplest Quantum Speedup}
+\begin{itemize}
+\item Problem: Is $f(0) = f(1)$ (constant) or $f(0) \neq f(1)$ (balanced)?
+\item Classical: must call $f$ twice to determine (worst case)
+\item Quantum: calls $f$ exactly ONCE and always gives the correct answer
+\item The simplest algorithm showing quantum speedup (2x in query complexity)
+\item Uses superposition to query both 0 and 1 simultaneously
+\item Uses interference to reveal whether $f$ is constant or balanced
+\end{itemize}
+% Suggested diagram: Deutsch algorithm circuit with H gates, oracle, H, measure
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Deutsch Algorithm: Step by Step}
+\begin{itemize}
+\item State: $|0\rangle|1\rangle \to H \otimes H \to |+\rangle|-\rangle$
+\item Apply oracle $U_f$: encodes $f(x)$ into phase via kickback
+\item Constant $f$: state returns to $|+\rangle|-\rangle$; balanced $f$: state becomes $|-\rangle|-\rangle$
+\item Apply H to first qubit
+\item Measure: 0 means constant, 1 means balanced
+\item One query, definite answer --- quantum advantage!
+\end{itemize}
+% Suggested diagram: Step-by-step state evolution for constant vs balanced oracle
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Deutsch-Jozsa Algorithm}
+\begin{itemize}
+\item Generalization to $n$-bit functions: is $f: \{0,1\}^n \to \{0,1\}$ constant or balanced?
+\item Classical: need $2^{n-1}+1$ queries in worst case (test half the inputs plus one)
+\item Quantum: exactly 1 query --- exponential speedup!
+\item Use: $n+1$ qubit register; H on all input qubits; oracle; H on input qubits; measure
+\item If all measurement results are 0: constant function
+\item If any result is 1: balanced function
+\item First clear example of exponential quantum vs classical separation
+\end{itemize}
+% Suggested diagram: Deutsch-Jozsa circuit with n input qubits and oracle
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Bernstein-Vazirani Algorithm}
+\begin{itemize}
+\item Problem: find a hidden $n$-bit string $s$ given that $f(x) = s \cdot x$ (bitwise dot product)
+\item Classical: need $n$ queries (one per bit of $s$)
+\item Quantum: ONE query reveals the entire string $s$
+\item Circuit: identical to Deutsch-Jozsa setup; measure gives $s$ directly
+\item Why? The oracle encodes each bit of $s$ as a phase on each query qubit
+\item H gates transform these phases back into amplitudes that can be measured
+\end{itemize}
+% Suggested diagram: Bernstein-Vazirani circuit; output bits = hidden string s
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Grover's Search Algorithm}
+\begin{itemize}
+\item Problem: find a marked item in an unsorted database of $N$ items
+\item Classical brute force: $O(N)$ queries on average
+\item Quantum (Grover): $O(\sqrt{N})$ queries --- quadratic speedup
+\item Example: $N = 1{,}000{,}000$ items; classical needs ~500,000 tries; Grover needs ~1000
+\item Not exponential speedup, but quadratic --- still very significant for large databases
+\item Key insight: amplify the amplitude of the marked item's state
+\end{itemize}
+% Suggested diagram: Amplitude bar chart -- uniform superposition vs after Grover iterations
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Grover's Algorithm: How It Works}
+\begin{itemize}
+\item Step 1: Initialize all qubits in equal superposition (H on all qubits)
+\item Step 2: Apply oracle --- marks the target by flipping its phase
+\item Step 3: Apply diffusion operator --- amplifies the marked item, suppresses others
+\item Repeat steps 2-3 for $O(\sqrt{N})$ iterations
+\item Measure: gives the marked item with high probability
+\item Diffusion = ``inversion about average'': values above average grow, below shrink
+\end{itemize}
+% Suggested diagram: Grover iteration as geometric rotation in 2D amplitude space
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Geometric Intuition for Grover's}
+\begin{itemize}
+\item Initial state: uniform superposition, nearly perpendicular to target state
+\item Each Grover iteration: rotates the state by $\approx 2\theta$ toward the target
+\item After $\pi/(4\theta)$ iterations: state aligns with target; $\theta \approx 1/\sqrt{N}$
+\item Over-rotation: if we run too many iterations, we rotate past and accuracy drops
+\item Optimal: $\lfloor \pi\sqrt{N}/4 \rfloor$ iterations
+\end{itemize}
+% Suggested diagram: 2D vector rotation diagram showing initial state, oracle reflection, diffusion reflection
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Lab: Grover's Search in Qiskit}
+\begin{itemize}
+\item Implement Grover's algorithm for a 3-qubit search (8 items)
+\item Oracle marks item ``101'' ($x=5$)
+\item Expected: 2-3 Grover iterations optimal for 3 qubits
+\item Use Qiskit's built-in \texttt{GroverOperator} or build from scratch
+\item Plot histogram: item 5 should have highest probability
+\end{itemize}
+\begin{verbatim}
+from qiskit.circuit.library import GroverOperator
+from qiskit.circuit.library import PhaseOracle
+oracle = PhaseOracle('~x1 & x2 & ~x3')  # marks 101
+grover_op = GroverOperator(oracle)
+\end{verbatim}
+% Suggested diagram: Histogram before and after Grover showing amplitude amplification
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Amplitude Amplification: Generalization of Grover's}
+\begin{itemize}
+\item Grover's works for one marked item, but the idea generalizes
+\item Amplitude amplification: start with any quantum state, amplify any subset of outcomes
+\item Key: if a classical algorithm succeeds with probability $p$, quantum version needs $O(1/\sqrt{p})$ iterations
+\item Replaces any classical Monte Carlo algorithm with a quadratic speedup
+\item Used as a subroutine in many quantum algorithms
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Practical Limits of Grover's on NISQ}
+\begin{itemize}
+\item Grover requires $O(\sqrt{N})$ depth --- for 1M items: $\sim$1000 gate layers
+\item Current NISQ devices: reliable depth of tens to hundreds of gates
+\item For small $N$ (8-64 items): Grover can run on current hardware
+\item For large $N$: not feasible until fault-tolerant QC is available
+\item Grover is one of the clearest known quantum speedups --- important theoretically
+\item Practical impact will grow with hardware improvements
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise: Query Complexity Comparison}
+\begin{itemize}
+\item For each scenario, calculate classical vs quantum query count:
+\begin{enumerate}
+  \item Find 1 marked item in 100: Classical ~50, Quantum ~10 (Grover)
+  \item Determine constant/balanced for 8-bit function: Classical 129, Quantum 1 (D-J)
+  \item Find hidden 10-bit string: Classical 10, Quantum 1 (Bernstein-Vazirani)
+  \item Find 1 marked item in 1 million: Classical ~500k, Quantum ~1000 (Grover)
+\end{enumerate}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Module 5a Summary}
+\begin{itemize}
+\item Quantum advantage comes from superposition + interference + oracle queries
+\item Oracle model: quantum queries superpositions of all inputs simultaneously
+\item Deutsch: 1 query vs 2; Deutsch-Jozsa: 1 query vs exponential; B-V: 1 vs $n$
+\item Grover's search: $O(\sqrt{N})$ vs $O(N)$ --- quadratic speedup for search
+\item Amplitude amplification: generalizes Grover's to any quantum subroutine
+\item NISQ limitation: circuit depth restricts Grover's to small problem sizes today
+\item Next: NISQ variational algorithms for optimization and simulation
+\end{itemize}
+\end{frame}

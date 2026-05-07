@@ -1,6 +1,6 @@
 # Teaching Data Science
 
-Repository for LaTeX course notes for Python, Machine Learning, Deep Learning, Natural Language Processing, etc. Core content is in the form for Beamer slides, which in turn can get compiled into presentation pdf as well as two-column course notes pdf.
+Repository for LaTeX course notes for Python, Machine Learning, Deep Learning, Natural Language Processing, Quantum Computing, etc. Core content is in the form for Beamer slides, which in turn can get compiled into presentation pdf as well as two-column course notes pdf.
 
 All tex sources and images have been open sourced as I have built them by referring to material from others, learnt from others, although I have added some of mine, I need to give it back!!
 

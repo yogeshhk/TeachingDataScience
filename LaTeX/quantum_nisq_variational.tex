@@ -1,0 +1,191 @@
+% Module 5b: Computing with Qubits -- NISQ Variational Algorithms
+% Estimated slides: 30 | Duration: ~2 hours
+% Key topics: NISQ overview, parameterized circuits, VQE, QAOA,
+%             hybrid quantum-classical optimization, ansatz design
+% Labs: QAOA for Max-Cut optimization; VQE for H2 molecule
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Module 5b: NISQ Variational Algorithms}\\[0.5em]
+{\large VQE, QAOA, and the Hybrid Quantum-Classical Approach}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The NISQ Era: What We Have Today}
+\begin{itemize}
+\item NISQ = Noisy Intermediate-Scale Quantum (Preskill, 2018)
+\item Hundreds to thousands of physical qubits, but error rates of 0.1-1\%
+\item Circuit depth limited: errors accumulate beyond ~100 gate layers
+\item No error correction yet (that requires millions of physical qubits)
+\item Question: what useful computation can we do on noisy, shallow circuits?
+\item Answer: variational (hybrid quantum-classical) algorithms
+\end{itemize}
+% Suggested diagram: NISQ limitations table (qubits, depth, fidelity, connectivity)
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Hybrid Quantum-Classical Computing}
+\begin{itemize}
+\item Idea: use quantum for the hard part, classical optimizer for the rest
+\item Quantum circuit has tunable parameters $\vec{\theta}$ (rotation angles)
+\item Classical optimizer adjusts $\vec{\theta}$ to minimize a cost function
+\item Quantum computer evaluates the cost function efficiently; classical minimizes it
+\item Similar to training a neural network: quantum circuit = forward pass, optimizer = backprop
+\item Examples: VQE, QAOA, Quantum Neural Networks
+\end{itemize}
+% Suggested diagram: Hybrid loop diagram: parametric circuit -> measure -> cost -> optimizer -> update theta
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parameterized Quantum Circuits (PQC)}
+\begin{itemize}
+\item A quantum circuit with rotation angles as free parameters: $R_y(\theta_1)$, $R_z(\theta_2)$, etc.
+\item The circuit defines a family of quantum states parameterized by $\vec{\theta}$
+\item Changing $\vec{\theta}$ changes the output state (and thus measurement probabilities)
+\item PQCs are the core building block of all variational algorithms
+\item Qiskit: use \texttt{ParameterVector} or \texttt{Parameter} objects
+\item Hardware efficient: layers of rotation gates + CNOT gates repeat $L$ times
+\end{itemize}
+\begin{verbatim}
+from qiskit.circuit import ParameterVector
+theta = ParameterVector('theta', 4)
+qc.ry(theta[0], 0); qc.ry(theta[1], 1)
+qc.cx(0, 1)
+\end{verbatim}
+% Suggested diagram: Parameterized circuit with theta parameters labeled
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Variational Quantum Eigensolver (VQE)}
+\begin{itemize}
+\item Goal: find the ground state energy of a molecule or material
+\item Why quantum? Simulating quantum systems on classical computers scales exponentially
+\item VQE: prepare a parameterized trial state (ansatz), measure its energy, minimize
+\item Energy = expectation value of the Hamiltonian (observable describing energy)
+\item Variational principle: any trial state has energy $\geq$ true ground state energy
+\item Minimize energy over $\vec{\theta}$ to approach the true ground state
+\end{itemize}
+% Suggested diagram: Variational principle energy landscape; optimizer converging to minimum
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{VQE: The Algorithm Step by Step}
+\begin{itemize}
+\item Step 1: Express molecule as a Hamiltonian (sum of Pauli operators)
+\item Step 2: Choose an ansatz circuit (e.g., UCCSD or hardware-efficient)
+\item Step 3: Run quantum circuit with current $\vec{\theta}$, measure Pauli terms
+\item Step 4: Compute expectation value $\langle H \rangle = \langle \psi(\theta) | H | \psi(\theta) \rangle$
+\item Step 5: Classical optimizer updates $\vec{\theta}$ to reduce $\langle H \rangle$
+\item Repeat until convergence; final $\langle H \rangle$ approximates ground state energy
+\end{itemize}
+% Suggested diagram: VQE flowchart with quantum and classical parts highlighted
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{VQE: Applications}
+\begin{itemize}
+\item \textbf{Chemistry}: ground state energy of H$_2$, LiH, BeH$_2$ molecules
+\item \textbf{Material science}: electronic structure of materials, superconductors
+\item \textbf{Drug discovery}: binding energies of drug-target interactions
+\item \textbf{Catalyst design}: reaction energies for industrial catalysts
+\item Today: small molecules (up to ~30 qubits) demonstrated on real hardware
+\item Future: larger molecules as qubit counts and fidelities improve
+\end{itemize}
+% Suggested diagram: H2 molecule diagram; energy vs bond length VQE vs exact comparison
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quantum Approximate Optimization Algorithm (QAOA)}
+\begin{itemize}
+\item Goal: solve combinatorial optimization problems (e.g., find maximum cut in a graph)
+\item QAOA: a specific parameterized circuit structure designed for optimization
+\item Alternates between cost unitary $U_C$ (encodes problem) and mixer unitary $U_B$ (explores)
+\item Circuit depth $p$ (number of alternating layers); higher $p$ = better solution
+\item For $p \to \infty$: provably converges to optimal solution
+\item In practice: even $p=1,2$ gives good approximate solutions on NISQ
+\end{itemize}
+% Suggested diagram: QAOA circuit showing alternating UC and UB layers
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{QAOA: Max-Cut Example}
+\begin{itemize}
+\item Max-Cut: partition graph nodes into two groups to maximize the number of edges between groups
+\item NP-hard classically; QAOA finds approximate solutions
+\item Encode: each qubit = one node; $|0\rangle$ = group A, $|1\rangle$ = group B
+\item Cost: maximize number of edges between qubits in different states
+\item QAOA with $p=1$: guaranteed to find a cut of at least 0.6924 $\times$ optimal (proven)
+\item Industry use: vehicle routing, portfolio optimization, job scheduling
+\end{itemize}
+% Suggested diagram: Graph with highlighted max-cut; qubit assignment visualization
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ansatz Design}
+\begin{itemize}
+\item Ansatz = the parameterized circuit structure used in variational algorithms
+\item Needs to balance expressibility (can reach target state) vs trainability (gradients exist)
+\item Problem-inspired ansatz (UCCSD for chemistry): uses domain knowledge, deeper
+\item Hardware-efficient ansatz: uses native gates, shallower, but less expressive
+\item Barren plateaus: gradients vanish exponentially in $n$ qubits for random ansatze
+\item Active research: designing ansatze that avoid barren plateaus
+\end{itemize}
+% Suggested diagram: Expressibility vs depth trade-off; hardware-efficient vs UCCSD comparison
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Classical Optimizers for Variational Algorithms}
+\begin{itemize}
+\item Gradient-based: BFGS, L-BFGS-B; requires gradient estimation (parameter shift rule)
+\item Gradient-free: COBYLA, Nelder-Mead, SPSA; more robust to noise
+\item Parameter shift rule: estimate gradient by shifting parameter by $\pm\pi/2$
+\item SPSA (Simultaneous Perturbation Stochastic Approximation): efficient for noisy settings
+\item Convergence: variational algorithms can get stuck in local minima
+\item Initialization: random initialization can land in barren plateaus; warm-starting helps
+\end{itemize}
+% Suggested diagram: Loss landscape with local minima and optimization trajectories
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Lab: QAOA for Max-Cut in Qiskit}
+\begin{itemize}
+\item Use Qiskit's QAOA implementation on a 4-node graph
+\item Encode the Max-Cut cost Hamiltonian
+\item Optimize with COBYLA; compare result to brute-force classical
+\item Visualize the final cut assignment
+\end{itemize}
+\begin{verbatim}
+from qiskit_algorithms import QAOA
+from qiskit_optimization.applications import Maxcut
+import networkx as nx
+G = nx.Graph(); G.add_edges_from([(0,1),(1,2),(2,3),(3,0),(0,2)])
+\end{verbatim}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Limitations of NISQ Variational Algorithms}
+\begin{itemize}
+\item Barren plateaus: gradient vanishes exponentially with qubit count
+\item Classical simulation can sometimes beat QAOA at low depth $p$
+\item Quantum advantage for variational algorithms not yet proven rigorously
+\item Measurement overhead: many Pauli term measurements needed (for chemistry)
+\item Noise increases with depth; more layers $p$ = more errors
+\item These are open research problems --- active area of innovation
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Module 5b Summary}
+\begin{itemize}
+\item NISQ era: noisy qubits, shallow circuits, no error correction yet
+\item Variational algorithms: hybrid quantum-classical loop with parameterized circuits
+\item VQE: find molecular ground state energies; chemical simulation
+\item QAOA: combinatorial optimization (Max-Cut, routing, scheduling)
+\item Parameterized circuits + classical optimizer = quantum machine learning paradigm
+\item Ansatz design and optimizer choice are critical for performance
+\item Limitations: barren plateaus, measurement overhead, noise
+\item Next: Quantum Fourier Transform and Shor's Algorithm
+\end{itemize}
+\end{frame}

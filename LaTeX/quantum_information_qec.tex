@@ -1,0 +1,176 @@
+% Module 8: Quantum Information and Error Correction
+% Estimated slides: 30 | Duration: ~2 hours
+% Key topics: Classical information theory basics, quantum entropy, no-cloning revisited,
+%             error types (bit-flip, phase-flip), basic error correcting codes,
+%             surface codes (conceptual), fault tolerance, error mitigation for NISQ
+% Labs: Bit-flip error correction circuit in Qiskit
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Module 8: Quantum Information and Error Correction}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why Quantum Error Correction?}
+\begin{itemize}
+\item Real qubits are noisy: gate errors, decoherence, measurement errors
+\item Error rates: 0.1-1\% per gate operation; accumulate over deep circuits
+\item Classical computers: engineers can rely on near-perfect gates (error rate $10^{-15}$)
+\item Quantum: errors are much worse --- need active correction during computation
+\item Classical error correction: copy bits 3x, take majority vote
+\item Quantum challenge: cannot copy qubits (no-cloning) and measuring destroys state
+\item Need entirely new error correction paradigm
+\end{itemize}
+% Suggested diagram: Error accumulation curve vs circuit depth for different error rates
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Types of Quantum Errors}
+\begin{itemize}
+\item \textbf{Bit-flip error}: $|0\rangle \to |1\rangle$ or $|1\rangle \to |0\rangle$ (like classical bit flip)
+\item \textbf{Phase-flip error}: $|+\rangle \to |-\rangle$ (flips the sign of $|1\rangle$ amplitude)
+\item \textbf{Depolarizing error}: random mixture of X, Y, Z errors
+\item \textbf{Amplitude damping}: qubit loses energy, $|1\rangle$ decays to $|0\rangle$ (T1 error)
+\item \textbf{Dephasing}: phase coherence lost over time (T2 error)
+\item \textbf{Readout error}: qubit measured incorrectly
+\item Any error can be decomposed into X (bit-flip) and Z (phase-flip) components
+\end{itemize}
+% Suggested diagram: Bloch sphere showing different error types as rotations/decoherence
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Classical Error Correction: Repetition Code}
+\begin{itemize}
+\item Encode 1 logical bit using 3 physical bits: $0 \to 000$, $1 \to 111$
+\item If one bit flips (say $000 \to 010$), majority vote corrects it back to $000$
+\item Can detect and correct any 1-bit error
+\item Overhead: 3x physical bits per logical bit
+\item Key idea: encode information redundantly so errors can be detected and corrected
+\item Quantum version needs to handle both bit-flip AND phase-flip errors simultaneously
+\end{itemize}
+% Suggested diagram: Classical repetition code with error, syndrome, and correction
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quantum Bit-Flip Code}
+\begin{itemize}
+\item Encode $|\psi\rangle = \alpha|0\rangle + \beta|1\rangle$ as:
+  $\alpha|000\rangle + \beta|111\rangle$ using CNOT gates
+\item A bit-flip error on any one of 3 qubits is detectable
+\item Measure parity checks: XOR of pairs (01 parity, 12 parity) --- called syndrome measurement
+\item Parity checks don't reveal the qubit state, only where the error occurred
+\item Apply X correction on the erroneous qubit
+\item Corrects any single bit-flip error; phase-flip errors still unprotected
+\end{itemize}
+% Suggested diagram: 3-qubit encoding circuit; syndrome measurement circuit
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quantum Phase-Flip Code}
+\begin{itemize}
+\item Bit-flip code does not protect against phase-flip errors
+\item Solution: encode in the X basis ($|+\rangle$ and $|-\rangle$) using H gates
+\item Apply H to each qubit before the repetition code; phase flips become bit flips in this basis
+\item Shor code (1995): combines bit-flip and phase-flip protection
+\item Uses 9 physical qubits to encode 1 logical qubit
+\item Corrects any single-qubit error (bit-flip, phase-flip, or both)
+\end{itemize}
+% Suggested diagram: Shor 9-qubit code encoding structure
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Syndrome Measurement: Detecting Without Collapsing}
+\begin{itemize}
+\item Key insight: measure parity (even/odd) of pairs, NOT the qubits themselves
+\item Parity measurement: $|00\rangle$ and $|11\rangle$ are even; $|01\rangle$ and $|10\rangle$ are odd
+\item Parity checks don't reveal individual qubit values --- no state collapse
+\item Error syndrome: the pattern of parity check results identifies the error location
+\item This is the crucial trick that makes quantum error correction possible
+\item Ancilla qubits: used to hold parity measurement results
+\end{itemize}
+% Suggested diagram: Parity check circuit with ancilla qubits; syndrome table
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Surface Codes: The Leading Approach}
+\begin{itemize}
+\item Surface codes: qubits arranged in 2D grid; physical qubits connect to nearest neighbors only
+\item Data qubits (logical info) + ancilla qubits (for syndrome measurement) alternate in grid
+\item Error correction: measure all ancilla qubits, infer error locations from syndrome pattern
+\item Threshold theorem: if error rate per gate $< 1\%$ (threshold), can correct to arbitrary precision
+\item Overhead: $\sim$1000 physical qubits per 1 logical qubit (for deep circuits)
+\item Leading approach for IBM, Google fault-tolerant roadmaps
+\end{itemize}
+% Suggested diagram: Surface code 2D grid layout with data and ancilla qubits
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Quantum Error Correction Overhead}
+\begin{itemize}
+\item Each logical qubit requires many physical qubits (depending on target error rate)
+\item Distance-$d$ surface code: $\sim 2d^2$ physical qubits, corrects up to $(d-1)/2$ errors
+\item For Shor's algorithm on 2048-bit RSA: $\sim$4000 logical qubits needed
+\item At distance 27: $\sim$2916 physical qubits per logical qubit
+\item Total: $\sim$12 million physical qubits
+\item IBM's roadmap targets 100,000+ physical qubits by 2033; error correction by 2029-2031
+\end{itemize}
+% Suggested diagram: Physical vs logical qubit ratio curve for different distances
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error Mitigation: Near-Term Techniques}
+\begin{itemize}
+\item Error mitigation: reduce noise effects without full error correction
+\item Suitable for NISQ devices (no overhead of error correction)
+\item \textbf{Zero-noise extrapolation}: run at multiple noise levels, extrapolate to zero noise
+\item \textbf{Probabilistic error cancellation}: model noise channels, cancel their effect statistically
+\item \textbf{Clifford data regression}: use classical simulation of Clifford circuits as reference
+\item \textbf{Readout error mitigation}: measure calibration matrix, invert to correct readout
+\item Qiskit: \texttt{qiskit.ignis} and \texttt{mthree} packages for mitigation
+\end{itemize}
+% Suggested diagram: Zero-noise extrapolation plot showing 3 noise levels and extrapolated value
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quantum Entropy and Information}
+\begin{itemize}
+\item Classical Shannon entropy: $H = -\sum p_i \log p_i$ (uncertainty in a distribution)
+\item Quantum von Neumann entropy: $S = -\text{Tr}(\rho \log \rho)$; $\rho$ = density matrix
+\item Pure state: $S = 0$ (no entropy, perfectly known); maximally mixed: $S = \log d$
+\item Entanglement entropy: entropy of subsystem; measures entanglement between parts
+\item Bell state: subsystem entropy = 1 bit (maximally entangled)
+\item Holevo bound: can extract at most $n$ classical bits from $n$ qubits
+\end{itemize}
+% Suggested diagram: Entropy visualization: pure vs mixed state density matrices
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Lab: Bit-Flip Error Correction in Qiskit}
+\begin{itemize}
+\item Encode $|+\rangle$ state using 3-qubit repetition code
+\item Introduce a controlled bit-flip error on qubit 1
+\item Perform syndrome measurement using 2 ancilla qubits
+\item Apply correction based on syndrome; verify state is recovered
+\end{itemize}
+\begin{verbatim}
+# Encode: CNOT(0->1), CNOT(0->2)
+# Error: qc.x(1)  # flip qubit 1
+# Syndrome: CNOT(0->anc0) XOR CNOT(1->anc0); etc.
+# Correct: apply X to qubit 1 if syndrome = 10
+\end{verbatim}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Module 8 Summary}
+\begin{itemize}
+\item Quantum errors: bit-flip (X), phase-flip (Z), depolarizing, amplitude damping
+\item Classical error correction ideas don't directly apply (no-cloning blocks copying)
+\item Syndrome measurement: detect errors without collapsing the logical state
+\item 3-qubit code corrects bit-flip errors; Shor's 9-qubit code corrects all single-qubit errors
+\item Surface codes: leading approach for fault-tolerant QC; $\sim$1000 physical per logical qubit
+\item Error mitigation: practical near-term techniques for NISQ devices
+\item Threshold theorem: below ~1\% gate error rate, error-free computation is possible
+\end{itemize}
+\end{frame}

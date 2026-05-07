@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Repository Purpose
 
 An open-source educational repository containing:
-- **LaTeX**: Beamer presentation slides and two-column cheatsheets for Data Science courses (Python, ML, DL, NLP, GenAI, RAG, etc.)
+- **LaTeX**: Beamer presentation slides and two-column cheatsheets for Data Science courses (Python, ML, DL, NLP, GenAI, RAG, Quantum Computing, etc.)
 - **Code**: Python scripts and Jupyter notebooks demonstrating the concepts covered in the slides
 
 ## LaTeX Build System
@@ -64,6 +64,15 @@ CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `
 ### Known issues
 - `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
 - `workshop_python_content.tex` and `workshop_maths4ml_content.tex` still use raw files (not yet routed via seminar layer — deferred)
+- `seminar_quantum_content.tex` — orphaned; its former driver files (`Main_Seminar_Tech_Quantum_*`) were merged into `Main_Seminar_Tech_QuantumComputing_Overview_*`. Kept as reference; safe to delete.
+
+### Quantum Computing course (added May 2026)
+Full 4-level hierarchy for the course "Quantum Computing for Non-Physicists":
+- **Course**: `Main_Course_QuantumComputing_{Presentation,CheatSheet}.tex` → `course_quantumcomputing_content.tex`
+- **Workshops** (4): `Main_Workshop_QuantumComputing_{Foundations,Circuits,Algorithms,Advanced}_{Presentation,CheatSheet}.tex`
+- **Seminar**: `Main_Seminar_Tech_QuantumComputing_Overview_{Presentation,CheatSheet}.tex` (~2 hr overview + QML)
+- **Topic files** (14): all prefixed `quantum_` (e.g. `quantum_intro_motivation.tex`, `quantum_gates_circuits.tex`)
+- Existing files `quantum_basics_intro.tex`, `quantum_maths_intro.tex`, `quantum_machinelearning_intro.tex` pre-date the course and are referenced optionally (heavier math; commented-out in the new overview seminar)
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
