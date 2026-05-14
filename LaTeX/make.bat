@@ -1,2 +1,2 @@
 @echo off
-for /r %%i in (Main_Seminar_AI_ClaudeCode_Ch*.tex) do texify -cp %%i
+for /r %%i in (Main*QuantumComputing*.tex) do texify -cp %%i
