@@ -116,7 +116,9 @@ $\;\xrightarrow{\text{Store}}\;$
 \textbf{Why must documents be split into chunks?}
 
 \begin{itemize}
-  \item \textbf{Context window limit:} LLMs accept at most $N$ tokens per call (4K--128K depending on model). A 200-page PDF cannot fit in a single prompt.
+  % T1c: Updated context window range — "128K" was the 2023 ceiling;
+  %      Gemini 1.5 Pro/Flash support 1M tokens, Claude supports 200K (as of 2025).
+  \item \textbf{Context window limit:} LLMs accept at most $N$ tokens per call (4K--1M+ depending on model). A 200-page PDF cannot fit in a single prompt.
   \item \textbf{Retrieval precision:} The embedding of a 10-page chapter encodes \textit{everything}: the similarity score is diluted. A focused 300-token chunk about one topic scores much higher against a precise query.
   \item \textbf{Cost:} Fewer tokens per retrieval call = lower inference cost.
 \end{itemize}
@@ -186,7 +188,8 @@ Both the query and every stored chunk are embedded. The top-$k$ chunks with high
   \begin{column}[T]{0.5\linewidth}
     \begin{itemize}
       \item \textbf{Sentence-BERT / all-MiniLM-L6-v2}: Lightweight, fast, open-source.
-      % \item \textbf{E5-large / BGE-large}: Top MTEB scorers; open-source.
+      % G1: Uncommented — E5 and BGE are now leading MTEB open-source models.
+      \item \textbf{E5-large / BGE-large}: Top MTEB scorers; open-source.
       \item \textbf{OpenAI text-embedding-3-small}: Strong general-purpose; API-based.
     \end{itemize}
   \end{column}
@@ -232,6 +235,7 @@ A specialised datastore for high-dimensional vectors. It enables fast \textit{ap
 \vspace{0.3em}
 \begin{center}
 \small
+% G2: Uncommented pgvector — now widely adopted for teams already on PostgreSQL.
 \begin{tabular}{|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{2.5cm}|}
 \hline
 \textbf{Database} & \textbf{Type} & \textbf{Best for} & \textbf{Notes} \\
@@ -241,7 +245,7 @@ ChromaDB   & Open-source    & Local dev / testing  & Easy LangChain integration 
 Qdrant     & Open-source    & Production OSS       & Rich filtering; on-prem or cloud \\
 Weaviate   & Open-source    & Hybrid search        & Keyword + vector built-in \\
 Pinecone   & Managed SaaS   & Large-scale cloud    & Fully managed; pay-per-use \\
-% pgvector   & PG extension   & Existing Postgres    & SQL + vector in one DB \\
+pgvector   & PG extension   & Existing Postgres    & SQL + vector in one DB \\
 \hline
 \end{tabular}
 \end{center}
@@ -384,8 +388,9 @@ First-pass vector search scores query and chunk \textit{independently}. A cross-
   \end{column}
   \begin{column}[T]{0.4\linewidth}
 \begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain.document_loaders import TextLoader
-from langchain.text_splitter import (
+from langchain_community.document_loaders \
+    import TextLoader
+from langchain_text_splitters import (
     RecursiveCharacterTextSplitter)
 from langchain_community.embeddings import (
     HuggingFaceEmbeddings)
@@ -533,7 +538,8 @@ Reserved for answer & 300--800 & 15--20\% \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{RAGAS: Evaluation Framework}
 
-\textbf{RAGAS} is an open-source framework that evaluates a RAG pipeline \textit{without needing human annotations for most metrics}: it uses an LLM as the judge.
+% U3: Added 2-sentence definition — image-only slide had no explanation of what RAGAS is.
+\textbf{RAGAS} (Retrieval Augmented Generation Assessment) is an open-source framework that evaluates a RAG pipeline \textit{without needing human annotations for most metrics}: it uses an LLM as the judge. It covers both retrieval quality and generation quality with a single \texttt{evaluate()} call.
 
 \vspace{0.3em}
 \begin{center}

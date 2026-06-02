@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  RAG PIPELINE: END-TO-END IMPLEMENTATION
 %
-%  Tools : LangChain v0.1 (v1 API), DocstringLoader, HuggingFace Embeddings,
-%           ChromaDB, HuggingFaceHub LLM, RAGAS
+%  Tools : LangChain >= 0.2 (community API), langchain-text-splitters,
+%           HuggingFace Embeddings, ChromaDB >= 0.5, HuggingFaceHub LLM, RAGAS
 %  Data  : local faq.txt
 %  Goal  : academic walk-through of every pipeline step with runnable code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,9 +114,13 @@ A: Splitting documents into smaller pieces
 \begin{columns}
   \begin{column}[T]{0.6\linewidth}
     \begin{itemize}
-      \item \textbf{langchain} v0.1: the v1 stable API used throughout this demo.
+      % G4: Updated package list — added langchain-text-splitters (split from
+      %     langchain core in 0.2+); updated version numbers to 2025 stable releases.
+      \item \textbf{langchain} $\geq$0.2: the community-stable API used throughout.
+      \item \textbf{langchain-community}: integrations (loaders, LLMs, vector stores).
+      \item \textbf{langchain-text-splitters}: text splitting utilities (new package in 0.2+).
       \item \textbf{sentence-transformers}: local embedding model; no API key needed.
-      \item \textbf{chromadb}: lightweight local vector store; persists to disk.
+      \item \textbf{chromadb} $\geq$0.5: lightweight local vector store; auto-persists to disk.
       \item \textbf{huggingface\_hub}: access to open-source LLMs via Inference API.
       \item \textbf{ragas}: reference-free RAG evaluation framework.
       \item \textbf{datasets}: required by RAGAS to build the evaluation dataset object.
@@ -126,17 +130,18 @@ A: Splitting documents into smaller pieces
   \begin{column}[T]{0.4\linewidth}
 \begin{lstlisting}[language=bash, basicstyle=\tiny]
 # Create a virtual environment (recommended)
-conda create -n rag-demo
+conda create -n rag-demo python=3.11
 conda activate rag-demo
 
 # Install dependencies
-pip install langchain==0.1.20
-pip install langchain-community==0.0.38
-pip install sentence-transformers==2.7.0
-pip install chromadb==0.5.0
-pip install huggingface_hub==0.23.0
-pip install ragas==0.1.9
-pip install datasets==2.19.0
+pip install langchain==0.2.16
+pip install langchain-community==0.2.17
+pip install langchain-text-splitters==0.2.4
+pip install sentence-transformers==3.0.1
+pip install chromadb==0.5.18
+pip install huggingface_hub==0.24.7
+pip install ragas==0.1.21
+pip install datasets==2.20.0
 
 # Set your HuggingFace token
 export HUGGINGFACEHUB_API_TOKEN="hf_..."
@@ -158,12 +163,14 @@ export HUGGINGFACEHUB_API_TOKEN="hf_..."
       \item Each \texttt{Document} automatically receives \texttt{source} metadata (the file path), useful for citations in the final answer.
       \item Printing the first document confirms the content was loaded correctly before proceeding.
     \end{itemize}
-  {\tiny (Ref: https://python.langchain.com/v0.1/docs/modules/data\_connection/document\_loaders/)}
+  {\tiny (Ref: https://python.langchain.com/docs/integrations/document\_loaders/)}
   \end{column}
   \begin{column}[T]{0.4\linewidth}
 \begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain.document_loaders import TextLoader
-
+# T1d: Updated import namespace - TextLoader
+# moved to langchain_community in LangChain 0.2+
+from langchain_community.document_loaders \
+    import TextLoader
 
 loader = TextLoader(
     file_path="faq.txt",
@@ -201,11 +208,14 @@ print("Metadata:", documents[0].metadata)
       \item \texttt{separators} list prioritises blank lines (\texttt{\textbackslash n\textbackslash n}) so each Q\&A pair stays together.
       \item Inspect chunk count and the first chunk to verify boundaries are sensible.
     \end{itemize}
-  {\tiny (Ref: https://python.langchain.com/v0.1/docs/modules/data\_connection/text\_splitting/)}
+  {\tiny (Ref: https://python.langchain.com/docs/how\_to/recursive\_text\_splitter/)}
   \end{column}
   \begin{column}[T]{0.4\linewidth}
 \begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain.text_splitter import  RecursiveCharacterTextSplitter
+# T1e: Updated import - RecursiveCharacterTextSplitter
+# moved to langchain-text-splitters package in 0.2+
+from langchain_text_splitters import \
+    RecursiveCharacterTextSplitter
 
 splitter = RecursiveCharacterTextSplitter(
     chunk_size=300,
@@ -242,11 +252,12 @@ print(chunks[1].page_content)
       \item \texttt{persist\_directory} enables loading the index in future sessions without re-embedding.
       \item Printing the collection count confirms all chunks were indexed successfully.
     \end{itemize}
-  {\tiny (Ref: https://python.langchain.com/v0.1/docs/integrations/vectorstores/chroma/)}
+  {\tiny (Ref: https://python.langchain.com/docs/integrations/vectorstores/chroma/)}
   \end{column}
   \begin{column}[T]{0.4\linewidth}
 \begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import \
+    HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 
 # Local embedding model - no API key needed
@@ -261,7 +272,11 @@ vectorstore = Chroma.from_documents(
     embedding=embedding_model,
     persist_directory="./chroma_db"
 )
-vectorstore.persist()
+# T1f: vectorstore.persist() is DEPRECATED in
+# ChromaDB >= 0.4.0. Persistence is now automatic
+# when persist_directory is set. Remove this call
+# in newer installations.
+# vectorstore.persist()
 
 count = vectorstore._collection.count()
 print(f"Indexed {count} chunks in ChromaDB")
@@ -329,11 +344,13 @@ prompt = PromptTemplate(
       \item \textbf{RetrievalQA.from\_chain\_type()} wires the retriever, prompt, and LLM into a single callable object.
       \item \texttt{return\_source\_documents=True} exposes which chunks were used, enabling manual inspection and RAGAS evaluation.
     \end{itemize}
-  {\tiny (Ref: https://python.langchain.com/v0.1/docs/modules/chains/)}
+  {\tiny (Ref: https://python.langchain.com/docs/integrations/llms/)}
   \end{column}
   \begin{column}[T]{0.4\linewidth}
 \begin{lstlisting}[language=python, basicstyle=\tiny]
-from langchain.llms import HuggingFaceHub
+# T1g: Updated import namespace - HuggingFaceHub
+# moved to langchain_community.llms in LangChain 0.2+
+from langchain_community.llms import HuggingFaceHub
 from langchain.chains import RetrievalQA
 
 # Open-source LLM via HuggingFace Inference API
@@ -473,25 +490,16 @@ eval_dataset = Dataset.from_dict({
     \end{itemize}
   {\tiny (Ref: https://docs.ragas.io/en/stable/concepts/metrics/)}
 
-    % \vspace{0.2em}
-    % \begin{center}
-    % \small
-    % \begin{tabular}{ll}
-    % \hline
-    % \textbf{Metric} & \textbf{Sample} \\
-    % \hline
-    % Faithfulness      & 0.92 \\
-    % Answer Relevancy  & 0.88 \\
-    % Context Recall    & 0.87 \\
-    % Context Precision & 0.90 \\
-    % \hline
-    % \end{tabular}
-    % \end{center}
   \end{column}
   \begin{column}[T]{0.35\linewidth}
 \begin{lstlisting}[language=python, basicstyle=\tiny]
 from ragas import evaluate
-from ragas.metrics import faithfulness, answer_relevancy, context_recall, context_precision
+from ragas.metrics import (
+    faithfulness,
+    answer_relevancy,
+    context_recall,
+    context_precision
+)
 
 # RAGAS uses an LLM internally as judge.
 # Default judge model: gpt-3.5-turbo.
@@ -531,6 +539,8 @@ print(df[["question",
   \item \textbf{\texttt{temperature=0}:} Makes every run deterministic; essential for reproducible academic experiments.
   \item \textbf{RAGAS without ground truth:} \textit{faithfulness} and \textit{answer\_relevancy} need no labels: run them in production for continuous monitoring.
   \item \textbf{Scaling up:} Replace \texttt{faq.txt} with any document set; swap \texttt{Chroma} for Qdrant or Pinecone; replace \texttt{flan-t5-large} with any LangChain-compatible LLM.
+  % G3: Note about modern LangChain API.
+  \item \textbf{Modern alternative (LCEL):} LangChain 0.2+ recommends the LangChain Expression Language (\texttt{|} operator) over \texttt{RetrievalQA} for composable, type-safe chains: \texttt{chain = prompt | llm | StrOutputParser()}.
 \end{itemize}
 
 \end{frame}
