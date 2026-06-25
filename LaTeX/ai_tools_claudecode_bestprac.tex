@@ -1,0 +1,423 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
+{\Large Best Practices}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tips for Beginners}
+  \begin{itemize}
+    \item \textbf{Be Specific:}
+    Don't say ``Make it better'' but say, ``Refactor the handleSubmit function to use async/await and add error handling.''
+
+    \item \textbf{Provide Context:} Don't say ``Fix the bug'' but say, ``The login form throws `undefined is not a function' when clicking submit. The error occurs in auth.ts line 45.''
+
+    \item \textbf{Use Plan Mode First:} For complex features, press \texttt{Shift+Tab} to switch to Plan mode before implementation. Review the full approach before a single file is touched.
+
+    \item \textbf{Leverage Image Support:} Paste screenshots or mockups into the terminal --- Claude Code can understand images and implement UI from visual designs.
+
+    \item \textbf{Use Extended Thinking for Hard Problems:} Press \texttt{Alt+T} to toggle deep reasoning mode for architectural decisions and complex algorithmic problems.
+
+    \item \textbf{Create Project-Specific Configs:} Different projects need different settings. \texttt{CLAUDE.md} and \texttt{.claude/settings.json} live in the repo root and travel with the codebase.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{1. CLAUDE.md is Execution Memory}
+  \begin{itemize}
+    \item Your \texttt{CLAUDE.md} (and \texttt{\textasciitilde/.claude/CLAUDE.md} globally) should define:
+    \begin{itemize}
+        \item WHY --- product purpose
+        \item WHAT --- repo map and file ownership
+        \item HOW --- non-negotiable rules and build steps
+    \end{itemize}
+    \item Keep it short and authoritative.
+    \item If it becomes a knowledge dump, Claude will lose track of critical constraints.
+    \item Clear, structural guidance beats long explanations.
+    \item \textbf{Let Claude maintain it:} Auto memory means Claude updates \texttt{CLAUDE.md} as it learns --- just review and commit.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{2. Turn Repeated Workflows into Commands}
+
+Why:
+  \begin{itemize}
+    \item Standardize code review, refactoring, and release workflows.
+    \item Prevent prompt drift across sessions and teammates.
+    \item Use \texttt{\$ARGUMENTS} for parameterized commands.
+    \item Commit \texttt{.claude/commands/} to Git: the whole team benefits.
+  \end{itemize}
+
+  \begin{itemize}
+    \item If you repeat the same prompt twice, make it a command.
+    \item Create reusable command files in:
+  \end{itemize}
+
+\begin{lstlisting}
+.claude/commands/test-gen.md    # /test-gen <file>
+.claude/commands/review.md      # /review
+.claude/commands/changelog.md   # /changelog "last week"
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{3. Use Hooks for Deterministic Guardrails}
+  \begin{itemize}
+    \item Memory is probabilistic. Hooks are deterministic.
+    \item Use hooks (not prompts) for anything that \textit{must} always happen.
+    \item Examples:
+    \begin{itemize}
+        \item Auto-run Black formatter after every file edit (PostToolUse)
+        \item Run tests before Claude stops responding (Stop hook)
+        \item Block \texttt{rm -rf} and \texttt{DROP TABLE} commands (PreToolUse)
+        \item Desktop notification when Claude needs your attention (Notification)
+        \item Load git context at session start (SessionStart)
+    \end{itemize}
+    \item Deterministic rules belong in hooks, not prompts.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{4. Use docs/ for Progressive Disclosure}
+
+  \begin{itemize}
+    \item Use \texttt{@file:docs/architecture.md} to load only what is relevant for the current task.
+    \item Smaller context improves reliability and reduces hallucination risk.
+    \item Keep architecture, ADRs, and runbooks in \texttt{docs/}.
+    \item Reference documentation --- do not paste it wholesale into context.
+  \end{itemize}
+
+\begin{lstlisting}
+docs/
+  architecture.md
+  decisions/
+  runbooks/
+  specs/
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{5. Add Rules Files Near Sharp Edges}
+  \begin{itemize}
+    \item Place \texttt{.claude/rules/} files near high-risk directories.
+    \item Use the \texttt{paths:} glob pattern to load rules only when Claude touches those files.
+    \item Document invariants, constraints, and warnings.
+    \item Context is loaded exactly where it matters --- not on every prompt.
+  \end{itemize}
+\begin{lstlisting}
+.claude/rules/auth-rules.md
+  paths: ["src/auth/**"]
+  NEVER store tokens in localStorage.
+
+.claude/rules/migration-rules.md
+  paths: ["db/migrations/**"]
+  Always test rollback before committing a migration.
+
+.claude/rules/infra-rules.md
+  paths: ["infra/**", "terraform/**"]
+  Never modify prod resources without a plan review.
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{6. Structure for Machine Onboarding}
+  \begin{itemize}
+    \item If a new engineer would be confused, Claude will be too.
+    \item Use clear module boundaries:
+    \begin{itemize}
+        \item \texttt{src/} --- application code
+        \item \texttt{api/} --- interface layer
+        \item \texttt{domain/} --- business logic
+        \item \texttt{infra/} --- infrastructure and deployment
+    \end{itemize}
+    \item Keep naming consistent and nesting shallow.
+    \item Add nested \texttt{CLAUDE.md} files in complex subdirectories to give Claude targeted context for that area.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{7. Smaller Context Beats Larger Context}
+  \begin{itemize}
+    \item More files in context does not mean better output.
+    \item Large context dilutes signal and increases the risk of ignoring critical constraints.
+    \item Provide:
+    \begin{itemize}
+        \item Exact files via \texttt{@file:}
+        \item Exact constraints via rules files
+        \item Exact task definition with acceptance criteria
+    \end{itemize}
+    \item Use \texttt{/compact} when context grows large to summarize older turns.
+    \item Route exploration work to subagents: they run in clean contexts and return only summaries.
+    \item Precision beats volume.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{8. Document Architecture Decisions (ADRs)}
+  \begin{itemize}
+    \item Claude Code cannot infer historical decisions.
+    \item Document \textit{why} technologies and boundaries were chosen.
+    \item Reference ADRs in \texttt{CLAUDE.md} so they are loaded each session.
+    \item Prevents Claude from ``optimizing'' your architecture away based on general preferences.
+    \item The conversation \textit{is} the ADR --- use \texttt{claude --resume} to revisit decisions.
+  \end{itemize}
+\begin{lstlisting}
+docs/decisions/
+  001-use-postgres-not-mongo.md
+  002-use-fastapi-not-django.md
+  003-auth-via-httponly-cookies.md
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{9. Treat Commands as Versioned Assets}
+  \begin{itemize}
+    \item Store reusable commands in your repository.
+    \item Version and improve them over time alongside the codebase.
+    \item Avoid copy-paste prompt drift across sessions and teammates.
+    \item Commands encode the team's \textit{process}, not just the AI's capabilities.
+    \item Package them in a plugin for distribution beyond the current repo.
+  \end{itemize}
+\begin{lstlisting}
+.claude/commands/
+  test-gen.md          # /test-gen src/auth.py
+  review.md            # /review
+  changelog.md         # /changelog "last week"
+  security-audit.md    # /security-audit src/
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{10. Structure $>$ Prompting Skill}
+  \begin{itemize}
+    \item Strong structure transforms Claude Code into a workspace-native engineer.
+    \item Combine:
+    \begin{itemize}
+        \item File-based rules (\texttt{CLAUDE.md}, \texttt{.claude/rules/})
+        \item Reusable commands (\texttt{.claude/commands/})
+        \item Automated guardrails (hooks)
+        \item Documented architecture (\texttt{docs/decisions/})
+        \item Minimal scoped context (\texttt{@file:}, subagents)
+        \item Distributable bundles (plugins)
+    \end{itemize}
+    \item Prompts are temporary. Structure is permanent.
+    \item The team that builds great Claude Code configuration ships faster than the team that relies on clever prompting.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Token Optimization}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why Token Budgeting Matters}
+  \begin{itemize}
+    \item \textbf{Tokens are finite:} Standard context window is 200K tokens; even 1M (beta) fills fast on complex tasks.
+    \item \textbf{Cost adds up:} Every input \textit{and} output token is billed. Long unfocused sessions on Sonnet or Opus cost more than necessary.
+    \item \textbf{Bloated context = worse output:} Signal gets buried under failed attempts, re-explanations, and irrelevant files. Smaller, focused contexts produce sharper results.
+    \item \textbf{Common causes of token waste:}
+      \begin{itemize}
+        \item Re-explaining the stack every session (missing or thin \texttt{CLAUDE.md}).
+        \item Asking Claude to ``do everything'' in one massive prompt.
+        \item Loading the entire codebase when only two files matter.
+        \item Letting the session grow without \texttt{/compact}.
+        \item Using Opus for tasks Haiku could handle.
+      \end{itemize}
+    \item \textbf{Goal:} Maximum signal per token. Treat context like screen real estate --- every element earns its place.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Choose the Right Model}
+\textbf{The biggest single lever for cost and quality.}
+\begin{center}
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Model} & \textbf{Cost (1M tokens)} & \textbf{Best For} & \textbf{Avoid For} \\
+\hline
+Haiku 4.5 & \$0.80 in / \$4.00 out & Exploration, search, simple edits, subagents & Deep reasoning \\
+Sonnet 4.6 & \$3.00 in / \$15.00 out & Daily coding, refactoring, tests & Trivial lookups \\
+Opus 4.6+ & Higher & Architecture, security review, research & Repetitive work \\
+\hline
+\end{tabular}
+}
+\end{center}
+\textbf{Rule of thumb:} Default to Sonnet. Drop to Haiku for subagents doing file exploration. Promote to Opus only when Sonnet genuinely struggles.
+\begin{lstlisting}[language=bash]
+/model claude-haiku-4-5     # Switch in session
+claude --model claude-haiku-4-5  # At launch
+
+# Per-project default in .claude/settings.json:
+{ "model": "claude-sonnet-4-6" }
+
+# Per-subagent in .claude/agents/explore.md:
+---
+model: haiku
+allowed-tools: Read, Grep, Glob
+---
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Plan Mode: Free Exploration + Ask Before Acting}
+\textbf{Plan mode is read-only} --- no file edits, no bash execution. Exploration costs almost nothing vs.\ wasted implementation tokens.
+
+\textbf{Pattern 1: ``Ask Me Questions'' Before Starting}
+\begin{lstlisting}
+Before implementing the streaming feature, ask me
+up to 5 clarifying questions about requirements
+and constraints. Do NOT write any code until I answer.
+\end{lstlisting}
+Forces upfront alignment. Prevents the ``start, realize it is wrong, redo'' cycle that wastes the most tokens.
+
+\textbf{Pattern 2: Plan Mode + Extended Thinking}
+\begin{lstlisting}[language=bash]
+Shift+Tab   # Enter Plan mode (read-only, no edits)
+Alt+T       # Toggle extended thinking for hard decisions
+\end{lstlisting}
+
+\textbf{Pro Tip:} After reviewing a plan, choose ``Yes, clear context'' on approval. Implementation then starts with a clean 0-token context --- not burdened by the entire exploration history.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Break Tasks Down: One Step at a Time}
+\textbf{Anti-pattern --- one massive prompt:}
+\begin{lstlisting}
+Refactor the entire codebase, add tests for all
+modules, generate API docs, and create a GitHub PR.
+\end{lstlisting}
+One prompt = massive context = errors compound, hard to review, hard to recover.
+
+\textbf{Pattern --- numbered steps, confirm each:}
+\begin{lstlisting}
+I want to improve mychatbot. Break this into numbered
+subtasks. Show me the list first. Do NOT start working
+until I confirm each step individually.
+\end{lstlisting}
+
+\textbf{TodoWrite: Claude's Built-in Task Tracker}
+  \begin{itemize}
+    \item Ask Claude: ``Use TodoWrite to track the steps for this refactor.''
+    \item Each step is marked done as Claude completes it --- gives a live progress view.
+    \item One task in progress at a time; no parallel context drift.
+    \item Catching errors early beats recovering from 10 compounding steps.
+  \end{itemize}
+
+\textbf{Human in the Loop: Stay in Normal Mode}
+  \begin{itemize}
+    \item Use \textbf{normal mode} (not auto-accept) for any multi-step task. Claude pauses for your approval after every change.
+    \item One misdirected step that triggers 3 follow-ups = 4$\times$ the wasted tokens. Catch and redirect early.
+    \item Only switch to auto-accept (\texttt{Shift+Tab} twice) for mechanical bulk edits you have already reviewed in plan mode.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Session Continuity: Save Your Place}
+\textbf{Problem:} Sessions are ephemeral. Close terminal, lose context. Next session = blank slate, re-explain everything.
+
+\textbf{Technique 1: Named Sessions}
+\begin{lstlisting}[language=bash]
+/rename refactor-auth-module        # Name current session
+claude --resume refactor-auth-module # Resume with full context
+claude -c                           # Resume most recent session
+\end{lstlisting}
+
+\textbf{Technique 2: The Plan File (restart from next step)}
+\begin{lstlisting}
+Ask Claude: "Write our progress to
+.claude/plans/current-task.md as a numbered
+checklist. Mark completed steps [x].
+Note the next step at the top."
+\end{lstlisting}
+\begin{lstlisting}[language=bash]
+## .claude/plans/current-task.md
+## Next: Step 3
+
+- [x] 1. Read auth.py and map dependencies
+- [x] 2. Extract Config dataclass
+- [ ] 3. Add type hints to all public functions  <- resume here
+- [ ] 4. Write unit tests
+\end{lstlisting}
+
+\textbf{Technique 3: /compact before closing} --- summarises older turns; summary auto-loads next session.
+
+\textbf{Technique 4: Save Intermediate Outputs to Files}
+\begin{lstlisting}
+Ask Claude: "Write this analysis to
+.claude/notes/auth-findings.md so we can
+@file: reference it cheaply next session."
+\end{lstlisting}
+Generated specs, plans, code-review reports saved as files = free \texttt{@file:} references next session. No regeneration cost.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Context Hygiene: Keep Your Context Clean}
+  \begin{itemize}
+    \item \textbf{\texttt{/compact}:} Compresses older turns into a summary while preserving key decisions and code. Run when \texttt{/cost} shows context past 50\% of the window.
+    \item \textbf{\texttt{/cost}:} Shows current token usage and session cost. Check after every major step.
+    \item \textbf{\texttt{@file:} scoping:} Load only the file(s) relevant to the current step. Loading 50 files when you need 2 is the most common context mistake.
+    \item \textbf{Subagents for exploration:} Work done in a subagent (e.g., ``How does X work?'') stays isolated. Only the \textit{summary} returns to the main session. Main context stays clean.
+    \item \textbf{Skills are lazy-loaded:} Keep domain knowledge in \texttt{.claude/skills/} not \texttt{CLAUDE.md}. Claude loads skill content only when the task matches --- not on every prompt.
+    \item \textbf{\texttt{/clear}:} Nuclear option; clears the conversation. Use only for genuinely fresh, unrelated tasks.
+  \end{itemize}
+\begin{lstlisting}[language=bash]
+/cost              # Check token usage now
+/compact           # Summarise older turns, free space
+@file:src/auth.py  # Focus on one specific file only
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Memory \& Custom Commands: Cross-Session Efficiency}
+\textbf{Problem:} Repeating ``our stack is Python + FastAPI, we use pytest, no bare except...'' costs tokens \textit{every} session.
+
+\textbf{Update All Three CLAUDE.md Tiers}
+\begin{lstlisting}[language=bash]
+~/.claude/CLAUDE.md             # Global: your personal habits
+./CLAUDE.md                     # Project: team conventions (commit!)
+./.claude/settings.local.json   # Local: machine overrides (gitignore)
+\end{lstlisting}
+  \begin{itemize}
+    \item \textbf{Global:} add patterns you repeat across \textit{every} project --- preferred tools, output style, ``never use auto-accept on db migrations''.
+    \item \textbf{Project:} add stack, build commands, deploy steps, naming rules --- whole team benefits, zero per-session re-explanation cost.
+    \item \textbf{Local:} add machine-specific paths or API key names; gitignored so it never leaks.
+    \item \textbf{Rule:} if you explain something \textit{twice} in a session, it belongs in a CLAUDE.md file.
+  \end{itemize}
+\begin{lstlisting}[language=bash]
+# Have Claude write it for you:
+"Remember that we use Black formatting.
+ Update the project CLAUDE.md now."
+
+/memory          # View everything Claude has learned
+/memory clear    # Remove stale auto-learnings
+\end{lstlisting}
+
+\textbf{Custom Commands Eliminate Repetitive Prompts}
+  \begin{itemize}
+    \item If you type the same prompt more than twice: make it a command.
+    \item One-time cost: write \texttt{.claude/commands/review.md}. Ongoing savings: zero tokens re-explaining context.
+    \item Parameterize with \texttt{\$ARGUMENTS}; commit to Git so the team benefits.
+  \end{itemize}
+\begin{lstlisting}[language=bash]
+/review src/mychatbot/   # Instead of typing long review prompt
+/test-gen src/auth.py    # Instead of re-explaining test patterns
+/changelog "last week"   # Instead of describing format every time
+\end{lstlisting}
+\end{frame}
