@@ -2,7 +2,7 @@
 \begin{frame}[fragile]\frametitle{}
 
 \begin{center}
-{\Large Basic Demo (1 Hour)}
+{\Large Basic SDLC Demo}
 \end{center}
 \end{frame}
 
@@ -10,49 +10,25 @@
 %% WORKSHOP OVERVIEW
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Workshop Overview}
-\textbf{What we will build:} A chatbot with two interfaces: CLI and Streamlit, powered by LangChain + Groq LLM. We'll deploy it live to Vercel.
+\textbf{What we will build:} A chatbot with two interfaces: CLI and Streamlit, powered by LangChain + Groq LLM.
 
 \textbf{What we will learn:}
   \begin{itemize}
-    \item How to use Claude Code across the \textbf{full SDLC}: from specs to deployment
-    \item \textbf{CLAUDE.md}, \textbf{custom commands}, \textbf{skills}, \textbf{subagents}, \textbf{hooks}, \textbf{MCP servers}, \textbf{plugins}
-    \item Writing code, tests, and docs: \textit{all from the terminal}
-    \item How Plan mode, permission system, and hooks enforce quality automatically
-    \item \textbf{Deploying to production} using GitHub and Vercel integration
+    \item How to use Claude Code across 4 core SDLC stages: bootstrap, specification, architecture, implementation
+    \item \textbf{CLAUDE.md} for project memory, \textbf{Plan mode} for safe design, and \textbf{subagents} for specialized tasks
+    \item Writing code from the terminal: all prompts, no IDE required
+    \item How the permission system and Plan mode enforce quality before any file is touched
   \end{itemize}
 
-\textbf{Duration:} Basic (Stages 1--4): \textasciitilde{}60 min. \quad Advanced (Stages 5--14): 90+ min.
-\end{frame}
+\textbf{Duration:} $\approx$60 min \quad \textbf{Format:} Solo walkthrough --- one stage at a time
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{SDLC Stages We Will Cover}
-\begin{center}
-\adjustbox{max width=\linewidth}{%
-\begin{tabular}{|p{0.7cm}|l|l|}
-\hline
-\textbf{Stage} & \textbf{Activity} & \textbf{Claude Code Feature} \\
-\hline
-1 & Project bootstrap \& init & \texttt{/init}, CLAUDE.md \\
-2 & Requirements \& specs & Custom subagent, Markdown \\
-3 & Architecture design & Plan mode, \texttt{@workspace} \\
-4 & Implementation & Auto-accept, \texttt{@file:} \\
-5 & Testing (unit + synthetic) & Custom command, MCP \\
-6 & Debugging & Debug subagent, context tools \\
-7 & Refactoring & Skills, Rules \\
-8 & Documentation & Docs subagent \\
-9 & Code review & Review subagent \\
-10 & GitHub workflow & MCP GitHub server \\
-11 & Hooks \& automation & Hooks system (new!) \\
-12 & .claude/ production setup & Rules, deny perms, skills \\
-13 & Plugins & Plugin packaging (new!) \\
-14 & Deployment to Vercel & GitHub integration, live hosting \\
-\hline
-\end{tabular}
-}
-\end{center}
-
-{\small \textbf{Basic} (this section): Stages 1--4. \quad \textbf{Advanced} (next section): Stages 5--14. Each stage = one demo block.}
+\textbf{Stages covered:}
+  \begin{enumerate}
+    \item \textbf{Project Bootstrap} --- \texttt{/init}, CLAUDE.md, project memory
+    \item \textbf{Specifications} --- subagent writes Markdown spec
+    \item \textbf{Architecture Design} --- Plan mode, scaffold files
+    \item \textbf{Implementation} --- \texttt{@file:} references, run \& verify
+  \end{enumerate}
 \end{frame}
 
 
@@ -69,9 +45,9 @@
 \begin{frame}[fragile]\frametitle{Pre-requisites Checklist}
 Before starting, verify all of the following for the \textbf{mychatbot} demo:
 
-\textbf{Essential Software} (install from Getting Started section if missing):
+\textbf{Essential Software:}
   \begin{itemize}
-    \item Start with empty folder, switch to that directory
+    \item Create an \textbf{empty folder} and switch to it: \lstinline|mkdir mychatbot && cd mychatbot|
     \item Conda env installed, activated: \lstinline|conda --version|
     \item Claude Code installed: \lstinline|claude doctor|
     \item Node.js $\geq$ 18: \lstinline|node --version|
@@ -79,21 +55,18 @@ Before starting, verify all of the following for the \textbf{mychatbot} demo:
     \item Python $\geq$ 3.10: \lstinline|python --version|
   \end{itemize}
 
-\textbf{Demo-Specific Accounts \& Keys:}
+\textbf{Accounts \& Keys:}
   \begin{itemize}
     \item \textbf{Claude Pro/Max or API key} (already done in Getting Started)
-    \item \textbf{GitHub account} and \textbf{Vercel account} (same email)
     \item Groq API key: \href{https://console.groq.com}{\texttt{console.groq.com}}
-    \item GitHub Personal Access Token for MCP integration
   \end{itemize}
 
-\textbf{Set environment variables and install demo deps:}
+\textbf{Set the API key and install demo deps:}
 \begin{lstlisting}
-GROQ_API_KEY="gsk_..."
-GITHUB_TOKEN="ghp_..."
+export GROQ_API_KEY="gsk_..."   # Linux/Mac
+set GROQ_API_KEY=gsk_...        # Windows
 
-pip install langchain langchain-groq streamlit
-pip install pytest pytest-mock faker rich
+pip install langchain langchain-groq streamlit rich
 \end{lstlisting}
 \end{frame}
 
@@ -127,55 +100,49 @@ claude --model claude-opus-4-6
 { "model": "claude-sonnet-4-6" }
 \end{lstlisting}
 
-% \textbf{Practical guide:}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{IDE Integration (Optional)}
+% \textbf{What IDE integration adds:}
   % \begin{itemize}
-    % \item \textbf{Haiku}: subagents doing file exploration, simple search, fast questions
-    % \item \textbf{Sonnet}: most coding tasks, refactoring, test generation
-    % \item \textbf{Opus}: architectural design, security review, complex multi-file refactors
+	% \item Claude Code integrates into VS Code and JetBrains IDEs.
+	% \item All CLAUDE.md, settings, and MCP servers are shared with the terminal session.
+    % \item Inline diff view as Claude edits files
+    % \item One-click approve/reject per file change
+    % \item Editor context automatically sent (open file, selection)
+    % \item Same session continues from terminal -- no context loss
   % \end{itemize}
-\end{frame}
+
+% \begin{lstlisting}
+% ## VS Code extension:
+
+% # Install from VS Code Marketplace:
+% # Search: "Claude Code"
+
+% # Or via terminal:
+% code --install-extension anthropic.claude-code
+
+% # Use inside VS Code:
+% # Ctrl+Shift+P -> "Claude Code: Open"
+% # Or: click the Claude icon in the sidebar
+
+% ## JetBrains plugin:
+% # Install from JetBrains Marketplace:
+% # Settings -> Plugins -> Search "Claude Code"
+% # Supports: IntelliJ IDEA, PyCharm, WebStorm, etc.
+% \end{lstlisting}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{IDE Integration}
-\textbf{What IDE integration adds:}
-  \begin{itemize}
-	\item Claude Code integrates into VS Code and JetBrains IDEs.
-	\item All CLAUDE.md, settings, and MCP servers are shared:
-    \item Inline diff view as Claude edits files
-    \item One-click approve/reject per file change
-    \item Editor context automatically sent (open file, selection)
-    \item Same session continues from terminal -- no context loss
-  \end{itemize}
-
-\begin{lstlisting}
-## VS Code extension:
-
-# Install from VS Code Marketplace:
-# Search: "Claude Code"
-
-# Or via terminal:
-code --install-extension anthropic.claude-code
-
-# Use inside VS Code:
-# Ctrl+Shift+P -> "Claude Code: Open"
-# Or: click the Claude icon in the sidebar
-
-## JetBrains plugin:
-# Install from JetBrains Marketplace:
-# Settings -> Plugins -> Search "Claude Code"
-# Supports: IntelliJ IDEA, PyCharm, WebStorm, etc.
-\end{lstlisting}
-
-
-\end{frame}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PROJECT BOOTSTRAP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Project Bootstrap}
+{\Large Stage 1: Project Bootstrap}
 
 % {\normalsize Teaching Claude Code about your project with CLAUDE.md}
 \end{center}
@@ -184,21 +151,20 @@ code --install-extension anthropic.claude-code
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Run /init: Generate CLAUDE.md}
-The first command in any new project. Scans the directory and writes Claude's instruction manual.
-
-Make sure \textbf{Plan mode} is active first (press \texttt{Shift+Tab}). Inside TUI (project is still empty, .git is there though):
-
-\textbf{Key difference from OpenCode:} In Claude Code the file is called \texttt{CLAUDE.md} (not AGENTS.md), and Claude also supports \textbf{nested} CLAUDE.md files in subdirectories for directory-specific instructions.
-
-Claude will ask clarifying questions about the project. Answer them. Once the plan looks right, press \texttt{Shift+Tab} to switch to normal mode and approve the file creation.
+  \begin{itemize}
+    \item The first command in any new project. Scans the directory and writes Claude's instruction manual.
+    \item Make sure \textbf{Plan mode} is active first (press \texttt{Shift+Tab}). Inside TUI (project is still empty, .git is there though):
+    \item \textbf{Key difference from OpenCode/CoPilot/Codex:} In Claude Code the file is called \texttt{CLAUDE.md} (not AGENTS.md), and Claude also supports \textbf{nested} CLAUDE.md files in subdirectories for directory-specific instructions.
+    \item Claude will ask clarifying questions about the project. Answer them. Once the plan looks right, press \texttt{Shift+Tab} to switch to normal mode and approve the file creation.
+\end{itemize}
 
 
 \begin{lstlisting}
 /init
 
 ## What /init generates:
-CLAUDE.md # Project intelligence file
-.claude/settings.json # Permissions, model config
+CLAUDE.md              # Project intelligence file
+.claude/settings.json  # Permissions, model config
 
 ## Commit immediately:
 git add CLAUDE.md
@@ -208,25 +174,24 @@ git commit -m "chore: add CLAUDE.md"
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{CLAUDE.md: The Project Memory File}
-CLAUDE.md is loaded automatically at the start of \textit{every} session. Inspect and extend it with project-specific rules. Three scopes exist:
+\begin{frame}[fragile]\frametitle{CLAUDE.md: Scopes of Project Memory}
+CLAUDE.md is loaded automatically at the start of \textit{every} session. Three scopes exist --- global, project, and local:
 
 \begin{lstlisting}
-~/.claude/CLAUDE.md # Global: all your projects
-./CLAUDE.md   # Project: everyone on the team
-./.claude/settings.local.json # Local: your overrides (gitignore)
+~/.claude/CLAUDE.md            # Global: all your projects
+./CLAUDE.md                    # Project: everyone on the team
+./.claude/settings.local.json  # Local: your overrides (gitignore)
 
-## Edit the project CLAUDE.md:
+## Inspect and extend the project CLAUDE.md:
 
 ## Project: mychatbot
 
 ## Tech Stack
 - Python 3.11, LangChain 0.3+, langchain-groq
-- Streamlit 1.35+, Rich (CLI output), pytest + pytest-mock
+- Streamlit 1.35+, Rich (CLI output)
 
 ## Build Commands
 - Install: `pip install -e ".[dev]"`
-- Tests:   `pytest tests/ -v`
 - Lint:    `ruff check src/`
 - Format:  `black src/`
 
@@ -234,7 +199,6 @@ CLAUDE.md is loaded automatically at the start of \textit{every} session. Inspec
 - Type hints on all functions
 - Docstrings (Google style) on all public functions
 - No hardcoded API keys: always read from env vars
-- Never catch bare except
 
 ## File Map
 - src/mychatbot/chain.py   : LangChain chain factory
@@ -250,8 +214,12 @@ CLAUDE.md is loaded automatically at the start of \textit{every} session. Inspec
 \textbf{A unique Claude Code feature:} Claude automatically builds memory as it works, saving learnings across sessions without you writing anything.
 
 \begin{lstlisting}
-# During a session, if Claude discovers something useful: Claude writes this to CLAUDE.md automatically.
-# You can also instruct Claude to remember things: "Remember that we use Black for formatting, not autopep8. Add this to CLAUDE.md."
+# During a session Claude discovers something useful
+# and writes it to CLAUDE.md automatically.
+
+# Instruct Claude to remember things explicitly:
+"Remember that we use Black formatting, not autopep8.
+ Add this to CLAUDE.md."
 
 # View what Claude has learned:
 /memory
@@ -260,9 +228,8 @@ CLAUDE.md is loaded automatically at the start of \textit{every} session. Inspec
 /memory clear
 
 
-## Rules files (alternative to CLAUDE.md for team rules):
+## Rules files (scoped rules alongside CLAUDE.md):
 
-# Create targeted rule files:
 mkdir -p .claude/rules
 cat > .claude/rules/python-style.md << 'EOF'
 paths: ["src/**/*.py", "tests/**/*.py"]
@@ -280,13 +247,11 @@ EOF
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Requirements \& Specification}
+{\Large Stage 2: Specifications}
 
 % {\normalsize Using a custom subagent to write elaborate specs}
 \end{center}
 \end{frame}
-
-% Customization overview omitted -- covered in detail in the Introduction section.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Create a Specs Subagent}
@@ -330,7 +295,7 @@ EOF
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Generate the Project Spec}
-Inside the interactive REPL (Read-Eval-Print Loop, text box where you can type and execute code, for now, here its the normal mode ie confirm before accept), invoke the specs subagent:
+Inside the interactive REPL (normal mode), invoke the specs subagent:
 
 \begin{lstlisting}
 Write a technical specification for mychatbot.
@@ -344,19 +309,44 @@ It should cover:
 - Error handling expectations
 Save to docs/specs/mychatbot-spec.md
 
-## Claude detects this matches the ``specs'' subagent description and routes automatically. You can also invoke explicitly:
+## Claude detects this matches the ``specs'' subagent and
+## routes automatically. Explicit invocation also works:
 
-
-# Explicit subagent invocation:
 Use the specs subagent to write a spec for mychatbot.
-
-# In non-interactive mode:
-claude -p "Use the specs subagent to write a spec for
-  mychatbot. Save to docs/specs/mychatbot-spec.md"
 
 ## Git
 git add docs/
 git commit -m "docs: add mychatbot spec"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Expected Output: Project Spec}
+Verify that \texttt{docs/specs/mychatbot-spec.md} was created and contains meaningful content:
+
+\begin{lstlisting}[language=bash]
+# Check the file exists:
+ls docs/specs/
+
+# Preview the spec:
+cat docs/specs/mychatbot-spec.md
+\end{lstlisting}
+
+\textbf{A well-formed spec should include:}
+  \begin{itemize}
+    \item \textbf{Overview}: purpose, two interfaces (CLI + Streamlit)
+    \item \textbf{Functional Requirements}: multi-turn history, \texttt{/exit} command, streaming
+    \item \textbf{Data Models}: \texttt{\{role: str, content: str\}} message schema
+    \item \textbf{API Contracts}: \texttt{make\_chain()} signature, env var names
+    \item \textbf{Open Questions}: streaming support via Groq, token limits
+  \end{itemize}
+
+\textbf{If a section is thin, ask Claude to expand it:}
+\begin{lstlisting}
+Expand the Data Models section in
+docs/specs/mychatbot-spec.md to include the Config
+dataclass fields and the LangChain chain interface.
 \end{lstlisting}
 \end{frame}
 
@@ -366,7 +356,7 @@ git commit -m "docs: add mychatbot spec"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Architecture Design}
+{\Large Stage 3: Architecture Design}
 
 % {\normalsize Plan mode: read-only exploration before any edits}
 \end{center}
@@ -386,11 +376,10 @@ Plan mode restricts Claude to \textbf{read-only exploration} -- no file edits, n
 
 \begin{lstlisting}
 # Enter plan mode (cycles through modes):
-Shift+Tab # Cycles: normal -> plan -> auto-accept
+Shift+Tab  # Cycles: normal -> plan -> auto-accept
 
 # Or via command:
-/plan          # Enter plan mode
-/plan refactor the auth module  # With description
+/plan
 
 ## In Plan mode, ask for the architecture:
 
@@ -412,22 +401,22 @@ Show me the plan before creating any files.
 \begin{frame}[fragile]\frametitle{Plan Mode: Extended Thinking}
 For complex architectural decisions, combine Plan mode with \textbf{Extended Thinking}.
 
-\textbf{Pro Tip:} Extended thinking is especially valuable in Plan mode because it can explore multiple approaches without consuming execution tokens on wasted code.
+\textbf{Pro Tip:} Extended thinking explores multiple approaches without consuming tokens on wasted code --- costs almost nothing vs.\ a wrong implementation.
 
 \begin{lstlisting}
 # Toggle extended thinking inside a session:
 Alt+T  # Toggle extended thinking on/off
 
-# Or launch with thinking:
-claude "Design the architecture for mychatbot"
-# Then press Alt+T before sending complex questions
-
 ## In Plan mode with extended thinking enabled:
 Given docs/specs/mychatbot-spec.md, should we use:
-1. LangChain ConversationBufferMemory (simple, risk of token bloat), or
-2. LangChain ConversationSummaryMemory (summarises old turns, lower token use)?
+1. LangChain ConversationBufferMemory
+   (simple, risk of token bloat), or
+2. LangChain ConversationSummaryMemory
+   (summarises old turns, lower token use)?
 
-Consider: multi-turn history size, streaming support, Groq API limits, testability. Think carefully and give a recommendation with trade-offs.
+Consider: multi-turn history size, streaming support,
+Groq API limits, testability.
+Think carefully and give a recommendation with trade-offs.
 \end{lstlisting}
 
 \end{frame}
@@ -435,12 +424,13 @@ Consider: multi-turn history size, streaming support, Groq API limits, testabili
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Scaffold the Project Structure}
-Exit plan mode (press \texttt{Shift+Tab}). In normal mode:
+Exit plan mode (press \texttt{Shift+Tab}). In normal mode, approve the scaffold:
 
 \begin{lstlisting}
-Create the mychatbot package scaffold based on the architecture plan and add stub methods:
+Create the mychatbot package scaffold based on the
+architecture plan and add stub methods:
 
-## Result may be:
+## Expected result:
 - src/mychatbot/__init__.py
 - src/mychatbot/chain.py     (stub: make_chain())
 - src/mychatbot/cli.py       (stub: main())
@@ -455,9 +445,44 @@ Create the mychatbot package scaffold based on the architecture plan and add stu
 git add .
 git commit -m "chore: scaffold mychatbot package"
 
-## Context management tip:
+## Context management:
 /cost       # Check token usage so far
 /compact    # Summarise older context to free space
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Expected Output: Project Scaffold}
+Verify the generated file tree before implementing anything:
+
+\begin{lstlisting}[language=bash]
+# List generated files (Linux/Mac):
+find . -not -path './.git/*' -not -path './.claude/*' -type f | sort
+
+# Windows:
+tree /F
+\end{lstlisting}
+
+\textbf{You should see:}
+\begin{lstlisting}
+src/mychatbot/__init__.py
+src/mychatbot/chain.py       <- stub: make_chain()
+src/mychatbot/cli.py         <- stub: main()
+src/mychatbot/app.py         <- stub: Streamlit skeleton
+src/mychatbot/config.py      <- stub: Config dataclass
+tests/__init__.py
+tests/test_chain.py          <- stub tests
+pyproject.toml
+README.md
+docs/specs/mychatbot-spec.md <- from Stage 2
+\end{lstlisting}
+
+\textbf{Confirm stub signatures before implementing:}
+\begin{lstlisting}
+@file:src/mychatbot/chain.py
+Is the make_chain() signature correct per the spec?
+If not, fix the stub first before implementing.
 \end{lstlisting}
 \end{frame}
 
@@ -467,7 +492,7 @@ git commit -m "chore: scaffold mychatbot package"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large Implementation}
+{\Large Stage 4: Implementation}
 
 {\normalsize File references, auto-accept mode, and session management}
 \end{center}
@@ -475,8 +500,8 @@ git commit -m "chore: scaffold mychatbot package"
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Review and Implement chain.py}
-In normal mode (use \texttt{@file:} to reference files precisely). Review the contents first and accordingly ask to add the remaining.
+\begin{frame}[fragile]\frametitle{Implement chain.py}
+In normal mode, use \texttt{@file:} to reference files precisely. Review the stub first, then ask Claude to fill it in.
 
 \begin{lstlisting}
 @file:src/mychatbot/chain.py
@@ -488,13 +513,11 @@ Implement chain.py:
 - Return a callable that takes history and returns str
 - Read GROQ_API_KEY from env via Config
 - Raise EnvironmentError if key is missing
-- Include full type hints and Google-style docstrings
+- Full type hints and Google-style docstrings
 - Handle Groq API errors with informative messages
 
 
-## Reviewing Claude's choices:
-
-# Ask Claude to explain its implementation decisions:
+## Ask Claude to explain its choices:
 Why did you use ChatPromptTemplate instead of
 MessagesPlaceholder? Is there a better approach
 for multi-turn history?
@@ -507,9 +530,8 @@ git commit -m "feat: implement LangChain chain factory"
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Review and Implement cli.py ,  app.py}
-Review the contents first and accordingly ask to add the remaining.
-
+\begin{frame}[fragile]\frametitle{Implement cli.py and app.py}
+Review each stub first, then implement one file at a time.
 
 \begin{lstlisting}
 ## CLI implementation:
@@ -523,7 +545,6 @@ Implement the CLI chatbot:
 - Commands: /exit or /quit to end, /clear to reset history
 - Ctrl+C gracefully exits with "Goodbye!" message
 - Call make_chain() from mychatbot.chain
-- Model/system prompt configurable via env vars
 
 
 ## Streamlit implementation:
@@ -537,6 +558,41 @@ Implement the Streamlit chatbot:
 - Sidebar: model selector, system prompt text area
 - Spinner while waiting for the model response
 - Handle missing GROQ_API_KEY with st.error and st.stop()
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Run and Verify}
+Once implementation is complete, run both interfaces to confirm end-to-end behaviour:
+
+\begin{lstlisting}[language=bash]
+# 1. Install the package in editable mode:
+pip install -e ".[dev]"
+
+# 2. Run the CLI chatbot:
+python -m mychatbot.cli
+# Expected: "[You]" styled prompt appears.
+# Type a message and press Enter.
+# "[mychatbot]" reply appears in green.
+# Type /exit to quit gracefully.
+
+# 3. Run the Streamlit web UI:
+streamlit run src/mychatbot/app.py
+# Expected: browser opens at http://localhost:8501
+# Chat bubbles visible; sidebar model selector works.
+
+# 4. Commit working implementation:
+git add src/
+git commit -m "feat: implement CLI and Streamlit chatbot"
+\end{lstlisting}
+
+\textbf{If an error occurs, show Claude the error inline:}
+\begin{lstlisting}
+@file:src/mychatbot/chain.py
+Running python -m mychatbot.cli gives:
+  ImportError: cannot import name 'ChatGroq' from 'langchain_groq'
+Fix it.
 \end{lstlisting}
 \end{frame}
 
@@ -556,9 +612,5 @@ claude --resume mychatbot-implementation
 
 # Fork a session to try an alternative approach:
 claude --resume mychatbot-implementation --fork-session
-
-## Run the chatbot to verify:
-python -m mychatbot.cli     # CLI interface
-streamlit run src/mychatbot/app.py  # http://localhost:8501
 \end{lstlisting}
 \end{frame}

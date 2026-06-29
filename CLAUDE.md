@@ -74,6 +74,22 @@ Full 4-level hierarchy for the course "Quantum Computing for Non-Physicists":
 - **Topic files** (14): all prefixed `quantum_` (e.g. `quantum_intro_motivation.tex`, `quantum_gates_circuits.tex`)
 - Existing files `quantum_basics_intro.tex`, `quantum_maths_intro.tex`, `quantum_machinelearning_intro.tex` pre-date the course and are referenced optionally (heavier math; commented-out in the new overview seminar)
 
+### Machine Learning course restructured (June 2026)
+Full 4-level hierarchy for the 40-hour ML course "Machine Learning for Graduate Students":
+- **Course**: `Main_Course_MachineLearning_{Presentation,CheatSheet}.tex` → `course_machinelearning_content.tex`
+- **Workshops** (6 × driver pairs):
+  - W1 Python for ML (8h): existing `workshop_python_content.tex`
+  - W2 Foundations (4h): `workshop_ml_foundations_content.tex`
+  - W3 Regression (4h): `workshop_ml_regression_content.tex`
+  - W4 Tree-Based & Ensemble (8h): `workshop_ml_treebased_content.tex`
+  - W5 Supervised II — KNN/SVM/NB (8h): `workshop_ml_supervisedII_content.tex`
+  - W6 Unsupervised & Deployment (8h): `workshop_ml_unsupervised_content.tex`
+  - Standalone all-ML workshop (W2–W6, no Python/demos): `Main_Workshop_MachineLearning_{Presentation,CheatSheet}.tex`
+- **Seminars** (10 × driver pairs): `seminar_ml_{intro,dataprep,regression,decisiontree,ensemble,knn,svm_nb,clustering,dimreduction,deployment}_content.tex`; drivers are `Main_Seminar_ML_{Intro,DataPrep,Regression,DecisionTree,Ensemble,KNN,SVM_NB,Clustering,DimReduction,Deployment}_{Presentation,CheatSheet}.tex`
+- **New demo/assign files**: `ml_course_demo_regression_housing.tex`, `ml_course_demo_svm_digits.tex`, `ml_course_assign_knn_wine.tex`, `ml_course_demo_clustering_customers.tex`, `ml_course_assign_pca_digits.tex`
+- **Upgrade status**: Seminar 1 (Intro) upgraded; track remaining 9 in `LaTeX/todo_ml_seminar_upgrade.md`
+- **Pending**: `course_machinelearning_content.tex` still needs the 5 new demo/assign files listed above added at the end
+
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
 2. `\input{<domain>_<topic>}` inside the relevant `seminar_*_content.tex`

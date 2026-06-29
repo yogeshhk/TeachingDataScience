@@ -1,0 +1,100 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large SVM --- Handwritten Digit Recognition}
+
+{\tiny (Ref: scikit-learn SVM example --- Digit Classification)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Problem Info}
+\begin{itemize}
+\item Dataset: Digits (\texttt{sklearn.datasets.load\_digits}, built-in)
+\item 1,797 images of handwritten digits (0--9), each 8$\times$8 pixels = 64 features
+\item Goal: Classify each image into one of 10 digit classes using SVM
+\item Demonstrates the power of SVM's RBF kernel for non-linear image classification
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Import Libraries}
+\begin{lstlisting}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report, confusion_matrix
+import seaborn as sns
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Load and Visualize Data}
+\begin{lstlisting}
+digits = load_digits()
+print("Data shape:", digits.data.shape)   # (1797, 64)
+print("Classes   :", digits.target_names) # [0 1 2 ... 9]
+
+fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+for ax, img, label in zip(axes.ravel(),
+                           digits.images, digits.target):
+    ax.imshow(img, cmap='gray_r')
+    ax.set_title(str(label))
+    ax.axis('off')
+plt.suptitle("Sample Digits")
+plt.show()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Train SVM Classifier}
+\begin{lstlisting}
+X_train, X_test, y_train, y_test = train_test_split(
+    digits.data, digits.target,
+    test_size=0.2, random_state=42)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test  = scaler.transform(X_test)
+
+svm = SVC(kernel='rbf', C=10, gamma=0.001)
+svm.fit(X_train, y_train)
+y_pred = svm.predict(X_test)
+
+print(classification_report(y_test, y_pred))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Confusion Matrix}
+\begin{lstlisting}
+cm = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=digits.target_names,
+            yticklabels=digits.target_names)
+plt.xlabel("Predicted")
+plt.ylabel("True")
+plt.title("SVM Digit Recognition: Confusion Matrix")
+plt.tight_layout()
+plt.show()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Visualize Misclassifications}
+\begin{lstlisting}
+wrong = np.where(y_pred != y_test)[0]
+fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+for ax, idx in zip(axes.ravel(), wrong[:10]):
+    ax.imshow(X_test[idx].reshape(8, 8), cmap='gray_r')
+    ax.set_title(f"True:{y_test[idx]} Pred:{y_pred[idx]}")
+    ax.axis('off')
+plt.suptitle("Misclassified Digits")
+plt.tight_layout()
+plt.show()
+\end{lstlisting}
+\end{frame}

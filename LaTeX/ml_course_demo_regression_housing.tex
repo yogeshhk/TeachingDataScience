@@ -1,0 +1,94 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Linear Regression --- House Price Prediction}
+
+{\tiny (Ref: scikit-learn User Guide --- Generalized Linear Models)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Problem Info}
+\begin{itemize}
+\item Dataset: California Housing (\texttt{sklearn.datasets.fetch\_california\_housing}, built-in)
+\item Features: median income, house age, avg rooms, avg bedrooms, population, latitude, longitude
+\item Target: Median house value (in 100,000s USD)
+\item Goal: Predict house prices using Linear Regression; compare Ridge and Lasso regularization
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Import Libraries}
+\begin{lstlisting}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import StandardScaler
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Load and Explore Data}
+\begin{lstlisting}
+data = fetch_california_housing()
+df = pd.DataFrame(data.data, columns=data.feature_names)
+df['MedHouseVal'] = data.target
+
+print(df.shape)       # (20640, 9)
+print(df.describe())
+print(df.head())
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Train Linear Regression}
+\begin{lstlisting}
+X_train, X_test, y_train, y_test = train_test_split(
+    data.data, data.target, test_size=0.2, random_state=42)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test  = scaler.transform(X_test)
+
+lr = LinearRegression()
+lr.fit(X_train, y_train)
+y_pred = lr.predict(X_test)
+
+print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred)))
+print("R2  :", r2_score(y_test, y_pred))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Compare Regularization}
+\begin{lstlisting}
+for name, model in [("Linear", LinearRegression()),
+                    ("Ridge",  Ridge(alpha=1.0)),
+                    ("Lasso",  Lasso(alpha=0.1))]:
+    model.fit(X_train, y_train)
+    pred = model.predict(X_test)
+    rmse = np.sqrt(mean_squared_error(y_test, pred))
+    r2   = r2_score(y_test, pred)
+    print(f"{name:8s}  RMSE={rmse:.4f}  R2={r2:.4f}")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Predicted vs Actual}
+\begin{lstlisting}
+plt.figure(figsize=(6, 5))
+plt.scatter(y_test, y_pred, alpha=0.3, s=10)
+plt.plot([y_test.min(), y_test.max()],
+         [y_test.min(), y_test.max()], 'r--', lw=2)
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+plt.title("Linear Regression: Predicted vs Actual")
+plt.tight_layout()
+plt.show()
+\end{lstlisting}
+Points close to the diagonal indicate accurate predictions.
+\end{frame}

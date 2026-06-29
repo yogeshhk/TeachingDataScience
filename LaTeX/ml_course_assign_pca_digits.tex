@@ -1,0 +1,82 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large PCA + K-Means --- Handwritten Digit Clustering}
+
+{\tiny (Ref: scikit-learn Decomposition and Clustering User Guide)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Problem Info}
+\begin{itemize}
+\item Dataset: Digits (\texttt{sklearn.datasets.load\_digits}, built-in) --- 1,797 images, 64 features each
+\item Part A: Use PCA to reduce 64 dimensions to 2; visualise digit clusters in 2D
+\item Part B: Apply K-Means (K=10) on PCA-reduced data; measure cluster quality
+\item Part C: Vary the number of PCA components (2, 10, 30) and observe effect on clustering
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Import Libraries}
+\begin{lstlisting}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_digits
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score, adjusted_rand_score
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Part A: PCA Visualisation}
+\begin{lstlisting}
+digits = load_digits()
+X = StandardScaler().fit_transform(digits.data)
+
+pca2 = PCA(n_components=2)
+X2   = pca2.fit_transform(X)
+
+plt.figure(figsize=(8, 6))
+scatter = plt.scatter(X2[:, 0], X2[:, 1],
+                      c=digits.target, cmap='tab10',
+                      s=10, alpha=0.7)
+plt.colorbar(scatter, label='Digit')
+plt.title("Digits projected to 2 PCA components")
+plt.xlabel("PC 1"); plt.ylabel("PC 2")
+plt.tight_layout(); plt.show()
+
+print("Variance explained:", pca2.explained_variance_ratio_.sum())
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Part B: K-Means on PCA Data}
+\begin{lstlisting}
+for n_comp in [2, 10, 30]:
+    Xr = PCA(n_components=n_comp).fit_transform(X)
+    km = KMeans(n_clusters=10, random_state=42, n_init=10)
+    labels = km.fit_predict(Xr)
+    sil = silhouette_score(Xr, labels)
+    ari = adjusted_rand_score(digits.target, labels)
+    print(f"PCA={n_comp:2d}  Silhouette={sil:.3f}  "
+          f"ARI={ari:.3f}")
+\end{lstlisting}
+\begin{itemize}
+\item \textbf{Silhouette score}: measures cluster compactness (higher is better, max 1.0)
+\item \textbf{Adjusted Rand Index}: compares clusters to true digit labels (1.0 = perfect)
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Assignment Tasks}
+\begin{itemize}
+\item Report the variance explained by 2, 10, and 30 PCA components
+\item Plot the explained variance ratio (scree plot) and identify the ``elbow''
+\item At which number of PCA components does ARI peak? Explain why
+\item Visualise cluster centres (inverse-transform to pixel space) for the best configuration
+\item What do the cluster centres look like? Do they resemble recognisable digits?
+\end{itemize}
+\end{frame}
