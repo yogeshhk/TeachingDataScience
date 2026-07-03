@@ -65,6 +65,7 @@ CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `
 - `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
 - `workshop_python_content.tex` and `workshop_maths4ml_content.tex` still use raw files (not yet routed via seminar layer — deferred)
 - `seminar_quantum_content.tex` — orphaned; its former driver files (`Main_Seminar_Tech_Quantum_*`) were merged into `Main_Seminar_Tech_QuantumComputing_Overview_*`. Kept as reference; safe to delete.
+- `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` (only active content: `ai_tools_claudecode_demo_cimatron.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CimatronWorshop/` (untracked as of Jul 2026). The two have drifted apart: the deck's implementation steps now call for a Markdown report (`reports/<stem>.md`) plus a `.claude/skills/inspection-report-summary/` skill, and its DevOps Subagent frame is commented out (`\iffalse`/`\fi`) for this teaching pass — none of that has been back-ported to the actual PoC code, which still writes JSON-only reports, still has `.claude/skills/geometry-validation/`, and still has `.claude/agents/devops.md` + a working `inspect` console-script entry point in `pyproject.toml`.
 
 ### Quantum Computing course (added May 2026)
 Full 4-level hierarchy for the course "Quantum Computing for Non-Physicists":
@@ -145,7 +146,7 @@ Do not create `venv/` or `.venv/` folders — use conda environments only.
 A repo-wide `Code/.gitignore` covers `__pycache__/`, `.ipynb_checkpoints/`, `.env`, `*.pyc`, model weights (`*.bin`, `*.pt`, `*.safetensors`).
 
 ### Notable sub-projects with their own config
-- `Code/claudecode/` — has its own `CLAUDE.md`
+- `Code/claudecode/MyWorkshop/` and `Code/claudecode/CimatronWorshop/` — each has its own `CLAUDE.md` (no `CLAUDE.md` directly under `Code/claudecode/` itself)
 - `Code/langgraph/open_deep_research-langcahin-ai/` — has its own `CLAUDE.md` and `README.md`
 - `Code/crewai/researcher/` — uses `pyproject.toml` + `uv.lock` (modern uv workflow)
 
