@@ -148,15 +148,17 @@ CLAUDE.md              # Project intelligence file
 
 ## Resulting CLAUDE.md (edit to match below):
 ---
+# CLAUDE.md
+
 ## Project: stlinspector
 STL/STEP geometry inspector and validator (PoC).
 
 ## Tech Stack
 - Python 3.11, trimesh, numpy
-- Streamlit + plotly (3D preview), Rich (CLI output)
+- Streamlit + plotly (3D preview), Rich (CLI)
 
 ## Build Commands
-- Install: `pip install -e ".[dev]"`
+- Install: `pip install trimesh numpy streamlit plotly pytest rich`
 - Test:    `pytest tests/ -v`
 ---
 ## Commit immediately:
@@ -189,8 +191,8 @@ git commit -m "chore: added CLAUDE.md"
 ---
 name: specs
 description: >
-  Technical specification writer. Produces structured
-  Markdown specs from feature descriptions. Read-only.
+  Technical specification writer. Produces structured Markdown specs from feature descriptions. 
+Read-only.
 model: claude-opus-4-6
 allowed-tools: Read, Write, Glob
 
@@ -198,7 +200,7 @@ Produce a Markdown spec covering: Overview, Goals,
 Non-Goals, Functional Requirements, Data Models,
 API/CLI Contracts, Open Questions. 
 
-Save to docs/specs/<feature>.md.
+Save to docs/specs/<feature>.md
 ---
 ## Invoke it via following prompt:
 ---
@@ -208,7 +210,8 @@ Cover:
   (bbox, volume, surface_area, triangle_count, issues)
 - Validation rules: not-watertight, non-manifold edges,
   degenerate faces
-- cli.py: inspect <file> [--report out.json]
+- cli.py: python cli.py <file> [--report out.json]
+  (no console-script entry point in this pass)
 - app.py: upload -> 3D preview -> report table
 Save to docs/specs/stlinspector-spec.md
 ---
@@ -236,24 +239,22 @@ Plan mode is \textbf{read-only}: no edits, no bash, and is perfect for exploring
 \begin{lstlisting}
 -- Prompt --
 Read docs/specs/stlinspector-spec.md, then design the package layout for stlinspector:
-- src/stlinspector/{core,cli,app,config}.py
-- Data flow: file -> core.inspect() -> InspectionReport
+- src/{core,cli,app,config}.py
+- Data flow: file -> core.load_mesh() -> mesh -> core.inspect_mesh() -> InspectionReport
 - What core.py must NOT depend on (no Streamlit imports)
 Show the plan before creating any files.
 --
-## Approve ("Yes, clear context and auto-accept edits")
+## Approve ("Yes, auto-accept edits")
 
 \lstinline|Shift+Tab   # Enter Normal mode|
 
 -- Prompt --
 Create the stlinspector scaffold with stub methods:
-- src/stlinspector/__init__.py
-- src/stlinspector/core.py    (stub: inspect(path))
-- src/stlinspector/cli.py     (stub: main())
-- src/stlinspector/app.py     (stub: Streamlit skeleton)
-- src/stlinspector/config.py  (stub: Config dataclass)
+- src/core.py    (stub: load_mesh(path), inspect_mesh(mesh))
+- src/cli.py     (stub: main())
+- src/app.py     (stub: Streamlit skeleton)
+- src/config.py  (stub: Config dataclass)
 - tests/__init__.py, tests/conftest.py, tests/test_core.py
-- pyproject.toml, 
 - README.md
 
 ---
@@ -277,11 +278,11 @@ git add . && git commit -m "chore: scaffold stlinspector"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Implement core.py: the Inspection Engine}
 \begin{lstlisting}
-@file:src/stlinspector/core.py
+@file:src/core.py
 @file:docs/specs/stlinspector-spec.md
 Implement core.py:
 - load_mesh(path: str) -> trimesh.Trimesh
-- inspect(path: str) -> InspectionReport, where InspectionReport is a dataclass with: bounding_box, volume, surface_area, triangle_count, issues: list[str]
+- inspect_mesh(mesh: trimesh.Trimesh) -> InspectionReport, where InspectionReport is a dataclass with: bounding_box, volume, surface_area, triangle_count, issues: list[str]
 - Issue checks:
   - "not_watertight" if not mesh.is_watertight
   - "non_manifold_edges" if any edge shared by > 2 faces
@@ -290,11 +291,7 @@ Implement core.py:
 - Raise FileNotFoundError / ValueError with clear messages
 
 ---
-## Ask Claude to explain a choice:
-Why check edge-sharing counts instead of relying only on
-mesh.is_watertight for non-manifold detection?
----
-git add src/stlinspector/core.py
+git add src/core.py
 git commit -m "feat: implement inspection engine"
 \end{lstlisting}
 \end{frame}
@@ -304,30 +301,30 @@ git commit -m "feat: implement inspection engine"
 \begin{frame}[fragile]\frametitle{Implement cli.py and app.py}
 \begin{lstlisting}
 ## CLI:
-@file:src/stlinspector/cli.py
-Implement the `inspect` CLI entry point:
-- inspect(path) [--report out.json] via argparse
+@file:src/cli.py
+Implement the CLI (run via `python cli.py`, no
+console-script entry point in this pass):
+- load_mesh(path) then inspect_mesh(mesh) [--report out.json] via argparse
 - Use Rich Table to print bbox/volume/area/triangle_count
 - Print issues in red if any, green "All checks passed"
 - Exit code 1 if any issue found (CI-friendly)
-- Also write a human-readable Markdown report to
-  reports/<stem>.md (same fields + issues list) -- this
-  feeds the inspection-report-summary skill later
+- JSON is the only report format (via --report out.json)
+  -- this feeds the inspection-report-summary skill later
 
 ---
 ## Streamlit:
-@file:src/stlinspector/app.py
+@file:src/app.py
 Implement the Streamlit app:
 - st.file_uploader restricted to .stl
-- Save upload to a temp file, call core.inspect()
+- Save upload to a temp file, call core.load_mesh() then core.inspect_mesh()
 - 3D preview via plotly go.Mesh3d (mesh.vertices/faces)
 - st.metric tiles for bbox/volume/area/triangle_count
 - st.error per issue, st.success if none
 
 ---
 ## Run and verify (no entry point installed yet):
-python src/stlinspector/cli.py tests/fixtures/box.stl --report out.json
-streamlit run src/stlinspector/app.py
+python src/cli.py tests/fixtures/box.stl --report out.json
+streamlit run src/app.py
 
 ---
 git add src/ && git commit -m "feat: implement CLI and Streamlit app"
@@ -362,7 +359,7 @@ description: >
 allowed-tools: Read, Edit, Write, Bash
 
 Add a new validation check named "$ARGUMENTS" to
-src/stlinspector/core.py:
+src/core.py:
 1. Add a private _check_$ARGUMENTS(mesh) -> bool helper
 2. Wire it into inspect(), appending "$ARGUMENTS" to
    issues when it returns True
@@ -392,15 +389,16 @@ src/stlinspector/core.py:
 ---
 name: inspection-report-summary
 description: >
-  Summarizes an stlinspector InspectionReport (Markdown)
+  Summarizes an stlinspector InspectionReport (JSON)
   for a non-technical stakeholder. Use when asked to
   "summarize", "explain", or "triage" an inspection
   report.
+---
 
 ## Input
-Read the most recent file under reports/*.md (or the
-path given): bbox, volume, surface_area, triangle_count,
-and a list of issues (if any).
+Read the JSON report written by --report (e.g. out.json,
+or the path given): bbox, volume, surface_area,
+triangle_count, and a list of issues (if any).
 
 ## Output
 - One-paragraph plain-English verdict: PASS / FAIL and why
@@ -410,16 +408,18 @@ and a list of issues (if any).
   3. degenerate_faces (usually cosmetic, low risk)
 - Suggest the next concrete action per issue found
   (e.g. "re-export from CAD with tighter tessellation")
----
+
+## Generate a report to summarize (if out.json isn't already present):
+python src/cli.py src/Box.stl --report out.json
 
 ## Usage:
-Summarize reports/box.md for a non-technical reviewer
+Summarize out.json for a non-technical reviewer
 \end{lstlisting}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% QA AND DEVOPS
+%% QA WORKFLOWS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
@@ -462,12 +462,12 @@ and on report.issues membership.
 \begin{lstlisting}[language=bash]
 pytest tests/ -v --tb=short
 
-pytest tests/ --cov=src/stlinspector --cov-report=term-missing
+pytest tests/ --cov=src --cov-report=term-missing
 
 --- 
 # If a test fails, hand Claude the traceback directly:
 ---
-@file:src/stlinspector/core.py
+@file:src/core.py
 test_degenerate_face_mesh fails with:
 AssertionError: 'degenerate_faces' not in report.issues
 Here is the fixture: [paste]. Fix the check or the fixture.
@@ -478,38 +478,6 @@ git commit -m "test: add synthetic-fixture test suite"
 \end{frame}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% DevOps Subagent -- not relevant for this session, disabled for now
-\iffalse
-\begin{frame}[fragile]\frametitle{DevOps Subagent}
-
-  \begin{itemize}
-	\item CI Pipeline
-	\item Write \lstinline|.claude/agents/devops.md | as below.
-	\item Use the devops subagent to create .github/workflows/ci.yml: on push/PR, set up Python 3.11, pip install -e ".[dev]", run ruff check, run
-pytest with coverage, fail the job on any failure.
-	\item Also finalise pyproject.toml with an `inspect` console script entry point mapped to stlinspector.cli:main.
-  \end{itemize}
-
-\begin{lstlisting}
----
-name: devops
-description: >
-  Writes and maintains CI/CD config (GitHub Actions),
-  packaging (pyproject.toml), and Dockerfiles. Never
-  edits src/ or tests/ logic. Use for build/deploy
-  pipeline requests only.
-model: claude-sonnet-4-6
-allowed-tools: Read, Write, Bash
-
-Keep pipelines minimal and fast. Pin dependency
-versions. Fail the build on lint or test failure.
----
-git add .github/ pyproject.toml
-git commit -m "ci: add GitHub Actions pipeline"
-\end{lstlisting}
-\end{frame}
-\fi
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -565,12 +533,12 @@ git commit -m "ci: add GitHub Actions pipeline"
 \textbf{What we covered:} bootstrap $\to$ spec $\to$ architecture $\to$ implementation $\to$ commands \& skills $\to$ QA subagent $\to$ hooks -- everything needed to ship \texttt{stlinspector} end-to-end.
 
 \begin{lstlisting}[language=bash]
-python src/stlinspector/cli.py tests/fixtures/box.stl --report out.json
+python src/cli.py tests/fixtures/box.stl --report out.json
 # Expected: Rich table with bbox/volume/area/triangle_count
 # "All checks passed" in green (box is watertight)
-# Also writes reports/box.md (Markdown report)
+# Writes out.json (the only report format)
 
-streamlit run src/stlinspector/app.py
+streamlit run src/app.py
 # Expected: browser opens at http://localhost:8501
 # Upload an STL, see 3D preview + report
 
@@ -629,7 +597,7 @@ first. Do NOT start until I confirm each step.
     \item \texttt{/clear}: nuclear option, only for a genuinely unrelated new task.
   \end{itemize}
 \begin{lstlisting}[language=bash]
-@file:src/stlinspector/core.py   # Not the whole src/ tree
+@file:src/core.py   # Not the whole src/ tree
 /compact
 \end{lstlisting}
 \end{frame}

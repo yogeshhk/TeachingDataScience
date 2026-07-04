@@ -10,7 +10,7 @@ STL/STEP geometry inspector and validator (PoC).
   committed to the repo)
 
 ## Build Commands
-- Install: `pip install -e ".[dev]"`
+- Install: `conda env create -f environment.yml`
 - Test:    `pytest tests/ -v`
 - Lint:    `ruff check src/`
 
@@ -23,9 +23,9 @@ STL/STEP geometry inspector and validator (PoC).
   is meant to detect)
 
 ## File Map
-- src/stlinspector/core.py   : geometry inspection engine
-- src/stlinspector/cli.py    : `inspect` CLI entry point
-- src/stlinspector/app.py    : Streamlit web app
-- src/stlinspector/config.py : Config dataclass (validation thresholds)
+- src/core.py   : geometry inspection engine
+- src/cli.py    : CLI entry point (`python src/cli.py`, no console script)
+- src/app.py    : Streamlit web app
+- src/config.py : Config dataclass (validation thresholds)
 - tests/                     : pytest suite (synthetic fixtures only)
 - docs/specs/                : feature specs

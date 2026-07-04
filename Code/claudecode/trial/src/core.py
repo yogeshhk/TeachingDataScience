@@ -15,14 +15,13 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
-from stlinspector.config import Config, DEFAULT_CONFIG
+from config import Config, DEFAULT_CONFIG
 
 
 @dataclass
 class InspectionReport:
-    """Result of inspecting a single part file."""
+    """Result of inspecting a single mesh."""
 
-    file_path: str
     bounding_box: tuple[list[float], list[float]]
     volume: float
     surface_area: float
@@ -35,7 +34,6 @@ class InspectionReport:
 
     def to_dict(self) -> dict:
         return {
-            "file_path": self.file_path,
             "bounding_box": {
                 "min": self.bounding_box[0],
                 "max": self.bounding_box[1],
@@ -84,29 +82,56 @@ def _has_degenerate_faces(mesh: trimesh.Trimesh, threshold: float) -> bool:
     return bool(np.any(mesh.area_faces < threshold))
 
 
-def inspect(path: str | Path, config: Config = DEFAULT_CONFIG) -> InspectionReport:
-    """Inspect a part file and report its properties and validation issues.
+def _check_thin_walls(mesh: trimesh.Trimesh, min_thickness: float) -> bool:
+    """True if any wall is thinner than min_thickness.
+
+    Casts a ray inward from each face's centroid (along its inward
+    normal) and measures the distance to the mesh surface on the far
+    side. A short hit distance means the local wall is thin there.
+    """
+    if len(mesh.faces) == 0:
+        return False
+
+    origins = mesh.triangles_center
+    directions = -mesh.face_normals
+    # Nudge origins off the surface along the ray direction so the
+    # ray doesn't immediately re-intersect its own starting face.
+    nudged_origins = origins + directions * 1e-6
+
+    locations, index_ray, _ = mesh.ray.intersects_location(
+        ray_origins=nudged_origins,
+        ray_directions=directions,
+        multiple_hits=False,
+    )
+    if len(locations) == 0:
+        return False
+
+    thicknesses = np.linalg.norm(locations - origins[index_ray], axis=1)
+    return bool(np.any(thicknesses < min_thickness))
+
+
+def inspect_mesh(mesh: trimesh.Trimesh, config: Config = DEFAULT_CONFIG) -> InspectionReport:
+    """Inspect an already-loaded mesh and report its properties and validation issues.
 
     Args:
-        path: Path to the part file to inspect.
+        mesh: The triangle mesh to inspect (see load_mesh).
         config: Validation thresholds to apply.
 
     Returns:
         An InspectionReport describing the mesh and any issues found.
     """
-    mesh = load_mesh(path)
-
     issues: list[str] = []
     if not mesh.is_watertight:
         issues.append("not_watertight")
     if _has_non_manifold_edges(mesh):
         issues.append("non_manifold_edges")
-    if _has_degenerate_faces(mesh, config.degenerate_face_area_threshold):
+    if _has_degenerate_faces(mesh, config.degenerate_face_eps):
         issues.append("degenerate_faces")
+    if _check_thin_walls(mesh, config.min_wall_thickness):
+        issues.append("thin_walls")
 
     bounds = mesh.bounds
     return InspectionReport(
-        file_path=str(path),
         bounding_box=(bounds[0].tolist(), bounds[1].tolist()),
         volume=float(mesh.volume),
         surface_area=float(mesh.area),

@@ -1,4 +1,4 @@
-"""Command-line interface for stlinspector: `inspect part.stl --report out.json`."""
+"""Command-line interface for stlinspector: `python cli.py part.stl --report out.json`."""
 
 from __future__ import annotations
 
@@ -9,14 +9,14 @@ import sys
 from rich.console import Console
 from rich.table import Table
 
-from stlinspector.core import InspectionReport, inspect
+from core import InspectionReport, inspect_mesh, load_mesh
 
 console = Console()
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="inspect",
+        prog="cli.py",
         description="Inspect and validate an STL part file.",
     )
     parser.add_argument("path", help="Path to the STL file to inspect")
@@ -28,8 +28,8 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _print_report(report: InspectionReport) -> None:
-    table = Table(title=f"Inspection report: {report.file_path}")
+def _print_report(report: InspectionReport, path: str) -> None:
+    table = Table(title=f"Inspection report: {path}")
     table.add_column("Metric")
     table.add_column("Value")
 
@@ -52,12 +52,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        report = inspect(args.path)
+        mesh = load_mesh(args.path)
     except (FileNotFoundError, ValueError) as exc:
         console.print(f"[red]Error: {exc}[/red]")
         return 2
 
-    _print_report(report)
+    report = inspect_mesh(mesh)
+    _print_report(report, args.path)
 
     if args.report:
         with open(args.report, "w", encoding="utf-8") as f:

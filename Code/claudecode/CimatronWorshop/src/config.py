@@ -10,6 +10,7 @@ class Config:
     """Tunable thresholds used by the inspection engine."""
 
     degenerate_face_area_threshold: float = 1e-8
+    min_wall_thickness: float = 1.0
 
 
 DEFAULT_CONFIG = Config()

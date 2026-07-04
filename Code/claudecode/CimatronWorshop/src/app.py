@@ -7,9 +7,8 @@ from pathlib import Path
 
 import plotly.graph_objects as go
 import streamlit as st
-import trimesh
 
-from stlinspector.core import inspect
+from core import inspect_mesh, load_mesh
 
 st.set_page_config(page_title="STL Inspector", layout="wide")
 st.title("STL Inspector")
@@ -26,8 +25,8 @@ try:
         tmp.write(uploaded.read())
         tmp_path = Path(tmp.name)
 
-    report = inspect(tmp_path)
-    mesh = trimesh.load(tmp_path, force="mesh")
+    mesh = load_mesh(tmp_path)
+    report = inspect_mesh(mesh)
 except (FileNotFoundError, ValueError) as exc:
     st.error(f"Could not inspect file: {exc}")
     st.stop()
