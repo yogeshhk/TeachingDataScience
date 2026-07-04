@@ -191,17 +191,16 @@ git commit -m "chore: added CLAUDE.md"
 ---
 name: specs
 description: >
-  Technical specification writer. Produces structured Markdown specs from feature descriptions. 
-Read-only.
+  Technical specification writer. Produces structured
+  Markdown specs from feature descriptions. Read-only.
 model: claude-opus-4-6
 allowed-tools: Read, Write, Glob
-
+---
 Produce a Markdown spec covering: Overview, Goals,
 Non-Goals, Functional Requirements, Data Models,
-API/CLI Contracts, Open Questions. 
+API/CLI Contracts, Open Questions. Save to
+docs/specs/<feature>.md.
 
-Save to docs/specs/<feature>.md
----
 ## Invoke it via following prompt:
 ---
 Write a technical spec for stlinspector. 
@@ -357,16 +356,15 @@ description: >
   wired into InspectionReport.issues, plus a matching
   synthetic-fixture test. Pass the rule name as argument.
 allowed-tools: Read, Edit, Write, Bash
-
+---
 Add a new validation check named "$ARGUMENTS" to
 src/core.py:
 1. Add a private _check_$ARGUMENTS(mesh) -> bool helper
-2. Wire it into inspect(), appending "$ARGUMENTS" to
+2. Wire it into inspect_mesh(), appending "$ARGUMENTS" to
    issues when it returns True
 3. Add a synthetic-mesh test in tests/test_core.py that
    triggers the new check
 4. Run pytest tests/ -v and report the result
----
 
 ## Usage:
 /add-check thin_walls
@@ -434,7 +432,7 @@ Summarize out.json for a non-technical reviewer
   \begin{itemize}
 	\item Synthetic Fixtures, No Sample Files
 	\item Write \lstinline|.claude/agents/qa.md| as below.
-	\item Use the qa subagent to write tests/conftest.py with fixtures: \lstinline|valid_box_mesh, non_watertight_mesh, degenerate_face_mesh|. Then write \lstinline|tests/test_core.py| covering all three cases against \lstinline|core.inspect()|.
+	\item Use the qa subagent to write tests/conftest.py with fixtures: \lstinline|valid_box_mesh, non_watertight_mesh, degenerate_face_mesh|. Then write \lstinline|tests/test_core.py| covering all three cases against \lstinline|core.inspect_mesh()|.
   \end{itemize}
  
  
@@ -446,13 +444,18 @@ description: >
   (no real STL files). Use when adding tests for core.py.
 model: claude-sonnet-4-6
 allowed-tools: Read, Write, Bash
-
+---
 Generate fixtures with trimesh.creation (box, icosphere)
 for the valid case, and hand-built meshes (remove a face for
 non-watertight, zero-area triangle for degenerate) for
 the failing cases. Assert on InspectionReport fields
 and on report.issues membership.
----
+
+## Usage:
+Use the qa subagent to write tests/conftest.py with
+fixtures: valid_box_mesh, non_watertight_mesh,
+degenerate_face_mesh. Then write tests/test_core.py
+covering all three cases against core.inspect_mesh().
 \end{lstlisting}
 \end{frame}
 
@@ -491,7 +494,7 @@ git commit -m "test: add synthetic-fixture test suite"
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Wire Up Hooks in .claude/settings.json}
+\begin{frame}[fragile]\frametitle{Wire Up Hooks in .claude/settings.local.json}
   \begin{itemize}
 	\item Hooks are deterministic: they always fire, unlike a prompt-based instruction.
 	\item What this buys:
@@ -505,23 +508,29 @@ git commit -m "test: add synthetic-fixture test suite"
 
 \begin{lstlisting}
 {
-  "hooks": {
-    "PostToolUse": [{
-      "matcher": "Edit|Write",
-      "hooks": [{"type": "command",
-        "command": "FILE=$(cat | jq -r '.tool_input.file_path'); ruff format \"$FILE\" 2>/dev/null || true"}]
-    }],
-    "Stop": [{
-      "hooks": [{"type": "command",
-        "command": "cd \"$CLAUDE_PROJECT_DIR\" && pytest tests/ -q --tb=short || echo '{\"decision\": \"block\", \"reason\": \"tests failing\"}'"}]
-    }],
-    "PreToolUse": [{
-      "matcher": "Bash",
-      "hooks": [{"type": "command",
-        "command": "INPUT=$(cat); CMD=$(echo $INPUT | jq -r '.tool_input.command'); echo \"$CMD\" | grep -qE 'rm -rf|DROP TABLE' && echo 'Blocked: destructive command' >&2 && exit 2 || exit 0"}]
-    }]
-  }
+  "permissions": {
+    "allow": [
+		:
+    ]
+  },
+"hooks": {
+  "PostToolUse": [{
+	"matcher": "Edit|Write",
+	"hooks": [{"type": "command",
+	  "command": "FILE=$(cat | jq -r '.tool_input.file_path'); ruff format \"$FILE\" 2>/dev/null || true"}]
+  }],
+  "Stop": [{
+	"hooks": [{"type": "command",
+	  "command": "cd \"$CLAUDE_PROJECT_DIR\" && pytest tests/ -q --tb=short || echo '{\"decision\": \"block\", \"reason\": \"tests failing\"}'"}]
+  }],
+  "PreToolUse": [{
+	"matcher": "Bash",
+	"hooks": [{"type": "command",
+	  "command": "INPUT=$(cat); CMD=$(echo $INPUT | jq -r '.tool_input.command'); echo \"$CMD\" | grep -qE 'rm -rf|DROP TABLE' && echo 'Blocked: destructive command' >&2 && exit 2 || exit 0"}]
+  }]
 }
+ }
+
 \end{lstlisting}
 \end{frame}
 
@@ -535,14 +544,14 @@ git commit -m "test: add synthetic-fixture test suite"
 \begin{lstlisting}[language=bash]
 python src/cli.py tests/fixtures/box.stl --report out.json
 # Expected: Rich table with bbox/volume/area/triangle_count
-# "All checks passed" in green (box is watertight)
 # Writes out.json (the only report format)
 
 streamlit run src/app.py
 # Expected: browser opens at http://localhost:8501
 # Upload an STL, see 3D preview + report
 
-pytest tests/ -v      # All synthetic-fixture tests pass
+pytest tests/ -v      
+# All synthetic-fixture tests pass
 \end{lstlisting}
 \end{frame}
 

@@ -7,7 +7,7 @@ the parent repo for the full walkthrough).
 ## What it does
 - Loads an STL part file (`trimesh`)
 - Computes bounding box, volume, surface area, triangle count
-- Flags: not watertight, non-manifold edges, degenerate faces
+- Flags: not watertight, non-manifold edges, degenerate faces, thin walls
 
 ## Install
 ```bash

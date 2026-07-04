@@ -9,7 +9,7 @@ description: >
 
 ## Input
 Read the JSON report written by --report (e.g. out.json,
-or the path given): bbox, volume, surface_area,
+or the path given): bounding_box, volume, surface_area,
 triangle_count, and a list of issues (if any).
 
 ## Output
@@ -17,6 +17,7 @@ triangle_count, and a list of issues (if any).
 - If issues present, rank by severity:
   1. not_watertight (blocks 3D printing / CAM)
   2. non_manifold_edges (blocks CAM toolpath generation)
-  3. degenerate_faces (usually cosmetic, low risk)
+  3. thin_walls (may crack or fail under load; also a print risk)
+  4. degenerate_faces (usually cosmetic, low risk)
 - Suggest the next concrete action per issue found
   (e.g. "re-export from CAD with tighter tessellation")
