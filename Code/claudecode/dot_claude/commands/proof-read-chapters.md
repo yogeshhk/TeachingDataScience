@@ -65,6 +65,8 @@ Flag clarity, word choice, and logic issues:
 - Awkward constructions (e.g., "better than in competitive examinations")
 - Word choice errors — wrong word used (e.g., "intentions" where "incentives" is meant)
 
+> **Hard boundary in default mode:** Do NOT flag comma splices, missing or spurious commas, hyphenation errors, apostrophe errors, tense errors, sentence fragments, subject-verb agreement, or any other grammar/punctuation/syntax issue — even when noticed. Those are Task 1 items and must be omitted entirely in default mode.
+
 ### Task 3 — Paragraph-level redundancy check *(Both modes)*
 Identify paragraphs that state the **same concept in different words** — pure explanation with no distinct example content. This is an optional, high-bar task: only flag a pair when you are confident both paragraphs are genuinely interchangeable in meaning.
 
@@ -86,15 +88,19 @@ After flagging, provide a merged replacement ready to copy-paste.
 One entry per issue, no preamble:
 
 **"[first 4–6 words of paragraph]…"**
-> [quoted problematic text]
-Fix: [corrected text]
+Problem: [terse, specific description of the grammatical or punctuation error]
+Action: [terse, specific corrective action]
+Target: `[quoted problematic text]`
+Replacement: `[corrected text with **bolded** changed word(s)]` *(omit if no direct text substitution applies; bold only the specific word(s) that changed, not the whole sentence)*
 
 ### Section B — Proofreading *(Both modes)*
 One entry per issue, no preamble. In default mode this is renamed **Section A — Proofreading**:
 
 **"[first 4–6 words of paragraph]…"**
-> [quoted problematic text]
-Fix: [corrected text]
+Problem: [terse, specific description of the clarity, logic, or word-choice issue]
+Action: [terse, specific corrective action]
+Target: `[quoted problematic text]`
+Replacement: `[corrected text with **bolded** changed word(s)]` *(omit if no direct text substitution applies; bold only the specific word(s) that changed, not the whole sentence)*
 
 ### Section C — Paragraph-level Redundancy *(Both modes)*
 In default mode this is relabeled **Section B — Redundancy**. Only include if redundant pairs were actually found. If none, write: *No redundancy candidates found.*

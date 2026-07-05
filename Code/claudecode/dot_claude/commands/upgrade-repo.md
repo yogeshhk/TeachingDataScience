@@ -151,6 +151,11 @@ Once the user approves the plan (fully or partially), execute changes in this st
 - Create 'reports' directory if not already there and store the file in it
 - Then as all the recommendations to get incorporated one by one, in 'Ask' mode.
 
+### Step 7: Commit
+- After all approved changes are applied and tests pass, group the changes into logical commits (e.g. one for structural changes, one for bug fixes, one for docs/tests).
+- For each commit: run `git status` + `git diff`, write a conventional-commit message (`fix:`, `refactor:`, `docs:`, `test:` prefix), and ask for confirmation before running `git commit`.
+- Do not batch all changes into a single commit — keep them traceable by concern.
+
 
 ### Guardrails
 - **No guessing:** Never invent findings. Only act on what was confirmed during analysis.
