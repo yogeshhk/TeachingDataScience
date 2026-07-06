@@ -1,0 +1,666 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
+{\Large STL Inspector App Workflow}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% WORKSHOP OVERVIEW
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Use-case}
+% \textbf{What we will build:}
+A STEP/STL geometry inspector \& validator, \texttt{stlinspector}, with a CLI and a Streamlit app. Meshes exported from CAD/CAM tools can silently carry bad geometry -- non-watertight shells, non-manifold edges, degenerate faces -- that only surfaces later, as a failed 3D print or a broken CAM toolpath. \texttt{stlinspector} catches these issues right after export, with both a scriptable CLI (for CI pipelines) and a Streamlit app (for a quick visual check). This workshop builds it end-to-end in a single solo walkthrough, using Claude Code's structural primitives -- commands, subagents, skills, and hooks -- on top of the standard chat loop.
+
+% \textbf{What we will learn:}
+  % \begin{itemize}
+    % \item Claude Code across 4 core SDLC stages: bootstrap, specification, architecture, implementation
+    % \item Custom \textbf{commands}, \textbf{skills}, \textbf{subagents}, and \textbf{hooks}, beyond the standard chat loop
+    % \item QA workflows (synthetic test fixtures)
+    % \item Token-efficient habits, including ones that matter more on a larger, CAD/CAM-style codebase
+  % \end{itemize}
+
+% \textbf{Duration:} $\approx$120 min \quad \textbf{Format:} Solo walkthrough, one stage at a time
+
+% \textbf{Stages covered:}
+  % \begin{enumerate}
+    % \item \textbf{Bootstrap}: \texttt{/init}, CLAUDE.md
+    % \item \textbf{Specification}: subagent-written spec
+    % \item \textbf{Architecture}: Plan mode, scaffold
+    % \item \textbf{Implementation}: engine, CLI, Streamlit
+    % \item \textbf{Commands \& Skills}: \lstinline|/add-check|, report-summary skill
+    % \item \textbf{QA}: test subagent
+    % \item \textbf{Hooks}: deterministic guardrails
+    % \item \textbf{Best Practices \& Token Management}
+  % \end{enumerate}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Claude Code Customization, at a Glance}
+Four ways to extend Claude Code beyond the standard chat loop, used throughout this workshop:
+
+\begin{center}
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Primitive} & \textbf{Invoked via} & \textbf{Purpose} \\
+\hline
+Commands & Typed slash command, e.g. \texttt{/add-check} & Repeatable, team-shared workflow saved as a prompt \\
+Subagents & Delegated by name, e.g. \texttt{specs}, \texttt{qa} & Isolate a task's context; only its summary returns \\
+Skills & Auto-loaded when the task matches its description & Lazy-loaded domain knowledge, not in every session \\
+Hooks & Fire automatically on lifecycle events & Deterministic guardrail -- always runs, not a request \\
+\hline
+\end{tabular}
+}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 0: SETUP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Setup}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pre-requisites}
+% Before starting, verify all of the following:
+
+\textbf{Essential Steps/Checklist:}
+  \begin{itemize}
+    \item Create an \textbf{empty folder} and switch to it
+	\item \lstinline|mkdir stlinspector && cd stlinspector|
+    \item Conda installed: \lstinline|conda --version|
+    \item Claude Code installed: \lstinline|claude doctor|
+    % \item Git configured: \lstinline|git config --global user.name "Your Name"|
+    % \item Python $\geq$ 3.11: \lstinline|python --version|
+    \item Have Claude Pro/Max or API key
+	\item Create the conda env and install demo deps
+  \end{itemize}
+
+\begin{lstlisting}
+conda create -n stlinspector python=3.11 -y
+conda activate stlinspector
+
+pip install trimesh numpy streamlit plotly pytest rich
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Choosing the Right Model}
+Claude Code ships three model tiers. Use the right one:
+
+\begin{center}
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Model} & \textbf{Best For} & \textbf{Avoid For} \\
+\hline
+Haiku 4.5 & commands, exploration, quick edits & Deep reasoning \\
+Sonnet 4.6 (default) & Daily coding, refactors, implementation & Trivial lookups \\
+Opus 4.6+ & Architecture, hard trade-off calls & Repetitive work \\
+\hline
+\end{tabular}
+}
+\end{center}
+
+\textbf{Setting model}:
+\begin{lstlisting}
+/model claude-opus-4-6 # inside a session
+claude --model claude-opus-4-6 # Or launch
+
+# Per-project default in .claude/settings.json:
+{ "model": "claude-sonnet-4-6" }
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PROJECT BOOTSTRAP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 1: Project Bootstrap}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Run /init: Generate CLAUDE.md}
+  \begin{itemize}
+    % \item Make sure \textbf{Plan mode} is active first (\texttt{Shift+Tab}). Project folder is empty except \texttt{.git}.
+	\item Start \lstinline|claude| and at the prompt say \lstinline|/init| as shown below
+    \item Claude asks clarifying questions about the project: answer them, then approve the file creation.
+  \end{itemize}
+
+\begin{lstlisting}
+/init
+
+## What /init generates:
+CLAUDE.md              # Project intelligence file
+.claude/settings.json  # Permissions, model config
+
+## Resulting CLAUDE.md (edit to match below):
+---
+# CLAUDE.md
+
+## Project: stlinspector
+STL/STEP geometry inspector and validator (PoC).
+
+## Tech Stack
+- Python 3.11, trimesh, numpy
+- Streamlit + plotly (3D preview), Rich (CLI)
+
+## Build Commands
+- Install: `pip install trimesh numpy streamlit plotly pytest rich`
+- Test:    `pytest tests/ -v`
+---
+## Commit immediately:
+git add .
+git commit -m "chore: added CLAUDE.md"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SPECIFICATIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 2: Specifications}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Specs Subagent Writes the Project Spec}
+
+  \begin{itemize}
+	\item Crate a \textbf{specs} subagent that keeps spec-writing out of your main context.
+    \item \lstinline|mkdir -p .claude/agents|
+    \item \lstinline|cat > .claude/agents/specs.md| as below
+  \end{itemize}
+
+\begin{lstlisting}
+---
+name: specs
+description: >
+  Technical specification writer. Produces structured
+  Markdown specs from feature descriptions. Read-only.
+model: claude-opus-4-6
+allowed-tools: Read, Write, Glob
+---
+Produce a Markdown spec covering: Overview, Goals,
+Non-Goals, Functional Requirements, Data Models,
+API/CLI Contracts, Open Questions. Save to
+docs/specs/<feature>.md.
+
+## Invoke it via following prompt:
+---
+Write a technical spec for stlinspector. 
+Cover:
+- core.py: load_mesh(path), InspectionReport dataclass
+  (bbox, volume, surface_area, triangle_count, issues)
+- Validation rules: not-watertight, non-manifold edges,
+  degenerate faces
+- cli.py: python cli.py <file> [--report out.json]
+  (no console-script entry point in this pass)
+- app.py: upload -> 3D preview -> report table
+Save to docs/specs/stlinspector-spec.md
+---
+git add docs/
+git commit -m "docs: added stlinspector spec"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ARCHITECTURE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 3: Architecture Design}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Design, Then Scaffold}
+Plan mode is \textbf{read-only}: no edits, no bash, and is perfect for exploring the module split before committing to it.
+\lstinline|Shift+Tab   # Enter Plan mode|
+
+\begin{lstlisting}
+-- Prompt --
+Read docs/specs/stlinspector-spec.md, then design the package layout for stlinspector:
+- src/{core,cli,app,config}.py
+- Data flow: file -> core.load_mesh() -> mesh -> core.inspect_mesh() -> InspectionReport
+- What core.py must NOT depend on (no Streamlit imports)
+Show the plan before creating any files.
+--
+## Approve ("Yes, auto-accept edits")
+
+\lstinline|Shift+Tab   # Enter Normal mode|
+
+-- Prompt --
+Create the stlinspector scaffold with stub methods:
+- src/core.py    (stub: load_mesh(path), inspect_mesh(mesh))
+- src/cli.py     (stub: main())
+- src/app.py     (stub: Streamlit skeleton)
+- src/config.py  (stub: Config dataclass)
+- tests/__init__.py, tests/conftest.py, tests/test_core.py
+- README.md
+
+---
+
+git add . && git commit -m "chore: scaffold stlinspector"
+/cost      # Check token usage so far
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% IMPLEMENTATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 4: Implementation}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implement core.py: the Inspection Engine}
+\begin{lstlisting}
+@file:src/core.py
+@file:docs/specs/stlinspector-spec.md
+Implement core.py:
+- load_mesh(path: str) -> trimesh.Trimesh
+- inspect_mesh(mesh: trimesh.Trimesh) -> InspectionReport, where InspectionReport is a dataclass with: bounding_box, volume, surface_area, triangle_count, issues: list[str]
+- Issue checks:
+  - "not_watertight" if not mesh.is_watertight
+  - "non_manifold_edges" if any edge shared by > 2 faces
+  - "degenerate_faces" if any face area < 1e-8
+- Full type hints, Google-style docstrings
+- Raise FileNotFoundError / ValueError with clear messages
+
+---
+git add src/core.py
+git commit -m "feat: implement inspection engine"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implement cli.py and app.py}
+\begin{lstlisting}
+## CLI:
+@file:src/cli.py
+Implement the CLI (run via `python cli.py`, no
+console-script entry point in this pass):
+- load_mesh(path) then inspect_mesh(mesh) [--report out.json] via argparse
+- Use Rich Table to print bbox/volume/area/triangle_count
+- Print issues in red if any, green "All checks passed"
+- Exit code 1 if any issue found (CI-friendly)
+- JSON is the only report format (via --report out.json)
+  -- this feeds the inspection-report-summary skill later
+
+---
+## Streamlit:
+@file:src/app.py
+Implement the Streamlit app:
+- st.file_uploader restricted to .stl
+- Save upload to a temp file, call core.load_mesh() then core.inspect_mesh()
+- 3D preview via plotly go.Mesh3d (mesh.vertices/faces)
+- st.metric tiles for bbox/volume/area/triangle_count
+- st.error per issue, st.success if none
+
+---
+## Run and verify (no entry point installed yet):
+python src/cli.py tests/fixtures/box.stl --report out.json
+streamlit run src/app.py
+
+---
+git add src/ && git commit -m "feat: implement CLI and Streamlit app"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% COMMANDS AND SKILLS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Custom Commands \& Skills}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create the /add-check Custom Command}
+  \begin{itemize}
+	\item If you would repeat the same ``add a validation rule'' prompt more than once, make it a command.
+	\item \lstinline|mkdir -p .claude/commands|
+	\item Write \lstinline|.claude/commands/add-check.md| as below
+  \end{itemize}
+
+\begin{lstlisting}
+---
+description: >
+  Scaffold a new geometry validation rule in core.py,
+  wired into InspectionReport.issues, plus a matching
+  synthetic-fixture test. Pass the rule name as argument.
+allowed-tools: Read, Edit, Write, Bash
+---
+Add a new validation check named "$ARGUMENTS" to
+src/core.py:
+1. Add a private _check_$ARGUMENTS(mesh) -> bool helper
+2. Wire it into inspect_mesh(), appending "$ARGUMENTS" to
+   issues when it returns True
+3. Add a synthetic-mesh test in tests/test_core.py that
+   triggers the new check
+4. Run pytest tests/ -v and report the result
+
+## Usage:
+/add-check thin_walls
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Create the inspection-report-summary Skill}
+
+  \begin{itemize}
+	\item \textbf{Skills} are lazy-loaded: Claude pulls this in only when the task matches, unlike CLAUDE.md which loads every session.
+	\item A skill cannot do geometry math itself -- \texttt{core.py}/trimesh already did that. What it \textit{can} do well is turn a report into a stakeholder-ready summary.
+	\item \lstinline|mkdir -p .claude/skills/inspection-report-summary|
+	\item Write \lstinline|SKILL.md| in that folder, as below
+  \end{itemize}
+
+
+\begin{lstlisting}
+---
+name: inspection-report-summary
+description: >
+  Summarizes an stlinspector InspectionReport (JSON)
+  for a non-technical stakeholder. Use when asked to
+  "summarize", "explain", or "triage" an inspection
+  report.
+---
+
+## Input
+Read the JSON report written by --report (e.g. out.json,
+or the path given): bbox, volume, surface_area,
+triangle_count, and a list of issues (if any).
+
+## Output
+- One-paragraph plain-English verdict: PASS / FAIL and why
+- If issues present, rank by severity:
+  1. not_watertight (blocks 3D printing / CAM)
+  2. non_manifold_edges (blocks CAM toolpath generation)
+  3. degenerate_faces (usually cosmetic, low risk)
+- Suggest the next concrete action per issue found
+  (e.g. "re-export from CAD with tighter tessellation")
+
+## Generate a report to summarize (if out.json isn't already present):
+python src/cli.py src/Box.stl --report out.json
+
+## Usage:
+Summarize out.json for a non-technical reviewer
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% QA WORKFLOWS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large QA Workflows}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{QA Subagent}
+
+  \begin{itemize}
+	\item Synthetic Fixtures, No Sample Files
+	\item Write \lstinline|.claude/agents/qa.md| as below.
+	\item Use the qa subagent to write tests/conftest.py with fixtures: \lstinline|valid_box_mesh, non_watertight_mesh, degenerate_face_mesh|. Then write \lstinline|tests/test_core.py| covering all three cases against \lstinline|core.inspect_mesh()|.
+  \end{itemize}
+ 
+ 
+\begin{lstlisting}
+---
+name: qa
+description: >
+  Generates pytest tests using synthetic trimesh fixtures
+  (no real STL files). Use when adding tests for core.py.
+model: claude-sonnet-4-6
+allowed-tools: Read, Write, Bash
+---
+Generate fixtures with trimesh.creation (box, icosphere)
+for the valid case, and hand-built meshes (remove a face for
+non-watertight, zero-area triangle for degenerate) for
+the failing cases. Assert on InspectionReport fields
+and on report.issues membership.
+
+## Usage:
+Use the qa subagent to write tests/conftest.py with
+fixtures: valid_box_mesh, non_watertight_mesh,
+degenerate_face_mesh. Then write tests/test_core.py
+covering all three cases against core.inspect_mesh().
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Run Tests and Check Coverage}
+\begin{lstlisting}[language=bash]
+pytest tests/ -v --tb=short
+
+pytest tests/ --cov=src --cov-report=term-missing
+
+--- 
+# If a test fails, hand Claude the traceback directly:
+---
+@file:src/core.py
+test_degenerate_face_mesh fails with:
+AssertionError: 'degenerate_faces' not in report.issues
+Here is the fixture: [paste]. Fix the check or the fixture.
+---
+git add tests/
+git commit -m "test: add synthetic-fixture test suite"
+\end{lstlisting}
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% HOOKS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Hooks: Deterministic Guardrails}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Wire Up Hooks in .claude/settings.local.json}
+  \begin{itemize}
+	\item Hooks are deterministic: they always fire, unlike a prompt-based instruction.
+	\item What this buys:
+	  \begin{itemize}
+		\item PostToolUse: every edited file is auto-formatted
+		\item Stop: the suite must pass before Claude can finish
+		\item PreToolUse: destructive bash commands are blocked even if Claude "forgets", no prompt can override this
+	  \end{itemize}
+  \end{itemize}
+
+
+\begin{lstlisting}
+{
+  "permissions": {
+    "allow": [
+		:
+    ]
+  },
+"hooks": {
+  "PostToolUse": [{
+	"matcher": "Edit|Write",
+	"hooks": [{"type": "command",
+	  "command": "FILE=$(cat | jq -r '.tool_input.file_path'); ruff format \"$FILE\" 2>/dev/null || true"}]
+  }],
+  "Stop": [{
+	"hooks": [{"type": "command",
+	  "command": "cd \"$CLAUDE_PROJECT_DIR\" && pytest tests/ -q --tb=short || echo '{\"decision\": \"block\", \"reason\": \"tests failing\"}'"}]
+  }],
+  "PreToolUse": [{
+	"matcher": "Bash",
+	"hooks": [{"type": "command",
+	  "command": "INPUT=$(cat); CMD=$(echo $INPUT | jq -r '.tool_input.command'); echo \"$CMD\" | grep -qE 'rm -rf|DROP TABLE' && echo 'Blocked: destructive command' >&2 && exit 2 || exit 0"}]
+  }]
+}
+ }
+
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DEMO WRAP-UP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Run End-to-End and Recap}
+\textbf{What we covered:} bootstrap $\to$ spec $\to$ architecture $\to$ implementation $\to$ commands \& skills $\to$ QA subagent $\to$ hooks -- everything needed to ship \texttt{stlinspector} end-to-end.
+
+\begin{lstlisting}[language=bash]
+python src/cli.py tests/fixtures/box.stl --report out.json
+# Expected: Rich table with bbox/volume/area/triangle_count
+# Writes out.json (the only report format)
+
+streamlit run src/app.py
+# Expected: browser opens at http://localhost:8501
+# Upload an STL, see 3D preview + report
+
+pytest tests/ -v      
+# All synthetic-fixture tests pass
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% BEST PRACTICES AND TOKEN MANAGEMENT (SELF-CONTAINED)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Best Practices \& Token Management}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Token Budgeting and Model Choice}
+  \begin{itemize}
+    \item Every input \textit{and} output token is billed: unfocused sessions on Sonnet/Opus cost more than necessary.
+    \item Bloated context buries signal under failed attempts and irrelevant files; a smaller, focused context produces sharper output.
+    \item \textbf{Rule of thumb:} default to Sonnet; drop to Haiku for subagents doing \texttt{qa} triage runs); promote to Opus only for real architecture trade-offs.
+  \end{itemize}
+\begin{lstlisting}[language=bash]
+/model claude-haiku-4-5           # Cheap subagent work
+/cost                              # Check spend so far
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Plan Mode and Breaking Tasks Down}
+\textbf{Plan mode} (\texttt{Shift+Tab}) is read-only: exploring a wrong approach costs almost nothing; implementing it wrong costs a redo. Stay in \textbf{normal mode} (not auto-accept) for multi-step work; only auto-accept mechanical edits already reviewed in Plan mode.
+
+\begin{lstlisting}
+I want to add a wall-thickness check to stlinspector.
+Break this into numbered subtasks and show me the list
+first. Do NOT start until I confirm each step.
+
+## TodoWrite tracks progress automatically as steps
+## complete, one step in progress at a time, no
+## parallel context drift.
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Context Hygiene}
+  \begin{itemize}
+    \item \texttt{/compact}: summarise older turns once \texttt{/cost} shows context past $\sim$50\% of the window.
+    \item \texttt{@file:} scoping: load only the file(s) the current step needs: loading the whole \texttt{src/} tree for a one-file fix is the most common waste.
+    \item Subagents (\texttt{specs}, \texttt{qa}) run in isolated contexts: only their summary returns to the main session.
+    \item Skills are lazy-loaded: \texttt{inspection-report-summary} only enters context when the task matches.
+    \item \texttt{/clear}: nuclear option, only for a genuinely unrelated new task.
+  \end{itemize}
+\begin{lstlisting}[language=bash]
+@file:src/core.py   # Not the whole src/ tree
+/compact
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Structure Beats Prompting Skill}
+Everything used in this workshop is a structural layer, not a clever prompt:
+  \begin{itemize}
+    \item \texttt{CLAUDE.md}: execution memory, loaded every session (WHY/WHAT/HOW, kept short)
+    \item \texttt{.claude/commands/}: repeated workflows as \texttt{/add-check}-style commands, committed to Git for the whole team
+    \item \texttt{.claude/rules/}: path-scoped constraints near sharp edges (e.g. \texttt{core.py} numerics)
+    \item \texttt{.claude/skills/}: lazy-loaded domain knowledge (\texttt{inspection-report-summary})
+    \item Hooks: deterministic guardrails, not requests
+  \end{itemize}
+\textbf{Prompts are temporary. Structure is permanent}: it is what let Stages 5 to 8 of this workshop run with almost no re-explaining.
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Session Continuity Across Days}
+A workshop like this one often spans multiple sittings: treat sessions as resumable, not disposable.
+\begin{lstlisting}[language=bash]
+/rename stlinspector-implementation   # Name current session
+claude --resume stlinspector-implementation
+claude -c                             # Resume most recent
+
+## Or: write progress to a plan file Claude can re-read:
+Write our progress to .claude/plans/current.md as a
+numbered checklist with [x]/[ ] and the next step noted
+at the top.
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Scaling Up: Large CAD/CAM Codebases}
+\texttt{stlinspector} is a small PoC. Real CAD/CAM systems (geometry kernels, STEP/IGES parsers, GUI layers) can be millions of lines, so the same habits matter more, not less:
+  \begin{itemize}
+    \item \textbf{Module-scoped subagents:} one for the geometry kernel, one for file-format parsers, one for the GUI, never one subagent with the whole repo in scope.
+    \item \textbf{Directory-scoped rules files:} e.g.\ \texttt{.claude/rules/\allowbreak kernel-rules.md} with \texttt{paths: ["kernel/**"]}, so numerics constraints load only when kernel files are touched.
+    \item \textbf{\texttt{@file:} precision:} never ask Claude to ``read the parser'', instead reference the exact translation-unit or module; a full STEP/IGES parser can be tens of thousands of lines.
+  \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Scaling Up: Output Token Discipline}
+  \begin{itemize}
+    \item \textbf{Ask for diffs, not rewrites:} ``show the changed lines'' beats ``rewrite the file'': kernel files are often thousands of lines; a full rewrite burns output tokens and risks silently dropping code.
+    \item \textbf{Synthetic fixtures over real files:} as in this workshop, use \texttt{trimesh.creation} primitives, not multi-MB STEP files, as test/context input.
+    \item \textbf{Plan mode is mandatory before touching kernel/numerics code}: a wrong edit to tolerance-sensitive geometry code is expensive to detect and worse to revert.
+    \item \textbf{One validation rule (or one kernel change) per request}: mirrors the \texttt{/add-check} pattern; batching multiple kernel changes in one prompt compounds risk and review cost.
+  \end{itemize}
+\end{frame}
+
+

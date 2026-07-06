@@ -63,9 +63,9 @@ CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `
 
 ### Known issues
 - `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
-- `workshop_python_content.tex` and `workshop_maths4ml_content.tex` still use raw files (not yet routed via seminar layer — deferred)
+- `workshop_python_basic_content.tex` (renamed from `workshop_python_content.tex` in Aug 2026) and `workshop_python_adv_content.tex` still use raw files directly (not yet routed via seminar layer — deferred). `workshop_maths4ml_content.tex` was fixed in July 2026 (see below).
 - `seminar_quantum_content.tex` — orphaned; its former driver files (`Main_Seminar_Tech_Quantum_*`) were merged into `Main_Seminar_Tech_QuantumComputing_Overview_*`. Kept as reference; safe to delete.
-- `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` (only active content: `ai_tools_claudecode_demo_cimatron.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CimatronWorshop/` (untracked as of Jul 2026). As of Jul 2026 the deck and the PoC are back in sync: flat `src/` layout with no packaging (no `pyproject.toml`, no console-script entry point), the two-step `load_mesh`/`inspect_mesh` API, JSON-only reports (no Markdown report format), and a `thin_walls` check added alongside the original three. `CimatronWorshop` now has both `.claude/skills/geometry-validation/` and `.claude/skills/inspection-report-summary/`; `.claude/agents/devops.md` was removed. `Code/claudecode/trial/` (also untracked) was a from-scratch dry run of the same workshop script, used to find and fix these drift points plus several missing/misplaced YAML-frontmatter fences in the tex's subagent/command/skill blocks — it's now redundant and pending manual deletion.
+- `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` (only active content: `ai_tools_claudecode_demo_cadcam.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CadCamWorkshop/` (untracked as of Jul 2026). As of Jul 2026 the deck and the PoC are back in sync: flat `src/` layout with no packaging (no `pyproject.toml`, no console-script entry point), the two-step `load_mesh`/`inspect_mesh` API, JSON-only reports (no Markdown report format), and a `thin_walls` check added alongside the original three. `CadCamWorkshop` now has both `.claude/skills/geometry-validation/` and `.claude/skills/inspection-report-summary/`; `.claude/agents/devops.md` was removed. `Code/claudecode/trial/` (also untracked) was a from-scratch dry run of the same workshop script, used to find and fix these drift points plus several missing/misplaced YAML-frontmatter fences in the tex's subagent/command/skill blocks — it's now redundant and pending manual deletion.
 
 ### Quantum Computing course (added May 2026)
 Full 4-level hierarchy for the course "Quantum Computing for Non-Physicists":
@@ -79,7 +79,7 @@ Full 4-level hierarchy for the course "Quantum Computing for Non-Physicists":
 Full 4-level hierarchy for the 40-hour ML course "Machine Learning for Graduate Students":
 - **Course**: `Main_Course_MachineLearning_{Presentation,CheatSheet}.tex` → `course_machinelearning_content.tex`
 - **Workshops** (6 × driver pairs):
-  - W1 Python for ML (8h): existing `workshop_python_content.tex`
+  - W1 Python for ML (8h): existing `workshop_python_basic_content.tex` (renamed from `workshop_python_content.tex` in Aug 2026, see Python course note below)
   - W2 Foundations (4h): `workshop_ml_foundations_content.tex`
   - W3 Regression (4h): `workshop_ml_regression_content.tex`
   - W4 Tree-Based & Ensemble (8h): `workshop_ml_treebased_content.tex`
@@ -90,6 +90,46 @@ Full 4-level hierarchy for the 40-hour ML course "Machine Learning for Graduate 
 - **New demo/assign files**: `ml_course_demo_regression_housing.tex`, `ml_course_demo_svm_digits.tex`, `ml_course_assign_knn_wine.tex`, `ml_course_demo_clustering_customers.tex`, `ml_course_assign_pca_digits.tex`
 - **Upgrade status**: Seminar 1 (Intro) upgraded; track remaining 9 in `LaTeX/todo_ml_seminar_upgrade.md`
 - **Pending**: `course_machinelearning_content.tex` still needs the 5 new demo/assign files listed above added at the end
+
+### Maths for ML restructured (July 2026), promoted to a course (Aug 2026)
+Full 4-level hierarchy for "Zero-to-Hero: Mathematics for Machine Learning", aimed at
+fresher/college-level students. 12 seminars × ~2h = 24h ≈ 3 days × 8h, but the 4 topic-workshops
+are uneven in size (Basics/LinearAlgebra/Calculus 4h each, Statistics 12h), so the day boundary
+cuts across the Calculus/Statistics workshop pair rather than aligning 1:1 with workshops —
+annotated as comments in `course_maths4ml_content.tex` and inside
+`workshop_maths4ml_statistics_content.tex` (not a structural split):
+- **Day 1 (8h)**: Basics + Linear Algebra
+- **Day 2 (8h)**: Calculus + Statistics seminars 1–2 (probability_foundations, random_distributions)
+- **Day 3 (8h)**: Statistics seminars 3–6 (centraltendency_spread, distributions_expectedvalue, hypothesis_testing, tests_practice)
+- **Course**: `Main_Course_MathsML_{Presentation,CheatSheet}.tex` → `course_maths4ml_content.tex`
+- **Workshops** (4 × driver pairs), each just chaining its seminars:
+  - Basics: `workshop_maths4ml_basics_content.tex` → `seminar_maths4ml_basics_{numbers_equations,sets_proofs}_content.tex`; drivers `Main_Workshop_MathsML_Basics_{Presentation,CheatSheet}.tex`
+  - Linear Algebra: `workshop_maths4ml_linearalgebra_content.tex` → `seminar_maths4ml_linearalgebra_{vectors,matrices}_content.tex`; drivers `Main_Workshop_MathsML_LinearAlgebra_{Presentation,CheatSheet}.tex`
+  - Calculus: `workshop_maths4ml_calculus_content.tex` → `seminar_maths4ml_calculus_{functions_limits,derivatives_optimization}_content.tex`; drivers `Main_Workshop_MathsML_Calculus_{Presentation,CheatSheet}.tex`
+  - Statistics (6 seminars): `workshop_maths4ml_statistics_content.tex` → `seminar_maths4ml_statistics_{probability_foundations,random_distributions,centraltendency_spread,distributions_expectedvalue,hypothesis_testing,tests_practice}_content.tex`; drivers `Main_Workshop_MathsML_Statistics_{Presentation,CheatSheet}.tex`
+- **Seminars** (12 × driver pairs, unchanged): each has its own driver pair
+  `Main_Seminar_MathsML_<ParentTopic>_<Subtopic>_{Presentation,CheatSheet}.tex`
+- All 12 seminars have been through an intuition-first `/upgrade-deck` pass (technical fixes,
+  "Intuition" callouts, section-end "Quick Check" quizzes) — see git history for details, as
+  `LaTeX/todo_maths4ml_seminar_upgrade.md` (the working to-do for this restructuring) was
+  deleted once the work completed.
+- Raw `maths_*.tex` topic files are unchanged; only the aggregation layers changed.
+- The old single all-in-one `Main_Workshop_ML_Maths_{Presentation,Cheatsheet}.tex` /
+  `workshop_maths4ml_content.tex` were removed as redundant once the course/workshop split
+  landed (unlike the ML course, no standalone "complete workshop" was kept here).
+
+### Python course added (Aug 2026)
+2-day, 16h course combining the two existing standalone Python workshops as Day 1 / Day 2:
+- **Course**: `Main_Course_Python_{Presentation,CheatSheet}.tex` → `course_python_content.tex`
+- **Day 1 (8h)**: `workshop_python_basic_content.tex` (renamed from `workshop_python_content.tex`;
+  also still used standalone via `Main_Workshop_Python_Basic_{Presentation,CheatSheet}.tex`, and
+  as W1 "Python for ML" in `course_machinelearning_content.tex`)
+- **Day 2 (8h)**: `workshop_python_adv_content.tex` (unchanged; also still used standalone via
+  `Main_Workshop_Python_Advanced_{Presentation,CheatSheet}.tex`)
+- Both workshops still use raw `python_*.tex` topic files directly, not the seminar layer
+  (same deferred item as before — see Known Issues).
+- No redundant files removed here: unlike Maths4ML, both standalone workshops remain valid
+  independent offerings, so nothing was retired.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
@@ -146,7 +186,7 @@ Do not create `venv/` or `.venv/` folders — use conda environments only.
 A repo-wide `Code/.gitignore` covers `__pycache__/`, `.ipynb_checkpoints/`, `.env`, `*.pyc`, model weights (`*.bin`, `*.pt`, `*.safetensors`).
 
 ### Notable sub-projects with their own config
-- `Code/claudecode/MyWorkshop/` and `Code/claudecode/CimatronWorshop/` — each has its own `CLAUDE.md` (no `CLAUDE.md` directly under `Code/claudecode/` itself)
+- `Code/claudecode/MyWorkshop/` and `Code/claudecode/CadCamWorkshop/` — each has its own `CLAUDE.md` (no `CLAUDE.md` directly under `Code/claudecode/` itself)
 - `Code/langgraph/open_deep_research-langcahin-ai/` — has its own `CLAUDE.md` and `README.md`
 - `Code/crewai/researcher/` — uses `pyproject.toml` + `uv.lock` (modern uv workflow)
 
