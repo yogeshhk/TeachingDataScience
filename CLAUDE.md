@@ -63,7 +63,6 @@ CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `
 
 ### Known issues
 - `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
-- `workshop_python_basic_content.tex` (renamed from `workshop_python_content.tex` in Aug 2026) and `workshop_python_adv_content.tex` still use raw files directly (not yet routed via seminar layer — deferred). `workshop_maths4ml_content.tex` was fixed in July 2026 (see below).
 - `seminar_quantum_content.tex` — orphaned; its former driver files (`Main_Seminar_Tech_Quantum_*`) were merged into `Main_Seminar_Tech_QuantumComputing_Overview_*`. Kept as reference; safe to delete.
 - `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` (only active content: `ai_tools_claudecode_demo_cadcam.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CadCamWorkshop/` (untracked as of Jul 2026). As of Jul 2026 the deck and the PoC are back in sync: flat `src/` layout with no packaging (no `pyproject.toml`, no console-script entry point), the two-step `load_mesh`/`inspect_mesh` API, JSON-only reports (no Markdown report format), and a `thin_walls` check added alongside the original three. `CadCamWorkshop` now has both `.claude/skills/geometry-validation/` and `.claude/skills/inspection-report-summary/`; `.claude/agents/devops.md` was removed. `Code/claudecode/trial/` (also untracked) was a from-scratch dry run of the same workshop script, used to find and fix these drift points plus several missing/misplaced YAML-frontmatter fences in the tex's subagent/command/skill blocks — it's now redundant and pending manual deletion.
 
@@ -118,7 +117,7 @@ annotated as comments in `course_maths4ml_content.tex` and inside
   `workshop_maths4ml_content.tex` were removed as redundant once the course/workshop split
   landed (unlike the ML course, no standalone "complete workshop" was kept here).
 
-### Python course added (Aug 2026)
+### Python course added (Aug 2026), seminar layer added
 2-day, 16h course combining the two existing standalone Python workshops as Day 1 / Day 2:
 - **Course**: `Main_Course_Python_{Presentation,CheatSheet}.tex` → `course_python_content.tex`
 - **Day 1 (8h)**: `workshop_python_basic_content.tex` (renamed from `workshop_python_content.tex`;
@@ -126,8 +125,24 @@ annotated as comments in `course_maths4ml_content.tex` and inside
   as W1 "Python for ML" in `course_machinelearning_content.tex`)
 - **Day 2 (8h)**: `workshop_python_adv_content.tex` (unchanged; also still used standalone via
   `Main_Workshop_Python_Advanced_{Presentation,CheatSheet}.tex`)
-- Both workshops still use raw `python_*.tex` topic files directly, not the seminar layer
-  (same deferred item as before — see Known Issues).
+- Both workshops now route through a seminar layer (6 seminars each) between the workshop and
+  the raw `python_*.tex` topic files, matching the Maths4ML/ML hierarchy:
+  - **Basic** (`workshop_python_basic_content.tex`): B1 Intro, B2 Constructs, B3 Procedures,
+    B4 OOP, B5 IOLibraries, B6 Closure — `seminar_python_basic_<name>_content.tex`; drivers
+    `Main_Seminar_Python_Basic_<Name>_{Presentation,CheatSheet}.tex`
+  - **Advanced** (`workshop_python_adv_content.tex`): A1 OOPIteration, A2 FunctionsOS,
+    A3 StringsWeb, A4 DataLibs, A5 Visualization, A6 Problems —
+    `seminar_python_adv_<name>_content.tex`; drivers
+    `Main_Seminar_Python_Advanced_<Name>_{Presentation,CheatSheet}.tex`
+  - `Extra`/`References` sections stay as trailing raw `\input`s in the workshop content files,
+    not wrapped in a seminar (same precedent as Maths4ML/ML)
+  - `python_oop.tex` is `\input` by both Basic B4 and Advanced A1 — duplication predates this
+    restructure, preserved as-is
+- Raw `python_*.tex` topic files are unchanged; only the aggregation layers changed.
+- **Upgrade status**: Basic B1 (Intro), B2 (Constructs), B3 (Procedures) have been through an
+  intuition-first `/upgrade-deck` pass (technical fixes, "Intuition" callouts, "Quick Check"
+  quizzes); B4-B6 and Advanced A1-A6 remain — track progress in
+  `LaTeX/todo_python_seminar_restructure.md`
 - No redundant files removed here: unlike Maths4ML, both standalone workshops remain valid
   independent offerings, so nothing was retired.
 

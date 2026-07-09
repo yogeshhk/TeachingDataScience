@@ -11,6 +11,10 @@ seminars, both workshops, the Python course, and the ML course (which depends on
 `workshop_python_basic_content.tex`) — all passed with unchanged page counts, so nothing
 was lost or duplicated.
 
+Presentation compile + `/upgrade-deck` pass progress: 3 of 12 seminars done (Basic B1
+Intro, B2 Constructs, B3 Procedures) — see per-seminar checkboxes below for what each
+pass fixed. Remaining: Basic B4-B6, Advanced A1-A6.
+
 Remaining work (deferred to next session, one seminar at a time — Presentation compiles are
 slow, so do NOT batch them):
 1. Compile the seminar's Presentation driver: `texify -cp <driver>_Presentation.tex`
@@ -39,8 +43,8 @@ Covers       : python_intro_short, python_setup, python_syntax, python_datatypes
 - [x] Create content file
 - [x] Create driver pair
 - [x] Sanity-check compile (CheatSheet) — passed
-- [ ] Compile Presentation : `texify -cp Main_Seminar_Python_Basic_Intro_Presentation.tex`
-- [ ] Upgrade   : `/upgrade-deck Main_Seminar_Python_Basic_Intro_Presentation.tex`
+- [x] Compile Presentation : `texify -cp Main_Seminar_Python_Basic_Intro_Presentation.tex` — passed, 108 pages
+- [x] Upgrade   : `/upgrade-deck Main_Seminar_Python_Basic_Intro_Presentation.tex` — done: fixed Python-2-isms (`long` type, `999L`, `0177` octal, unparenthesized `print`), curly/backtick quote artifacts in code blocks, 4 `lstlisting`-placement violations, 1 Intuition callout (Slicing), 5 Quick-Check quizzes (one per raw file). Recompiled clean, 118 pages.
 
 ---
 
@@ -52,8 +56,8 @@ Covers       : python_conditionals, python_loops, python_liststuples, python_dic
 - [x] Create content file
 - [x] Create driver pair
 - [x] Sanity-check compile (CheatSheet) — passed
-- [ ] Compile Presentation : `texify -cp Main_Seminar_Python_Basic_Constructs_Presentation.tex`
-- [ ] Upgrade   : `/upgrade-deck Main_Seminar_Python_Basic_Constructs_Presentation.tex`
+- [x] Compile Presentation : `texify -cp Main_Seminar_Python_Basic_Constructs_Presentation.tex` — passed, 126 pages
+- [x] Upgrade   : `/upgrade-deck Main_Seminar_Python_Basic_Constructs_Presentation.tex` — done: fixed Python-2-isms (unparenthesized `print` x3, `namedTuple`→`namedtuple`, Python-2 `zip`/`set()` repr claims), a backtick-quote code artifact, ~20 `lstlisting`-placement violations across all 4 raw files, 3 Intuition callouts (match/case, zip, list comprehensions, hash tables — 4 total), 4 Quick-Check quizzes (one per raw file). Recompiled clean, 134 pages.
 
 ---
 
@@ -65,8 +69,8 @@ Covers       : python_functions, python_exceptions
 - [x] Create content file
 - [x] Create driver pair
 - [x] Sanity-check compile (CheatSheet) — passed
-- [ ] Compile Presentation : `texify -cp Main_Seminar_Python_Basic_Procedures_Presentation.tex`
-- [ ] Upgrade   : `/upgrade-deck Main_Seminar_Python_Basic_Procedures_Presentation.tex`
+- [x] Compile Presentation : `texify -cp Main_Seminar_Python_Basic_Procedures_Presentation.tex` — passed, 66 pages
+- [x] Upgrade   : `/upgrade-deck Main_Seminar_Python_Basic_Procedures_Presentation.tex` — done: `python_functions.tex` had a severe pre-existing corruption (every `"` had been mangled to `''` at some point, both in ~30 runnable code lines and in prose/titles) — fixed throughout, restoring valid Python and correct TeX quote pairing; also fixed 4 unparenthesized Python-2 `print` statements and a mismatched-quote typo (3x). Fixed ~8 `lstlisting`-placement violations across both raw files. Added 2 Intuition callouts (call-by-object-reference, try/except/finally) and 2 Quick-Check quizzes (one per raw file). Recompiled clean, 70 pages.
 
 ---
 
