@@ -60,15 +60,26 @@ CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `
 - Driver files: `Main_[Course|Seminar|Workshop]_<Subject>_[Presentation|CheatSheet].tex`
   - Seminar ≈ 1 hour, Workshop ≈ 1 day, Course ≈ 1 week/semester
 - Every Seminar and Workshop **must** have both a `_Presentation.tex` and a `_CheatSheet.tex` driver
+  — this pairing rule holds even for the lighter-weight `_Overview` driver category below; only
+  the "Seminar ≈ 1 hour" duration expectation doesn't apply to that category
 - `_Short` suffix on a driver (e.g. `Main_Seminar_Tech_CareerInDataScience_Short_Presentation.tex`)
   denotes a shorter-duration variant of an existing seminar, sharing topic files with its
   parent via the `X.tex`/`X_short.tex` comment-sync pattern below — see the
   CareerInDataScience note for the first precedent of this at the seminar level
+- `_overview` suffix on a topic file (e.g. `dl_intro_overview.tex`) denotes a deep/
+  comprehensive standalone treatment that sits *outside* the `X.tex`/`X_short.tex`
+  comment-sibling relationship — see the short/full sync audit note below
+- `_Overview` suffix on a **driver** (e.g. `Main_Seminar_DL_Foundations_Overview_
+  Presentation.tex`) denotes a minimal, single-section standalone seminar that exists
+  solely to make an `_overview.tex` topic file independently reachable as its own
+  session — deliberately thinner than a normal ~1hr Seminar (no References section,
+  by design) — see the short/full sync audit note below for the 4 precedents
 
 ### Known issues
 - `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
 - `seminar_quantum_content.tex` — orphaned; its former driver files (`Main_Seminar_Tech_Quantum_*`) were merged into `Main_Seminar_Tech_QuantumComputing_Overview_*`. Kept as reference; safe to delete.
 - `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` (only active content: `ai_tools_claudecode_demo_cadcam.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CadCamWorkshop/` (untracked as of Jul 2026). As of Jul 2026 the deck and the PoC are back in sync: flat `src/` layout with no packaging (no `pyproject.toml`, no console-script entry point), the two-step `load_mesh`/`inspect_mesh` API, JSON-only reports (no Markdown report format), and a `thin_walls` check added alongside the original three. `CadCamWorkshop` now has both `.claude/skills/geometry-validation/` and `.claude/skills/inspection-report-summary/`; `.claude/agents/devops.md` was removed. `Code/claudecode/trial/` (also untracked) was a from-scratch dry run of the same workshop script, used to find and fix these drift points plus several missing/misplaced YAML-frontmatter fences in the tex's subagent/command/skill blocks — it's now redundant and pending manual deletion.
+- `workshop_deepnlp_content.tex` line 2 has `\input{nlp_intro_short}` but no `nlp_intro_short.tex` exists in `LaTeX/` (closest matches: `nlp_intro_short_old.tex`, `nlp_intro_short_w_embedding.tex`, `nlp_intro.tex`) — blocks `Main_Workshop_NLP_Deep_*` and (via `course_generativeai_content.tex`) `Main_Course_GenerativeAI_*` from compiling. Found during the short/full sync audit below (Oct 2026); pre-existing and unrelated, not fixed.
 
 ### Quantum Computing course (added May 2026)
 Full 4-level hierarchy for the course "Quantum Computing for Non-Physicists":
@@ -178,6 +189,79 @@ independently:
 - Both variants went through an `/upgrade-deck` pass, each reviewed as its own
   standalone artifact; working notes (now complete) were in
   `LaTeX/todo_careerindatascience_split.md`
+
+### Short/full topic-file sync audit (Oct 2026)
+Repo-wide audit of all `X.tex`/`X_short.tex` pairs against the comment-sibling
+convention (see CareerInDataScience note above). Of 24 pairs checked, 13 were
+already in sync, 3 near-miss pairs and 3 missing-only pairs got small content
+fixes, and 5 pairs had drifted so far apart (independently authored, not a
+subset relationship at all) that they were split into a three-file group —
+**this introduces a new file-naming pattern**: `<topic>_overview.tex` now
+denotes a deep/comprehensive standalone treatment that sits *outside* the
+comment-sibling relationship, while `<topic>.tex`/`<topic>_short.tex` were
+freshly authored as a genuine (smaller) comment-sibling pair distilled from
+it. The five:
+- `dnlp_intro_overview.tex` (renamed from the old `dnlp_intro.tex`) —
+  Kirill Eremenko technical walkthrough (Seq2Seq/Attention/Decoding), used by
+  `workshop_deepnlp_content.tex`. Fresh `dnlp_intro.tex`/`_short.tex` merge in
+  the old short's foundational material (Turing Test, NLP tasks, embeddings
+  basics), used by `seminar_deepnaturallanguageprocessing_content.tex`.
+- `data_intro_overview.tex` (renamed from the old `data_intro.tex`) —
+  technical data-types/distance-metrics deep dive (NOIR, Euclidean/Minkowski,
+  SMC, Cosine Similarity), used by `seminar_data_tensorflow_content.tex`'s
+  "Basic Concepts in Data" section (a good label fit, unlike before). Fresh
+  `data_intro.tex`/`_short.tex` are a motivational/historical intro (Man on
+  the Moon, "Data is the New Oil", the 4 Vs, Target case study), used by
+  `workshop_dataanalytics_content.tex`'s "Introduction" section (kept on the
+  plain filename — a deliberate deviation from the mechanical rename, since
+  the old full's technical content never fit that section's actual title).
+- `dl_intro_overview.tex` (renamed from the old `dl_intro.tex`) — the deeper
+  synthesis (still includes backprop math, automatic differentiation,
+  optimizer plots), used by `seminar_deeplearning_foundations_content.tex`.
+  Fresh `dl_intro.tex`/`_short.tex` condense both old files' strengths into a
+  non-mathematical walkthrough, used by `seminar_deeplearning_content.tex`.
+- `python_syntax_overview.tex` (renamed from the old `python_syntax.tex`,
+  content unchanged) — this one had already been through `/upgrade-deck` as
+  part of the Python seminar restructuring's B1 (`seminar_python_basic_intro_
+  content.tex`); the rename was verified to preserve that work exactly (same
+  118-page compile). Fresh `python_syntax.tex`/`_short.tex` are a broader
+  "Python Basics" primer (the old short's actual scope, despite its narrow
+  name), used by `course_deeplearning_content.tex`'s W1 recap.
+- `nlp_embedding_overview.tex` (renamed from the old `nlp_embedding.tex`) —
+  the authoritative, current (2023-2026) material: BERT, RAG systems,
+  multimodal/CLIP, bias/ethics, a full Tweet-Sentiment-with-Word2Vec code case
+  study. Used by `seminar_wordembeddings_content.tex` (a seminar wholly about
+  embeddings, so its "Introduction" section is really the whole seminar's
+  substance — repointed here rather than mechanically). Fresh
+  `nlp_embedding.tex`/`_short.tex` condense the overview's structure, used by
+  `seminar_nlp_advanced_content.tex` (one topic among several in a broader
+  workshop) and `workshop_deepnlp_content.tex`.
+- Working notes (now complete) were in `LaTeX/todo_short_full_sync_audit.md`,
+  deleted once the work finished — same precedent as the other `todo_*`
+  restructuring files noted elsewhere in this document.
+
+**Dedicated standalone seminars for 4 of the 5 overview files (Oct 2026,
+additive follow-up)**: each of the 5 `_overview.tex` files is used by an
+existing consumer deck that specifically needs its depth (documented above)
+— those consumers were deliberately left as-is, not repointed. Instead, 4 of
+the 5 also got a *new*, minimal, single-section standalone seminar so the
+deep-dive content is independently reachable as its own session (the 5th,
+`nlp_embedding_overview.tex`, already had one — `seminar_wordembeddings_
+content.tex`'s only real section is the overview, backed by `Main_Seminar_
+NLP_WordEmbeddings_{Presentation,CheatSheet}.tex`):
+- `dnlp_intro_overview.tex` → `seminar_dnlp_overview_content.tex` →
+  `Main_Seminar_NLP_DNLP_Overview_{Presentation,CheatSheet}.tex`
+- `data_intro_overview.tex` → `seminar_dataconcepts_overview_content.tex` →
+  `Main_Seminar_Data_Concepts_Overview_{Presentation,CheatSheet}.tex`
+- `dl_intro_overview.tex` → `seminar_dl_technical_overview_content.tex` →
+  `Main_Seminar_DL_Foundations_Overview_{Presentation,CheatSheet}.tex`
+- `python_syntax_overview.tex` → `seminar_python_syntax_overview_content.tex`
+  → `Main_Seminar_Python_Syntax_Overview_{Presentation,CheatSheet}.tex`
+
+Each content wrapper is deliberately minimal: a single `\section[Overview]
+{Overview}` + `\input{<topic>_overview}`, no References section (unlike most
+seminars, by design — these are supplementary deep-dive sessions, not full
+independent courses). All 8 driver files compiled clean.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
