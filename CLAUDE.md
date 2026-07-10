@@ -60,6 +60,10 @@ CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `
 - Driver files: `Main_[Course|Seminar|Workshop]_<Subject>_[Presentation|CheatSheet].tex`
   - Seminar ≈ 1 hour, Workshop ≈ 1 day, Course ≈ 1 week/semester
 - Every Seminar and Workshop **must** have both a `_Presentation.tex` and a `_CheatSheet.tex` driver
+- `_Short` suffix on a driver (e.g. `Main_Seminar_Tech_CareerInDataScience_Short_Presentation.tex`)
+  denotes a shorter-duration variant of an existing seminar, sharing topic files with its
+  parent via the `X.tex`/`X_short.tex` comment-sync pattern below — see the
+  CareerInDataScience note for the first precedent of this at the seminar level
 
 ### Known issues
 - `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
@@ -145,6 +149,35 @@ annotated as comments in `course_maths4ml_content.tex` and inside
   `LaTeX/todo_python_seminar_restructure.md`
 - No redundant files removed here: unlike Maths4ML, both standalone workshops remain valid
   independent offerings, so nothing was retired.
+
+### CareerInDataScience seminar split into 90-min full + 30-min short (Oct 2026)
+First precedent in the repo for a single seminar offered at two durations, sharing
+underlying topic files kept in sync by commenting rather than by duplicating content
+independently:
+- **Full (90 min, unchanged)**: `Main_Seminar_Tech_CareerInDataScience_{Presentation,CheatSheet}.tex`
+  → `seminar_careerindatascience_content.tex` (Background, Introduction, Challenges,
+  Roles \& Personas, Preparation, Mid-career, References)
+- **Short (30 min, new)**: `Main_Seminar_Tech_CareerInDataScience_Short_{Presentation,CheatSheet}.tex`
+  → `seminar_careerindatascience_short_content.tex`, dropping Background/Challenges/
+  Mid-career entirely (their `\section`+`\input` lines commented out, not deleted) and
+  swapping the rest to `_short` topic files: `ai_intro_tech_short.tex` (~11 orientation
+  slides), `career_ai_roles_short.tex` (8 of ~16 roles), `career_ai_personas_short.tex`
+  (all 3 personas, trimmed detail), `career_ai_prep_short.tex` (5 of ~12 slides);
+  `career_refs.tex` kept in full (only 2 frames)
+- **Sync convention**: each `_short.tex` sibling is a full copy of its parent with the
+  excluded frames commented out (not rewritten/deleted), so a frame added to the parent
+  can be manually mirrored into the child as either live or commented — the same
+  discipline as the pre-existing repo-wide `X.tex`/`X_short.tex` pattern (e.g.
+  `dl_intro.tex`/`dl_intro_short.tex`), now extended to a full seminar-level split
+- `ai_intro_tech_short.tex` — shared by 5 other decks (`course_deeplearning_content`,
+  `seminar_artificialintelligencemachinelearning_content`,
+  `seminar_artificialintelligence_tech_content`, `seminar_machinelearning_content`, and
+  commented in `seminar_llm_genai_content`) — was renamed to `ai_intro_tech.tex` first
+  (content-preserving; it was never actually short, just misnamed) so a genuine
+  ~11-slide `ai_intro_tech_short.tex` could be created without touching those decks
+- Both variants went through an `/upgrade-deck` pass, each reviewed as its own
+  standalone artifact; working notes (now complete) were in
+  `LaTeX/todo_careerindatascience_split.md`
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
