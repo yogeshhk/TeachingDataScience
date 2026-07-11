@@ -19,23 +19,28 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{How does Bokeh work?}
 \begin{itemize}
-\item Bokeh writes to a custom-built HTML5 Canvas library, which affords it high performance. 
+\item Bokeh writes to a custom-built HTML5 Canvas library, which affords it high performance.
 \item This allows it to integrate with other web tools, such as Google Maps.
 \item Bokeh plots are based on visual elements called glyphs that are bound to data objects.
 \end{itemize}
+\begin{block}{Intuition}
+Think of a Bokeh plot as a small web app, not a static picture: matplotlib bakes pixels into an image, while Bokeh ships JSON describing your data plus JavaScript that draws and updates it in the browser -- that's what makes panning, zooming, and hovering possible without re-running Python.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{A Simple Example}
+Every Bokeh plot starts the same way: create a \texttt{figure}, add glyphs to it with method calls, then \texttt{show()} it.
 \begin{lstlisting}
-import bokeh.plotting as bk
-
+from bokeh.plotting import figure, show
 import numpy as np
 
 x = np.linspace(-6, 6, 100)
 y = np.random.normal(0.3*x, 1)
-bk.circle(x, y, color="red", plot_width=500, plot_height=500)
-bk.show()
+
+p = figure(width=500, height=500)
+p.scatter(x, y, color="red", marker="circle")
+show(p)
 \end{lstlisting}
 \end{frame}
 
@@ -46,32 +51,33 @@ from scipy.stats import expon
 theta = 1
 measured = np.random.exponential(theta, 1000)
 hist, edges = np.histogram(measured, density=True, bins=50)
-bk.hold(True)
-bk.figure(title="Exponential Distribution (theta=1)",tools="previewsave",
-       background_fill="#E8DDCB")
-bk.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], fill_color="#036564", line_color="#033649")
-       
+
+p = figure(title="Exponential Distribution (theta=1)", tools="save",
+           background_fill_color="#E8DDCB")
+p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],
+       fill_color="#036564", line_color="#033649")
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Statistical Plots}
-Add lines showing the form of the probability distribution function (PDF) and cumulative distribution function (CDF).
+Add lines showing the form of the probability distribution function (PDF) and cumulative distribution function (CDF), on the same figure \texttt{p} created on the previous slide.
 \begin{lstlisting}
 x = np.linspace(0, 10, 1000)
-bk.line(x, expon.pdf(x, scale=1), line_color="#D95B43", line_width=8, alpha=0.7, legend="PDF")
-bk.line(x, expon.cdf(x, scale=1), line_color="white", line_width=2, alpha=0.7, legend="CDF")
-bk.legend().orientation = "top_right"
+p.line(x, expon.pdf(x, scale=1), line_color="#D95B43",
+       line_width=8, alpha=0.7, legend_label="PDF")
+p.line(x, expon.cdf(x, scale=1), line_color="white",
+       line_width=2, alpha=0.7, legend_label="CDF")
+p.legend.location = "top_right"
 
-bk.hold(False)
-bk.show()
+show(p)
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Bar Plot Example}
 \begin{itemize}
-\item Bokeh's core display model relies on composing graphical primitives which are bound to data series. 
+\item Bokeh's core display model relies on composing graphical primitives which are bound to data series.
 \item We first need to reshape the data, by grouping it according to the year of the car, and then by the country of origin (here, USA or Japan).
 \end{itemize}
 \begin{lstlisting}
@@ -79,7 +85,7 @@ grouped = autompg.groupby("yr")
 mpg = grouped["mpg"]
 mpg_avg = mpg.mean()
 mpg_std = mpg.std()
-years = np.asarray(grouped.groups.keys())
+years = np.asarray(list(grouped.groups.keys()))
 american = autompg[autompg["origin"]==1]
 japanese = autompg[autompg["origin"]==3]
 
@@ -100,30 +106,30 @@ american.head(10)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Bar Plot Example}
 \begin{itemize}
-\item For each year, we want to plot the distribution of MPG within that year. 
-\item As a guide, we will include a box that represents the mean efficiency, plus and minus one standard deviation. 
+\item For each year, we want to plot the distribution of MPG within that year.
+\item As a guide, we will include a box that represents the mean efficiency, plus and minus one standard deviation.
 \item We will make these boxes partly transparent.
 \end{itemize}
 \begin{lstlisting}
-bk.hold(True)
-bk.figure(title='Automobile mileage by year and country')
-bk.quad(left=years-0.4, right=years+0.4, bottom=mpg_avg-mpg_std, top=mpg_avg+mpg_std, fill_alpha=0.4)
+p = figure(title='Automobile mileage by year and country')
+p.quad(left=years-0.4, right=years+0.4,
+       bottom=mpg_avg-mpg_std, top=mpg_avg+mpg_std, fill_alpha=0.4)
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Bar Plot Example}
-We overplot the actual data points, using contrasting symbols for American and Japanese cars.
+We overplot the actual data points on the same figure \texttt{p}, using contrasting symbols for American and Japanese cars.
 \begin{lstlisting}
 # Add Japanese cars as circles
-bk.circle(x=np.asarray(japanese["yr"]), 
-       y=np.asarray(japanese["mpg"]), 
-       size=8, alpha=0.4, line_color="red", fill_color=None, line_width=2)
+p.scatter(x=np.asarray(japanese["yr"]),
+          y=np.asarray(japanese["mpg"]), marker="circle",
+          size=8, alpha=0.4, line_color="red", fill_color=None, line_width=2)
 
 # Add American cars as triangles
-bk.triangle(x=np.asarray(american["yr"]), 
-         y=np.asarray(american["mpg"]),
-         size=8, alpha=0.4, line_color="blue", fill_color=None, line_width=2)
+p.scatter(x=np.asarray(american["yr"]),
+          y=np.asarray(american["mpg"]), marker="triangle",
+          size=8, alpha=0.4, line_color="blue", fill_color=None, line_width=2)
 \end{lstlisting}
 \end{frame}
 
@@ -131,12 +137,10 @@ bk.triangle(x=np.asarray(american["yr"]),
 \begin{frame}[fragile] \frametitle{Bar Plot Example}
 We can add axis labels by binding them to the axis\_label attribute of each axis.
 \begin{lstlisting}
-xax, yax = bk.axis()
-xax.axis_label = 'Year'
-yax.axis_label = 'MPG'
+p.xaxis.axis_label = 'Year'
+p.yaxis.axis_label = 'MPG'
 
-bk.hold(False)
-bk.show()
+show(p)
 \end{lstlisting}
 \end{frame}
 
@@ -144,19 +148,25 @@ bk.show()
 \begin{frame}[fragile] \frametitle{Linked Brushing}
 To link plots together at a data level, we can explicitly wrap the data in a ColumnDataSource. This allows us to reference columns by name.
 \begin{lstlisting}
-source = bk.ColumnDataSource(autompg.to_dict("list"))
-source.add(autompg["yr"], name="yr")
+from bokeh.models import ColumnDataSource
+from bokeh.layouts import gridplot
 
-plot_config = dict(plot_width=300, plot_height=300, tools="pan, wheel_zoom, box_zoom, select")
-bk.gridplot([[
-  bk.circle("yr", "mpg", color="blue", title="MPG by Year",
-         source=source, **plot_config),
-  bk.circle("hp", "displ", color="green", title="HP vs. Displacement",
-         source=source, **plot_config),
-  bk.circle("mpg", "displ", size="cyl", line_color="red", title="MPG vs. Displacement",
-         fill_color=None, source=source, **plot_config)
-  ]])
-  bk.show()
+source = ColumnDataSource(autompg.to_dict("list"))
+
+plot_config = dict(width=300, height=300,
+                    tools="pan,wheel_zoom,box_zoom,box_select")
+
+p1 = figure(title="MPG by Year", **plot_config)
+p1.scatter("yr", "mpg", color="blue", source=source, marker="circle")
+
+p2 = figure(title="HP vs. Displacement", **plot_config)
+p2.scatter("hp", "displ", color="green", source=source, marker="circle")
+
+p3 = figure(title="MPG vs. Displacement", **plot_config)
+p3.scatter("mpg", "displ", size="cyl", line_color="red",
+           fill_color=None, source=source, marker="circle")
+
+show(gridplot([[p1, p2, p3]]))
 \end{lstlisting}
 \end{frame}
 
@@ -176,9 +186,8 @@ bk.gridplot([[
 First, we import the data with Pandas and manipulate it as needed.
 \begin{lstlisting}
 import pandas as pd
-from bokeh.objects import HoverTool
+from bokeh.models import HoverTool
 from bokeh.sampledata.unemployment1948 import data
-from collections import OrderedDict
 
 data['Year'] = [str(x) for x in data['Year']]
 years = list(data['Year'])
@@ -216,7 +225,7 @@ for y in years:
 \begin{frame}[fragile] \frametitle{Visualization of US unemployment rates}
 Create a ColumnDataSource with columns: month, year, color, rate
 \begin{lstlisting}
-source = bk.ColumnDataSource(
+source = ColumnDataSource(
     data=dict(
         month=month,
         year=year,
@@ -235,16 +244,17 @@ source = bk.ColumnDataSource(
 \item x\_range is years, y\_range is months (reversed)
 \item fill color for the rectangles is the 'color' field
 \item line\_color for the rectangles is None
-\item tools are resize and hover tools
-\item add a nice title, and set the plot\_width and plot\_height
+\item tools are the built-in save and hover tools
+\item add a nice title, and set the width and height
 \end{itemize}
 \begin{lstlisting}
-bk.rect('year', 'month', 0.95, 0.95, source=source,
-     x_axis_location="above",
-     x_range=years, y_range=list(reversed(months)),
-     color='color', line_color=None,
-     tools="resize,hover", title="US Unemployment (1948 - 2013)",
-     plot_width=900, plot_height=400)
+p = figure(x_range=years, y_range=list(reversed(months)),
+           x_axis_location="above", width=900, height=400,
+           title="US Unemployment (1948 - 2013)",
+           tools="save,hover")
+
+p.rect(x='year', y='month', width=0.95, height=0.95, source=source,
+       fill_color='color', line_color=None)
 \end{lstlisting}
 \end{frame}
 
@@ -258,137 +268,126 @@ Style the plot, including:
 \item set the x-axis orientation to vertical, or angled
 \end{itemize}
 \begin{lstlisting}
-bk.grid().grid_line_color = None
-bk.axis().axis_line_color = None
-bk.axis().major_tick_line_color = None
-bk.axis().major_label_text_font_size = "5pt"
-bk.axis().major_label_standoff = 0
-bk.xaxis().major_label_orientation = np.pi/3
+p.grid.grid_line_color = None
+p.axis.axis_line_color = None
+p.axis.major_tick_line_color = None
+p.axis.major_label_text_font_size = "5pt"
+p.axis.major_label_standoff = 0
+p.xaxis.major_label_orientation = np.pi/3
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Visualization of US unemployment rates}
 Configure the hover tool to display the month, year and rate
-\begin{itemize}
-\item remove the axis and grid lines
-\item remove the major ticks
-\item make the tick labels smaller
-\item set the x-axis orientation to vertical, or angled
-\end{itemize}
 \begin{lstlisting}
-hover = bk.curplot().tools[1]
-hover.tooltips = OrderedDict([
+hover = p.select(dict(type=HoverTool))[0]
+hover.tooltips = [
     ('date', '@month @year'),
     ('rate', '@rate'),
-])
-bk.show()
+]
+show(p)
 \end{lstlisting}
+\begin{block}{Intuition}
+\texttt{p.select()} searches the figure for the tool/glyph objects matching a type or name, since Bokeh plots are really trees of Python objects -- you configure them by finding and mutating the right node, not by re-issuing a plotting command.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Core Bokeh}
+\begin{block}{Think About It}
+A matplotlib figure is a static image -- once it's drawn, interacting with it in Python again requires re-running the plotting code. Why can a Bokeh figure support panning, zooming, and hover tooltips \emph{without} calling back into your Python process?
+\end{block}
+\pause
+\begin{block}{Answer}
+Bokeh doesn't render a picture -- it serializes the figure (data via \texttt{ColumnDataSource}, glyphs, tools) into JSON and ships a JavaScript library (BokehJS) that runs entirely in the browser. Pan/zoom/hover are handled client-side against that JSON; your Python code has already finished running by the time you interact with the plot.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{High-level Plots}
 \begin{itemize}
-\item The examples so far have been relatively low-level, in that individual elements of plots need to be specified by hand. 
-\item The bokeh.charts interface makes it easy to get up-and-running with a high-level API that tries to make smart layout and design decisions by default.
+\item The examples so far have been relatively low-level, in that individual elements of plots need to be specified by hand.
+\item Bokeh once shipped a \texttt{bokeh.charts} module with ready-made chart types (\texttt{Bar}, \texttt{BoxPlot}, \texttt{HeatMap}, \texttt{Histogram}, \texttt{Scatter}, \texttt{Timeseries}) that made smart layout decisions automatically.
+\item \texttt{bokeh.charts} was removed from Bokeh years ago -- there is no drop-in high-level charting module anymore, so the same results are built directly with \texttt{bokeh.plotting}, just as we've been doing.
 \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{High-level Plots}
-To use them, you simply import the chart type you need from bokeh.charts:
-\begin{itemize}
-\item Bar
-\item BoxPlot
-\item HeatMap
-\item Histogram
-\item Scatter
-\item Timeseries
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{High-level Plots}
-To illustrate, let's create some random data and display it as histograms.
+To illustrate, let's create some random data and display it as a histogram, built with the same \texttt{figure}/\texttt{quad} pattern used earlier for the exponential distribution.
 \begin{lstlisting}
 normal = np.random.standard_normal(1000)
-student_t = np.random.standard_t(6, 1000)
-distributions = pd.DataFrame({'Normal': normal, 'Student-T': student_t})
+hist, edges = np.histogram(normal, bins=int(np.sqrt(len(normal))), density=True)
 
-from bokeh.charts import Histogram
-
-hist = Histogram(distributions, bins=np.sqrt(len(normal)), notebook=True)
-hist.title("Histograms").ylabel("frequency").legend(True).width(600).height(300)
-
-hist.show()
+p = figure(title="Histogram", x_axis_label="value", y_axis_label="frequency",
+           width=600, height=300)
+p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],
+       fill_color="navy", line_color="white", alpha=0.6)
+show(p)
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Scatter Plot}
 \begin{lstlisting}
-from collections import OrderedDict
-
-from bokeh.charts import Scatter
 from bokeh.sampledata.iris import flowers
 
-setosa = flowers[(flowers.species == "setosa")][["petal_length", "petal_width"]]
-versicolor = flowers[(flowers.species == "versicolor")][["petal_length", "petal_width"]]
-virginica = flowers[(flowers.species == "virginica")][["petal_length", "petal_width"]]
+colors = {"setosa": "navy", "versicolor": "olive", "virginica": "firebrick"}
 
-xyvalues = OrderedDict([("setosa", setosa.values), 
-                        ("versicolor", versicolor.values), 
-                        ("virginica", virginica.values)])
+p = figure(title="Iris dataset", x_axis_label="petal_length",
+           y_axis_label="petal_width", width=600, height=400)
+for species, color in colors.items():
+    subset = flowers[flowers.species == species]
+    p.scatter(subset["petal_length"], subset["petal_width"],
+              color=color, marker="circle", legend_label=species)
 
-scatter = Scatter(xyvalues)
-scatter.title("iris dataset, dict_input").xlabel("petal_length").ylabel("petal_width").legend("top_left")
-scatter.width(600).height(400).notebook().show()
+p.legend.location = "top_left"
+show(p)
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Interactivity with other packages}
+\begin{frame}[fragile] \frametitle{Working with other plotting libraries}
 \begin{itemize}
-\item Bokeh plots are compatible with other Python plotting packages, such as Matplotlib, Seaborn, and ggplot, via an onboard compatibility layer bokeh.mpl. 
-\item This allows existing plots in these packages to be converted seamlessly into Bokeh.
+\item Bokeh used to ship a \texttt{bokeh.mpl} compatibility layer that could convert an existing Matplotlib/Seaborn figure into an interactive Bokeh one -- that layer has since been removed.
+\item There is no automatic conversion today: if you want a Bokeh-interactive version of a plot, you build it directly with \texttt{bokeh.plotting}, as below. Matplotlib and Seaborn remain perfectly usable side by side with Bokeh, just as independent, separate figures.
 \end{itemize}
 \begin{lstlisting}
-titanic = pd.read_csv('http://biostat.mc.vanderbilt.edu/wiki/pub/Main/DataSets/titanic3.csv')
-
+titanic = pd.read_csv(
+    'https://raw.githubusercontent.com/mwaskom/seaborn-data/master/titanic.csv')
+titanic = titanic.dropna(subset=['age'])
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Interactivity with other packages}
+\begin{frame}[fragile] \frametitle{Working with other plotting libraries}
+A native Bokeh equivalent of a per-class age distribution: overlay one semi-transparent histogram per passenger class.
 \begin{lstlisting}
-from ggplot import ggplot, aes, geom_density
-from bokeh import mpl
-import matplotlib.pyplot as plt
+p = figure(title="Titanic passenger age distribution by class",
+           x_axis_label="age", y_axis_label="density", width=600, height=350)
+class_colors = {1: "navy", 2: "olive", 3: "firebrick"}
 
-g = ggplot(titanic, aes(x='age', color='pclass')) + geom_density()
+for pclass, color in class_colors.items():
+    ages = titanic.loc[titanic["pclass"] == pclass, "age"]
+    hist, edges = np.histogram(ages, bins=20, density=True)
+    p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],
+           fill_color=color, alpha=0.4, legend_label=f"Class {pclass}")
 
-g.draw()
-
-plt.title("Plot of titanic passenger age distribution by class")
-
-mpl.to_bokeh(name="density")
+show(p)
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Interactivity with other packages}
+\begin{frame}[fragile] \frametitle{Working with other plotting libraries}
+Seaborn and Matplotlib still work exactly as before -- they simply produce their own separate figure, in their own window/output, instead of feeding into Bokeh.
 \begin{lstlisting}
 import seaborn as sns
+import matplotlib.pyplot as plt
 
-# We generated random data
-titanic = titanic.dropna(subset=['age'])
-
-# And then just call the violinplot from Seaborn
-sns.violinplot(titanic.age, groupby=titanic.pclass, color="Set3")
-
+sns.violinplot(data=titanic, x="pclass", y="age")
 plt.title("Distribution of age by passenger class")
-
-mpl.to_bokeh(name="violin")
+plt.show()
 \end{lstlisting}
 \end{frame}
 
@@ -454,30 +453,13 @@ create_fractal(min_x, max_x, min_y, max_y, img, 20)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Generating and displaying images}
-Use image renderer to display Mandelbrot image, colormapped with "Spectral-11" color palette. The renderer can display many images at once, so it takes lists of images, coordinates, and palettes.
+Use the image renderer to display the Mandelbrot image, colormapped with the "Spectral11" palette. The renderer can display many images at once, so it takes lists of images, coordinates, and palettes.
 \begin{lstlisting}
-bk.image(image=[img],
-      x=[min_x],
-      y=[min_y],
-      dw=[max_x-min_x],
-      dh=[max_y-min_y],
-      palette=["Spectral-11"],
-      x_range = [min_x, max_x],
-      y_range = [min_y, max_y],
-      title="Mandelbrot",
-      tools="pan,wheel_zoom,box_zoom,reset,previewsave",
-      plot_width=900,
-      plot_height=600
-)
-bk.show()
+p = figure(title="Mandelbrot", x_range=(min_x, max_x), y_range=(min_y, max_y),
+           tools="pan,wheel_zoom,box_zoom,reset,save",
+           width=900, height=600)
+p.image(image=[img], x=[min_x], y=[min_y],
+        dw=[max_x-min_x], dh=[max_y-min_y], palette="Spectral11")
+show(p)
 \end{lstlisting}
 \end{frame}
-
-
-
-
-
-
-
-
-

@@ -46,6 +46,16 @@ Something is happening after some_function() is called.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition: Decorators}
+\begin{block}{Intuition}
+A decorator is like gift-wrapping a present: the original gift (the function) is still inside,
+unchanged, but it's now wrapped in extra paper (extra behavior) that runs before -- and possibly
+after -- you actually get to the gift. The \texttt{@decorator} syntax is just shorthand for
+handing your function to the wrapping function and using whatever comes back in its place.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Decorators Intro}
         \begin{lstlisting}
 def my_decorator(some_function):
@@ -89,20 +99,15 @@ Something is happening after some_function() is called.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Decorators Intro}
-There are two things hiding behind the name ``decorator'':
-    \begin{itemize}
-    \item The function which does the work of decorating, i.e. performs the real work
-    \item The expression adhering to the decorator syntax, i.e. an at-symbol and the name of the decorating function.
-    \end{itemize}
+There are two things hiding behind the name ``decorator'': the function which does the work of
+decorating -- performs the real work -- (marked \texttt{[2]} below), and the expression
+adhering to decorator syntax -- an at-symbol and the decorating function's name -- applied just
+above a normally-defined function (marked \texttt{[1]}):
         \begin{lstlisting}
 @decorator             # [2]
 def function():        # [1]
     pass
 \end{lstlisting}
-    \begin{itemize}
-    \item [1] A function is defined in the standard way.
-    \item [2] An expression starting with @ placed before the function definition is the decorator.
-    \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -224,7 +229,7 @@ def function():
   print("inside function")
 
 doing decoration
->>>function()
+>>> function()
 inside function
 \end{lstlisting}
 \end{frame}
@@ -244,7 +249,7 @@ def function():
   print("inside function")
 
 defining the decorator
-doing decoration, `abc'
+doing decoration, 'abc'
 function()
 inside function
 \end{lstlisting}
@@ -275,8 +280,11 @@ def secret():
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Decorators Example}
-Did you notice that the function gets passed to the functools.wraps() decorator? This simply preserves the metadata of the wrapped function.
-Let's look at one last use case. Take a quick look at the following Flask route handler:
+Did you notice that the function gets passed to the functools.wraps() decorator? This simply
+preserves the metadata of the wrapped function. Let's look at one last use case -- the following
+Flask route handler ensures that the key \texttt{student\_id} is part of the request. Although
+this validation works, it really does not belong in the function itself -- and perhaps there are
+other routes that need the exact same validation:
         \begin{lstlisting}
 @app.route('/grade', methods=['POST'])
 def update_grade():
@@ -286,6 +294,23 @@ def update_grade():
     # update database
     return "success!"
 \end{lstlisting}
-Here we ensure that the key student\_id is part of the request. Although this validation works it really does not belong in the function itself. Plus, perhaps there are other routes that use the exact same validation
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Decorators}
+\begin{block}{Think About It}
+A colleague writes \lstinline|@login_required| above three different view functions, then
+notices all three views seem to share the exact same \texttt{wrapper} name in stack traces. Why,
+and is that a problem?
+\end{block}
+\pause
+\begin{block}{Answer}
+Every call to \lstinline|login_required(f)| defines and returns a brand-new local function
+object, so each decorated view actually gets its own distinct function -- the shared \emph{name}
+is just cosmetic. It becomes a real problem for debugging and introspection (stack traces,
+\lstinline|help()|, frameworks that key routing off \texttt{\_\_name\_\_}) unless the decorator
+uses \lstinline|@functools.wraps(f)| to copy over the original function's \texttt{\_\_name\_\_},
+\texttt{\_\_doc\_\_}, etc. -- exactly what the \lstinline|login_required| example does.
+\end{block}
 \end{frame}
 

@@ -4,3 +4,142 @@
 {\Large Directories}
 \end{center}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Current Directory \& Listing Files}
+The \texttt{os} module is the traditional way to interact with the filesystem: find out where
+you are, move around, and see what's there:
+\begin{lstlisting}
+import os
+
+print('Current dir:', os.getcwd())
+
+os.chdir('..')                  # move up one directory
+print('Now in    :', os.getcwd())
+
+print('Entries   :', os.listdir('.'))   # files and subdirectories, unsorted
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Checking and Building Paths}
+The \texttt{os.path} submodule answers questions about a path and builds new ones portably
+(using the right slash for the current OS):
+\begin{lstlisting}
+import os
+
+p = os.path.join('data', 'reports', 'summary.csv')
+print(p)                              # data/reports/summary.csv
+
+print(os.path.exists(p))              # True/False
+print(os.path.isdir('data'))          # True/False
+print(os.path.isfile(p))              # True/False
+
+print(os.path.basename(p))            # summary.csv
+print(os.path.dirname(p))             # data/reports
+print(os.path.abspath(p))             # full path from filesystem root
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Modern Python: \texttt{pathlib}}
+Since Python 3.4, \texttt{pathlib.Path} wraps the same functionality as \texttt{os.path} in an
+object-oriented API -- paths are objects with methods, and \texttt{/} joins them:
+\begin{lstlisting}
+from pathlib import Path
+
+p = Path('data') / 'reports' / 'summary.csv'   # / joins path components
+print(p)                              # data/reports/summary.csv
+
+print(p.exists())
+print(p.parent)                       # data/reports
+print(p.name)                         # summary.csv
+print(p.suffix)                       # .csv
+print(p.with_suffix('.json'))         # data/reports/summary.json
+
+for entry in Path('.').iterdir():
+    print(entry)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition: \texttt{os.path} vs.\ \texttt{pathlib}}
+\begin{block}{Intuition}
+\texttt{os.path} treats a path as a plain string that you slice and dice by passing it through
+function after function. \texttt{pathlib} treats a path as an \emph{object} you can ask
+questions of and chain operations on (\texttt{p.parent.parent / "x"}) -- similar to how
+f-strings replaced \texttt{\%}-formatting: the same capability, but more readable, chainable
+code.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Walking a Directory Tree}
+\lstinline|os.walk()| is a generator that recursively visits every subdirectory, yielding
+\texttt{(dirpath, dirnames, filenames)} for each one -- useful for processing an entire tree
+without writing the recursion yourself:
+\begin{lstlisting}
+import os
+
+for dirpath, dirnames, filenames in os.walk('.'):
+    for filename in filenames:
+        if filename.endswith('.py'):
+            print(os.path.join(dirpath, filename))
+\end{lstlisting}
+The \texttt{pathlib} equivalent for a simple recursive glob:
+\begin{lstlisting}
+from pathlib import Path
+
+for p in Path('.').rglob('*.py'):
+    print(p)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Creating and Removing Directories}
+\begin{lstlisting}
+import os, shutil
+
+os.mkdir('output')                    # fails if 'output' already exists
+os.makedirs('output/2026/reports')    # creates all intermediate dirs; no-op if it exists
+
+os.rmdir('output/2026/reports')       # fails unless the directory is empty
+shutil.rmtree('output')               # removes a directory and everything inside it
+\end{lstlisting}
+\lstinline|shutil.rmtree| is not undoable -- there is no ``move to trash'' -- so double-check
+the path before calling it in real code.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+Write a function \lstinline|count_py_files(root)| that recursively counts how many \texttt{.py}
+files exist under a given directory \texttt{root}.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+\begin{lstlisting}
+from pathlib import Path
+
+def count_py_files(root):
+    return sum(1 for _ in Path(root).rglob('*.py'))
+
+print(count_py_files('.'))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Directories}
+\begin{block}{Think About It}
+\lstinline|os.walk('.')| and \lstinline|Path('.').rglob('*.py')| both find every \texttt{.py}
+file recursively. What's the practical difference in how they do it?
+\end{block}
+\pause
+\begin{block}{Answer}
+\lstinline|os.walk()| yields \texttt{(dirpath, dirnames, filenames)} level by level -- you
+filter \texttt{filenames} yourself, and can even prune \texttt{dirnames} in place to skip whole
+subtrees. \lstinline|Path.rglob()| directly yields matching \texttt{Path} objects for a single
+glob pattern -- more concise for ``find all files matching X'', but you'd reach for
+\lstinline|os.walk()| when you need finer control, like skipping specific directories entirely.
+\end{block}
+\end{frame}

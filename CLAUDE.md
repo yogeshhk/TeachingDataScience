@@ -154,10 +154,18 @@ annotated as comments in `course_maths4ml_content.tex` and inside
   - `python_oop.tex` is `\input` by both Basic B4 and Advanced A1 — duplication predates this
     restructure, preserved as-is
 - Raw `python_*.tex` topic files are unchanged; only the aggregation layers changed.
-- **Upgrade status**: Basic B1 (Intro), B2 (Constructs), B3 (Procedures) have been through an
-  intuition-first `/upgrade-deck` pass (technical fixes, "Intuition" callouts, "Quick Check"
-  quizzes); B4-B6 and Advanced A1-A6 remain — track progress in
-  `LaTeX/todo_python_seminar_restructure.md`
+- All 12 seminars (Basic B1-B6, Advanced A1-A6) have been through an intuition-first
+  `/upgrade-deck` pass (technical fixes, "Intuition" callouts, "Quick Check" quizzes) — see git
+  history for details, as `LaTeX/todo_python_seminar_restructure.md` (the working to-do for this
+  restructuring) was deleted once the work completed. Notable fixes along the way: Advanced A5
+  (`python_intro_bokeh.tex`) was rewritten from a Bokeh procedural API removed from the library
+  ~8 years ago to current Bokeh 3.x, and its dependent `bokeh.charts`/`bokeh.mpl` demo frames
+  were replaced with native-Bokeh equivalents since those modules no longer exist; A5's
+  `python_intro_tkinter.tex` had ~1850 lines of dead, never-rendered commented-out Python-2-era
+  Tcl/Tk documentation removed. Advanced A6's raw files (`python_dsa.tex`,
+  `python_codingproblems_basic.tex`, `python_systemdesign.tex`) were recently AI-authored and
+  algorithmically correct throughout, so that pass was lighter — mainly mismatched
+  reference-citation cleanup and one `itertools.permutations` simplification.
 - No redundant files removed here: unlike Maths4ML, both standalone workshops remain valid
   independent offerings, so nothing was retired.
 

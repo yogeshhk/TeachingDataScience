@@ -14,14 +14,15 @@ the keyboard:
 \item When the user presses Return or Enter, the program
 resumes and input returns what the user typed as a string.
 \begin{lstlisting}
->>> input = input()
+>>> name = input()
 Some silly stuff
->>> print(input)
+>>> print(name)
 Some silly stuff
 \end{lstlisting}
 \item Before getting input from the user, it is a good idea to print a prompt telling the
 user what to input:
 \begin{lstlisting}
+>>> prompt = 'What...is the airspeed velocity of an unladen swallow?\n'
 >>> speed = input(prompt)
 What...is the airspeed velocity of an unladen swallow?
 What do you mean, an African or a European swallow?
@@ -74,6 +75,17 @@ Chuck
     file.close(): close the open file. 
 \end{lstlisting}
 \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition: File Modes}
+\begin{block}{Intuition}
+Think of a file like a book: \texttt{'r'} opens it to read without disturbing a single page;
+\texttt{'w'} opens a brand-new blank book, discarding anything that was written before;
+\texttt{'a'} opens it to the last page so you keep writing where you left off. Calling
+\texttt{close()} is like closing the book -- it makes sure your writing is actually saved to the
+page (flushed to disk) and frees the book up for others to use.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -146,6 +158,24 @@ for line in fhand:
 	if line.startswith('Subject:'):
 		count = count + 1
 print('There were', count, 'subject lines in', fname)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The \texttt{with} Statement}
+Every example so far has called \lstinline|open()| and then manually \lstinline|close()|d the
+file -- easy to forget, and skipped entirely if an exception is raised in between. The
+\texttt{with} statement fixes both problems, and is the idiomatic way to open files in modern
+Python: it closes the file automatically as soon as the block ends, even if an exception occurs
+inside it:
+\begin{lstlisting}
+with open(fname) as fhand:
+    count = 0
+    for line in fhand:
+        if line.startswith('Subject:'):
+            count = count + 1
+    print('There were', count, 'subject lines in', fname)
+# fhand is guaranteed to be closed here, no explicit close() needed
 \end{lstlisting}
 \end{frame}
 
@@ -225,11 +255,11 @@ for line in fhand:
   \end{lstlisting}
     Create a directory; fails if the directory already exists.
     Assumes that all parent directories exist already.
+Unlike \lstinline|os.mkdir|, \lstinline|os.makedirs| is a no-op if the directory already exists,
+and creates all the intermediate-level directories needed to contain the leaf:
   \begin{lstlisting}
   os.makedirs(path)
 \end{lstlisting}
-Create a directory; no-op if the directory already exists.
-Creates all the intermediate-level directories needed to contain the leaf.
 %\begin{lstlisting}
 %  os.rename(old,new)
 %\end{lstlisting}
@@ -382,3 +412,18 @@ os.path.dirname(path)
 %    extension \texttt{ext2} instead.
 %\end{itemize}
 %\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: File IO}
+\begin{block}{Think About It}
+You open a file with \lstinline|f = open('data.txt', 'w')|, write some lines, but your script
+crashes before calling \lstinline|f.close()|. What happens to your data, and why?
+\end{block}
+\pause
+\begin{block}{Answer}
+Writes are often buffered in memory and only guaranteed to reach disk when the file is closed (or
+explicitly \lstinline|flush()|ed). If the script crashes first, some or all of the written data
+may be lost. This is exactly why the \lstinline|with open(...) as f:| pattern is preferred -- it
+closes the file automatically even when an exception is raised.
+\end{block}
+\end{frame}

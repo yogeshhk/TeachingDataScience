@@ -68,6 +68,17 @@ Tags have commonly used names that depend on their position in relation to other
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition: The Parsed HTML Tree}
+\begin{block}{Intuition}
+Think of parsed HTML as a set of nested boxes: \texttt{<html>} is the outermost box, containing
+\texttt{<head>} and \texttt{<body>} boxes, which contain \texttt{<p>} boxes, and so on.
+\texttt{.children}, \texttt{.parent}, and calls like \texttt{.find('p')} are just ways of asking
+``what's inside this box'' or ``which box contains this one'' -- no different from browsing
+folders and subfolders on a hard drive.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{HTML}
 \begin{lstlisting}
 <html>
@@ -106,8 +117,8 @@ Tags have commonly used names that depend on their position in relation to other
 
     \begin{itemize}
     \item  One element can have multiple classes, and a class can be shared between elements.
-    \item Each element can only have one id, and an id can only be used once on a page. 
-    \item Classes and ids are optional, and not all elements will have them.
+    \item Each element can only have one id, and an id can only be used once on a page.
+    \item Classes and ids are optional, and not all elements will have them. As you can see below, adding classes and ids doesn't change how the tags are rendered at all:
     \end{itemize}
     \begin{lstlisting}
         <p class="bold-paragraph">
@@ -119,7 +130,6 @@ Tags have commonly used names that depend on their position in relation to other
             <a href="https://www.python.org" class="extra-large">Python</a>
         </p>
 \end{lstlisting}
-As you can see, adding classes and ids doesn't change how the tags are rendered at all.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,9 +175,9 @@ print(soup.prettify())
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Parsing a page with BeautifulSoup}
     \begin{itemize}
-    \item As all the tags are nested, we can move through the structure one level at a time. 
-    \item We can first select all the elements at the top level of the page using the children property of soup. 
-    \item Note that children returns a list generator, so we need to call the list function on it:
+    \item As all the tags are nested, we can move through the structure one level at a time.
+    \item We can first select all the elements at the top level of the page using the children property of soup.
+    \item Note that children returns a list generator, so we need to call the list function on it. There are two tags at the top level of the page -- the initial \lstinline|<!DOCTYPE html>| tag, newline and the \lstinline|<html>| tag:
     \end{itemize}
         \begin{lstlisting}
 list(soup.children)
@@ -180,28 +190,6 @@ list(soup.children)
  </body>
  </html>]
 \end{lstlisting}
-There are two tags at the top level of the page -- the initial <!DOCTYPE html> tag, newline and the <html> tag
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Parsing a page with BeautifulSoup}
-    \begin{itemize}
-    \item As all the tags are nested, we can move through the structure one level at a time. 
-    \item We can first select all the elements at the top level of the page using the children property of soup. 
-    \item Note that children returns a list generator, so we need to call the list function on it:
-    \end{itemize}
-        \begin{lstlisting}
-list(soup.children)
-['html', '\n', <html>
- <head>
- <title>A simple example page</title>
- </head>
- <body>
- <p>Here is some simple content for this page.</p>
- </body>
- </html>]
-\end{lstlisting}
-There are two tags at the top level of the page -- the initial \lstinline|<!DOCTYPE html>| tag, newline and the \lstinline|<html>| tag
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -247,7 +235,9 @@ p.get_text()
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Finding all instances of a tag at once}
- If we want to extract a single tag, we can instead use the find\_all method, which will find all the instances of a tag on a page.
+ If we want to extract a single tag, we can instead use the find\_all method, which will find all
+ the instances of a tag on a page. (If you only want the first instance of a tag, use the find
+ method instead, which returns a single BeautifulSoup object.)
         \begin{lstlisting}
 soup = BeautifulSoup(page.content, 'html.parser')
 soup.find_all('p')
@@ -255,7 +245,6 @@ soup.find_all('p')
 soup.find_all('p')[0].get_text()
 'Here is some simple content for this page.'
 \end{lstlisting}
-If you instead only want to find the first instance of a tag, you can use the find method, which will return a single BeautifulSoup object.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -333,8 +322,11 @@ soup.find_all(id="first")
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Using CSS Selectors}
+The \lstinline|.select()| method takes an actual CSS selector string, rather than separate tag
+and class arguments -- here, \lstinline|p.outer-text| finds every \texttt{p} tag with class
+\texttt{outer-text}, the same result as the \lstinline|find_all| call from the previous slide:
             \begin{lstlisting}
-soup.find_all('p', class_='outer-text')
+soup.select("p.outer-text")
 
 [<p class="outer-text first-item" id="second">
  <b>
@@ -398,7 +390,7 @@ The div that contains the extended forecast items.
 \begin{frame}[fragile]\frametitle{Get the data}
 
             \begin{lstlisting}
-page = requests.get("http://forecast.weather.gov/MapClick.php?lat=37.7772\&lon=-122.4168")
+page = requests.get("http://forecast.weather.gov/MapClick.php?lat=37.7772&lon=-122.4168")
 soup = BeautifulSoup(page.content, 'html.parser')
 seven_day = soup.find(id="seven-day-forecast")
 forecast_items = seven_day.find_all(class_="tombstone-container")
@@ -471,7 +463,7 @@ Tonight: Mostly clear, with a low around 49. West northwest wind 12 to 17 mph de
 Inside the forecast item tonight is all the information we want. There are 4 pieces of information we can extract:
      \begin{itemize}
     \item    Select all items with the class period-name inside an item with the class tombstone-container in seven\_day.
-    \item        Use a list comprehension to call the get\_text method on each BeautifulSoup object.
+    \item        Use a list comprehension to call the get\_text method on each BeautifulSoup object -- this gets us each of the period names, in order:
 	    \end{itemize}
 	                \begin{lstlisting}
 period_tags = seven_day.select(".tombstone-container .period-name")
@@ -487,7 +479,6 @@ periods
  'Sunday',
  'SundayNight']
 \end{lstlisting}
-Gets us each of the period names, in order.
 \end{frame}
 
 
@@ -586,6 +577,22 @@ Some good examples of data to scrape are:
 
 
 	    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Web Scraping}
+\begin{block}{Think About It}
+This deck fetches a weather page and calls \lstinline|.find(class_='tombstone-container')| for
+a single item, then later \lstinline|.select('.tombstone-container .period-name')| for
+\emph{all} items. Why the two different methods?
+\end{block}
+\pause
+\begin{block}{Answer}
+\lstinline|.find()| stops at the first matching tag -- perfect for grabbing one specific known
+element (``tonight's forecast''). \lstinline|.select()| uses CSS-selector syntax and returns
+\emph{every} match as a list, which is what you need once you're pulling the same field (period
+name, temperature, ...) out of every one of the 9 forecast items via a list comprehension.
+\end{block}
 \end{frame}
 
 

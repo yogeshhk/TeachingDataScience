@@ -26,14 +26,14 @@ def create_or_open_db(filename):
     file_exists = os.path.isfile(filename)
     conn = sqlite3.connect(filename)
     if file_exists:
-        print ''' "{}" database successfully opened '''.format(filename)
+        print(''' "{}" database successfully opened '''.format(filename))
     else:
-        print ''' "{}" database successfully created '''.format(filename)
+        print(''' "{}" database successfully created '''.format(filename))
     return conn
 conn = create_or_open_db('mycds.sqlite')
 cur = conn.cursor()
 cur.execute('SELECT SQLITE_VERSION()')
-print 'version:', cur.fetchone() 
+print('version:', cur.fetchone())
 \end{lstlisting}
 
 \end{frame}
@@ -47,7 +47,7 @@ def create_tbl_artists(conn):
             ArtistID INTEGER PRIMARY KEY,
             ArtistName TEXT);'''
     conn.execute(sql) # shortcut for conn.cursor().execute(sql)
-    print "Created Artists table successfully"
+    print("Created Artists table successfully")
 create_tbl_artists(conn)
 \end{lstlisting}
 
@@ -56,7 +56,9 @@ create_tbl_artists(conn)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Importing data}
-Let's say we have a CSV file that holds students and their grades in certain courses:
+Let's say we have a CSV file that holds students and their grades in certain courses. Both
+students took the same courses; student 1 did pretty well, student 2 not as well. Grades are
+assigned a numerical value with A being a 4, B being a 3, etc.:
 \begin{lstlisting}
 studentid,course,grade,credits
 1,PY205,3.8,3
@@ -70,7 +72,6 @@ studentid,course,grade,credits
 2,E101,2.9,2
 2,CS216,3.3,3
 \end{lstlisting}
-Both students took the same courses. Student 1 did pretty well, student 2 not as well. Grades are assigned a numerical value with A being a 4, B being a 3, etc.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -271,6 +272,15 @@ studentid   course      grade       credits
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Intuition: GROUP BY}
+\begin{block}{Intuition}
+Think of GROUP BY as sorting rows into labeled buckets -- one bucket per distinct value (or
+combination of values). An aggregate function like SUM or AVG then collapses each bucket down
+to a single number, so the query returns one row per bucket, not one row per original row.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
 \begin{itemize}
 \item Using a GROUP BY clause makes the query into an aggregate query. 
@@ -290,19 +300,18 @@ studentid   AVG(grade)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Grouping and Aggregate Queries}
+This takes the total gradepoints of each group and divides them by the total credits in that
+group. Since the grouping is by studentid, each student is a group, and each group contains the
+rows for that student, so any aggregate functions operate on the rows for each student
+independently:
 \begin{lstlisting}
 SELECT studentid, SUM(grade*credits)/SUM(credits) AS GPA FROM grades GROUP BY studentid;
 
-studentid   GPA       
+studentid   GPA
 ----------  ----------
-1           3.41875   
-2           2.8625      
+1           3.41875
+2           2.8625
 \end{lstlisting}
-\begin{itemize}
-\item This takes the total gradepoints of each group and divides them by the total credits in that group.
-\item Since the grouping is by studentid, each student is a group, and each group contains the rows for that student. 
-\item So any aggregate functions operate on the rows for each student independently.
-\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -385,19 +394,19 @@ studentid   course
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Joins}
 Joins allow you to join two or more tables of data together.
+\begin{itemize}
+\item  Now we can join the tables together. At its core, a join is simply a cartesian-product of the rows in two input tables.
+\item  So for every row in one input table, every row in the second table will be returned.
+\end{itemize}
 \begin{lstlisting}
 SELECT * FROM demographics;
 
-studentid   gender      age       
+studentid   gender      age
 ----------  ----------  ----------
-1           m           22        
-2           f           19        
-3           m           20        
+1           m           22
+2           f           19
+3           m           20
 \end{lstlisting}
-\begin{itemize}
-\item  Now we can join the tables together. At its core, a join is simply a cartesian-product of the rows in two input tables. 
-\item  So for every row in one input table, every row in the second table will be returned.
-\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -419,20 +428,19 @@ There are 10 rows in the grades table, and 3 rows in the demographics table, so 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Joins}
-We can filter this out by selecting only where the studentid column of the first table is equal to the studentid column of the second table. This is called a join condition and will get us the demographics and grades of the respective students.
+We can filter this out by selecting only where the studentid column of the first table is equal to the studentid column of the second table. This is called a join condition and will get us the demographics and grades of the respective students. This performs a regular join, also known as an inner join or cross join -- only rows that match the join condition are returned:
 \begin{lstlisting}
 SELECT g.*, d.gender, d.age
     FROM grades g JOIN demographics d ON g.studentid=d.studentid;
 
 
-studentid   course      grade       credits     gender      age       
+studentid   course      grade       credits     gender      age
 ----------  ----------  ----------  ----------  ----------  ----------
-1           PY205       3.8         3           m           22        
-:    
-2           E101        2.9         2           f           19        
-2           CS216       3.3         3           f           19        
+1           PY205       3.8         3           m           22
+:
+2           E101        2.9         2           f           19
+2           CS216       3.3         3           f           19
 \end{lstlisting}
-This performs a regular join, also known as an inner join or cross join. Only rows that match the join condition are returned.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -446,18 +454,20 @@ This performs a regular join, also known as an inner join or cross join. Only ro
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Joins and grouping}
-Joins work with groups just as you'd expect. All joins happen before grouping, so you can get a student's demographic information along with their GPA in one query:
+Joins work with groups just as you'd expect. All joins happen before grouping, so you can get a
+student's demographic information along with their GPA in one query (if you're wondering why we
+couldn't just put the demographics data into the grades table, there are a couple of reasons --
+covered next):
 \begin{lstlisting}
 SELECT g.studentid, SUM(g.grade*g.credits)/SUM(g.credits) AS GPA, d.gender, d.age
     FROM grades g JOIN demographics d ON g.studentid=d.studentid
     GROUP BY g.studentid;
 
-studentid   GPA         gender      age       
+studentid   GPA         gender      age
 ----------  ----------  ----------  ----------
-1           3.41875     m           22        
-2           2.8625      f           19     
+1           3.41875     m           22
+2           2.8625      f           19
 \end{lstlisting}
-If you're wondering why we couldn't just put the demographics data into the grades table, there are a couple of reasons. 
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -469,6 +479,23 @@ If you're wondering why we couldn't just put the demographics data into the grad
 
 \item We call the unique columns in a table a "key", and usually you can identify a single primary key. If two datasets have different primary keys, then they typically should belong in different tables. If two datasets have the same primary key, then it may make sense to combine them into one table, but organizationally it may still make sense to keep them separate.
 \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Quick Check: SQL Joins}
+\begin{block}{Think About It}
+Why does a bare \lstinline|JOIN| (no \lstinline|ON|/\lstinline|WHERE| condition) between the
+10-row grades table and the 3-row demographics table return 30 rows, while adding
+\lstinline|ON g.studentid=d.studentid| cuts that down dramatically?
+\end{block}
+\pause
+\begin{block}{Answer}
+A bare \lstinline|JOIN| performs a full cartesian product -- every row of one table paired with
+every row of the other, regardless of whether they're related, giving $10 \times 3 = 30$ rows.
+Adding a join condition filters that cartesian product down to only the pairs where the
+specified columns actually match, which is what makes the join meaningful: each grade row
+matched to the \emph{one} demographics row for that same student, not all three.
+\end{block}
 \end{frame}
 
 

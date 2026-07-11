@@ -65,6 +65,16 @@
     \end{itemize}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition: Doctest}
+\begin{block}{Intuition}
+A doctest is like a recipe card that shows a worked example right on the card: instead of a
+separate ``test suite'' file nobody reads, the example \emph{is} the documentation, and it
+doubles as a check that the function still behaves as advertised -- if the recipe's example
+stops matching reality, the test fails.
+\end{block}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Doctest (2/7)}
@@ -87,35 +97,6 @@ def square(x):
 \adjustbox{valign=t}{
 \begin{minipage}{0.4\linewidth}
  Line \emph{not} starting with \texttt{>>>} or \emph{not}
-  following a line starting with \texttt{>>>} are documentation lines,
-  and are thus ignored for testing purposes.
-\end{minipage}
-}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Doctest (2/7)}
-\adjustbox{valign=t}{
-\begin{minipage}{0.45\linewidth}
-  \begin{lstlisting}
-def square(x):
-    """
-    This function compute
-    the square of a number.
-
-      >>> square(2)
-      4
-    """
-  \end{lstlisting}
-\end{minipage}
-}
-\hfill
-\adjustbox{valign=t}{
-\begin{minipage}{0.4\linewidth}
-Line \emph{not} starting with \texttt{>>>} or \emph{not}
   following a line starting with \texttt{>>>} are documentation lines,
   and are thus ignored for testing purposes.
 \end{minipage}
@@ -197,7 +178,7 @@ $ python -m doctest vector6.py
 *************************************
 File "vector6.py", line 32, in vector6.Vector
 Failed example:
-    print v * 2
+    print(v * 2)
 Expected:
     <2,1>
 Got:
@@ -217,7 +198,7 @@ Got:
 \begin{lstlisting}%[language=sh,basicstyle=\ttfamily\footnotesize]
 $ python -m doctest -v vector6.py
 Trying:
-    print v * 2
+    print(v * 2)
 Expecting:
     <2,4>
 ok
@@ -254,7 +235,10 @@ ok
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{The unittest module (1/4)}
   Allows you to create tests in a more structured way using the
-  \textit{Template method pattern}.
+  \textit{Template method pattern}. Any method whose name starts with \texttt{test\_} will be
+  run; a test is successful iff it does \emph{not} raise an exception. Specialized ``asserts''
+  are defined in the \texttt{TestCase} class -- they provide better logging and reporting of
+  failures than a plain \texttt{assert} would:
 
   \begin{lstlisting}
 import unittest
@@ -267,13 +251,6 @@ class MyTest(unittest.TestCase):
     self.assertEqual(square(2), 4)
     self.assertEqual(square(-2), 4)
   \end{lstlisting}
-
-Any method whose name starts with \texttt{test\_} will be run.
-A test is successful iff it does \emph{not} raise an exception!
-
-%\+
-Specialized ``asserts'' are defined in the \texttt{TestCase}
-class: they provide better logging and reporting of failures.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -314,6 +291,16 @@ class MyTest(unittest.TestCase):
   \end{lstlisting}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition: Fixtures}
+\begin{block}{Intuition}
+Think of \texttt{setUp}/\texttt{tearDown} as a stage crew: before each scene (test) they set up
+the props (fresh objects, files, connections), and after the scene they clear the stage --
+so every test starts from the same clean state and one test's leftovers can never leak into
+the next.
+\end{block}
+\end{frame}
+
 
 \begin{frame}[fragile]
 \frametitle{The unittest module (4/4)}
@@ -331,9 +318,29 @@ OK
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Modern Python: \texttt{pytest}}
+The \texttt{pytest} framework is today's most widely used Python testing tool. It runs
+\texttt{unittest}-style test classes unchanged, but also lets you write tests as plain
+functions with plain \texttt{assert} statements -- no \texttt{TestCase} subclass, no
+\texttt{self.assertEqual}, and it still prints a detailed diff on failure:
+\begin{lstlisting}
+def test_square1():
+    assert square(1) == 1
+
+def test_square2():
+    assert square(2) == 4
+    assert square(-2) == 4
+\end{lstlisting}
+\begin{lstlisting}[language=sh]
+$ pytest test_square.py
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Exercises}
 %  %  \begin{exercise}
-    Write a set of unit tests for the following function:
+    Write a set of unit tests for the following function. Pay special attention to the corner
+    cases!
 \begin{lstlisting}
 def is_prime(number):
   """Return True if `number` is prime."""
@@ -342,6 +349,22 @@ def is_prime(number):
       return False
   return True
 \end{lstlisting}
-    Pay special attention to the corner cases!
 %%  \end{exercise}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Testing}
+\begin{block}{Think About It}
+A doctest and a unittest both check that \lstinline|square(2) == 4|. What's the actual tradeoff
+between putting that check in a docstring (doctest) versus a \lstinline|test_square| method
+(unittest/pytest)?
+\end{block}
+\pause
+\begin{block}{Answer}
+Doctests double as usage documentation -- the example lives right where a reader looks for how
+to call the function -- but they're awkward for anything beyond a couple of lines and don't
+support fixtures (\texttt{setUp}/\texttt{tearDown}). unittest/pytest are more verbose to set up
+but scale to complex suites, support fixtures, and give clearer isolated failure reports. In
+practice: doctests are documentation-by-example; unittest/pytest are for real test suites.
+\end{block}
 \end{frame}

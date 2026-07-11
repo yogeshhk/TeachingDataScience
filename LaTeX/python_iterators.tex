@@ -45,11 +45,11 @@ With a file, it loops over lines of the file:
 >>> ",".join(["a", "b", "c"])
 'a,b,c'
 >>> ",".join({"x": 1, "y": 2})
-'y,x'
+'x,y'
 >>> list("python")
 ['p', 'y', 't', 'h', 'o', 'n']
 >>> list({"x": 1, "y": 2})
-['y', 'x']
+['x', 'y']
 \end{lstlisting}
     \end{itemize}
 \end{frame}
@@ -112,6 +112,16 @@ An iterator object allows to loop just once.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition: The Iterator Protocol}
+\begin{block}{Intuition}
+\lstinline|iter()| hands you a ticket-dispenser (the iterator) for a queue; \lstinline|next()|
+advances the dispenser one ticket at a time. Once the queue is empty, the dispenser doesn't hand
+you a blank ticket -- it tells you it's out (\lstinline|StopIteration|), so any loop built on
+top of it knows exactly when to stop.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Iteration Protocol}
 The built-in function \lstinline|iter()| takes an iterable object and returns an iterator.
 	\begin{lstlisting}
@@ -130,6 +140,8 @@ The built-in function \lstinline|iter()| takes an iterable object and returns an
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Iteration Protocol}
 
+Each call to \lstinline|next()| returns the next element. When exhausted, it raises
+\lstinline|StopIteration|:
 \begin{lstlisting}
 >>> next(x)
 2
@@ -140,7 +152,6 @@ Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 StopIteration
 \end{lstlisting}
-Each call to \lstinline|next()| returns the next element. When exhausted, it raises \lstinline|StopIteration|.
 \end{frame}
 
 
@@ -221,14 +232,15 @@ StopIteration
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Iteration Usage}
-Many built-in functions accept iterators as arguments.
+Many built-in functions accept iterators as arguments. In this case, both the iterable and
+iterator are the same object -- notice that \_\_iter\_\_ returned \lstinline|self|. It need not
+be the case always:
 \begin{lstlisting}
 >>> list(yrange(5))
 [0, 1, 2, 3, 4]
 >>> sum(yrange(5))
 10
 \end{lstlisting}
-In the above case, both the iterable and iterator are the same object. Notice that the \_\_iter\_\_ method returned self. It need not be the case always.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -346,6 +358,23 @@ Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 StopIteration
 \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Iterators}
+\begin{block}{Think About It}
+\lstinline|yrange| and \lstinline|zrange| both support calling \lstinline|list(obj)| twice in a
+row, but only \lstinline|zrange| gives the same result both times. Why?
+\end{block}
+\pause
+\begin{block}{Answer}
+\lstinline|yrange.__iter__| returns \lstinline|self|, so the iterable and the iterator are the
+\emph{same} object -- once its internal state (\lstinline|self.i|) reaches \lstinline|self.n|,
+it's exhausted for good, and a second \lstinline|list()| call gets nothing back.
+\lstinline|zrange.__iter__| returns a \emph{fresh} \lstinline|zrange_iter(self.n)| every time,
+so each \lstinline|list()| call starts a brand-new iterator with its own state -- exactly the
+iterable-vs-iterator distinction from a few slides back.
+\end{block}
 \end{frame}
 
 

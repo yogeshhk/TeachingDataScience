@@ -146,17 +146,15 @@ array([-2.,  0.,  2.,  4.,  6.])
 \begin{frame}[fragile]
     \frametitle{Inefficient Arithmetic}
 
-    Never do this:
+    Never do this -- it sends 10 separate jobs to the underlying C library:
     \begin{lstlisting}
 >>> for i in range(10):
         z[i] = x[i] + y[i]
-		
-    % It will send 10 separate jobs to the C libraries.
-    \\~\\
-    % Always try to do vectorized calculations:
->>> z = x+y
+    \end{lstlisting}
 
-	%     It only sends one job.
+    Always try to do vectorized calculations instead -- this sends only one job:
+    \begin{lstlisting}
+>>> z = x+y
     \end{lstlisting}
 \end{frame}
 
@@ -208,7 +206,7 @@ Note: the formulation stated earlier is an approximation to original approximati
 \begin{frame}[fragile]\frametitle{Multidimensional Arrays}
 
     \begin{lstlisting}
-%     NumPy supports multidimensional arrays:
+# NumPy supports multidimensional arrays:
 
 >>> x = np.zeros((3,4))
 >>> x
@@ -220,7 +218,7 @@ array([ 0.,  0.,  0.])
 >>> x[0] # or x[0,:]
 array([ 0.,  0.,  0., 0.])
 
-%    NumPy arrays support comma-separated dimension indexing
+# NumPy arrays support comma-separated dimension indexing
 
     \end{lstlisting}
 
@@ -285,20 +283,31 @@ array([ 0.,  0.,  0., 0.])
 \begin{frame}[fragile]\frametitle{Broadcasting}
 
     \begin{lstlisting}
-%    Arithmetic usually requires arrays to be the same shape:
-	
+# Arithmetic usually requires arrays to be the same shape:
+
 >>> x = np.arange(12).reshape(3,4)
 >>> y = np.arange(12).reshape(4,3)
 >>> x*y   # Does this work?
 
-	%    But broadcasting will copy outer dimensions inward:
+# But broadcasting will copy outer dimensions inward:
 
 >>> x = np.ones(12).reshape(3,4)
 >>> y = np.arange(4)
 >>> x*y     # Outer dimension matches
-%    As long as the last dimensions match, you can broadcast.
+# As long as the last dimensions match, you can broadcast.
 
     \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition: Broadcasting}
+\begin{block}{Intuition}
+Broadcasting is like stamping a single row of a pattern across every row of a grid, without
+actually copying that row in memory: if one array has shape \texttt{(4,)} and the other
+\texttt{(3,4)}, NumPy conceptually stretches (``broadcasts'') the smaller one to match the
+bigger one's shape before applying the operation element-by-element -- as long as the trailing
+dimensions already line up.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -326,7 +335,7 @@ array([ 0.,  0.,  0., 0.])
 >>> np.hstack((x,y))    # Stack on axis=0
 >>> np.vstack((x,y))    # Stack on axis=1
 
-# Use \lstinline|np.concatenate| for higher dimensions:
+# Use np.concatenate for higher dimensions:
 
 
 >>> x = np.ones((4,3,2))
@@ -424,7 +433,7 @@ array([ 0.,  0.,  0., 0.])
     \begin{lstlisting}
 >>> x = np.random.rand(3,4)
 >>> x_m = np.ma.masked_array(x, x>0.5)
->>> print x_m
+>>> print(x_m)
 
 #     Support isn't universal, but it's not bad
     \end{lstlisting}
@@ -482,4 +491,18 @@ array([ 0.,  0.,  0., 0.])
 >>> data = sio.loadmat('mydata.mat')
 >>> sio.savemat('mydata.mat', {'var': data})
     \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: NumPy \& SciPy}
+\begin{block}{Think About It}
+Given \lstinline|x = np.arange(5)| and \lstinline|y = x| (not \lstinline|np.copy(x)|), why does
+changing \lstinline|x[0]| also change \lstinline|y[0]|? How would you avoid this?
+\end{block}
+\pause
+\begin{block}{Answer}
+NumPy arrays are mutable, and \lstinline|y = x| doesn't copy the array -- it just makes
+\texttt{y} a second reference to the same underlying memory. Use \lstinline|y = np.copy(x)| (or
+\lstinline|x.copy()|) to get an independent array that won't be affected by changes to \texttt{x}.
+\end{block}
 \end{frame}

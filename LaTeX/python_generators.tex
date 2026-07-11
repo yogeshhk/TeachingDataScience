@@ -23,8 +23,19 @@ def yrange(n):
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition: Generators}
+\begin{block}{Intuition}
+A generator function is like a lazy vending machine: it only produces the next item when you
+press the button (\lstinline|next()|), rather than manufacturing and storing the whole product
+line up front the way a list would. That makes generators the natural fit for sequences too
+large -- or infinite -- to hold in memory all at once.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Generator Usage}
-Each time the yield statement is executed the function generates a new value.
+Each time the yield statement is executed the function generates a new value. A generator is
+also an iterator, so you don't have to worry about the iterator protocol:
 \begin{lstlisting}
 >>> y = yrange(3)
 >>> y
@@ -40,7 +51,6 @@ Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 StopIteration
 \end{lstlisting}
-So a generator is also an iterator. You don't have to worry about the iterator protocol.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,7 +102,7 @@ The first number of the sequence is 0, the second number is 1, and each subseque
 \begin{lstlisting}
 import time
 def fib():
-   a, b = 1, 1
+   a, b = 0, 1
    while True:
       yield b
       a, b = b, a + b
@@ -246,7 +256,7 @@ for e in n:
     print(e)
     i += 1
     if i > 100:
-        raise StopIteration
+        break
 \end{lstlisting}
 \end{frame}
 
@@ -318,8 +328,29 @@ def grep(pattern, lines):
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Example: Reading multiple files}
+\begin{frame}[fragile]\frametitle{\texttt{yield from}: Delegating to a Sub-generator}
+When a generator's job is mostly to hand off to another generator, \lstinline|yield from| avoids
+writing a manual \lstinline|for ... yield| loop, and forwards the sub-generator's return value
+too:
+\begin{lstlisting}
+def readfiles(filenames):
+    for f in filenames:
+        with open(f) as fh:
+            yield from fh   # same as: for line in fh: yield line
 
+def chain_two(seq1, seq2):
+    yield from seq1
+    yield from seq2
+
+>>> list(chain_two([1, 2], [3, 4]))
+[1, 2, 3, 4]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Reading multiple files}
+The code is much simpler now with each function doing one small thing. We can move all these
+functions into a separate module and reuse it in other programs:
 \begin{lstlisting}
 def printlines(lines):
     for line in lines:
@@ -330,7 +361,6 @@ def main(pattern, filenames):
     lines = grep(pattern, lines)
     printlines(lines)
 \end{lstlisting}
-The code is much simpler now with each function doing one small thing. We can move all these functions into a separate module and reuse it in other programs.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -387,6 +417,21 @@ a 1
 b 2
 c 3
 \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Generators}
+\begin{block}{Think About It}
+\lstinline|squares()| calls \lstinline|integers()|, an infinite generator. Why doesn't
+\lstinline|print(take(5, squares()))| hang forever?
+\end{block}
+\pause
+\begin{block}{Answer}
+Because generators are lazy: \lstinline|integers()| doesn't produce any values until something
+asks for them via \lstinline|next()|. \lstinline|take()| only calls \lstinline|next()| 5 times
+(via its \lstinline|for i in range(n)| loop), so only 5 values ever get pulled through the whole
+chain -- the ``infinite'' sequence is never actually materialized.
+\end{block}
 \end{frame}
 
 
