@@ -9,7 +9,7 @@ labels: bug
 e.g. `LaTeX/ml_svm.tex`, or `Main_Seminar_ML_SVM_NB_Presentation.tex`
 
 **What's wrong?**
-A clear description of the error — a wrong formula, a code example that no longer runs, a dead
+A clear description of the error: a wrong formula, a code example that no longer runs, a dead
 link, a LaTeX compile error, etc.
 
 **Expected / correct behavior**

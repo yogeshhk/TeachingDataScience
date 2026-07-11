@@ -15,7 +15,7 @@ Examples of behavior that contributes to a positive environment:
 - Being respectful of differing opinions, viewpoints, and experiences
 - Giving and gracefully accepting constructive feedback
 - Focusing on what is best for the community and the learners this content serves
-- Showing patience with newcomers — this is an educational repo, and questions are welcome
+- Showing patience with newcomers, this is an educational repo, and questions are welcome
 
 Examples of unacceptable behavior:
 

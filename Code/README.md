@@ -1,7 +1,7 @@
 # Code
 
 Runnable Python scripts and Jupyter notebooks demonstrating the concepts covered in the
-`LaTeX/` slide decks — drawn from many contributors and courses, reorganized here by area.
+`LaTeX/` slide decks, drawn from many contributors and courses, reorganized here by area.
 Where a subdirectory has its own `README.md`, it has more detail (setup, features) than the
 one-liner below; click through for that.
 
@@ -46,7 +46,7 @@ conda activate <env-name>
 | [`ludwig/`](ludwig/) | Low/no-code, config-based platform for fine-tuning LLMs and other ML/DL workflows |
 | `llama/` | Llama 2 fine-tuning scripts |
 | `gcp_notebooks/` | Fine-tuning notebooks on GCP (Gemma, Ludwig, CodeT5) |
-| `vizuara/` | Building a Small Language Model (SLM) from scratch — notebooks and slides |
+| `vizuara/` | Building a Small Language Model (SLM) from scratch: notebooks and slides |
 | `amd/` | AMD Academy workshop materials: AI agents, fine-tuning, LLM serving with vLLM |
 
 ## Document Parsing
@@ -66,7 +66,7 @@ conda activate <env-name>
 | `deep_rl/` | HuggingFace Deep RL course notebooks (Q-learning, Deep Q-Learning, Unity3D, units 1-8) |
 | `dl_curiousily/` | Deep learning tutorials: neural networks through production deployment |
 | `animesh1012/` | Plant disease image classifier (train/test notebooks + simple web app) |
-| `prodramp/` | Deep learning with satellite imagery — data processing and modeling |
+| `prodramp/` | Deep learning with satellite imagery: data processing and modeling |
 | `curiosily_ai_bootcamp/` | AI Bootcamp notebooks |
 
 ## Classical ML
@@ -82,7 +82,7 @@ conda activate <env-name>
 
 | Directory | Covers |
 |---|---|
-| [`spacy/`](spacy/) | spaCy for NER, custom pipelines, batch processing — with an Indic-language focus |
+| [`spacy/`](spacy/) | spaCy for NER, custom pipelines, batch processing, with an Indic-language focus |
 | `nlp/` | Classical NLP tutorials (BERT, NLTK, spaCy, Doc2Vec classification, knowledge graphs) |
 | `dnlp/` | Deep NLP notebooks: attention mechanisms, sentiment analysis, NER with BiLSTM-CRF |
 | `meta_bAbi_tasks/` | Assessing LLMs' logical interpretation via Meta's bAbI tasks |
@@ -92,7 +92,7 @@ conda activate <env-name>
 
 | Directory | Covers |
 |---|---|
-| [`gnn/`](gnn/) | Graph Neural Networks with PyTorch Geometric — molecular property prediction, knowledge graphs |
+| [`gnn/`](gnn/) | Graph Neural Networks with PyTorch Geometric: molecular property prediction, knowledge graphs |
 | `AIinGraphs/` | Standalone write-up on graph-based AI |
 
 ## Indic Language

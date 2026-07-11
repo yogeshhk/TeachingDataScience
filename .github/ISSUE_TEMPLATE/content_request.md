@@ -9,7 +9,7 @@ labels: content
 e.g. "A seminar on diffusion models" or "More depth on transformer attention math"
 
 **Where would it fit?**
-Check [`COURSES.md`](../../COURSES.md) first — does this extend an existing course/workshop, or
+Check [`COURSES.md`](../../COURSES.md) first: does this extend an existing course/workshop, or
 is it a new standalone seminar?
 
 **Why this topic?**
