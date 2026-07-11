@@ -8,6 +8,16 @@ An open-source educational repository containing:
 - **LaTeX**: Beamer presentation slides and two-column cheatsheets for Data Science courses (Python, ML, DL, NLP, GenAI, RAG, etc.)
 - **Code**: Python scripts and Jupyter notebooks demonstrating the concepts covered in the slides
 
+## Repo popularity/discoverability upgrade (Jul 2026)
+
+This repo's own discoverability upgrade is done (README rewritten as a landing page, `COURSES.md`,
+`Code/README.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue/PR templates, `Admin/` cleanup;
+see git history and `Code/reports/` for details). That work produced two generic slash commands,
+`/upgrade-repo-tech` and `/upgrade-repo-non-tech` (in `~/.claude/commands/`, mirrored in
+`Code/claudecode/dot_claude/commands/`), meant to be run next on sibling repos: `/upgrade-repo-non-tech`
+on `BharatVidya` (no code, pure content), `/upgrade-repo-tech` on `MidcurveNN` and `Sarvadnya` (both
+real codebases). Not yet run on any of them as of this note; run one at a time, plan-then-approve.
+
 ## LaTeX Build System
 
 Compile a specific deck from the `LaTeX/` directory using MikTeX's `texify`:
