@@ -203,7 +203,7 @@ Limitations
 \begin{itemize}
 \item If we find 2-NN then 3.2 and 5 are the neighbours
 \item Their ys are 6 and 3.
-\item Avereage of theose ys is 4.5. So for $x=4$, y is predicted as 4.5
+\item Average of those ys is 4.5. So for $x=4$, y is predicted as 4.5
 \end{itemize}
 \begin{center}
 \includegraphics[width=0.4\linewidth,keepaspectratio]{knn21}
@@ -216,7 +216,7 @@ Limitations
 \begin{itemize}
 \item Its easy to see that if you go on adding neighbours, you may not be more accurate all the time.
 \item If you take all the neighbours?
-\item As it is just avarage of those many y values aorund.
+\item As it is just average of those many y values around.
 \item Is that good? No. There is one sweet spot (tradeoff).
 \end{itemize}
 \begin{center}
@@ -228,7 +228,7 @@ Limitations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{KNN Regression Example: 1d}
 \begin{itemize}
-\item So, if you are in the middle, then  its intrapolation, works.
+\item So, if you are in the middle, then  its interpolation, works.
 \item If you are at boundaries then, its hard to predict. Extrapolation
 \item Find for $x=0$ with 1-NN, 2NN.
 \end{itemize}
@@ -364,13 +364,21 @@ function.
 \begin{itemize}
 \item Euclidean is for numerical features: $\sqrt{\sum (x_d - x'_d)^2}$
 \item Hamming is for categorical features: $\sum 1_{x_d \neq x'_d}$ ie  number of attributes, where $x, x'$  differ 
-\item Minkowski distance:  $p\sqrt{\sum (x_d - x'_d)^p}$
+\item Minkowski distance:  $\sqrt[p]{\sum |x_d - x'_d|^p}$
 	\begin{itemize}
-	\item p = 2: Euclidean 
+	\item p = 2: Euclidean
 	\item p = 1: Manhattan
-	\item p = 0: Hamming 
+	\item p = 0: Hamming
 	\end{itemize}
 \end{itemize}
+
+\begin{block}{Intuition}
+Minkowski is just one dial ($p$) that stretches between two familiar rulers: at $p=1$ you
+add up the ``city block'' steps along each axis (Manhattan), while at $p=2$ you measure the
+straight-line distance (Euclidean). Larger differences get penalized more heavily as $p$
+grows, so the choice of $p$ is really a choice about how harshly you want to punish a single
+large mismatch versus several small ones.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -396,8 +404,11 @@ to output their corresponding responses.
 \begin{frame}[fragile]\frametitle{Writing our Own KNN from Scratch}
 In the case of KNN, which as discussed earlier, is a lazy algorithm, the training block reduces to just memorizing the training data
 \begin{lstlisting}
+import numpy as np
+from collections import Counter
+
 def train(X_train, y_train):
-	# do nothing 
+	# do nothing
 	return
 \end{lstlisting}
 \end{frame}
@@ -452,7 +463,9 @@ def kNearestNeighbor(X_train,y_train,X_test, predictions, k):
 \begin{frame}[fragile]\frametitle{Writing our Own KNN from Scratch}
 Let's go ahead and run our algorithm
 \begin{lstlisting}
-# making our predictions 
+from sklearn.metrics import accuracy_score
+
+# making our predictions
 predictions = []
 
 kNearestNeighbor(X_train, y_train, X_test, predictions, 7)
@@ -462,7 +475,7 @@ predictions = np.asarray(predictions)
 
 # evaluating accuracy
 accuracy = accuracy_score(y_test, predictions)
-print('\nThe accuracy is %d%%' % accuracy*100)
+print('\nThe accuracy is %d%%' % (accuracy * 100))
 \end{lstlisting}
 \end{frame}
 
@@ -485,6 +498,14 @@ stead, batch up nearby points to quickly find the
 most appropriate bucket B for our query point.
 \end{itemize}
 \end{itemize}
+
+\begin{block}{Intuition}
+All three tricks trade a bit of exactness for speed by pre-organizing the training points so
+that a query only needs to look at a small nearby subset instead of every single point.
+Voronoi/Grid indexes still find the true nearest neighbor but narrow the search space first;
+LSH goes a step further and accepts an approximate answer in exchange for even less work --
+a reasonable trade when ``close enough'' neighbors are good enough for the task.
+\end{block}
 \end{frame}
 
 %
@@ -714,7 +735,7 @@ Cons
 %\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{K- Nearest Neighbors (Recap)}
+\begin{frame}[fragile]\frametitle{K-Nearest Neighbors (Recap)}
 \begin{itemize}
 \item k = parameter, chosen by analyst
 \item For a given test instance, use the k ``closest'' points (nearest neighbors) for performing classification
@@ -726,6 +747,24 @@ Cons
 	\item The value of k, the number of nearest neighbors to retrieve
 	\end{itemize}
 \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: K-Nearest Neighbor}
+\begin{block}{Think About It}
+Suppose you train a KNN model to predict house prices using square footage (values in the
+thousands) and number of bedrooms (typically 1-5), without scaling either feature. Which
+feature will dominate the distance calculation, and why does this make KNN especially
+sensitive to feature scaling compared to a Decision Tree trained on the same raw data?
+\end{block}
+\pause
+\begin{block}{Answer}
+Square footage will dominate, since distances are computed on raw magnitudes and a
+difference of a few hundred square feet dwarfs a difference of one bedroom. KNN is sensitive
+to this because every feature contributes directly to a single geometric distance number;
+a Decision Tree instead considers one feature at a time when choosing splits, so an
+unscaled feature doesn't drown out the others the way it does for a distance metric.
+\end{block}
 \end{frame}
 
 

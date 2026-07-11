@@ -22,7 +22,7 @@ import pandas
 import scipy
 import numpy
 
-url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/ pima-indians-diabetes.data.csv"
+url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv"
 names = ['preg', 'plas', 'pres', 'skin', 'test', 'mass', 'pedi', 'age', 'class']
 
 dataframe = pandas.read_csv(url, names=names)
@@ -52,7 +52,7 @@ from sklearn import model_selection
 from sklearn.linear_model import LogisticRegression
 
 seed = 7
-kfold = model_selection.KFold(n_splits=10, random_state=seed)
+kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
 model = LogisticRegression()
 scoring = 'accuracy'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
@@ -79,7 +79,7 @@ Accuracy score of approximately 77\% accurate
 \begin{frame}[fragile]\frametitle{Logarithmic Loss}
 \begin{lstlisting}
 seed = 7
-kfold = model_selection.KFold(n_splits=10, random_state=seed)
+kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
 model = LogisticRegression()
 scoring = 'neg_log_loss'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
@@ -99,7 +99,7 @@ Smaller logloss is better with 0 representing a perfect logloss. As mentioned ab
 
 	\begin{itemize}
 	\item Area under ROC Curve (or AUC for short) is a performance metric for binary classification problems.
-	\item The AUC represents a model’s ability to discriminate between positive and negative classes. An area of 1.0 represents a model that made all predictions perfectly. An area of 0.5 represents a model as good as random. Learn more about ROC here.
+	\item The AUC represents a model’s ability to discriminate between positive and negative classes. An area of 1.0 represents a model that made all predictions perfectly. An area of 0.5 represents a model as good as random.
 	\item ROC can be broken down into sensitivity and specificity. A binary classification problem is really a trade-off between sensitivity and specificity.
 		\begin{itemize}
 
@@ -108,13 +108,17 @@ Smaller logloss is better with 0 representing a perfect logloss. As mentioned ab
 	\end{itemize}
 	\end{itemize}
 
+\begin{block}{Intuition}
+AUC = 0.5 isn't ``50\% accurate'' -- it means the model's ranking of positive vs. negative cases is no better than a coin flip. AUC is threshold-free: it asks ``if I pick one random positive and one random negative example, how often does the model score the positive one higher?'' -- which is why it stays meaningful even when the two classes are wildly imbalanced, unlike plain accuracy.
+\end{block}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Area Under ROC Curve}
 \begin{lstlisting}
 seed = 7
-kfold = model_selection.KFold(n_splits=10, random_state=seed)
+kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
 model = LogisticRegression()
 scoring = 'roc_auc'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
@@ -142,6 +146,8 @@ The AUC is relatively close to 1 and greater than 0.5, suggesting some skill in 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Confusion Matrix}
 \begin{lstlisting}
+from sklearn.metrics import confusion_matrix
+
 test_size = 0.33
 seed = 7
 X_train, X_test, Y_train, Y_test = model_selection.train_test_split(X, Y, test_size=test_size, random_state=seed)
@@ -172,6 +178,8 @@ The majority of the predictions fall on the diagonal line of the matrix (which a
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Classification Report}
 \begin{lstlisting}
+from sklearn.metrics import classification_report
+
 test_size = 0.33
 seed = 7
 X_train, X_test, Y_train, Y_test = model_selection.train_test_split(X, Y, test_size=test_size, random_state=seed)
@@ -227,10 +235,12 @@ Y = array[:,13]
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Classification Report}
+\begin{frame}[fragile]\frametitle{Mean Absolute Error}
 \begin{lstlisting}
+from sklearn.linear_model import LinearRegression
+
 seed = 7
-kfold = model_selection.KFold(n_splits=10, random_state=seed)
+kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
 model = LinearRegression()
 scoring = 'neg_mean_absolute_error'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
@@ -257,7 +267,7 @@ A value of 0 indicates no error or perfect predictions. Like logloss, this metri
 \begin{frame}[fragile]\frametitle{Mean Squared Error}
 \begin{lstlisting}
 seed = 7
-kfold = model_selection.KFold(n_splits=10, random_state=seed)
+kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
 model = LinearRegression()
 scoring = 'neg_mean_squared_error'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
@@ -275,7 +285,7 @@ This metric too is inverted so that the results are increasing. Remember to take
 
 	\begin{itemize}
 	\item The $R^2$ (or R Squared) metric provides an indication of the goodness of fit of a set of predictions to the actual values. In statistical literature, this measure is called the coefficient of determination.
-	\item This is a value between 0 and 1 for no-fit and perfect fit respectively.
+	\item $R^2 = 1$ is a perfect fit and $R^2 = 0$ means the model does no better than always predicting the mean -- but $R^2$ is \emph{not} bounded below by 0: a model that fits worse than that mean-only baseline (common on a bad fold) can score negative, which is exactly why the example below has such a large standard deviation relative to its mean.
 	\end{itemize}
 
 \end{frame}
@@ -284,7 +294,7 @@ This metric too is inverted so that the results are increasing. Remember to take
 \begin{frame}[fragile]\frametitle{$R^2$ Metric}
 \begin{lstlisting}
 seed = 7
-kfold = model_selection.KFold(n_splits=10, random_state=seed)
+kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
 model = LinearRegression()
 scoring = 'r2'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
@@ -294,5 +304,16 @@ R^2: 0.203 (0.595)
 \end{lstlisting}
 
 This metric too is inverted so that the results are increasing. Remember to take the absolute value before taking the square root if you are interested in calculating the RMSE.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Model Evaluation}
+\begin{block}{Think About It}
+The Pima diabetes dataset has roughly twice as many non-diabetic (class 0) cases as diabetic (class 1) cases. A model that always predicts class 0, no matter the input, could reach around 65\% classification accuracy. Which of the metrics on the earlier slides would immediately expose this model as useless, and why does plain accuracy fail to?
+\end{block}
+\pause
+\begin{block}{Answer}
+AUC would immediately expose it: a constant-output model can't rank any example above another, so it scores AUC $\approx$ 0.5, no better than random, regardless of class imbalance. The confusion matrix would show the same story directly -- an entire empty row or column, since class 1 is never predicted. Accuracy fails here because it only counts how many predictions matched, and on an imbalanced dataset ``always predict the majority class'' matches a lot of the time by construction -- exactly why accuracy is called out on the first slide of this section as ``the most misused'' metric.
+\end{block}
 \end{frame}
 

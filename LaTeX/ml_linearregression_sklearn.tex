@@ -45,7 +45,7 @@ X = array[:,0:13]  # feature columns
 Y = array[:,13]    # target: median house value
 seed = 7
 # 10-fold cross-validation for stable error estimate
-kfold = model_selection.KFold(n_splits=10, random_state=seed)
+kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
 model = LinearRegression()
 scoring = 'neg_mean_absolute_error'  # negated so higher = better
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
@@ -366,13 +366,17 @@ linreg.intercept_ + linreg.coef_ * 2
 # array([ 1.51699012])
 
 # compute prediction for al=2 using the predict method
-linreg.predict(2) 
+linreg.predict([[2]])
 # array([ 1.51699012])
 
 # examine coefficient for al
-zip(feature_cols, linreg.coef_) 
+list(zip(feature_cols, linreg.coef_))
 # [('al', -0.002477606387469623)]
 \end{lstlisting}
+
+\begin{block}{Intuition}
+Scikit-learn estimators always expect a 2D array for \texttt{X} -- shape (n\_samples, n\_features) -- even when there's only one feature or one sample, because the API is built for the general many-features case. That's why a single number like \texttt{2} must be wrapped as \texttt{[[2]]} (one sample, one feature) rather than passed as a bare scalar.
+\end{block}
 
 \end{frame}
 
@@ -676,3 +680,14 @@ zip(feature_cols, linreg.coef_)
 %\includegraphics[width=0.6\linewidth]{sklclass11}
 %\end{center}
 %\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Linear Regression with Scikit-Learn}
+\begin{block}{Think About It}
+The Glass Identification example fits \texttt{linreg.fit(X, y)} with \texttt{feature\_cols = ['al']}, a single feature. Would \texttt{X = glass['al']} (a pandas Series, one-dimensional) work just as well as \texttt{X = glass[feature\_cols]} (a DataFrame, two-dimensional)?
+\end{block}
+\pause
+\begin{block}{Answer}
+No -- \texttt{glass['al']} is 1D (shape \texttt{(n,)}), and scikit-learn's \texttt{fit()} expects a 2D features matrix (shape \texttt{(n\_samples, n\_features)}), so it raises a \texttt{ValueError} about reshaping. \texttt{glass[feature\_cols]} (a list of column names, not a single string) keeps it as a DataFrame -- 2D even with one column -- which is exactly the same single-feature-array gotcha as the earlier \texttt{predict(2)} vs \texttt{predict([[2]])} example.
+\end{block}
+\end{frame}

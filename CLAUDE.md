@@ -102,7 +102,11 @@ Full 4-level hierarchy for the 40-hour ML course "Machine Learning for Graduate 
   - Standalone all-ML workshop (W2–W6, no Python/demos): `Main_Workshop_MachineLearning_{Presentation,CheatSheet}.tex`
 - **Seminars** (10 × driver pairs): `seminar_ml_{intro,dataprep,regression,decisiontree,ensemble,knn,svm_nb,clustering,dimreduction,deployment}_content.tex`; drivers are `Main_Seminar_ML_{Intro,DataPrep,Regression,DecisionTree,Ensemble,KNN,SVM_NB,Clustering,DimReduction,Deployment}_{Presentation,CheatSheet}.tex`
 - **New demo/assign files**: `ml_course_demo_regression_housing.tex`, `ml_course_demo_svm_digits.tex`, `ml_course_assign_knn_wine.tex`, `ml_course_demo_clustering_customers.tex`, `ml_course_assign_pca_digits.tex`
-- **Upgrade status**: Seminar 1 (Intro) upgraded; track remaining 9 in `LaTeX/todo_ml_seminar_upgrade.md`
+- **Upgrade status**: All 10 seminars upgraded (compiled clean + `/upgrade-deck` pass: technical
+  fixes, "Intuition" callouts, "Quick Check" quizzes) as of Jul 2026 — see git history for
+  details, as `LaTeX/todo_ml_seminar_upgrade.md` (the working to-do for this pass) was deleted
+  once the work completed, matching the precedent set by the Maths4ML/Python restructuring notes
+  below
 - **Pending**: `course_machinelearning_content.tex` still needs the 5 new demo/assign files listed above added at the end
 
 ### Maths for ML restructured (July 2026), promoted to a course (Aug 2026)

@@ -79,7 +79,7 @@ import pandas as pd
 filename = 'vehicles_train.csv'
 url = 'https://raw.githubusercontent.com/justmarkham/DAT8/master/data/' + filename
 
-train = pd.read_csv(filename)
+train = pd.read_csv(url)
 \end{lstlisting}
 
 \end{frame}
@@ -96,6 +96,7 @@ feature_cols = ['year', 'miles', 'doors', 'vtype']
 X = train[feature_cols]
 y = train.price
 
+import numpy as np
 from sklearn.tree import DecisionTreeRegressor
 
 treereg = DecisionTreeRegressor(random_state=1)
@@ -103,7 +104,7 @@ treereg = DecisionTreeRegressor(random_state=1)
 # use leave-one-out cross-validation (LOOCV) to estimate the RMSE for this model
 from sklearn.model_selection import cross_val_score
 
-scores = cross_val_score(treereg, X, y, cv=14, scoring='r2')
+scores = cross_val_score(treereg, X, y, cv=14, scoring='neg_mean_squared_error')
 np.mean(np.sqrt(-scores))
 \end{lstlisting}
 \end{frame}
@@ -137,6 +138,10 @@ plt.plot(max_depth_range, RMSE_scores)
 plt.xlabel('max_depth')
 plt.ylabel('RMSE (lower is better)')
 \end{lstlisting}
+
+\begin{block}{Intuition}
+\texttt{max\_depth} is a bias-variance knob: too shallow (depth 1) and the tree can barely split the data at all -- high bias, underfitting. Too deep (unlimited) and it carves out a leaf for almost every training point -- high variance, overfitting, exactly like the fully-grown tree in the earlier conceptual section. The RMSE-vs-depth curve typically dips to a sweet spot in between, which is what this sweep is searching for.
+\end{block}
 
 \end{frame}
 
@@ -469,4 +474,15 @@ for evaluating splits; means with medians for predictions in terminal nodes)
 \item very fast to classify new points
 \item robust to tuning parameters (the stopping criteria), \textit{for a given set of data}
 \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Decision Trees with Scikit-Learn}
+\begin{block}{Think About It}
+The Car Evaluation example trains a \texttt{max\_depth=6} tree (Accuracy printed) and later a \texttt{max\_depth=None} ``fully perfect'' tree, comparing their \texttt{feature\_importances\_} charts. If the full-depth tree reaches close to 100\% accuracy on this same training data, why bother looking at the shallower depth-6 tree's feature importances at all?
+\end{block}
+\pause
+\begin{block}{Answer}
+Training accuracy alone doesn't tell you whether importances \emph{generalize} -- a fully-grown tree can reach near-100\% by carving out tiny leaves for individual quirky rows, and \texttt{feature\_importances\_} on that tree partly reflects those overfit splits, not just genuinely predictive structure. The shallower tree is forced to spend its limited splits on the features that separate the \emph{most} data, so its importance ranking is a cleaner signal of what actually matters -- the same bias-variance trade-off from \texttt{max\_depth} tuning, just viewed through feature importance instead of RMSE.
+\end{block}
 \end{frame}

@@ -79,7 +79,7 @@ print(metrics.confusion_matrix(expected, predicted))
 
 \begin{lstlisting}
 import pandas as pd
-iris  = pd.read_csv(`data/iris.csv')
+iris  = pd.read_csv('data/iris.csv')
 print(iris.head())
 \end{lstlisting}
 
@@ -165,7 +165,7 @@ plt.show()
 \end{itemize}
 Plot?
 \begin{lstlisting}
-sns.FacetGrid(iris, hue="Species", size=5) \
+sns.FacetGrid(iris, hue="class", size=5) \
    .map(plt.scatter, "sepal_length_cm", "sepal_width_cm") \
    .add_legend()
 
@@ -235,7 +235,7 @@ Iris-virginica
 
 # We can turn these into integers. We cannot use One-hot encoding dummies here, as we need only one output column:
 
-iris['Species'] = iris['Species'].map({'Iris-setosa':0,'Iris-versicolor':1,'Iris-virginica':2})
+iris['class'] = iris['class'].map({'Iris-setosa':0,'Iris-versicolor':1,'Iris-virginica':2})
 
 # Print the output.
 \end{lstlisting}
@@ -301,6 +301,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 \begin{frame}[fragile]\frametitle{Iris: Logistic Regression}
 \begin{lstlisting}
 # Optimization - Feature scaling
+import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 # Initlalize a new StandardScaler object, sc
@@ -317,13 +318,17 @@ X_combined_std = np.vstack((X_train_std, X_test_std))
 y_combined = np.hstack((y_train, y_test))
 \end{lstlisting}
 
+\begin{block}{Intuition}
+Logistic regression optimizes its coefficients with gradient-based methods, and features on very different scales (e.g. petal length in cm vs. a count in the thousands) make that optimization landscape lopsided -- steep in one direction, flat in another -- which slows or destabilizes convergence. Scaling every feature to comparable range/variance turns that landscape into something closer to a bowl, which is faster and more reliable to descend.
+\end{block}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Iris: Logistic Regression}
 \begin{lstlisting}
 lr = LogisticRegression()
-lr.fit(X_train, y_train)
+lr.fit(X_train_std, y_train)  # use the scaled features from the previous step
 
 \end{lstlisting}
 
@@ -541,9 +546,9 @@ The first column indicates the predicted probability of class 0, and the second 
 
 \begin{lstlisting}
 # examine some example predictions
-print(logreg.predict_proba(1))
-print(logreg.predict_proba(2))
-print(logreg.predict_proba(3))
+print(logreg.predict_proba([[1]]))
+print(logreg.predict_proba([[2]]))
+print(logreg.predict_proba([[3]]))
 
 [[ 0.97161726  0.02838274]]
 [[ 0.34361555  0.65638445]]
@@ -619,12 +624,23 @@ Advantages of logistic regression:
 \end{itemize}
 Disadvantages of logistic regression:
 \begin{itemize}
-% \item 
+% \item
 %    Presumes a linear relationship between the features and the log-odds of the response
 \item     Performance is (generally) not competitive with the best supervised learning methods
 %\item     Can't automatically learn feature interactions
 
 \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Logistic Regression with Scikit-Learn}
+\begin{block}{Think About It}
+In the Glass Identification example, \texttt{logreg.predict\_proba(X)[:, 1]} is used to get the predicted probability of class 1 (household glass). Why index with \texttt{[:, 1]} instead of just calling \texttt{logreg.predict(X)} and treating the 0/1 output as a probability?
+\end{block}
+\pause
+\begin{block}{Answer}
+\texttt{predict()} collapses the model's confidence down to a single hard label by thresholding internally (at 0.5 by default) -- you lose the information of \emph{how} confident the model was. \texttt{predict\_proba()} returns both class probabilities per row (columns sum to 1), so \texttt{[:, 1]} keeps the full, continuous confidence score for class 1 -- letting you see a borderline 0.51 differently from a confident 0.98, or apply a different decision threshold than 0.5 if the cost of false positives and false negatives isn't symmetric.
+\end{block}
 \end{frame}
 
 

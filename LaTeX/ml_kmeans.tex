@@ -389,6 +389,13 @@ Kasun Ranga Wijeweera)}
 %\item So far, all attributes treated equally when computing proximity
 %\item In some situations: some features are more important than others. Decision up to the analyst
 \end{itemize}
+
+\begin{block}{Intuition}
+K-means uses Euclidean ($L_2$) distance by default, which means it implicitly assumes
+clusters are roughly spherical and that all features are on comparable scales -- a feature
+with a much larger numeric range will dominate the distance calculation and effectively
+decide the clustering on its own, so features usually need to be standardized first.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -460,9 +467,18 @@ Algorithm
 \item  K-means picks k points known as centroids.
 \item  Each data point finds distances with each centroid and goes to the one who is closest.
 \item In the next iteration, it computes a new centroid of each cluster based on the latest cluster members.
-\item As we have new centroids, repeat step 2 and 3. 
+\item As we have new centroids, repeat step 2 and 3.
 \item Repeat this process until convergence occurs i.e. centroids do not change.
 \end{enumerate}
+
+\begin{block}{Intuition}
+Each of the two alternating steps can only ever improve or maintain the current clustering:
+reassigning points to their nearest centroid can't increase total distance, and recomputing
+a centroid as the mean of its points minimizes distance to exactly those points. Since the
+quantity being optimized never gets worse and there are only finitely many ways to partition
+the data, the process is guaranteed to stop -- though not necessarily at the best possible
+clustering, only a locally good one.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -563,6 +579,9 @@ Algorithm
 \begin{frame}[fragile]\frametitle{K-means Algorithm : From Scratch}
 Load data
 \begin{lstlisting}
+import numpy as np
+from scipy.io import loadmat
+
 data = loadmat('data/ex7data2.mat')
 X = data['X']
 \end{lstlisting}
@@ -686,6 +705,8 @@ Plot:
 
 Code:
 \begin{lstlisting}
+import matplotlib.pyplot as plt
+
 fig, ax = plt.subplots(figsize=(12,8))
 ax.scatter(cluster1[:,0], cluster1[:,1], s=30, color='r', label='Cluster 1')
 ax.scatter(cluster2[:,0], cluster2[:,1], s=30, color='g', label='Cluster 2')
@@ -743,6 +764,23 @@ When to use?
 \end{frame}
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: K-means}
+\begin{block}{Think About It}
+If you run k-means twice on the exact same dataset with the same k, but starting from
+different random initial centroids, could you get two different final clusterings? What
+does your answer imply about how many times you should run k-means in practice?
+\end{block}
+\pause
+\begin{block}{Answer}
+Yes -- k-means only guarantees convergence to a local optimum of the within-cluster
+distance, not the global one, and which local optimum it lands in depends on where the
+centroids started. This is why implementations like scikit-learn's \texttt{KMeans} run the
+algorithm several times with different random initializations and keep the best result,
+rather than trusting a single run.
+\end{block}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Applications}
