@@ -44,18 +44,10 @@ executed here; flag back to the maintainer when reached.
       layout overlap bug in that slide, not worth spotlighting. Saved to
       `docs/screenshots/` and added a "See It In Action" section near the
       top of the README.
-- [x] Draft a GitHub Actions workflow that compiles flagship decks and
-      attaches the PDFs as Release assets — done:
-      `.github/workflows/publish-course-pdfs.yml`, triggers on a published
-      Release or manual dispatch, compiles all 10 course-level drivers (5
-      courses × Presentation/CheatSheet — verified all 10 filenames exist,
-      including the inconsistently-named `..._DeepLearning_Cheatsheet.tex`
-      lowercase "s"), uploads as workflow artifacts always and attaches to
-      the release when that's the trigger. Caught and fixed a filename bug
-      of my own while writing it (`{driver}.pdf` naively appended to the
-      `.tex` name instead of replacing the extension) before finalizing.
-      **Untested** — same caveat as the CI workflow, can only really run
-      once pushed and a Release is published or it's manually dispatched.
+- [x] ~~Draft a GitHub Actions workflow that compiles flagship decks and
+      attaches the PDFs as Release assets~~ — drafted, then **removed** at
+      maintainer's request: not comfortable with GitHub Actions running
+      automatically yet. `.github/workflows/publish-course-pdfs.yml` deleted.
 - [x] Decide scope for an optional lightweight GitHub Pages catalog page —
       decided: skip for now. `COURSES.md` + the Release-PDF workflow above
       already cover discovery and download; a Pages site would just be a
@@ -129,15 +121,12 @@ executed here; flag back to the maintainer when reached.
       bug-in-slides templates) and a PR template — done: 3 issue templates
       (`bug_report.md`, `content_request.md`, `question.md`) cross-linking
       `COURSES.md`/`CONTRIBUTING.md`, plus `.github/PULL_REQUEST_TEMPLATE.md`.
-- [x] Add a GitHub Actions CI workflow that compiles a few flagship decks on
-      PR — done: `.github/workflows/latex-build-check.yml`, triggers on
-      PRs/pushes touching `LaTeX/**`, compiles 3 representative decks (ML,
-      Python, LLM — verified all 3 driver files exist) via
-      `dante-ev/latex-action` (TeX Live in Docker, since GitHub Actions
-      runners don't have MikTeX). **Caveat: this workflow is untested** — it
-      can only actually run once pushed to GitHub and a matching PR/push
-      happens; local `texify`/MikTeX compiles don't validate the TeX
-      Live-based CI path. Worth checking the first real run's Actions log.
+- [x] ~~Add a GitHub Actions CI workflow that compiles a few flagship decks
+      on PR~~ — built, then **removed** at maintainer's request: not
+      comfortable with GitHub Actions running automatically yet.
+      `.github/workflows/latex-build-check.yml` deleted. `.github/`
+      still has the issue/PR templates (those don't run anything, just
+      pre-fill a form when someone opens an issue/PR by hand).
 
 ## Workstream 5: Asset Cleanup (`LaTeX/images/`)
 
