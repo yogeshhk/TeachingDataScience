@@ -1,0 +1,58 @@
+name: Publish Course PDFs
+
+# Compiles the 5 full-course decks (Presentation + CheatSheet) and either:
+#  - attaches the PDFs to a published GitHub Release, or
+#  - uploads them as a downloadable workflow artifact, when run manually for testing.
+#
+# NOTE: untested — this can only actually run once a Release is published on GitHub, or the
+# workflow is manually dispatched from the Actions tab. Worth checking the first real run's log.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch: {}
+
+jobs:
+  compile-and-publish:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        driver:
+          - Main_Course_MachineLearning_Presentation.tex
+          - Main_Course_MachineLearning_CheatSheet.tex
+          - Main_Course_DeepLearning_Presentation.tex
+          - Main_Course_DeepLearning_Cheatsheet.tex
+          - Main_Course_GenerativeAI_Presentation.tex
+          - Main_Course_GenerativeAI_CheatSheet.tex
+          - Main_Course_MathsML_Presentation.tex
+          - Main_Course_MathsML_CheatSheet.tex
+          - Main_Course_Python_Presentation.tex
+          - Main_Course_Python_CheatSheet.tex
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile ${{ matrix.driver }}
+        uses: dante-ev/latex-action@v2
+        with:
+          root_file: ${{ matrix.driver }}
+          working_directory: LaTeX
+
+      - name: Compute output PDF name
+        id: pdfname
+        run: echo "pdf=${DRIVER%.tex}.pdf" >> "$GITHUB_OUTPUT"
+        env:
+          DRIVER: ${{ matrix.driver }}
+
+      - name: Upload as workflow artifact (always, useful for manual test runs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.pdfname.outputs.pdf }}
+          path: LaTeX/${{ steps.pdfname.outputs.pdf }}
+          if-no-files-found: warn
+
+      - name: Attach to release (only when triggered by a published release)
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: LaTeX/${{ steps.pdfname.outputs.pdf }}
