@@ -8,6 +8,14 @@ An open-source educational repository containing:
 - **LaTeX**: Beamer presentation slides and two-column cheatsheets for Data Science courses (Python, ML, DL, NLP, GenAI, RAG, etc.)
 - **Code**: Python scripts and Jupyter notebooks demonstrating the concepts covered in the slides
 
+## Style Conventions
+
+User-visible markdown (`README.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `COURSES.md`,
+`Code/README.md`, and similar reader-facing docs) must not use em-dashes (`—`); use a colon,
+comma, or semicolon instead, whichever reads most naturally. This is checked and enforced as
+of Jul 2026. Internal/tooling files (this `CLAUDE.md`, other `CLAUDE.md`s, templates) are
+exempt since they're written for Claude Code, not repo visitors.
+
 ## Repo popularity/discoverability upgrade (Jul 2026)
 
 This repo's own discoverability upgrade is done (README rewritten as a landing page, `COURSES.md`,

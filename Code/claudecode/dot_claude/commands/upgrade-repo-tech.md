@@ -108,10 +108,12 @@ Run each of the following checks across all relevant files. Do NOT fix anything 
 - [ ] `CONTRIBUTING.md` present? If contribution instructions are only buried in the README,
       consider extracting/expanding into its own file.
 - [ ] `CODE_OF_CONDUCT.md`, issue templates, PR template present?
-- [ ] **Do NOT propose GitHub Actions / CI workflows by default.** Some maintainers don't want
-      automated pipelines running without understanding them first, even for a code repo. Only
-      suggest CI if the maintainer explicitly asks, and clearly explain what will run
-      automatically and when before writing anything.
+- [ ] **Never propose or add GitHub Actions / CI workflows, full stop.** This maintainer has an
+      explicit standing preference against them (an earlier unrelated workflow file generated
+      200-300 unwanted runs on the Actions tab that had to be manually bulk-deleted). Do not
+      suggest CI/CD even if asked in passing elsewhere in this session; if the user wants to
+      revisit this, that's a conversation to have outside this command, not something to act on
+      mid-review.
 
 ### 2i. Asset & Media Health
 - [ ] Are there unusually large images/videos/binary/data assets committed to the repo? Check
@@ -228,8 +230,8 @@ Once the user approves the plan (fully or partially), execute changes in this st
 
 ### Step 4: Community & Trust Signals
 - Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue templates, PR template as approved
-- Do not add GitHub Actions workflows or other CI/CD unless the user explicitly asked for that
-  in the approved plan
+- Never add GitHub Actions workflows or other CI/CD, regardless of approval: the maintainer does
+  not want them, period (see guardrails)
 
 ### Step 5: Test Coverage
 - Add missing test cases for any logic that was changed or newly flagged
@@ -276,8 +278,11 @@ Once the user approves the plan (fully or partially), execute changes in this st
 - **Scope discipline:** Do not introduce features or refactors outside what was in the approved plan.
 - **Bulk-operation scope:** default narrow (see Section 3). Re-confirm scope explicitly if a
   bulk operation turns out larger than first estimated.
-- **No unsolicited automation:** never add CI/CD, GitHub Actions, or other automated pipelines
-  unless the user explicitly asked for them: confirm they understand what will run and when.
+- **No workflows, ever:** never add CI/CD, GitHub Actions, or other automated pipelines to this
+  repo, even if asked for in passing. This is a standing preference, not a per-session default:
+  an earlier workflow file caused 200-300 unwanted Actions runs the maintainer had to bulk-delete
+  manually. If the user wants CI/CD, that needs its own explicit, deliberate conversation outside
+  this command, not a checkbox in an upgrade-repo plan.
 - **Manual-only items:** GitHub repo Settings (Description, Topics, social preview image) and
   actual git history rewrites cannot be done by the agent: write these as a clear, numbered,
   step-by-step guide for the maintainer to execute themselves, don't attempt them.

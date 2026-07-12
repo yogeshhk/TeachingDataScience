@@ -83,10 +83,12 @@ Run each check across the repo. Do NOT fix anything yet: only gather findings.
 - [ ] `CONTRIBUTING.md`: does it exist, and if the README has an inline "how to contribute"
       section, should it be extracted there instead?
 - [ ] `CODE_OF_CONDUCT.md`, issue templates, PR template: present?
-- [ ] **Do NOT propose GitHub Actions / CI workflows by default.** Many non-technical
-      maintainers do not want automated pipelines running on their behalf without understanding
-      them. Only suggest this if the maintainer explicitly asks, and even then, clearly explain
-      what will run automatically and when, before writing anything.
+- [ ] **Never propose or add GitHub Actions / CI workflows, full stop.** This maintainer has an
+      explicit standing preference against them (an earlier unrelated workflow file generated
+      200-300 unwanted runs on the Actions tab that had to be manually bulk-deleted). Do not
+      suggest CI/CD even if asked in passing elsewhere in this session; if the user wants to
+      revisit this, that's a conversation to have outside this command, not something to act on
+      mid-review.
 
 ### 2e. Asset & Media Health
 - [ ] Are there unusually large images/videos/PDFs? Check actual file sizes: don't assume
@@ -188,7 +190,8 @@ Once the user approves the plan (fully or partially), execute changes in this st
 
 ### Step 4: Community & Trust Signals
 - Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue templates, PR template as approved
-- Do not add GitHub Actions workflows unless the user explicitly asked for that in the plan
+- Never add GitHub Actions workflows, regardless of approval: the maintainer does not want them,
+  period (see guardrails)
 
 ### Step 5: Asset Optimization
 - For image/media compression: confirm exact scope before running (see narrow-scope guardrail
@@ -224,8 +227,11 @@ Once the user approves the plan (fully or partially), execute changes in this st
   restructuring, or new tooling beyond what was discussed.
 - **Bulk-operation scope:** default narrow (see Section 3). Re-confirm scope explicitly if a
   bulk operation turns out larger than first estimated.
-- **No unsolicited automation:** never add CI/CD, GitHub Actions, or other automated pipelines
-  unless the user explicitly asked for them: confirm they understand what will run and when.
+- **No workflows, ever:** never add CI/CD, GitHub Actions, or other automated pipelines to this
+  repo, even if asked for in passing. This is a standing preference, not a per-session default:
+  an earlier workflow file caused 200-300 unwanted Actions runs the maintainer had to bulk-delete
+  manually. If the user wants CI/CD, that needs its own explicit, deliberate conversation outside
+  this command, not a checkbox in an upgrade-repo plan.
 - **Manual-only items:** GitHub repo Settings (Description, Topics, social preview image) and
   actual git history rewrites cannot be done by the agent: write these as a clear, numbered,
   step-by-step guide for the maintainer to execute themselves, don't attempt them.
