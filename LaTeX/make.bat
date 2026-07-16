@@ -1,2 +1,2 @@
 @echo off
-for /r %%i in (Main_Seminar_Tech_CareerInDataScience_Short_*.tex) do texify -cp %%i
+for /r %%i in (Main_Course_ML_CoEP_*.tex) do texify -cp %%i
