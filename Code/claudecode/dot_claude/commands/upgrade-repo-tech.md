@@ -199,6 +199,18 @@ scope.** A general approval for a category of work does not imply full-batch sco
 
 Once the user approves the plan (fully or partially), execute changes in this strict order:
 
+### Step 0: Write TODO.md
+- As soon as the user approves the plan (in full or in part), write the approved action items to
+  a `TODO.md` checklist file at the repo root before starting any other execution step (create it
+  if missing; if it already exists, update it rather than overwriting unrelated entries).
+- Each approved item becomes one checkbox line, grouped to mirror the plan sections above.
+- Work through the items one at a time in the step order below, checking off each box in
+  `TODO.md` immediately after that item is completed, rather than batching many items before
+  updating it.
+- This is separate from the dated report in the Output step below: `TODO.md` is the live working
+  checklist during execution; the dated report is the final summary once everything approved has
+  been applied.
+
 ### Step 1: Structural Changes First
 - Create new folders before moving files into them
 - Move files to their new locations
