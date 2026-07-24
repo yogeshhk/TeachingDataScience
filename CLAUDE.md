@@ -93,6 +93,19 @@ CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `
   session — deliberately thinner than a normal ~1hr Seminar (no References section,
   by design) — see the short/full sync audit note below for the 4 precedents
 
+### Sibling-file sync rule (standing rule, added Jul 2026)
+Whenever a `.tex` file being edited — via `/upgrade-deck` or any other change — has an
+`X.tex`/`X_short.tex` comment-sibling (per the naming convention above), check for that
+sibling and read it too, even if the driver you were pointed at doesn't `\input` it. Any
+frame added, removed, or materially edited in one file must have its comment/uncomment
+state mirrored in the sibling, so the two never silently drift apart. This is now built
+into the `/upgrade-deck` skill itself (Step 4 and its Guardrails), but applies to any
+manual edit of a sibling-paired file too. The CoEP course restructuring (see the ML CoEP
+note below) is the first case that leaned on this at scale, discovering along the way
+that several `_short.tex`/parent pairs already had far more content commented out by
+the original author than a naive `\begin{frame}` grep would suggest — always count *live*
+(uncommented) frames, not raw occurrences, when judging a deck's size.
+
 ### Known issues
 - `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
 - `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` (only active content: `ai_tools_claudecode_demo_cadcam.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CadCamWorkshop/` (untracked as of Jul 2026). As of Jul 2026 the deck and the PoC are back in sync: flat `src/` layout with no packaging (no `pyproject.toml`, no console-script entry point), the two-step `load_mesh`/`inspect_mesh` API, JSON-only reports (no Markdown report format), and a `thin_walls` check added alongside the original three. `CadCamWorkshop` now has both `.claude/skills/geometry-validation/` and `.claude/skills/inspection-report-summary/`; `.claude/agents/devops.md` was removed. `Code/claudecode/trial/` (also untracked) was a from-scratch dry run of the same workshop script, used to find and fix these drift points plus several missing/misplaced YAML-frontmatter fences in the tex's subagent/command/skill blocks — it's now redundant and pending manual deletion.
@@ -340,6 +353,76 @@ each decision point:
   `seminar_artificialintelligence_tools_content.tex`, is entirely
   commented-out/dead). `Main_Workshop_AI_{Presentation,CheatSheet}.tex` now
   compile clean.
+
+### ML CoEP course session rebalancing (Jul 2026)
+`course_mlcoep_content.tex` (driving `Main_Course_ML_CoEP_{Presentation,CheatSheet}.tex`,
+"AI-ML for Mechanical Engineers" — a bespoke 19-session course for CoEP, College of
+Engineering Pune) was audited and rebalanced against a ~50-55-live-frame-per-1hr-session
+target, going from 21 planned sessions (only Session 3 active, everything else a
+commented placeholder) to 19 fully-active sessions:
+- **Critical methodology finding**: raw `\begin{frame}` grep counts are unreliable across
+  this repo — many files already have large chunks commented out by the original author
+  (e.g. `ml_concepts.tex` showed 147 by grep but only 89 live frames). Always count *live*
+  (uncommented, `^\begin{frame}`-anchored) frames when judging a deck's size; see the
+  sibling-file sync rule above, which this finding fed into.
+- **Merges**: Pandas + Data Prep (old #3+#4) became a new theory-then-practice pair —
+  Session 3 "Understanding Your Data: EDA & Data Prep" (new content, see below) and
+  Session 4 "Doing It: Pandas" (`python_intro_pandas` alone). Random Forest merged into
+  Ensemble Methods (Session 11) since Random Forest alone was too thin. ML Workflow +
+  Data Prep (sklearn) + Model Evaluation merged into one practical session (Session 7),
+  absorbing `ml_datapreparation_sklearn` out of Session 4. ME Applications + Project Ideas
+  merged (Session 19), moved to after MLOps (Session 18).
+- **Split**: the old "ML Concepts & Scikit-Learn Workflow" session split into Sessions 5-7
+  (Intro to ML / Core ML Concepts / Sklearn Workflow+DataPrep+Evaluation).
+- **New `_short.tex` comment-siblings created** (originals untouched, since several are
+  shared with `course_machinelearning_content.tex`'s seminars): `ml_concepts_short.tex`,
+  `ml_decisiontree_short.tex`, `ml_naivebayes_short.tex`, `data_preparation_short.tex`
+  (the last curated from the previously CoEP-unused `data_preparation.tex`, which turned
+  out to be a much better fit for data-prep theory than authoring from scratch).
+  `ml_intro_short.tex` already existed (shared with 2 other decks) at exactly the right
+  size — reused as-is, nothing created.
+  `ml_linearregression.tex`/`ml_logisticregression.tex`/`ml_svm.tex`/`ml_pca.tex` looked
+  oversized by raw grep count but were already right-sized once live frames were counted
+  correctly — no `_short` needed, used directly.
+- **New content authored**: `ml_eda_intro.tex` (why EDA matters, univariate/bivariate,
+  6 frames) and `ml_eda_endtoend_churn.tex` (a fresh Load→Assess→Describe→Visualize→
+  Engineer→Check-what-matters walkthrough on the telecom churn dataset, following the
+  narrative arc of `Code/curiosily_ai_bootcamp/02.exploratory-data-analysis.ipynb`, 14
+  frames) — both for Session 3.
+- **Renamed** for naming-convention consistency (and fixed a typo), updating references in
+  both `course_mlcoep_content.tex` and `course_machinelearning_content.tex`:
+  `ml_course_assign4_logisticrgression_alice.tex` → `ml_course_assign_logisticregression_alice.tex`,
+  `ml_course_demo3_decisiontree_uciadults.tex` → `ml_course_demo_decisiontree_uciadults.tex`,
+  `ml_course_assign3_decisiontree_heartdisease.tex` → `ml_course_assign_decisiontree_heartdisease.tex`.
+- **Session 19 exemplars**: 4 of the excluded per-algorithm demo/assign files (housing
+  regression, SVM digits, customer clustering, PCA digits) were repurposed as worked
+  project exemplars in the new combined ME-Applications session, rather than left unused.
+- Each algorithm session (8-16) now includes only its core theory file; the matching
+  `_sklearn`/demo/assign companions are deliberately excluded from the active course but
+  kept on disk (commented `\input` lines note where each one would go) for a possible
+  future practical-companion pass.
+- **`python_intro_pandas.tex`** (Session 4) was separately expanded 41→54 live frames in
+  the same pass: added Reading Data, Quick Inspection, Value Counts, Rename/Drop Columns,
+  Creating New Columns, GroupBy (concept + aggregation + quiz), Concat, Merge, Plotting,
+  and a 2-frame Machine-Health-Check capstone — see git history for the exact diff.
+- **`upgrade-deck.md`** (`~/.claude/commands/`, mirrored to
+  `Code/claudecode/dot_claude/commands/`) was edited during this pass: removed the
+  quantum-physics/quantikz sub-tasks (1b/1c, unused anywhere in this repo) and added a
+  Step 4 "Sibling-File Check" + a "Sibling sync" guardrail, per the standing rule above.
+  Keep both copies mirrored on any future edit.
+- Verification is tracked session-by-session in `LaTeX/todo_mlcoep_session_verification.md`
+  (delete once complete, per the usual `todo_*.md` convention) — as of this note, Sessions
+  1-4 are compiled and verified clean (two PDFs each: `Course_MLCoEP_<N>_..._{Presentation,
+  CheatSheet}.pdf`), and a repo-wide `lstlisting`-placement-violation sweep (content after
+  `\end{lstlisting}`, violates the Style Preservation Rule) found and fixed 12 instances
+  across Sessions 3, 7, and 19 — including a genuine content bug caught in passing:
+  `ml_evaluation_sklearn.tex`'s `$R^2$ Metric` frame had text copy-pasted from the MSE
+  frame that was factually wrong for R² (not negated by `cross_val_score`, unlike MAE/MSE).
+  Sessions 5-19 still need their compile-and-verify pass.
+- **Not yet done**: `COURSES.md` doesn't list this course (unlike the other 5
+  `Main_Course_*` decks) — unclear if that's an intentional omission (bespoke
+  institution-specific course vs. the others' general-audience framing) or a gap; flagged,
+  not resolved.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames

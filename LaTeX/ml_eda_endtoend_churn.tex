@@ -1,0 +1,198 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large End-to-End Example: Customer Churn}
+  \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Question}
+A telecom company wants to know: which customers are likely to \emph{churn} (cancel their
+service)? We'll walk one dataset through the full arc -- load, assess, describe, visualize,
+engineer features, check what matters -- the same pattern you'll reuse on almost every
+dataset in this course.
+\begin{itemize}
+\item Dataset: per-customer usage records (call minutes, charges, plan type) plus whether
+  that customer eventually churned.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 1: Load Data}
+\begin{lstlisting}
+import pandas as pd
+
+df = pd.read_csv('telecom_churn.csv')
+df.shape
+(3333, 20)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Initial Assessment}
+Before anything else: what columns exist, and what type is each one?
+\begin{lstlisting}
+df.columns
+Index(['State', 'Account length', 'Area code', 'International plan',
+       'Voice mail plan', 'Total day minutes', 'Total day calls',
+       'Total eve minutes', 'Customer service calls', 'Churn', ...])
+
+df.dtypes
+State                object
+International plan  object
+Total day minutes    float64
+Customer service calls  int64
+Churn                  bool
+dtype: object
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 3: Descriptive Statistics}
+\texttt{describe()} gives a fast univariate read on every numeric column at once -- range,
+center, spread.
+\begin{lstlisting}
+df.describe()
+       Account length  Total day minutes  Customer service calls
+count         3333.00            3333.00                  3333.00
+mean           101.06             179.78                     1.56
+std             39.82              54.47                     1.32
+min              1.00               0.00                     0.00
+max            243.00             350.80                     9.00
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 4: Data Quality Check}
+\begin{block}{Intuition}
+No missing values or duplicates here, but the churn split (about 86/14) is a real finding,
+not a non-issue: with churners this rare, a model that just always predicts ``stays'' would
+already be 85\% ``accurate'' while being completely useless -- a pattern to watch for once
+we get to evaluation metrics.
+\end{block}
+\begin{lstlisting}
+df.isnull().sum().sum()
+0
+
+df.duplicated().sum()
+0
+
+df['Churn'].value_counts(normalize=True)
+False    0.855
+True     0.145
+Name: Churn, dtype: float64
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 5: Visualize -- Distributions}
+Plotting a numeric column shows shape that summary statistics alone can hide (skew,
+multiple peaks, a long tail of outliers).
+\begin{center}
+\includegraphics[width=0.75\linewidth,keepaspectratio]{churn20}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 5: Visualize -- Grouped by Target}
+Splitting a distribution by the target column is where visualization turns into real signal
+-- do churners and non-churners actually look different?
+\begin{center}
+\includegraphics[width=0.75\linewidth,keepaspectratio]{churn21}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 6: Feature Engineering -- New Columns}
+Raw columns rarely capture the most useful signal directly -- combine them into something
+more meaningful.
+\begin{itemize}
+\item \texttt{Total minutes} collapses three columns into one overall usage signal.
+\item \texttt{High service calls} turns a raw count into a flag -- customers who call
+  support a lot are often frustrated customers.
+\end{itemize}
+\begin{lstlisting}
+df['Total minutes'] = (df['Total day minutes'] + df['Total eve minutes']
+                        + df['Total night minutes'])
+
+df['High service calls'] = df['Customer service calls'] >= 4
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 6: Feature Engineering -- Encoding}
+\texttt{International plan} and \texttt{Voice mail plan} are Yes/No text -- most models need
+numbers.
+\begin{lstlisting}
+df['International plan'] = (df['International plan'] == 'Yes').astype(int)
+df['Voice mail plan'] = (df['Voice mail plan'] == 'Yes').astype(int)
+
+df[['International plan', 'Voice mail plan']].head(3)
+   International plan  Voice mail plan
+0                    0                1
+1                    0                1
+2                    0                0
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 7: What Actually Matters? -- Correlation}
+\begin{block}{Intuition}
+None of these correlations is huge on its own -- that's normal and expected. It's a first
+pass, not a final answer: it tells you where to look closer (service calls, day-time usage,
+having an international plan) before committing to a full model in the next session.
+\end{block}
+\begin{lstlisting}
+df.corr(numeric_only=True)['Churn'].sort_values(ascending=False)
+Customer service calls    0.21
+High service calls        0.19
+Total day minutes         0.21
+International plan        0.26
+Voice mail plan          -0.10
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 7: What Actually Matters? -- Group Comparison}
+Correlation only captures straight-line relationships -- groupby often reveals more. Here,
+churners call support noticeably more on average -- exactly the kind of pattern a model can
+learn from.
+\begin{lstlisting}
+df.groupby('Churn')['Customer service calls'].mean()
+Churn
+False    1.45
+True     2.23
+Name: Customer service calls, dtype: float64
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Recap: The Pattern}
+\begin{itemize}
+\item \textbf{Load} -- get the data into a DataFrame.
+\item \textbf{Assess} -- check shape, columns, types.
+\item \textbf{Describe} -- summary statistics, missing values, duplicates, class balance.
+\item \textbf{Visualize} -- distributions, and distributions split by the target.
+\item \textbf{Engineer} -- new columns, encode categoricals.
+\item \textbf{Check what matters} -- correlation and groupby comparisons.
+\end{itemize}
+This exact loop is what the rest of this course's ML sessions assume you've already done
+before a single model gets trained.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: EDA \& Data Preparation}
+\begin{block}{Think About It}
+The churn split was about 86\% stay / 14\% churn. Why does that number matter more for
+choosing an \emph{evaluation metric} later than it does for the EDA and preparation steps
+we just did?
+\end{block}
+\pause
+\begin{block}{Answer}
+Nothing in loading, cleaning, or engineering features depends on the class balance -- those
+steps work the same either way. But once you train a model, plain accuracy becomes
+misleading with an 86/14 split, since always predicting ``stays'' already scores 86\%. EDA's
+job here is to \emph{surface} the imbalance early; deciding what to do about it (a different
+metric, resampling, etc.) is a modeling-stage decision, covered later in this course.
+\end{block}
+\end{frame}

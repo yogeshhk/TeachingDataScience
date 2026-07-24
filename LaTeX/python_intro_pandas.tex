@@ -1,10 +1,3 @@
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{}
-% \begin{center}
-% {\Large Dataframes in Pandas}
-% \end{center}
-% \end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
   \begin{center}
@@ -47,7 +40,7 @@ s = pd.Series(data, index=index)
 \end{itemize}
 \begin{lstlisting}
 # create a Series with an arbitrary list
-s = pd.Series([7, 'Heisenberg', 3.14, -1789710578,     'Happy Eating!'])
+s = pd.Series([7, 'Heisenberg', 3.14, -1789710578, 'Happy Eating!'])
 s
 \end{lstlisting}
 \end{frame}
@@ -323,6 +316,29 @@ dtype: float64
 \end{lstlisting}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Series}
+\begin{block}{Think About It}
+\lstinline{cities['Chicago']} returns a single value, but
+\lstinline{cities[['Chicago', 'Portland']]} returns a Series. What's the difference in the
+syntax, and why does it matter?
+\end{block}
+\pause
+\begin{block}{Answer}
+A single string key does scalar/label lookup and returns \emph{one} value. A \emph{list} of
+keys is fancy indexing and always returns a Series, even with just one element -- the double
+brackets are doing two things at once: the outer \lstinline{[]} is the indexing operation, the
+inner \lstinline{[]} is a literal Python list being passed as the key.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large Dataframes in Pandas}
+  \end{center}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Creating Dataframes}
 Creating a DataFrame by passing a numpy array, with a datetime index and labeled columns:
@@ -338,6 +354,50 @@ Creating a DataFrame by passing a dict of objects that can be converted to serie
 \begin{center}
 \includegraphics[width=\linewidth,keepaspectratio]{df2}
 \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reading Data from Files}
+Every DataFrame so far has been typed in by hand. In practice, almost all data starts life in a file -- \texttt{pd.read\_csv()} and \texttt{pd.read\_excel()} load it straight into a DataFrame, inferring column names and types automatically.
+\begin{lstlisting}
+df = pd.read_csv('machine_logs.csv')
+df.head(3)
+
+  machine_id    shift  temperature  vibration operator_notes
+0         M1  Morning         72.5      0.021             ok
+1         M2  Morning         75.1      0.034  check bearing
+2         M1  Evening         78.3      0.041             ok
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Inspection}
+Before doing anything else with a newly loaded DataFrame, check its shape, column types, and non-null counts.
+\begin{lstlisting}
+df.shape
+(6, 5)
+
+df.dtypes
+machine_id         object
+shift              object
+temperature       float64
+vibration         float64
+operator_notes     object
+dtype: object
+
+df.info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 6 entries, 0 to 5
+Data columns (total 5 columns):
+ #   Column          Non-Null Count  Dtype
+---  ------          --------------  -----
+ 0   machine_id      6 non-null      object
+ 1   shift           6 non-null      object
+ 2   temperature     6 non-null      float64
+ 3   vibration       6 non-null      float64
+ 4   operator_notes  6 non-null      object
+dtypes: float64(2), object(3)
+\end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -378,6 +438,18 @@ Sorting by values
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Value Counts}
+\texttt{value\_counts()} is the fastest way to see how a categorical column is distributed -- here, how many readings each machine contributed.
+\begin{lstlisting}
+df['machine_id'].value_counts()
+M1    2
+M2    2
+M3    2
+Name: machine_id, dtype: int64
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Selection of Data}
 Selecting a single column, which yields a Series, equivalent to df.A
 \begin{center}
@@ -412,6 +484,17 @@ By lists of integer position locations, similar to the numpy/python style
 \begin{center}
 \includegraphics[width=\linewidth,keepaspectratio]{df12}
 \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition: Label vs. Position}
+\begin{block}{Intuition}
+Label-based selection is like finding a book by its title on the shelf -- you ask for
+``Wednesday's row'' or ``column A,'' and pandas looks up that name. Position-based selection is
+like grabbing the third book from the left, regardless of what it's called. Both answer valid
+but different questions, so pandas gives you separate ways to ask each one instead of guessing
+your intent.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -451,17 +534,176 @@ Applying functions to the data
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Quick Check: Pandas}
+\begin{frame}[fragile]\frametitle{Renaming \& Dropping Columns}
+Cleaning up column names and removing ones you don't need is usually the first step of any real analysis.
+\begin{lstlisting}
+df = df.rename(columns={'vibration': 'vibration_mm_s'})
+df = df.drop(columns=['operator_notes'])
+df.columns
+Index(['machine_id', 'shift', 'temperature', 'vibration_mm_s'], dtype='object')
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Creating New Columns}
+New columns are computed from existing ones with plain vectorized arithmetic and comparisons -- no loops needed.
+\begin{lstlisting}
+df['vibration_in'] = df['vibration_mm_s'] / 25.4
+df['high_vibration'] = df['vibration_mm_s'] > 0.025
+df[['machine_id', 'vibration_mm_s', 'high_vibration']]
+
+  machine_id  vibration_mm_s  high_vibration
+0         M1           0.021           False
+1         M2           0.034            True
+2         M1           0.041            True
+3         M2           0.028            True
+4         M3           0.019           False
+5         M3           0.052            True
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: DataFrames}
 \begin{block}{Think About It}
-\lstinline{cities['Chicago']} returns a single value, but
-\lstinline{cities[['Chicago', 'Portland']]} returns a Series. What's the difference in the
-syntax, and why does it matter?
+\lstinline{df['A']} returns a Series (a column), but \lstinline{df[0:2]} returns a DataFrame
+(the first two rows). Same \lstinline{[]} operator, same object -- why does pandas treat a
+string key and a slice so differently?
 \end{block}
 \pause
 \begin{block}{Answer}
-A single string key does scalar/label lookup and returns \emph{one} value. A \emph{list} of
-keys is fancy indexing and always returns a Series, even with just one element -- the double
-brackets are doing two things at once: the outer \lstinline{[]} is the indexing operation, the
-inner \lstinline{[]} is a literal Python list being passed as the key.
+The plain \lstinline{[]} operator on a DataFrame is intentionally overloaded: a single label
+looks up a \emph{column} (matching the \lstinline{df.A} shortcut), while a slice looks up
+\emph{rows}, mirroring plain Python/NumPy slicing. Pandas infers your intent from the
+\emph{type} of the key rather than a fixed row/column rule -- which is exactly why
+\lstinline{.loc}/\lstinline{.iloc} exist: they remove the ambiguity by always meaning
+``by label'' or ``by position,'' regardless of what kind of key you pass.
 \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GroupBy: Split-Apply-Combine}
+\texttt{groupby()} splits rows into groups by a key column. Nothing is computed until you chain on an aggregate.
+\begin{block}{Intuition}
+Think of \texttt{groupby()} as sorting mail into pigeonholes by recipient. Nothing gets read or
+totalled yet -- that's just the sorting step. The real work happens when a clerk (an aggregate
+like \texttt{.mean()} or \texttt{.sum()}) processes each pigeonhole separately and the results
+are stacked back into a single tray.
+\end{block}
+\begin{lstlisting}
+df.groupby('machine_id')
+<pandas.core.groupby.generic.DataFrameGroupBy object at 0x...>
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GroupBy with Aggregation}
+Chain \texttt{.mean()}, \texttt{.sum()}, or \texttt{.agg()} to actually run the per-group computation.
+\begin{lstlisting}
+df.groupby('machine_id')['temperature'].mean()
+M1    75.40
+M2    74.55
+M3    75.50
+Name: temperature, dtype: float64
+
+df.groupby('machine_id').agg({'temperature': 'mean', 'vibration_mm_s': 'max'})
+            temperature  vibration_mm_s
+machine_id
+M1                75.40            0.041
+M2                74.55            0.034
+M3                75.50            0.052
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: GroupBy}
+\begin{block}{Think About It}
+\lstinline{df.groupby('machine_id')} on its own prints only an object description, not a table
+of numbers. Why doesn't pandas compute anything at that point?
+\end{block}
+\pause
+\begin{block}{Answer}
+\lstinline{groupby()} only performs the \emph{split} -- it doesn't yet know what you want to
+\emph{apply} to each group. Waiting until you chain on \lstinline{.mean()}, \lstinline{.sum()},
+or \lstinline{.agg()} means the same grouped object can be reused for several different
+aggregations without repeating the split step, and pandas never computes a result you never
+asked for.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Concatenating DataFrames}
+\texttt{pd.concat()} stacks DataFrames with the same columns on top of each other -- useful when the same kind of data arrives in separate batches (e.g., one file per shift).
+\begin{lstlisting}
+morning = df[df['shift'] == 'Morning'][['machine_id', 'temperature']]
+evening = df[df['shift'] == 'Evening'][['machine_id', 'temperature']]
+pd.concat([morning, evening])
+  machine_id  temperature
+0         M1         72.5
+1         M2         75.1
+4         M3         69.8
+2         M1         78.3
+3         M2         74.0
+5         M3         81.2
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Merging DataFrames}
+\texttt{pd.merge()} joins two DataFrames on a shared key column -- like a VLOOKUP, or a SQL JOIN.
+\begin{lstlisting}
+machine_info = pd.DataFrame({
+    'machine_id': ['M1', 'M2', 'M3'],
+    'machine_type': ['Lathe', 'Mill', 'Drill']
+})
+pd.merge(df, machine_info, on='machine_id')[
+    ['machine_id', 'machine_type', 'temperature']].head(3)
+  machine_id machine_type  temperature
+0         M1        Lathe         72.5
+1         M2         Mill         75.1
+2         M1        Lathe         78.3
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Plotting with Pandas}
+\texttt{.plot()} is a thin wrapper around the \texttt{matplotlib} imported all the way back on the very first Pandas slide -- no separate charting library needed for a first look at the data.
+\begin{lstlisting}
+avg_temp = df.groupby('machine_id')['temperature'].mean()
+avg_temp.plot(kind='bar')
+plt.ylabel('Avg Temperature (deg C)')
+plt.show()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Putting It Together: Machine Health Check}
+The same five-step pattern -- read, inspect, clean, transform, summarize -- shows up in almost every dataset you'll touch in this course.
+\begin{lstlisting}
+df = pd.read_csv('machine_logs.csv')
+df = df.rename(columns={'vibration': 'vibration_mm_s'})
+df = df.drop(columns=['operator_notes'])
+df['high_vibration'] = df['vibration_mm_s'] > 0.025
+
+summary = df.groupby('machine_id').agg(
+    avg_temp=('temperature', 'mean'),
+    flagged_readings=('high_vibration', 'sum')
+)
+summary
+            avg_temp  flagged_readings
+machine_id
+M1             75.40                 1
+M2             74.55                 2
+M3             75.50                 1
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Putting It Together: Visualizing the Summary}
+One line turns the summary table into a chart flagging which machine needs a closer look.
+\begin{lstlisting}
+summary['avg_temp'].plot(kind='bar', color='steelblue')
+plt.title('Average Temperature by Machine')
+plt.ylabel('deg C')
+plt.show()
+\end{lstlisting}
 \end{frame}

@@ -41,11 +41,23 @@ equivalent preamble files) and record which packages are loaded. Specifically ch
 | Package / command | If present -- note as available |
 |---|---|
 | `\usepackage{listings}` | `lstlisting` environment is styled and ready -- flag every `\verbatim` block as a Task 1 finding |
-| `\usepackage{physics}` | Dirac notation macros (`\ket{}`, `\bra{}`, etc.) are available -- flag every raw ket/bra as a Task 1 finding |
-| `\usetikzlibrary{quantikz}` | Quantum circuit diagrams can be drawn natively -- note as a Task 4 enhancement opportunity |
 | `\lstdefinestyle{...}` | Record the default language and style name for use when converting verbatim blocks |
 
 Only after completing this audit do you proceed to the tasks below.
+
+### Step 4: Sibling-File Check
+
+Some decks follow a `<topic>.tex` / `<topic>_short.tex` comment-sibling convention: the `_short`
+file is a full copy of its parent with excluded frames commented out (not deleted), so either
+file can be reconstructed from the other. For every source file discovered in Step 1, check
+whether a sibling exists (`<name>_short.tex` if you're reading the full version, or
+`<name>.tex`/an `_overview.tex` if you're reading a `_short` version). If one exists:
+
+- Read it too, even if it isn't `\input` by the driver you were pointed at.
+- Any frame you add, remove, or materially edit in one file must have its comment/uncomment
+  state mirrored in the sibling -- a live frame in one should stay a live (or intentionally
+  commented) frame in the other, not silently drift out of sync.
+- Note the sibling relationship in your Deck Summary so the user knows both files are in play.
 
 ---
 
@@ -81,41 +93,17 @@ Run this check on every frame across all source files:
 - **Placement rule:** `\end{lstlisting}` must be the last element in its frame. No text, items, or captions may follow it within the same `\begin{frame}...\end{frame}`.
 - **Do not convert** inline `\texttt{...}` for single identifiers or short labels -- only convert blocks that present code meant to be read or run.
 
-#### Task 1b: Quantum Notation Check (apply only when deck contains quantum physics content)
+#### Task 1b: Code Block Consolidation Check
 
-Run this check if the deck covers quantum computing, quantum information, or related physics topics:
+Run this check on **every frame in every source file that contains one or more `lstlisting` blocks** -- whether the block was already `lstlisting` or was just converted from `verbatim`/`verb` in Task 1a. This is unconditional (no package guard needed).
 
-- **Find:** Raw Dirac / ket-bra notation written as plain LaTeX math, for example:
-  - `|0\rangle`, `|1\rangle`, `|+\rangle`, `|\psi\rangle`, `\langle 0|`, `\langle\psi|`
-  - Multi-qubit kets: `|00\rangle`, `|01\rangle`, `|11\rangle`
-  - Bell / named states: `|\Phi^+\rangle`, `|\Psi^-\rangle`
-  - Combined expressions: `\alpha|0\rangle + \beta|1\rangle`
-- **Why it matters:** If `\usepackage{physics}` is loaded (confirmed in Step 3), the macros `\ket{}`, `\bra{}`, `\braket{}{}`, `\mel{}{}{}` are available. They produce correctly sized, properly spaced Dirac notation and are the standard in LaTeX physics typesetting.
-- **Action -- apply the following replacements throughout every source file:**
-
-  | Raw form | Physics-package form |
-  |---|---|
-  | `\|0\rangle` | `\ket{0}` |
-  | `\|1\rangle` | `\ket{1}` |
-  | `\|\psi\rangle` | `\ket{\psi}` |
-  | `\|+\rangle` | `\ket{+}` |
-  | `\|-\rangle` | `\ket{-}` |
-  | `\|00\rangle` | `\ket{00}` |
-  | `\|\Phi^+\rangle` | `\ket{\Phi^+}` |
-  | `\langle 0\|` | `\bra{0}` |
-  | `\langle\psi\|` | `\bra{\psi}` |
-  | `\langle 0\|1\rangle` | `\braket{0}{1}` |
-  | `\langle\psi\|H\|\phi\rangle` | `\mel{\psi}{H}{\phi}` |
-  | `\alpha\|0\rangle + \beta\|1\rangle` | `\alpha\ket{0} + \beta\ket{1}` |
-
-- **Do NOT modify** `|\alpha|^2` or `|\beta|^2` -- these are modulus-squared expressions, not kets.
-- **Do NOT modify** cases where `|...|` denotes absolute value or determinant.
-
-#### Task 1c: Quantum Circuit Diagram Check (apply only when `quantikz` is loaded)
-
-- **Find:** Slides that describe a quantum circuit in text or pseudocode but have no diagram.
-- **Why it matters:** `\usetikzlibrary{quantikz}` (confirmed in Step 3) enables native circuit diagrams at zero extra package cost.
-- **Action:** For each such slide, add a `\begin{quantikz}...\end{quantikz}` diagram *before* any `lstlisting` block (because `\end{lstlisting}` must be last in the frame). Keep diagrams simple -- single- and two-qubit gates only, matching what the slide already describes. Do not invent circuits not mentioned in the slide text.
+- **Find:** Frames where prose or `itemize` items sit *between* two or more `lstlisting` blocks, or where any text/items follow the *last* `lstlisting` block in the frame. A frame with code and prose interleaved multiple times reads as visually jumbled -- each `lstlisting` renders as its own boxed/framed region, and hopping between prose paragraph, code box, prose paragraph, code box breaks the slide's visual flow.
+- **Why it matters:** Readers scan a slide top-to-bottom expecting one coherent block of explanation followed by one coherent block of code, not an interleaved sequence. It also reinforces the existing placement rule (`\end{lstlisting}` must be the last element in the frame) by extending it to *all* code in the frame, not just the final block.
+- **Action:**
+  - Move all explanatory `itemize`/text content to the top of the frame, above any code.
+  - Consolidate every `lstlisting` in the frame into a single block at the very end of the frame (the last element, nothing after it). If the frame genuinely needs to show two or more distinct snippets (e.g. "with conda" vs. "with venv"), merge them into one `lstlisting` using short in-code `#`/`//` comments (matching the block's language) as the separators/labels, rather than LaTeX prose between separate blocks.
+  - If merging would make a single block too long or would obscure a meaningful distinction the slide is making (e.g. contrasting two languages side by side), it is acceptable to keep separate `lstlisting` blocks -- but they must still be contiguous at the end of the frame, with no prose between or after them, and a short label as an `itemize` item above (not between) may reference each one.
+- **Do not** apply this by deleting content -- only reorder within the frame; if reordering alone loses which snippet is which, add the missing labels as in-code comments as described above.
 
 ### Task 2: Redundancy
 
@@ -193,7 +181,7 @@ Run this check if the deck covers quantum computing, quantum information, or rel
 - Custom macros and preamble definitions
 - `itemize` / `enumerate` structure and nesting
 - Column layouts and block environments (`block`, `alertblock`, `exampleblock`)
-- `\end{lstlisting}` must always be the last element inside its frame -- no content after it
+- `\end{lstlisting}` must always be the last element inside its frame -- no content after it, and if a frame has multiple `lstlisting` blocks they must be consolidated and contiguous at the end (see Task 1b), never interleaved with prose/items
 
 If a style change is genuinely necessary to fix a technical issue, **flag it explicitly and justify it** before applying.
 
@@ -222,12 +210,12 @@ sections/model.tex -> Slides 6-12: Architecture, Training, Evaluation
 
 ### 3. Package Audit Results
 
-A short table listing which key packages were found (listings, physics, quantikz) and
-what checks are therefore activated for Tasks 1a, 1b, 1c.
+A short table listing which key packages were found (listings, etc.) and what checks are
+therefore activated for Task 1a. Also note any `_short.tex` sibling files found in Step 4.
 
 ### 4. Task-by-Task Findings
 
-One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b/1c).
+One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b).
 Each section contains:
 
 - **Findings** -- what was observed
@@ -258,5 +246,5 @@ Format:
 - **Scope discipline:** Do not introduce features, slides, or topics outside what was in the reviewed content.
 - **Always cite slides** by both frame title and slide number in all feedback.
 - **File integrity:** Ensure all `\input{}` references remain valid after any restructuring.
-- **Package guard:** Never apply Task 1b (ket notation) or Task 1c (quantikz) if the corresponding package was not confirmed in the Step 3 package audit. Flag the finding but leave the raw notation unchanged.
+- **Sibling sync:** If the file you're editing has a `_short.tex` comment-sibling (or is one itself, per Step 4), mirror any added/removed/materially-edited frame's comment/uncomment state into the sibling before finishing. Do not let the two drift apart.
 - **Intuition/quiz style guard:** Task 5 "Intuition" callouts and Task 6 quiz slides must reuse the deck's existing block/alert/note environments and color scheme -- never introduce a new box style, color, or theme element to make them stand out.
