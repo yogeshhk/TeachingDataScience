@@ -52,24 +52,55 @@ The old plan referenced a `build_session_pdfs.ps1` script for one-shot bulk gene
 of all session PDFs — **that script does not exist in `LaTeX/`**. Either write it, or
 keep using the manual procedure above (already used successfully for Sessions 2-5).
 
-### 1.2 Python raw-file overlap/redundancy audit (not started)
+### 1.2 Python raw-file overlap/redundancy audit + seminar-file consolidation (DONE, Jul 2026)
 
-Rebuilding `python_overview.tex` pulled content from several other `python_*.tex` files
-(`python_setup.tex`, `python_advanced_topics_overview.tex`, the old
-`python_syntax_overview.tex`/`python_quick_overview.tex`), raising the concern that the
-~45+ `python_*.tex` topic files in the repo have accumulated real overlap, and that some
-`seminar_python_*.tex` wrapper files may be orphaned ("artificially created", never wired
-into a driver). Analysis only — do not execute changes without approval:
+Rebuilding `python_overview.tex` had pulled content from several other `python_*.tex` files,
+raising the concern that the ~45+ `python_*.tex` topic files had accumulated real overlap,
+and that some `seminar_python_*.tex` wrapper files were redundant. Audited (2-pass, via
+background analysis) and executed after explicit sign-off on each decision point. Changes:
 
-1. Enumerate all `python_*.tex` files and summarize what each covers.
-2. For each, grep who `\input`s it — build a full consumer map.
-3. Cross-check for content overlap (shell walkthroughs, "what is Python", setup/installation,
-   OOP basics, etc. now appear in multiple places).
-4. Enumerate all `seminar_python_*.tex` / `Main_Seminar_Python_*.tex` files; confirm via grep
-   whether anything actually `\input`s each one. Flag zero-consumer files as dismantle
-   candidates.
-5. Produce a written recommendation (merge / rename / delete) and present it before touching
-   any files.
+- Deleted `python_intro_verbose.tex` — dead (zero live consumers) and structurally
+  incompatible anyway: it was book-chapter prose (`\chapter`/`\section`/`Verbatim`), not
+  Beamer frames, so it could never have compiled as slide content without a full rewrite.
+- Wired `python_special.tex` (was also dead, zero consumers) into
+  `seminar_python_adv_oopiteration_content.tex` (A1) — natural home since that seminar
+  already covers OOP/iterators/generators.
+- Deleted `python_syntax_overview.tex`, `seminar_python_syntax_overview_content.tex`, and
+  `Main_Seminar_Python_Syntax_Overview_{Presentation,CheatSheet}.tex` — confirmed its live
+  frame set was a duplicate copy (not a shared `\input`) of `python_syntax_short.tex`'s
+  content, fully superseded by keeping the latter.
+- `seminar_python_basic_intro_content.tex`: swapped `\input{python_syntax_overview}` ->
+  `\input{python_syntax_short}`; removed two stale commented `\input`s left pointing at
+  `python_intro_verbose`/`python_special` (now deleted / relocated).
+- Trimmed `python_advanced_topics_overview.tex` from 43 → 10 frames (Course Overview,
+  Context Managers, Threading, Async/Await, and the 6 worked Projects — the content
+  confirmed to have no home anywhere else in the repo) and renamed it
+  `python_advanced_projects.tex`. The other ~32 frames duplicated ground already owned by
+  dedicated raw files (`python_datatypes`, `python_oop`, `python_fileio`, etc.) or by
+  `python_intro_short.tex`, so they were dropped rather than carried forward.
+- Rewired `seminar_python_content.tex` (feeds `workshop_ai_content.tex` and
+  `workshop_ragtoriches_content.tex`) to `\input{python_intro_short}` +
+  `\input{python_advanced_projects}` instead of the old bloated file, keeping
+  `python_dsa`/`python_systemdesign`/`python_refs_short` unchanged (those are genuinely
+  shared with A6, not duplicated).
+- Left `python_syntax.tex` as-is (no consumer of its own, but correctly paired with
+  `python_syntax_short.tex` as a comment-sibling — not broken, no action taken).
+
+**Compile status (Jul 24, 2026):**
+
+| Deck | Status |
+|---|---|
+| `Main_Seminar_Python_Basic_Intro_{Presentation,CheatSheet}.tex` | Compiled clean (128pg / 11pg) |
+| `Main_Seminar_Python_Advanced_OOPIteration_{Presentation,CheatSheet}.tex` | Compiled clean (150pg / 15pg) |
+| `Main_Seminar_Python_{Presentation,CheatSheet}.tex` | Compiled clean (90pg / 13pg) |
+| `Main_Workshop_RAGToRiches_CheatSheet.tex` | Compiled clean (121pg) |
+| `Main_Workshop_RAGToRiches_Presentation.tex` | **Not yet compiled** — run manually: `texify -cp Main_Workshop_RAGToRiches_Presentation.tex` |
+| `Main_Workshop_AI_{Presentation,CheatSheet}.tex` | **Blocked by a pre-existing, unrelated bug**, not caused by this work: `workshop_ai_content.tex` line 5 does `\input{seminar_artificialintelligence_content}`, but no such file exists in `LaTeX/` (closest matches: `seminar_artificialintelligence_tech_content.tex`, `_nontech_content.tex`, etc.). The Python content this task touched (`seminar_python_content`, line 2) loads fine — compilation fails later, on an unrelated `\input`. Needs a separate fix (probably repoint to the correct `_tech`/`_nontech` variant) before either driver can compile; flagging here, not fixing as part of this task. |
+
+- [ ] Compile `Main_Workshop_RAGToRiches_Presentation.tex` (one-shot `texify -cp`, deferred
+      only because it's slow, not because of any known issue)
+- [ ] Fix `workshop_ai_content.tex` line 5's missing `seminar_artificialintelligence_content.tex`
+      reference, then compile both `Main_Workshop_AI_{Presentation,CheatSheet}.tex`
 
 ---
 
