@@ -247,7 +247,10 @@ it. The five:
   content.tex`); the rename was verified to preserve that work exactly (same
   118-page compile). Fresh `python_syntax.tex`/`_short.tex` are a broader
   "Python Basics" primer (the old short's actual scope, despite its narrow
-  name), used by `course_deeplearning_content.tex`'s W1 recap.
+  name), used by `course_deeplearning_content.tex`'s W1 recap. **Retired in
+  the Jul 2026 Python audit below**: turned out to be a duplicate copy of
+  `python_syntax_short.tex`'s content rather than distinct material, so the
+  file was deleted and B1 repointed to `python_syntax_short.tex`.
 - `nlp_embedding_overview.tex` (renamed from the old `nlp_embedding.tex`) —
   the authoritative, current (2023-2026) material: BERT, RAG systems,
   multimodal/CLIP, bias/ethics, a full Tweet-Sentiment-with-Word2Vec code case
@@ -262,27 +265,81 @@ it. The five:
   restructuring files noted elsewhere in this document.
 
 **Dedicated standalone seminars for 4 of the 5 overview files (Oct 2026,
-additive follow-up)**: each of the 5 `_overview.tex` files is used by an
-existing consumer deck that specifically needs its depth (documented above)
-— those consumers were deliberately left as-is, not repointed. Instead, 4 of
-the 5 also got a *new*, minimal, single-section standalone seminar so the
-deep-dive content is independently reachable as its own session (the 5th,
-`nlp_embedding_overview.tex`, already had one — `seminar_wordembeddings_
-content.tex`'s only real section is the overview, backed by `Main_Seminar_
-NLP_WordEmbeddings_{Presentation,CheatSheet}.tex`):
+additive follow-up; one retired Jul 2026, see below)**: each of the 5
+`_overview.tex` files is used by an existing consumer deck that specifically
+needs its depth (documented above) — those consumers were deliberately left
+as-is, not repointed. Instead, 4 of the 5 also got a *new*, minimal,
+single-section standalone seminar so the deep-dive content is independently
+reachable as its own session (the 5th, `nlp_embedding_overview.tex`, already
+had one — `seminar_wordembeddings_content.tex`'s only real section is the
+overview, backed by `Main_Seminar_NLP_WordEmbeddings_{Presentation,
+CheatSheet}.tex`):
 - `dnlp_intro_overview.tex` → `seminar_dnlp_overview_content.tex` →
   `Main_Seminar_NLP_DNLP_Overview_{Presentation,CheatSheet}.tex`
 - `data_intro_overview.tex` → `seminar_dataconcepts_overview_content.tex` →
   `Main_Seminar_Data_Concepts_Overview_{Presentation,CheatSheet}.tex`
 - `dl_intro_overview.tex` → `seminar_dl_technical_overview_content.tex` →
   `Main_Seminar_DL_Foundations_Overview_{Presentation,CheatSheet}.tex`
-- `python_syntax_overview.tex` → `seminar_python_syntax_overview_content.tex`
-  → `Main_Seminar_Python_Syntax_Overview_{Presentation,CheatSheet}.tex`
+- ~~`python_syntax_overview.tex` → `seminar_python_syntax_overview_content.tex`
+  → `Main_Seminar_Python_Syntax_Overview_{Presentation,CheatSheet}.tex`~~ —
+  **retired Jul 2026**: `python_syntax_overview.tex` turned out to be a
+  duplicate copy of `python_syntax_short.tex` rather than distinct material,
+  so both the topic file and this standalone seminar (+ its 2 drivers) were
+  deleted; see the Python raw-file audit note below. `COURSES.md`'s "Deep
+  dives / overviews" list was updated to drop the dead link.
 
 Each content wrapper is deliberately minimal: a single `\section[Overview]
 {Overview}` + `\input{<topic>_overview}`, no References section (unlike most
 seminars, by design — these are supplementary deep-dive sessions, not full
-independent courses). All 8 driver files compiled clean.
+independent courses). All 8 driver files compiled clean at the time (now 6,
+after the Jul 2026 retirement above).
+
+### Python raw-file overlap/redundancy audit + seminar consolidation (Jul 2026)
+Cleanup triggered by the CoEP `python_overview.tex` rebuild (see `Code/mlcoep/`)
+pulling content from several other `python_*.tex` files, raising the concern that
+the ~45+ raw `python_*.tex` files and several `seminar_python_*.tex` wrappers had
+accumulated real overlap. Two-pass audit (raw-file consumer map + content diff,
+then a seminar-level consolidation pass), executed after explicit sign-off on
+each decision point:
+- Deleted `python_intro_verbose.tex` — zero live consumers, and structurally
+  incompatible anyway: it was book-chapter prose (`\chapter`/`\section`/
+  `Verbatim`), not Beamer frames, so it could never have compiled as slide
+  content without a full rewrite.
+- Wired `python_special.tex` (also zero consumers) into
+  `seminar_python_adv_oopiteration_content.tex` (A1) — natural home since that
+  seminar already covers OOP/iterators/generators.
+- Deleted `python_syntax_overview.tex`, its standalone seminar, and drivers
+  (see the correction to the Oct 2026 sync-audit note above) — its live frame
+  set was a duplicate copy of `python_syntax_short.tex`, not distinct
+  material. `seminar_python_basic_intro_content.tex` (B1) now `\input`s
+  `python_syntax_short` instead.
+- Trimmed `python_advanced_topics_overview.tex` from 43 → 10 frames (Course
+  Overview, Context Managers, Threading, Async/Await, and 6 worked Projects —
+  content confirmed to have no home anywhere else in the repo) and renamed it
+  `python_advanced_projects.tex`. The other ~32 frames duplicated ground
+  already owned by dedicated raw files (`python_datatypes`, `python_oop`,
+  `python_fileio`, etc.) or by `python_intro_short.tex`.
+- Rewired `seminar_python_content.tex` — the "Python crash-course" seminar
+  backing `Main_Seminar_Python_{Presentation,CheatSheet}.tex` and embedded as
+  the Python prerequisite section inside `workshop_ai_content.tex` and
+  `workshop_ragtoriches_content.tex` — to `\input{python_intro_short}` +
+  `\input{python_advanced_projects}`, keeping `python_dsa`/
+  `python_systemdesign`/`python_refs_short` unchanged (genuinely shared with
+  A6, not duplicated). This is distinct in purpose from
+  `seminar_python_overview_content.tex` (`Main_Seminar_Python_Overview_*`,
+  just `\input{python_overview}`) — the crash-course assumes basics already
+  known and jumps to advanced/practical patterns + DSA/system-design; the
+  Overview teaches Python from scratch. No content overlap between the two
+  after this cleanup; deliberately not merged.
+- Found and fixed a pre-existing, unrelated bug while compile-checking:
+  `workshop_ai_content.tex` line 5 did
+  `\input{seminar_artificialintelligence_content}`, a file that never existed
+  in `LaTeX/`. Repointed to `seminar_artificialintelligence_tech_content.tex`
+  (the file's own commented-out alternative, labeled "tech-audience AI
+  content" — a fit for this broad technical workshop; the other alternative,
+  `seminar_artificialintelligence_tools_content.tex`, is entirely
+  commented-out/dead). `Main_Workshop_AI_{Presentation,CheatSheet}.tex` now
+  compile clean.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
