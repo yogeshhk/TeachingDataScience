@@ -419,10 +419,10 @@ commented placeholder) to 19 fully-active sessions:
   `ml_evaluation_sklearn.tex`'s `$R^2$ Metric` frame had text copy-pasted from the MSE
   frame that was factually wrong for R² (not negated by `cross_val_score`, unlike MAE/MSE).
   Sessions 5-19 still need their compile-and-verify pass.
-- **Not yet done**: `COURSES.md` doesn't list this course (unlike the other 5
-  `Main_Course_*` decks) — unclear if that's an intentional omission (bespoke
-  institution-specific course vs. the others' general-audience framing) or a gap; flagged,
-  not resolved.
+- `COURSES.md` now lists this course (added Jul 2026, after being flagged as a gap) under
+  "ML for Mechanical Engineers (CoEP)" — noted there as structurally different from the
+  other 5 courses (no workshop/seminar layer; sessions are chained directly, not
+  independently reachable).
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames

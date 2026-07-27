@@ -53,6 +53,18 @@ Driver: [`Main_Course_GenerativeAI_Presentation.tex`](LaTeX/Main_Course_Generati
 - [LLMs](LaTeX/Main_Workshop_LLM_Presentation.tex): [Intro](LaTeX/Main_Seminar_LLM_Intro_Presentation.tex), [Transformers](LaTeX/Main_Seminar_LLM_Transformers_Presentation.tex), [ChatGPT From Zero (Short)](LaTeX/Main_Seminar_LLM_ChatGPT_FromZeroShort_Presentation.tex), [Evaluation](LaTeX/Main_Seminar_LLM_Evaluation_Presentation.tex), [Prompt Engineering](LaTeX/Main_Seminar_LLM_PromptEngg_Presentation.tex), [Fine-Tuning](LaTeX/Main_Seminar_LLM_FineTuning_Presentation.tex), [RAG](LaTeX/Main_Seminar_LLM_RAG_Presentation.tex), [Agents](LaTeX/Main_Seminar_LLM_Agents_Presentation.tex), [Production](LaTeX/Main_Seminar_LLM_Production_Presentation.tex), [Reasoning](LaTeX/Main_Seminar_LLM_Reasoning_Presentation.tex), [LangChain](LaTeX/Main_Seminar_LLM_LangChain_Presentation.tex), [LlamaIndex](LaTeX/Main_Seminar_LLM_LlamaIndex_Presentation.tex), LLM applications (workshop-only)
 - Course-specific extras: ChatGPT applications (BDO/IMI/HR/journalism), advanced RAG, LangGraph deep-dive
 
+### ML for Mechanical Engineers (CoEP)
+Driver: [`Main_Course_ML_CoEP_Presentation.tex`](LaTeX/Main_Course_ML_CoEP_Presentation.tex)
+
+A bespoke 19-session course built for College of Engineering Pune (CoEP), pairing Python/ML
+fundamentals with mechanical-engineering-flavored applications and project ideas. Unlike the
+5 courses above, it has no separate workshop/seminar layer -- all 19 sessions are topic files
+chained directly in the course driver, not independently reachable: AI Overview, Python
+Overview, EDA & Data Preparation, Pandas, Introduction to ML, Core ML Concepts, ML Workflow &
+Model Evaluation (scikit-learn), Linear Regression, Logistic Regression, Decision Trees,
+Ensemble Methods & Random Forest, SVM, Naive Bayes, KNN, K-Means, PCA, a Titanic capstone,
+MLOps & Deployment, and AI/ML Applications & Project Ideas for Mechanical Engineers.
+
 ---
 
 ## Standalone Workshops

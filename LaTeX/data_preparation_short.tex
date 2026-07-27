@@ -1,9 +1,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-  \begin{center}
-    {\Large Data Reading}
-  \end{center}
-\end{frame}
+% Divider commented out: every frame under it is also commented out in this
+% _short variant (unlike the parent data_preparation.tex, where "Getting Data"
+% is still live), so an active divider here would render with nothing under it.
+%\begin{frame}
+%  \begin{center}
+%    {\Large Data Reading}
+%  \end{center}
+%\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \begin{frame}[fragile]\frametitle{Getting Data}
@@ -151,8 +154,8 @@ What is Feature Engineering?
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{The Art of Feature Engineering}
-What is the process of Feature Engineering ? 
+\begin{frame}[fragile]\frametitle{Feature Engineering: The Process}
+What is the process of Feature Engineering ?
 	\begin{itemize}
 	\item Variable transformation. 
 	\item Variable / Feature creation. 
@@ -242,6 +245,7 @@ Sensitive to the presence of Outliers in a data-set.
 	\item  X: Data to be normalized
 	\item norm: which norm to use: l1 (sum of elements gives 1) or l2 (sqrt the sum of the squares of the elements gives one)
 	\item axis: whether to normalize by row or column
+	\item In practice, prefer the class-based \texttt{Normalizer} (fit once, reuse via transform) -- covered hands-on in Session 7
 	\end{itemize}
 \end{frame}
 
@@ -265,7 +269,7 @@ Done by removing the mean value from all points, then scale it by dividing with 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Standardization}	
+\begin{frame}[fragile]\frametitle{Standardization: Z-Score}
 Majority of feature values will be in a range of [-1, 1].
 
 \begin{itemize}
@@ -275,11 +279,18 @@ Majority of feature values will be in a range of [-1, 1].
 \end{itemize}
 Standardization assumes the feature values are normally distributed. If not, standardization may introduce some distortions.
 
+\begin{block}{Intuition}
+A z-score of $+2$ just means ``two standard deviations above average for this feature'' -- so a
+z-score of 3 for machining tolerance and a z-score of 3 for temperature are directly comparable,
+even though the raw units (mm vs. degrees) never would be. That's the whole point of
+standardizing before feeding features to a distance- or gradient-based model.
+\end{block}
+
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Example}	
+\begin{frame}[fragile]\frametitle{Standardization Example}
 \begin{center}
 \includegraphics[width=0.8\linewidth,keepaspectratio]{stdex}
 \end{center}
@@ -287,6 +298,9 @@ Standardization assumes the feature values are normally distributed. If not, sta
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Sklearn Standardization/Scaling}
+This function-based form is handy for a quick one-off transform; for a real pipeline (fit on
+train, reuse on test) use the class-based \texttt{StandardScaler} -- covered hands-on in
+Session 7.
 \begin{lstlisting}
 from sklearn import preprocessing
 import numpy as np
@@ -418,6 +432,11 @@ array([[ 0.  ..., -1.22...,  1.33...],
 \end{itemize}
 \item Lower and upper are the specific thresholds.
 \end{itemize}
+\begin{block}{Intuition}
+Think of it like a torque wrench with a preset limit -- anything below the floor or above the
+ceiling gets clipped to that boundary instead of discarded, so you keep the row but stop one
+extreme sensor glitch or data-entry error from dragging the rest of the analysis around.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -546,12 +565,12 @@ print(X)
 	\item Scikit-learn doesn't directly handle categorical attributes well.
 	\item In order to use them in the dataset, some sort of encoding needs to be performed.
 	\item One good way to encode categorical attributes: if there are n categories, create n dummy binary variables representing each category.
-	\item Can be done easily using the sklearn.preprocessing.oneHotEncoder class.
+	\item Can be done easily using the sklearn.preprocessing.OneHotEncoder class.
 	\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Encoding}
+\begin{frame}[fragile]\frametitle{Encoding: Sample Data}
 \begin{center}
 \includegraphics[width=0.4\linewidth]{dfcity1}
 \end{center}
@@ -595,7 +614,7 @@ df = pd.DataFrame(raw_data, columns=['first_name', 'last_name', 'age', 'city'])
 \begin{frame}[fragile]\frametitle{Imp Note}
 	\begin{itemize}
 	\item All pre-processing steps done on X of training have to be done on X of testing also.
-	\item Once results are predicted, you many need to reverse transform some of the features to find corresponding points in the original X.
+	\item Once results are predicted, you may need to reverse transform some of the features to find corresponding points in the original X.
 	\end{itemize}
 \end{frame}
 
@@ -619,6 +638,12 @@ df = pd.DataFrame(raw_data, columns=['first_name', 'last_name', 'age', 'city'])
 
 \end{itemize}
 
+\begin{block}{Intuition}
+Covariance tells you the \emph{direction} two features move together (positive/negative) but its
+magnitude is meaningless on its own -- it's stuck in the product of the two features' original
+units, so you can't compare one pair's covariance to another's without normalizing. That's
+exactly the problem correlation (next slide) fixes.
+\end{block}
 
 \begin{center}
 \includegraphics[width=0.6\linewidth,keepaspectratio]{cov}
@@ -628,7 +653,7 @@ df = pd.DataFrame(raw_data, columns=['first_name', 'last_name', 'age', 'city'])
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Covariance}
+\begin{frame}[fragile] \frametitle{Covariance: A Worked Example}
 
 What is interesting in this data?
 
@@ -654,7 +679,7 @@ What is interesting in this data?
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Correlation}
+\begin{frame}[fragile] \frametitle{Correlation: Visual Intuition}
 
 \begin{center}
 \includegraphics[width=0.8\linewidth,keepaspectratio]{corr}
@@ -676,9 +701,14 @@ What is interesting in this data?
 \item values close to 1 indicate a very strong positive correlation
 \item values around 0 indicate no correlation
 \end{itemize}
-\item Features that have no correlation are said to be independent. 
-\item Calculating correlation between the HEIGHT feature and the WEIGHT and AGE features from the basketball players dataset. 
+\item Features that have no correlation are said to be independent.
+\item Calculating correlation between the HEIGHT feature and the WEIGHT and AGE features from the basketball players dataset.
 \end{itemize}
+\begin{block}{Intuition}
+Dividing covariance by both features' standard deviations rescales it into a unit-free number
+between $-1$ and $1$ -- so unlike covariance, a correlation of 0.8 always means the same strength
+of relationship, whether you're comparing height-vs-weight or torque-vs-RPM.
+\end{block}
 \end{frame}
 
 
@@ -696,7 +726,7 @@ What is interesting in this data?
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Example}	
+\begin{frame}[fragile]\frametitle{Covariance/Correlation Matrix Example}
 \begin{center}
 \includegraphics[width=\linewidth,keepaspectratio]{covcorrmat}
 \end{center}
@@ -748,8 +778,8 @@ What is interesting in this data?
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{The Art of Feature Engineering}
-What is Feature / Variable Creation \& its Benefits? 
+\begin{frame}[fragile]\frametitle{Feature Creation \& Its Benefits}
+What is Feature / Variable Creation \& its Benefits?
 	\begin{itemize}
 	\item Generate a new variables / features based on existing 
 variable(s). 
@@ -881,7 +911,7 @@ relationship with target variable.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{When to Remove Variables}
+\begin{frame}[fragile] \frametitle{When to Remove Variables: Mostly-Missing Case}
 90\% of the values are missing:
 \begin{itemize}
 \item Are the values that are present representative or not?
@@ -1016,8 +1046,19 @@ relationship with target variable.
 	\item Gives most important features
 	\end{itemize}
 \begin{lstlisting}
-Features sorted by their score:
-[(0.2321, 'fractal_dimension_mean'), (0.15359999999999999, 'concavity_worst'), (0.1164, 'radius_mean'), (0.088900000000000007, 'concave_points_sd_error'), (0.075999999999999998, 'perimeter_mean'), (0.062, 'texture_mean'), (0.0453, 'concave_points_worst'), (0.042599999999999999, 'area_sd_error'), (0.034200000000000001, 'symmetry_mean'), (0.024299999999999999, 'concave_points_mean'), (0.021399999999999999, 'fractal_dimension_worst'), (0.0207, 'radius_sd_error'), (0.015100000000000001, 'symmetry_worst'), (0.0086, 'smoothness_mean'), (0.0080999999999999996, 'fractal_dimension_sd_error'), (0.0077999999999999996, 'radius_worst'),\ldots, (0.0001, 'perimeter_worst')]
+from sklearn.ensemble import RandomForestClassifier
+
+model = RandomForestClassifier()
+model.fit(X_train, y_train)
+
+# Pair each feature name with its importance, sort descending
+importances = sorted(zip(model.feature_importances_, feature_names), reverse=True)
+print("Features sorted by their score:")
+print(importances)
+
+# Output:
+# [(0.2321, 'fractal_dimension_mean'), (0.1536, 'concavity_worst'),
+#  (0.1164, 'radius_mean'), (0.0889, 'concave_points_sd_error'), ...]
 \end{lstlisting}
 
 \end{frame}
