@@ -1,6 +1,6 @@
 ---
 name: prep-mlcoep-session
-description: Compiles, upgrades, and renames a single session of the ML CoEP course (LaTeX/course_mlcoep_content.tex) in isolation -- comments out the other 18 sessions, compiles both drivers via make.bat, runs /upgrade-deck scoped to just that session, recompiles, and renames the two output PDFs to Course_MLCoEP_<N>_<ShortName>_{Presentation,CheatSheet}.pdf, then restores the file to all-sessions-active. Argument is a session number or topic name; ask if not given. Use when the user asks to "prep session N of ML CoEP", "compile and upgrade the next CoEP session", or calls /prep-mlcoep-session.
+description: Compiles and renames a single session of the ML CoEP course (LaTeX/course_mlcoep_content.tex) in isolation -- comments out the other 18 sessions, compiles both drivers via make.bat, asks whether to also run /upgrade-deck scoped to just that session (optional, off by default), recompiles if it ran, and renames the two output PDFs to Course_MLCoEP_<N>_<ShortName>_{Presentation,CheatSheet}.pdf, then restores the file to all-sessions-active. Argument is a session number or topic name; ask if not given. Use when the user asks to "prep session N of ML CoEP", "compile and upgrade the next CoEP session", or calls /prep-mlcoep-session.
 ---
 
 # ML CoEP Session Pipeline
@@ -10,9 +10,8 @@ description: Compiles, upgrades, and renames a single session of the ML CoEP cou
 rebalancing" note). To review/upgrade one session at a time you must isolate it by commenting out
 the rest, compile, upgrade, recompile, rename, then restore.
 
-This command has no dependency on and takes no action related to
-`LaTeX/todo_mlcoep_session_verification.md` -- resolve everything directly from
-`course_mlcoep_content.tex`.
+This command has no dependency on and takes no action related to `LaTeX/todo.md` --
+resolve everything directly from `course_mlcoep_content.tex`.
 
 ## Step 0: Identify the target session
 
@@ -51,17 +50,25 @@ every frame throws a pre-existing, harmless `Overfull \hbox` footer-overflow war
 wider than the footline box) -- this is a known repo-wide cosmetic issue, not a new bug; don't let
 it block progress. Stop and report if the log shows a real error instead.
 
-## Step 3: Upgrade
+## Step 3: Ask whether to run /upgrade-deck
 
-Invoke the `upgrade-deck` skill against `LaTeX/Main_Course_ML_CoEP_Presentation.tex`. Because the
-other 18 sessions are commented out, its `\input` traversal naturally scopes the review to just the
-live session's topic files -- no special-casing needed. Apply its edits to the underlying topic
-`.tex` files (not to `course_mlcoep_content.tex`, unless a Task 3 restructuring finding specifically
-requires a section-level change -- flag that to the user before applying it).
+Ask the user whether to invoke the `upgrade-deck` skill on this session, or skip straight to
+renaming the PDFs just compiled in Step 2. Default expectation, unless the user says otherwise, is
+to skip it -- just produce the renamed PDF from the as-is content. Don't assume; ask each run.
+
+If the user declines, go straight to Step 5 (Rename outputs) using the PDFs from Step 2.
+
+If the user says yes, invoke the `upgrade-deck` skill against
+`LaTeX/Main_Course_ML_CoEP_Presentation.tex`. Because the other 18 sessions are commented out, its
+`\input` traversal naturally scopes the review to just the live session's topic files -- no
+special-casing needed. Apply its edits to the underlying topic `.tex` files (not to
+`course_mlcoep_content.tex`, unless a Task 3 restructuring finding specifically requires a
+section-level change -- flag that to the user before applying it). Then proceed to Step 4.
 
 ## Step 4: Recompile
 
-Re-run `make.bat` so the PDFs reflect `/upgrade-deck`'s edits. Check the log again.
+Only reached if Step 3 ran `/upgrade-deck`. Re-run `make.bat` so the PDFs reflect its edits. Check
+the log again.
 
 ## Step 5: Rename outputs
 
@@ -88,4 +95,5 @@ a hard guardrail; "all 19 active" is the file's required resting state.
   in Step 0.
 - If `/upgrade-deck` proposes edits to a file with an `X.tex`/`X_short.tex` comment-sibling, its own
   Step 4 sibling-sync guardrail applies -- don't bypass it just because this pipeline is driving it.
+- Always ask before running `/upgrade-deck` (Step 3) -- never fire it silently by default.
 - Report the final PDF filenames and log status back to the user at the end of the run.

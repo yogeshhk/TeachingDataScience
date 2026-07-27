@@ -410,15 +410,29 @@ commented placeholder) to 19 fully-active sessions:
   quantum-physics/quantikz sub-tasks (1b/1c, unused anywhere in this repo) and added a
   Step 4 "Sibling-File Check" + a "Sibling sync" guardrail, per the standing rule above.
   Keep both copies mirrored on any future edit.
-- Verification is tracked session-by-session in `LaTeX/todo_mlcoep_session_verification.md`
-  (delete once complete, per the usual `todo_*.md` convention) — as of this note, Sessions
-  1-4 are compiled and verified clean (two PDFs each: `Course_MLCoEP_<N>_..._{Presentation,
-  CheatSheet}.pdf`), and a repo-wide `lstlisting`-placement-violation sweep (content after
-  `\end{lstlisting}`, violates the Style Preservation Rule) found and fixed 12 instances
-  across Sessions 3, 7, and 19 — including a genuine content bug caught in passing:
-  `ml_evaluation_sklearn.tex`'s `$R^2$ Metric` frame had text copy-pasted from the MSE
-  frame that was factually wrong for R² (not negated by `cross_val_score`, unlike MAE/MSE).
-  Sessions 5-19 still need their compile-and-verify pass.
+- Verification is tracked session-by-session in `LaTeX/todo.md` (renamed Jul 2026 from
+  `todo_mlcoep_session_verification.md` for a shorter name; delete once complete, per the
+  usual `todo_*.md` convention) — as of this note, Sessions 1-4 are compiled and verified
+  clean (two PDFs each: `Course_MLCoEP_<N>_..._{Presentation,CheatSheet}.pdf`), and a
+  repo-wide `lstlisting`-placement-violation sweep (content after `\end{lstlisting}`,
+  violates the Style Preservation Rule) found and fixed 12 instances across Sessions 3, 7,
+  and 19 — including a genuine content bug caught in passing: `ml_evaluation_sklearn.tex`'s
+  `$R^2$ Metric` frame had text copy-pasted from the MSE frame that was factually wrong for
+  R² (not negated by `cross_val_score`, unlike MAE/MSE). Sessions 5-19 still need their
+  compile-and-verify pass.
+- **`prep-mlcoep-session` command** (`~/.claude/commands/`, mirrored to
+  `Code/claudecode/dot_claude/commands/`) was changed (Jul 2026) so its Step 3
+  (`/upgrade-deck`) is asked about rather than fired automatically — default is to skip it
+  and just produce the renamed PDF from as-is content. Sessions 3 and 4's current PDFs were
+  produced this way (compile + rename only, no `/upgrade-deck` pass), separate from and
+  prior to their eventual `/upgrade-deck` pass whenever that's requested. Keep both command
+  copies mirrored on any future edit, per the standing rule above.
+- **Em-dash cleanup** (Jul 2026): a literal em-dash (`—`) sweep across all `.tex` files
+  reachable from `course_mlcoep_content.tex` (Sessions 1-19 + appendix) found and fixed 5
+  instances — 2 in `ai_intro_tech.tex` (Session 1), 1 each in `ml_intro_short.tex` (Session
+  5), `ml_svm.tex` (Session 12, a quote-attribution dash, replaced with a plain hyphen `-`
+  rather than comma/colon since attribution is the one case treated as "a must"), and
+  `ml_predictive_analytics.tex` (Session 18). Zero remain as of this note.
 - `COURSES.md` now lists this course (added Jul 2026, after being flagged as a gap) under
   "ML for Mechanical Engineers (CoEP)" — noted there as structurally different from the
   other 5 courses (no workshop/seminar layer; sessions are chained directly, not
