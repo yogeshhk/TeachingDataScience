@@ -127,7 +127,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Data Preprocessing}	
 \begin{itemize}
-\item Data Exploration phase results in finding data quality issues. Outliers, missing values
+\item Data Exploration phase results in finding data quality issues. Outliers, missing values, etc
 \item Feature Engineering is the way to prepare data.
 
 \end{itemize}
@@ -157,9 +157,19 @@ What is Feature Engineering?
 \begin{frame}[fragile]\frametitle{Feature Engineering: The Process}
 What is the process of Feature Engineering ?
 	\begin{itemize}
-	\item Variable transformation. 
-	\item Variable / Feature creation. 
+	\item Variable transformation.
+	\item Variable / Feature creation.
 	\end{itemize}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Original Column & Transformation & Creation \\
+\midrule
+Income (skewed) & $\log(\text{Income})$ & -- \\
+Order Date & -- & Day-of-week, Is-weekend \\
+\bottomrule
+\end{tabular}
+\end{center}
 \end{frame}
 
 
@@ -245,8 +255,23 @@ Sensitive to the presence of Outliers in a data-set.
 	\item  X: Data to be normalized
 	\item norm: which norm to use: l1 (sum of elements gives 1) or l2 (sqrt the sum of the squares of the elements gives one)
 	\item axis: whether to normalize by row or column
-	\item In practice, prefer the class-based \texttt{Normalizer} (fit once, reuse via transform) -- covered hands-on in Session 7
+	\item In practice, prefer the class-based \texttt{Normalizer} (fit once, reuse via transform), covered hands-on in Session 7
 	\end{itemize}
+\begin{lstlisting}
+from sklearn import preprocessing
+import numpy as np
+
+X = np.array([[ 1., -1.,  2.],
+              [ 2.,  0.,  0.],
+              [ 0.,  1., -1.]])
+
+X_normalized = preprocessing.normalize(X, norm='l2')
+print(X_normalized)
+
+array([[ 0.408, -0.408,  0.816],
+       [ 1.   ,  0.   ,  0.   ],
+       [ 0.   ,  0.707, -0.707]])
+\end{lstlisting}
 \end{frame}
 
 
@@ -279,12 +304,12 @@ Majority of feature values will be in a range of [-1, 1].
 \end{itemize}
 Standardization assumes the feature values are normally distributed. If not, standardization may introduce some distortions.
 
-\begin{block}{Intuition}
-A z-score of $+2$ just means ``two standard deviations above average for this feature'' -- so a
-z-score of 3 for machining tolerance and a z-score of 3 for temperature are directly comparable,
-even though the raw units (mm vs. degrees) never would be. That's the whole point of
-standardizing before feeding features to a distance- or gradient-based model.
-\end{block}
+% \begin{block}{Intuition}
+% A z-score of $+2$ just means ``two standard deviations above average for this feature'' -- so a
+% z-score of 3 for machining tolerance and a z-score of 3 for temperature are directly comparable,
+% even though the raw units (mm vs. degrees) never would be. That's the whole point of
+% standardizing before feeding features to a distance- or gradient-based model.
+% \end{block}
 
 \end{frame}
 
@@ -299,7 +324,7 @@ standardizing before feeding features to a distance- or gradient-based model.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Sklearn Standardization/Scaling}
 This function-based form is handy for a quick one-off transform; for a real pipeline (fit on
-train, reuse on test) use the class-based \texttt{StandardScaler} -- covered hands-on in
+train, reuse on test) use the class-based \texttt{StandardScaler}, covered hands-on in
 Session 7.
 \begin{lstlisting}
 from sklearn import preprocessing
@@ -354,12 +379,25 @@ array([[ 0.  ..., -1.22...,  1.33...],
 % \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Equal-Width Binning}	
+\begin{frame}[fragile]\frametitle{Equal-Width Binning}
 \begin{itemize}
 \item Splits the range of the feature values into b bins each of size $\frac{range}{b}$
 \item Usually works well
 \item Some near-empty bins when data follows a normal distribution
 \end{itemize}
+\textbf{Example:} Ages = 12, 15, 18, 22, 25, 28, 32, 35, 40, 55 \quad (range 12--55, 3 bins of
+width $\approx$14.3)
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Bin & Range & Ages in Bin \\
+\midrule
+1 & [12, 26.3) & 12, 15, 18, 22, 25 \\
+2 & [26.3, 40.7) & 28, 32, 35, 40 \\
+3 & [40.7, 55] & 55 \\
+\bottomrule
+\end{tabular}
+\end{center}
 \end{frame}
 
 
@@ -372,15 +410,28 @@ array([[ 0.  ..., -1.22...,  1.33...],
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Equal-Frequency Binning}	
+\begin{frame}[fragile]\frametitle{Equal-Frequency Binning}
 \begin{itemize}
 \item Algorithm:
 	\begin{itemize}
-	\item Sorts the continuous feature values into ascending order 
-	\item Then places an equal number of instances into each bin, starting with bin 1 
+	\item Sorts the continuous feature values into ascending order
+	\item Then places an equal number of instances into each bin, starting with bin 1
 	\end{itemize}
 \item Number of instances placed in each bin $\frac{TotalNumberOfInstances}{NumberOfBins}$
 \end{itemize}
+\textbf{Same ages, equal-frequency (3 bins, $\approx$3--4 per bin):}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Bin & Ages in Bin & Range Covered \\
+\midrule
+1 & 12, 15, 18 & [12, 18] \\
+2 & 22, 25, 28 & [22, 28] \\
+3 & 32, 35, 40, 55 & [32, 55] \\
+\bottomrule
+\end{tabular}
+\end{center}
+Same bin sizes, uneven range widths: the opposite trade-off from equal-width.
 \end{frame}
 
 
@@ -392,15 +443,25 @@ array([[ 0.  ..., -1.22...,  1.33...],
 % \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Data Preparation: Sampling}	
+\begin{frame}[fragile]\frametitle{Data Preparation: Sampling}
 \begin{itemize}
 \item Sometimes we have too much data!, instead sample a smaller percentage from the larger dataset
 \item Care required when sampling:
 	\begin{itemize}
-	\item Try to ensure that the resulting datasets is still representative of the original data and that no unintended bias is introduced during this process. 
+	\item Try to ensure that the resulting datasets is still representative of the original data and that no unintended bias is introduced during this process.
 	\item If not, any modeling on the sample will not be relevant to the overall dataset.
 	\end{itemize}
 \end{itemize}
+\begin{lstlisting}
+# df: assumed already loaded, e.g. df = pd.read_csv("telecom_churn.csv")
+# Plain random sample, risky if the target is imbalanced (e.g. 86/14 churn split):
+# a small random sample could end up with too few (or zero) churners.
+df.sample(frac=0.2, random_state=42)
+
+# Stratified sample, keeps each class's proportion intact
+df.groupby('Churn', group_keys=False).apply(
+    lambda g: g.sample(frac=0.2, random_state=42))
+\end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -432,11 +493,11 @@ array([[ 0.  ..., -1.22...,  1.33...],
 \end{itemize}
 \item Lower and upper are the specific thresholds.
 \end{itemize}
-\begin{block}{Intuition}
-Think of it like a torque wrench with a preset limit -- anything below the floor or above the
-ceiling gets clipped to that boundary instead of discarded, so you keep the row but stop one
-extreme sensor glitch or data-entry error from dragging the rest of the analysis around.
-\end{block}
+% \begin{block}{Intuition}
+% Think of it like a torque wrench with a preset limit -- anything below the floor or above the
+% ceiling gets clipped to that boundary instead of discarded, so you keep the row but stop one
+% extreme sensor glitch or data-entry error from dragging the rest of the analysis around.
+% \end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -480,12 +541,21 @@ Data quality issues found in the motor Insurance fraud dataset
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Handling Missing Values (Dropping)}	
+\begin{frame}[fragile]\frametitle{Handling Missing Values (Dropping)}
 \begin{itemize}
 \item Drop any features that have missing values. Might lead to massive loss of data
 \item Drop any instance/record that has a missing value. Might lead to bias
 \item Derive a missing indicator feature from features with missing values. Replace with a binary feature, whether the value was missing or not.
 \item Ignore missing values. If data mining method is robust
+\end{itemize}
+\textbf{Example:} 4 records, \texttt{Age} missing in row 2, \texttt{Income} missing in row 3.
+\begin{itemize}
+\item Drop-column: removes \texttt{Age} \emph{and} \texttt{Income} entirely (each has a gap
+  somewhere), keeping all 4 rows but losing 2 features.
+\item Drop-row: removes rows 2 and 3, keeping both features but left with only 2 of 4
+  records.
+\item Indicator: keeps all 4 rows and both columns, adding \texttt{Age\_missing} and
+  \texttt{Income\_missing} flags instead of discarding anything.
 \end{itemize}
 \end{frame}
 
@@ -508,7 +578,8 @@ Missing values are marked as NaN
 \end{center}
 \begin{lstlisting}
 # Read a dataset with missing values
-flights = pd.read_csv("http://rcs.bu.edu/examples/python/data_analysis/flights.csv")
+flights = pd.read_csv(
+    "http://rcs.bu.edu/examples/python/data_analysis/flights.csv")
 
 # Select the rows that have at least one missing value
 flights[flights.isnull().any(axis=1)].head()
@@ -541,7 +612,8 @@ In scikit-learn, this is referred to as ``Imputation''
 import numpy as np
 from sklearn.impute import SimpleImputer
 
-X = np.array([[23.56],[53.45],[np.nan],[44.44],[77.78],[np.nan],[234.44],[11.33],[79.87]])
+X = np.array([[23.56], [53.45], [np.nan], [44.44], [77.78],
+              [np.nan], [234.44], [11.33], [79.87]])
 
 print(X)
 
@@ -640,15 +712,19 @@ df = pd.DataFrame(raw_data, columns=['first_name', 'last_name', 'age', 'city'])
 
 \begin{block}{Intuition}
 Covariance tells you the \emph{direction} two features move together (positive/negative) but its
-magnitude is meaningless on its own -- it's stuck in the product of the two features' original
+magnitude is meaningless on its own: it's stuck in the product of the two features' original
 units, so you can't compare one pair's covariance to another's without normalizing. That's
 exactly the problem correlation (next slide) fixes.
 \end{block}
 
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Covariance: Visual Intuition}
 \begin{center}
 \includegraphics[width=0.6\linewidth,keepaspectratio]{cov}
 \end{center}
-
 \end{frame}
 
 
@@ -704,11 +780,11 @@ What is interesting in this data?
 \item Features that have no correlation are said to be independent.
 \item Calculating correlation between the HEIGHT feature and the WEIGHT and AGE features from the basketball players dataset.
 \end{itemize}
-\begin{block}{Intuition}
-Dividing covariance by both features' standard deviations rescales it into a unit-free number
-between $-1$ and $1$ -- so unlike covariance, a correlation of 0.8 always means the same strength
-of relationship, whether you're comparing height-vs-weight or torque-vs-RPM.
-\end{block}
+% \begin{block}{Intuition}
+% Dividing covariance by both features' standard deviations rescales it into a unit-free number
+% between $-1$ and $1$ -- so unlike covariance, a correlation of 0.8 always means the same strength
+% of relationship, whether you're comparing height-vs-weight or torque-vs-RPM.
+% \end{block}
 \end{frame}
 
 
@@ -838,7 +914,7 @@ relationship with target variable.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Aggregation}	
+\begin{frame}[fragile]\frametitle{Aggregation}
 \begin{itemize}
 \item Combining two or more attributes into a single attribute Or - combining two or more objects into a single object
 \item Purpose:
@@ -847,8 +923,30 @@ relationship with target variable.
 	\item Change of scale: high-level vs. low-level
 	\end{itemize}
 \item Motivations: Less memory and processing time
-
 \end{itemize}
+\textbf{Example:} daily transactions $\rightarrow$ monthly summary.
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Date & Sales \\
+\midrule
+2024-01-01 & 120 \\
+2024-01-02 & 95 \\
+$\vdots$ & $\vdots$ \\
+2024-01-31 & 110 \\
+\bottomrule
+\end{tabular}
+\quad$\rightarrow$\quad
+\begin{tabular}{ll}
+\toprule
+Month & Total Sales \\
+\midrule
+2024-01 & 3{,}450 \\
+\bottomrule
+\end{tabular}
+\end{center}
+31 daily rows collapse into 1 monthly row: less memory, coarser (but often sufficient)
+granularity.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1048,6 +1146,8 @@ relationship with target variable.
 \begin{lstlisting}
 from sklearn.ensemble import RandomForestClassifier
 
+# X_train, y_train, feature_names: assumed already prepared, e.g. after a
+# train/test split on the cleaned, encoded DataFrame
 model = RandomForestClassifier()
 model.fit(X_train, y_train)
 
@@ -1061,6 +1161,24 @@ print(importances)
 #  (0.1164, 'radius_mean'), (0.0889, 'concave_points_sd_error'), ...]
 \end{lstlisting}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Recap: The Data Preparation Toolkit}
+\begin{itemize}
+\item \textbf{Scaling}: normalization and standardization, so features on different units
+  and ranges become comparable.
+\item \textbf{Missing values}: drop, flag, or impute (constant, mean/median/mode, or
+  model-based).
+\item \textbf{Binning}: turn a continuous feature into categories, equal-width or
+  equal-frequency.
+\item \textbf{Encoding}: turn categories into numbers models can use (one-hot, etc.).
+\item \textbf{Feature creation \& reduction}: engineer new columns, or cut down to the
+  ones that actually carry signal.
+\end{itemize}
+Same discipline as before: whatever preprocessing you fit on training data must be applied
+the same way to test data. Next, we walk one real dataset through this entire loop, start to
+finish.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

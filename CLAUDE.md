@@ -72,6 +72,13 @@ CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `
 
 `\usepackage{beamerarticle}` in `template_cheatsheet.tex` makes Beamer `\begin{frame}` environments compile correctly in article mode — no frame stripping needed.
 
+Both `template_presentation.tex` and `template_cheatsheet.tex` load `\usepackage{upquote}`
+(added Jul 2026) right after `\usepackage{listings}`, so straight apostrophes/backticks in
+`lstlisting`/verbatim code render as straight quotes instead of the curly OT1-typewriter-font
+ligature glyph. Repo-wide fix, not tied to any one deck; found while reviewing ML CoEP Session
+4 (`python_intro_pandas.tex`), whose code was rendering both ends of every quoted string curled
+the same direction.
+
 ### Naming conventions
 - Topic files: `<domain>_<topic>.tex` (e.g., `maths_linearalgebra_matrices.tex`)
 - Content aggregators: `<type>_<subject>_content.tex`
@@ -423,10 +430,12 @@ commented placeholder) to 19 fully-active sessions:
 - **`prep-mlcoep-session` command** (`~/.claude/commands/`, mirrored to
   `Code/claudecode/dot_claude/commands/`) was changed (Jul 2026) so its Step 3
   (`/upgrade-deck`) is asked about rather than fired automatically — default is to skip it
-  and just produce the renamed PDF from as-is content. Sessions 3 and 4's current PDFs were
-  produced this way (compile + rename only, no `/upgrade-deck` pass), separate from and
-  prior to their eventual `/upgrade-deck` pass whenever that's requested. Keep both command
-  copies mirrored on any future edit, per the standing rule above.
+  and just produce the renamed PDF from as-is content. A second change (also Jul 2026) added
+  a new, non-optional Step 2 that sweeps every live `--` prose dash in the target session's
+  topic files into a colon/comma before compiling (numeric ranges and table N/A-placeholder
+  dashes excluded), renumbering the steps after it; unlike `/upgrade-deck` this one always
+  runs, no asking. Keep both command copies mirrored on any future edit, per the standing
+  rule above.
 - **Em-dash cleanup** (Jul 2026): a literal em-dash (`—`) sweep across all `.tex` files
   reachable from `course_mlcoep_content.tex` (Sessions 1-19 + appendix) found and fixed 5
   instances — 2 in `ai_intro_tech.tex` (Session 1), 1 each in `ml_intro_short.tex` (Session
@@ -437,6 +446,33 @@ commented placeholder) to 19 fully-active sessions:
   "ML for Mechanical Engineers (CoEP)" — noted there as structurally different from the
   other 5 courses (no workshop/seminar layer; sessions are chained directly, not
   independently reachable).
+- **Sessions 3 and 4 deep-upgrade pass (Jul 2026)**, beyond the compile-verify note above:
+  - Session 3 (`ml_eda_intro.tex`, `data_preparation_short.tex`, `ml_eda_endtoend_churn.tex`):
+    added a clean-vs-messy rain-prediction tabular example (Pressure/Temperature/Humidity →
+    Rain) to ground "why EDA matters"; commented out (not deleted) 4 mechanical-engineering-
+    flavored "Intuition" blocks per explicit instruction that ME analogies aren't wanted right
+    now; added a `df.head()` "first look" frame in the churn walkthrough (renumbering its
+    Step 2-7 titles to 3-8), plus closing/recap frames to `ml_eda_intro.tex` and
+    `data_preparation_short.tex` (`ml_eda_endtoend_churn.tex` already had one); split the
+    Covariance frame's image into its own frame and rewrapped 3 code lines that had no
+    whitespace break point (both were genuine vertical/horizontal overflow, not cosmetic);
+    added worked examples/tables/code to 6 previously plain-list frames.
+  - Session 4 (`python_intro_pandas.tex`): added 12 missing `\frametitle`s; converted all 17
+    `df1.png`-`df17.png` screenshots to `lstlisting` text after visually confirming each was
+    plain monospace `In[]/Out[]` output with nothing graphical to lose; while converting,
+    found and fixed a real bug where the deck interleaves two different tutorials that both
+    reused the variable `df` (a classic synthetic `A/B/C/D`-column walkthrough and a
+    `machine_logs.csv` walkthrough added in the June 2026 rebalancing), reassigning it back
+    and forth — renamed the synthetic thread to `df_demo` throughout (~15 frames) rather than
+    reordering anything; also fixed two narrative gaps the images had been silently
+    papering over (a "drop rows" frame whose image never showed the drop, and a downstream
+    `A`/`B` = 0 change with no earlier step introducing it). Found via visual PDF-page
+    rendering (not just line-counting) that any frame with two separate `lstlisting` blocks
+    back-to-back visibly collides (each gets its own bordered box); split the 4 affected
+    frames into 8. `/upgrade-deck` was deliberately not run on either session this pass (see
+    the command note above) — for Session 4 specifically, declined because the file already
+    carries "Intuition"/"Quick Check" scaffolding from a prior pass and running it now would
+    risk re-adding ME-flavored intuition right after removing it from Session 3.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames

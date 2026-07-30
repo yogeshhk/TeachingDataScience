@@ -1,6 +1,6 @@
 ---
 name: prep-mlcoep-session
-description: Compiles and renames a single session of the ML CoEP course (LaTeX/course_mlcoep_content.tex) in isolation -- comments out the other 18 sessions, compiles both drivers via make.bat, asks whether to also run /upgrade-deck scoped to just that session (optional, off by default), recompiles if it ran, and renames the two output PDFs to Course_MLCoEP_<N>_<ShortName>_{Presentation,CheatSheet}.pdf, then restores the file to all-sessions-active. Argument is a session number or topic name; ask if not given. Use when the user asks to "prep session N of ML CoEP", "compile and upgrade the next CoEP session", or calls /prep-mlcoep-session.
+description: Compiles and renames a single session of the ML CoEP course (LaTeX/course_mlcoep_content.tex) in isolation -- comments out the other 18 sessions, cleans up prose long-dashes (--) into colons/commas in the session's topic files, compiles both drivers via make.bat, asks whether to also run /upgrade-deck scoped to just that session (optional, off by default), recompiles if it ran, and renames the two output PDFs to Course_MLCoEP_<N>_<ShortName>_{Presentation,CheatSheet}.pdf, then restores the file to all-sessions-active. Argument is a session number or topic name; ask if not given. Use when the user asks to "prep session N of ML CoEP", "compile and upgrade the next CoEP session", or calls /prep-mlcoep-session.
 ---
 
 # ML CoEP Session Pipeline
@@ -8,7 +8,7 @@ description: Compiles and renames a single session of the ML CoEP course (LaTeX/
 `course_mlcoep_content.tex` drives `Main_Course_ML_CoEP_{Presentation,CheatSheet}.tex` and chains
 19 sessions directly (no workshop/seminar layer -- see `CLAUDE.md`'s "ML CoEP course session
 rebalancing" note). To review/upgrade one session at a time you must isolate it by commenting out
-the rest, compile, upgrade, recompile, rename, then restore.
+the rest, clean up dashes, compile, upgrade, recompile, rename, then restore.
 
 This command has no dependency on and takes no action related to `LaTeX/todo.md` --
 resolve everything directly from `course_mlcoep_content.tex`.
@@ -42,7 +42,24 @@ session. Comment with `%` at the start of each line in the block -- do not delet
 anything. Leave the `\appendix` / References / Datasets Used section at the bottom untouched (it's
 small and applies regardless of which session is active).
 
-## Step 2: Compile
+## Step 2: Dash cleanup
+
+In every live `\input{}` file found in Step 1 (the target session's topic files), find literal
+`--` (TeX-style long dash) used as prose punctuation and replace each with a colon or comma,
+whichever reads most naturally -- rewrite into two sentences instead if the dash pair brackets an
+inserted clause. This runs automatically every time, unlike `/upgrade-deck` in Step 4 which is
+opt-in.
+
+Leave these alone, they are not prose dashes:
+- A lone `--` sitting by itself in a table cell (a "missing value" / "not applicable" placeholder).
+- A numeric range, e.g. `12--55` or `3--4` (standard range notation, not punctuation).
+- Anything inside a commented-out (`%`-prefixed) block -- don't touch dead code/text.
+
+If a quote-attribution dash reads awkwardly as a colon or comma, use a plain hyphen (`-`) instead
+-- that's the one case where a hyphen beats colon/comma (precedent: the Jul 2026 em-dash cleanup
+noted in `CLAUDE.md`).
+
+## Step 3: Compile
 
 From `LaTeX/`, run `make.bat` (loops `texify -cp` over `Main_Course_ML_CoEP_*.tex`). Check the
 resulting `.log` files for errors, undefined references, or missing images before proceeding. Note:
@@ -50,27 +67,27 @@ every frame throws a pre-existing, harmless `Overfull \hbox` footer-overflow war
 wider than the footline box) -- this is a known repo-wide cosmetic issue, not a new bug; don't let
 it block progress. Stop and report if the log shows a real error instead.
 
-## Step 3: Ask whether to run /upgrade-deck
+## Step 4: Ask whether to run /upgrade-deck
 
 Ask the user whether to invoke the `upgrade-deck` skill on this session, or skip straight to
-renaming the PDFs just compiled in Step 2. Default expectation, unless the user says otherwise, is
+renaming the PDFs just compiled in Step 3. Default expectation, unless the user says otherwise, is
 to skip it -- just produce the renamed PDF from the as-is content. Don't assume; ask each run.
 
-If the user declines, go straight to Step 5 (Rename outputs) using the PDFs from Step 2.
+If the user declines, go straight to Step 6 (Rename outputs) using the PDFs from Step 3.
 
 If the user says yes, invoke the `upgrade-deck` skill against
 `LaTeX/Main_Course_ML_CoEP_Presentation.tex`. Because the other 18 sessions are commented out, its
 `\input` traversal naturally scopes the review to just the live session's topic files -- no
 special-casing needed. Apply its edits to the underlying topic `.tex` files (not to
 `course_mlcoep_content.tex`, unless a Task 3 restructuring finding specifically requires a
-section-level change -- flag that to the user before applying it). Then proceed to Step 4.
+section-level change -- flag that to the user before applying it). Then proceed to Step 5.
 
-## Step 4: Recompile
+## Step 5: Recompile
 
-Only reached if Step 3 ran `/upgrade-deck`. Re-run `make.bat` so the PDFs reflect its edits. Check
+Only reached if Step 4 ran `/upgrade-deck`. Re-run `make.bat` so the PDFs reflect its edits. Check
 the log again.
 
-## Step 5: Rename outputs
+## Step 6: Rename outputs
 
 Rename both PDFs, keeping the two forms as separate files:
 - `Main_Course_ML_CoEP_Presentation.pdf` -> `Course_MLCoEP_<N>_<ShortName>_Presentation.pdf`
@@ -81,7 +98,7 @@ with spaces replaced by underscores. All 19 session titles are already kept to o
 exactly this purpose (e.g. Session 3's title is `EDA DataPrep` -> `EDA_DataPrep`) -- no derivation
 or abbreviation needed, just read the title and join it.
 
-## Step 6: Restore
+## Step 7: Restore
 
 Uncomment the other 18 sessions back in `course_mlcoep_content.tex` so the file returns to its
 normal all-sessions-active state. **Never end a run with the file partially commented** -- this is
@@ -95,5 +112,6 @@ a hard guardrail; "all 19 active" is the file's required resting state.
   in Step 0.
 - If `/upgrade-deck` proposes edits to a file with an `X.tex`/`X_short.tex` comment-sibling, its own
   Step 4 sibling-sync guardrail applies -- don't bypass it just because this pipeline is driving it.
-- Always ask before running `/upgrade-deck` (Step 3) -- never fire it silently by default.
+- Always ask before running `/upgrade-deck` (Step 4) -- never fire it silently by default. Dash
+  cleanup (Step 2), unlike `/upgrade-deck`, is not optional -- it always runs.
 - Report the final PDF filenames and log status back to the user at the end of the run.

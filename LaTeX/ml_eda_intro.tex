@@ -8,28 +8,77 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Why Look at Data Before Modeling?}
 \begin{itemize}
-\item Every ML pipeline so far in this course has started with a dataset -- but real datasets
+\item Datasets typically used in academic settins are clean and curated, but real datasets
   arrive messy: missing values, wrong types, outliers, duplicate rows.
-\item A model trained on unexamined data doesn't fail loudly -- it just quietly learns the
+\item A model trained on unexamined data doesn't fail loudly, it just quietly learns the
   wrong thing, or learns noise instead of signal.
-\item ``Garbage in, garbage out'' -- no algorithm, however sophisticated, can fix what bad
+\item ``Garbage in, garbage out'', no algorithm, however sophisticated, can fix what bad
   input data already broke.
 \end{itemize}
-\begin{block}{Intuition}
-Would you start machining a part from a raw casting without first inspecting it for cracks,
-checking its dimensions, and cleaning off the mold sand? Data is the raw material of ML --
-skipping inspection just moves the failure downstream, where it's far more expensive to find.
-\end{block}
+% \begin{block}{Intuition}
+% Would you start machining a part from a raw casting without first inspecting it for cracks,
+% checking its dimensions, and cleaning off the mold sand? Data is the raw material of ML,
+% skipping inspection just moves the failure downstream, where it's far more expensive to find.
+% \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{A Concrete Example: Predicting Rain}
+Say the goal is a simple model: given today's readings, will it rain tomorrow?
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+Pressure (hPa) & Temperature ($^\circ$C) & Humidity (\%) & Rain \\
+\midrule
+1013 & 28 & 65 & No \\
+1009 & 26 & 78 & Yes \\
+1018 & 31 & 40 & No \\
+1005 & 24 & 85 & Yes \\
+1015 & 29 & 55 & No \\
+1002 & 22 & 90 & Yes \\
+\bottomrule
+\end{tabular}
+\end{center}
+A dataset like this, clean, consistent, nothing missing, is what most textbook examples show
+you. Real data almost never looks like this.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Same Data, As It Usually Arrives}
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+Pressure (hPa) & Temperature ($^\circ$C) & Humidity (\%) & Rain \\
+\midrule
+1013 & 28 & 65 & No \\
+1009 & 26 & \textcolor{red}{--} & Yes \\
+1018 & \textcolor{red}{310} & 40 & No \\
+1005 & 24 & 85 & \textcolor{red}{yes} \\
+1015 & 29 & 55 & No \\
+1015 & 29 & 55 & No \\
+1002 & 22 & 90 & Yes \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}
+\item Row 2: humidity is \textbf{missing}.
+\item Row 3: a temperature of 310$^\circ$C is an \textbf{outlier}, a sensor glitch or typo,
+  not a real reading.
+\item Row 4: ``yes'' breaks the \textbf{consistent labeling} used everywhere else
+  (``Yes''/``No'').
+\item Rows 5 and 6 are an exact \textbf{duplicate}.
+\end{itemize}
+Every one of these would silently distort a model trained without first looking.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{What is Exploratory Data Analysis (EDA)?}
 \begin{itemize}
-\item EDA is the practice of looking at a dataset -- through summaries, tables, and plots --
+\item EDA is the practice of looking at a dataset, through summaries, tables, and plots,
   \emph{before} building any model, to understand what you actually have.
 \item It answers questions like: What does each column mean? What range of values is normal?
   Are any values missing or clearly wrong? Which variables seem related to each other?
-\item EDA is detective work, not decoration -- every chart or table should be answering a
+\item EDA is detective work, not decoration, every chart or table should be answering a
   specific question about the data, not just filling a slide.
 \end{itemize}
 \end{frame}
@@ -43,21 +92,21 @@ skipping inspection just moves the failure downstream, where it's far more expen
   columns: Do two numeric columns move together (correlation)? Does a categorical column
   split a numeric one into different groups?
 \end{itemize}
-\begin{block}{Intuition}
-Univariate analysis is like inspecting one machine part on its own -- checking its tolerances
-in isolation. Bivariate analysis is checking how two parts fit together -- their relationship
-is where a lot of real engineering problems (and real ML signal) actually live.
-\end{block}
+% \begin{block}{Intuition}
+% Univariate analysis is like inspecting one machine part on its own, checking its tolerances
+% in isolation. Bivariate analysis is checking how two parts fit together, their relationship
+% is where a lot of real engineering problems (and real ML signal) actually live.
+% \end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{What EDA Is Looking For}
 \begin{itemize}
-\item \textbf{Missing data} -- which columns have gaps, and are they random or systematic?
-\item \textbf{Outliers} -- values far outside the normal range; sometimes real, sometimes
+\item \textbf{Missing data}, which columns have gaps, and are they random or systematic?
+\item \textbf{Outliers}, values far outside the normal range; sometimes real, sometimes
   sensor glitches or data-entry errors.
-\item \textbf{Wrong types} -- a numeric column read in as text, a date stored as a string.
-\item \textbf{Imbalance} -- for a target column, are the classes roughly even, or is one
+\item \textbf{Wrong types}, a numeric column read in as text, a date stored as a string.
+\item \textbf{Imbalance}, for a target column, are the classes roughly even, or is one
   outcome rare (as with most failure/fraud/churn-style targets)?
 \end{itemize}
 \end{frame}
@@ -65,31 +114,45 @@ is where a lot of real engineering problems (and real ML signal) actually live.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Modern EDA: Automated Profiling}
 \begin{itemize}
-\item Everything on the previous slide -- missing data, outliers, types, imbalance -- can be
+\item Things like missing data, outliers, types, imbalance, can be
   generated automatically as a first-pass report, before writing any manual pandas code.
 \item Tools like \texttt{ydata-profiling} (formerly pandas-profiling) and \texttt{sweetviz}
   scan a DataFrame and produce a full HTML report: per-column distributions, correlations,
   missing-value maps, warnings about high cardinality or skew.
-\item Useful as a fast starting point, not a replacement for judgment -- it flags what to look
+\item Useful as a fast starting point, not a replacement for judgment, it flags what to look
   at, it doesn't decide what matters for your specific problem.
 \end{itemize}
 \begin{lstlisting}[language=Python]
 from ydata_profiling import ProfileReport
 
+# df: assumed already loaded, e.g. df = pd.read_csv("telecom_churn.csv")
 profile = ProfileReport(df, title="Churn Dataset Report")
 profile.to_file("report.html")
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Recap: Why EDA Matters}
+\begin{itemize}
+\item Real data arrives messy: EDA is how you find out \emph{how} messy, before that cost
+  gets baked into a trained model.
+\item Two angles: \textbf{univariate} (one column at a time) and \textbf{bivariate}
+  (relationships between columns).
+\item What to look for: missing data, outliers, wrong types, and class imbalance.
+\item Automated profiling tools give a fast first pass; they flag issues, they don't decide
+  what matters for your problem.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{From Exploring to Preparing}
 \begin{itemize}
-\item Once EDA surfaces a problem -- missing values, a skewed feature, an unencoded category
-  -- \textbf{data preparation} is the set of techniques used to fix it before modeling.
+\item Once EDA surfaces a problem, missing values, a skewed feature, an unencoded category
+ , \textbf{data preparation} is the set of techniques used to fix it before modeling.
 \item The two are a loop, not a strict sequence: you explore, prepare, then often explore
   again to confirm the fix worked.
-\item The rest of this session works through that toolkit -- handling missing values,
-  scaling, encoding, and engineering new features -- then closes with one dataset walked
+\item The toolkit: handling missing values,
+  scaling, encoding, and engineering new features, then closes with one dataset walked
   through start to finish.
 \end{itemize}
 \end{frame}

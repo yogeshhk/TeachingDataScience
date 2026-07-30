@@ -73,6 +73,13 @@ the repo's usual `todo_*.md` convention (see other restructuring notes in `CLAUD
   `python <scratchpad>/check_lstlisting_placement.py <files>` (script written during this
   audit; recreate if no longer in scratchpad).
 
+- **Sessions 3 and 4 went well beyond compile verification** (Jul 2026): both checkboxes above
+  predate a deep content/structure pass covering dash cleanup, missing frame titles, image-to-
+  `lstlisting` conversion, a real `df`/`df_demo` variable-collision bug fix, and several genuine
+  frame-overflow fixes (caught by rendering PDF pages to images and visually inspecting, not
+  just counting lines). Full detail in `CLAUDE.md`'s "Sessions 3 and 4 deep-upgrade pass"
+  note under the ML CoEP section — don't re-derive it from this file, it's not tracked here.
+
 ## Known risk points to watch for while verifying
 
 - Session 3: new content (`ml_eda_intro`, `ml_eda_endtoend_churn`) references images `churn20`/`churn21` -- confirm they render (reused from the existing churn demo's image set).
