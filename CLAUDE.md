@@ -473,6 +473,35 @@ commented placeholder) to 19 fully-active sessions:
     the command note above) — for Session 4 specifically, declined because the file already
     carries "Intuition"/"Quick Check" scaffolding from a prior pass and running it now would
     risk re-adding ME-flavored intuition right after removing it from Session 3.
+- **Session 4 hands-on + REPL-disambiguation + overflow pass (Jul 2026)**: triggered by wanting
+  students to run the `machine_logs.csv` walkthrough themselves in class with minimum typing.
+  - Created `Code/mlcoep/datasets/session04_pandas/machine_logs.csv` (6 rows), reverse-engineered
+    to exactly match every output already printed in the deck (shape, `value_counts`, groupby
+    averages, vibration flags, morning/evening split) — the file referenced by
+    `pd.read_csv('machine_logs.csv')` never actually existed on disk before this.
+  - Applied the standard Python REPL `>>>`/`...` convention across every code block in
+    `python_intro_pandas.tex` (~40 blocks): typed lines prefixed `>>> `/`... `, output left
+    unprefixed, stale mismatched `Out[N]:` cell-number labels removed, one explanatory sentence
+    added on the first code frame. This is now Task 1c in `/upgrade-deck` and Step 3 in
+    `/prep-mlcoep-session` (see command notes below) — fires on any REPL/notebook-transcript-style
+    block, not just this one.
+  - Found and fixed 2 real bugs while verifying every code block actually executes (ran the whole
+    deck's code end-to-end against current `pandas 2.2.3`, not just read it): `pd.set_option
+    ('max_columns', 50)` → `pd.set_option('display.max_columns', 50)` (shorthand key is now
+    ambiguous); stale Python-2-era `Index([u'A', ...])` repr → `Index(['A', ...])`.
+  - Found and fixed 2 distinct overflow categories, both silent (neither triggers a LaTeX
+    warning — `breaklines=true` swallows the horizontal case, and Beamer doesn't warn on vertical
+    frame overflow either): a CheatSheet-only (3-column, narrow) horizontal wrap in 4 frames
+    (`Reading Data from Files`, `Missing Data`, `Missing Data: Drop`, `Missing Data: Fill`) where
+    a wide DataFrame table split mid-row, fixed via `\begin{lstlisting}[basicstyle=\tiny\ttfamily]`
+    on just those 4 blocks; and a Presentation-only vertical overflow in `Quick Inspection`
+    (`df.shape`+`df.dtypes`+`df.info()` combined, 23 lines — the only outlier among all blocks,
+    confirmed by checking every other long block too), fixed by splitting into `Quick Inspection`
+    and a new `Quick Inspection: Full Structure` frame, matching the deck's existing
+    split-when-too-long precedent (`Adding Two Series Together`/`Adding Two Series: Output`).
+  - `upgrade-deck.md` and `prep-mlcoep-session.md` (`~/.claude/commands/`, mirrored to
+    `Code/claudecode/dot_claude/commands/`) both updated with the REPL-disambiguation rule above;
+    keep both copies mirrored on any future edit, per the standing rule.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames

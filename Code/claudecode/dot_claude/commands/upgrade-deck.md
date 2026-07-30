@@ -105,6 +105,33 @@ Run this check on **every frame in every source file that contains one or more `
   - If merging would make a single block too long or would obscure a meaningful distinction the slide is making (e.g. contrasting two languages side by side), it is acceptable to keep separate `lstlisting` blocks -- but they must still be contiguous at the end of the frame, with no prose between or after them, and a short label as an `itemize` item above (not between) may reference each one.
 - **Do not** apply this by deleting content -- only reorder within the frame; if reordering alone loses which snippet is which, add the missing labels as in-code comments as described above.
 
+#### Task 1c: REPL-Style Input/Output Disambiguation
+
+Run this check on every `lstlisting` block (in any language) that reads as a REPL/notebook
+transcript -- i.e., it mixes lines you'd type with the result printed or returned immediately
+after, rather than being a single self-contained program/script meant to be run top-to-bottom with
+no inline output.
+
+- **Find:** Blocks where it isn't obvious at a glance which lines are input and which are output --
+  e.g. a bare expression immediately followed by its printed representation with no prompt, label,
+  or visual separator; or inconsistent/stale `Out[N]:`/`In[N]:`-style cell-number labels.
+- **Why it matters:** without a clear marker, students can't tell what to type versus what the tool
+  prints back, which defeats copy-along/hands-on use of the slide.
+- **Action:** rewrite the block using the standard REPL-prompt convention:
+  - Prefix every typed line with `>>> ` (a new statement) or `... ` (a continuation of an unfinished
+    statement -- inside an open bracket, a multi-line call, etc., matching what a real interactive
+    shell would show).
+  - Leave every output line (return values, printed results, tables) with **no prefix at all**.
+  - Delete stale `Out[N]:` / `In[N]:` cell-number labels -- they're redundant once `>>>` marks where
+    new input starts, and are usually leftover artifacts from whatever notebook the content was
+    originally authored in.
+  - The first time this convention appears in a file, add one short sentence explaining it (e.g. on
+    the first code frame) so students aren't left to infer it silently.
+- **Do not apply this** to blocks that are a single self-contained script/program with no inline
+  output shown (a function definition, a full file listing, a shell command with no captured
+  result) -- the convention is only for transcript-style blocks that already mix input and output.
+- Precedent: Session 4 Pandas (`python_intro_pandas.tex`), Jul 2026.
+
 ### Task 2: Redundancy
 
 - Identify duplicate or substantially redundant slides.
@@ -215,7 +242,7 @@ therefore activated for Task 1a. Also note any `_short.tex` sibling files found 
 
 ### 4. Task-by-Task Findings
 
-One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b).
+One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b/1c).
 Each section contains:
 
 - **Findings** -- what was observed
