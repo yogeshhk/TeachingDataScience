@@ -9,9 +9,11 @@ repo root gives a global picture without digging through every subfolder.
 |---|---|---|
 | `Code/mlcoep/` (COEP AIML course) | [`Code/mlcoep/TODO_MLCOEP_TECHNICAL.md`](Code/mlcoep/TODO_MLCOEP_TECHNICAL.md) | Course in progress (Jul 16 - Nov 30, 2026), updated session-by-session, 2 days/week. Covers code/data/notebooks/assignments/exams. Slide content: [`LaTeX/course_mlcoep_content.tex`](LaTeX/course_mlcoep_content.tex) (per-session compile via the `/prep-mlcoep-session` skill). |
 
-## Not actively tracked here yet
+## Completed/maintained courses (no dedicated TODO.md tracked here)
 
-The rest of the repo (the Machine Learning / Deep Learning / Generative AI / Maths for ML / Python
-courses under `LaTeX/`, and the wider `Code/` project catalog: LangChain, LangGraph, RAG, GNN,
-fine-tuning, etc.) has no dedicated TODO.md. Add an entry here (and a TODO.md in the relevant
-subfolder) if/when one of those becomes active work again.
+The Machine Learning / Deep Learning / Generative AI / Maths for ML / Python courses under `LaTeX/`
+have had recent restructuring and maintenance work (June-Aug 2026); their own `CLAUDE.md` documents
+these updates. They have no dedicated running TODO.md (by this repo's own convention, working todos
+get deleted once each pass completes). The wider `Code/` project catalog (LangChain, LangGraph, RAG,
+GNN, fine-tuning, etc.) is maintained but not actively scheduled. Add an entry above (and a TODO.md
+in the relevant subfolder) if either track becomes active-project-scheduled work again.

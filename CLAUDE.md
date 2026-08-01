@@ -136,7 +136,7 @@ Full 4-level hierarchy for the 40-hour ML course "Machine Learning for Graduate 
   details, as `LaTeX/todo_ml_seminar_upgrade.md` (the working to-do for this pass) was deleted
   once the work completed, matching the precedent set by the Maths4ML/Python restructuring notes
   below
-- **Pending**: `course_machinelearning_content.tex` still needs the 5 new demo/assign files listed above added at the end
+- **Done**: the 5 new demo/assign files listed above are wired into `course_machinelearning_content.tex` (confirmed on disk, Oct 2026 audit)
 
 ### Maths for ML restructured (July 2026), promoted to a course (Aug 2026)
 Full 4-level hierarchy for "Zero-to-Hero: Mathematics for Machine Learning", aimed at
