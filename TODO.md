@@ -7,7 +7,7 @@ repo root gives a global picture without digging through every subfolder.
 
 | Area | TODO / status | Notes |
 |---|---|---|
-| `Code/mlcoep/` (COEP AIML course) | [`Code/mlcoep/TODO_MLCOEP_TECHNICAL.md`](Code/mlcoep/TODO_MLCOEP_TECHNICAL.md) | Course in progress (Jul 16 - Nov 30, 2026), updated session-by-session, 2 days/week. Covers code/data/notebooks/assignments/exams. Slide content: [`LaTeX/course_mlcoep_content.tex`](LaTeX/course_mlcoep_content.tex) (per-session compile via the `/prep-mlcoep-session` skill). |
+| `Code/mlcoep/` (COEP AIML course) | [`LaTeX/todo.md`](LaTeX/todo.md) | Course in progress (Jul 16 - Nov 30, 2026), updated session-by-session, 2 days/week. Setup (Python/conda) done; datasets/notebooks/assignments/exams dropped from scope (Aug 2026) in favor of slides + in-class code walkthroughs, so `Code/mlcoep/TODO_MLCOEP_TECHNICAL.md` was removed. Slide content: [`LaTeX/course_mlcoep_content.tex`](LaTeX/course_mlcoep_content.tex) (per-session compile via the `/prep-mlcoep-session` skill); compile verification tracked in `LaTeX/todo.md`. |
 
 ## Completed/maintained courses (no dedicated TODO.md tracked here)
 

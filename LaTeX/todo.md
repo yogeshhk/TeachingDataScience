@@ -25,8 +25,8 @@ the repo's usual `todo_*.md` convention (see other restructuring notes in `CLAUD
 - [x] 2 -- Python Overview -- `python_overview`
 - [x] 3 -- Understanding Your Data: EDA & Data Prep -- `ml_eda_intro`, `data_preparation_short`, `ml_eda_endtoend_churn`
 - [x] 4 -- Doing It: Pandas -- `python_intro_pandas`
-- [ ] 5 -- Introduction to Machine Learning -- `ml_intro_short`
-- [ ] 6 -- Core ML Concepts -- `ml_concepts_short`
+- [x] 5 -- Introduction to Machine Learning -- `ml_intro_short`
+- [x] 6 -- Core ML Concepts -- `ml_concepts_short`
 - [ ] 7 -- ML Workflow, Data Prep & Model Evaluation -- `ml_intro_sklearn`, `ml_datapreparation_sklearn`, `ml_evaluation_sklearn`
 - [ ] 8 -- Linear Regression -- `ml_linearregression`
 - [ ] 9 -- Logistic Regression -- `ml_logisticregression`

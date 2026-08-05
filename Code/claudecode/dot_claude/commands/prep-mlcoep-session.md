@@ -1,6 +1,6 @@
 ---
 name: prep-mlcoep-session
-description: Compiles and renames a single session of the ML CoEP course (LaTeX/course_mlcoep_content.tex) in isolation -- comments out the other 18 sessions, cleans up prose long-dashes (--) into colons/commas and disambiguates code-block input vs output (>>>/... convention) in the session's topic files, compiles both drivers via make.bat, asks whether to also run /upgrade-deck scoped to just that session (optional, off by default), recompiles if it ran, and renames the two output PDFs to Course_MLCoEP_<N>_<ShortName>_{Presentation,CheatSheet}.pdf, then restores the file to all-sessions-active. Argument is a session number or topic name; ask if not given. Use when the user asks to "prep session N of ML CoEP", "compile and upgrade the next CoEP session", or calls /prep-mlcoep-session.
+description: Compiles and renames a single session of the ML CoEP course (LaTeX/course_mlcoep_content.tex) in isolation -- comments out the other 18 sessions plus the shared References/Datasets-Used appendix, cleans up prose long-dashes (--) into colons/commas and disambiguates code-block input vs output (>>>/... convention) in the session's topic files, compiles both drivers via make.bat, asks whether to also run /upgrade-deck scoped to just that session (optional, off by default), recompiles if it ran, and renames the two output PDFs to Course_MLCoEP_<N>_<ShortName>_{Presentation,CheatSheet}.pdf, then restores the file to all-sessions-active (appendix included). Argument is a session number or topic name; ask if not given. Use when the user asks to "prep session N of ML CoEP", "compile and upgrade the next CoEP session", or calls /prep-mlcoep-session.
 ---
 
 # ML CoEP Session Pipeline
@@ -39,8 +39,12 @@ it's obvious the whole block was picked up, not just the first `\input` line.
 
 In `LaTeX/course_mlcoep_content.tex`, comment out every session's block **except** the target
 session. Comment with `%` at the start of each line in the block -- do not delete or reorder
-anything. Leave the `\appendix` / References / Datasets Used section at the bottom untouched (it's
-small and applies regardless of which session is active).
+anything. Also comment out the `\appendix` / References / Datasets Used section at the bottom, the
+same way (one `%` per line) -- it's a whole-course summary (which datasets get used across all 19
+sessions), not specific to this one session, so it doesn't belong on a single-session PDF even when
+this session's own content does touch a dataset (that's already conveyed inline in the session's
+own slides). It stays live only in the full 19-session compile. (Decided Aug 2026, after Session 5
+review -- see `CLAUDE.md`'s ML CoEP session note.)
 
 ## Step 2: Dash cleanup
 
@@ -122,14 +126,15 @@ or abbreviation needed, just read the title and join it.
 
 ## Step 8: Restore
 
-Uncomment the other 18 sessions back in `course_mlcoep_content.tex` so the file returns to its
-normal all-sessions-active state. **Never end a run with the file partially commented** -- this is
-a hard guardrail; "all 19 active" is the file's required resting state.
+Uncomment the other 18 sessions **and** the `\appendix` / References / Datasets Used section back
+in `course_mlcoep_content.tex` so the file returns to its normal all-sessions-active state (appendix
+included). **Never end a run with the file partially commented** -- this is a hard guardrail; "all
+19 active, appendix live" is the file's required resting state.
 
 ## Guardrails
 
-- Only touch the target session's block plus the comment/uncomment toggling needed to isolate and
-  restore it -- don't reorder, edit, or renumber other sessions.
+- Only touch the target session's block, plus the appendix, plus the comment/uncomment toggling
+  needed to isolate and restore both -- don't reorder, edit, or renumber other sessions.
 - Confirm the resolved session number/title with the user before editing if there was any ambiguity
   in Step 0.
 - If `/upgrade-deck` proposes edits to a file with an `X.tex`/`X_short.tex` comment-sibling, its own
