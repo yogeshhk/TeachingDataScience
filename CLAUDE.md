@@ -502,6 +502,25 @@ commented placeholder) to 19 fully-active sessions:
   - `upgrade-deck.md` and `prep-mlcoep-session.md` (`~/.claude/commands/`, mirrored to
     `Code/claudecode/dot_claude/commands/`) both updated with the REPL-disambiguation rule above;
     keep both copies mirrored on any future edit, per the standing rule.
+- **19-session restructuring + `prep-mlcoep-session` retirement (Aug 2026)**: the single
+  `course_mlcoep_content.tex` (19 sessions chained via comment/uncomment isolation, driving one
+  `Main_Course_ML_CoEP_{Presentation,CheatSheet}.tex` pair) was replaced with 19 independent
+  content files (`seminar_mlcoep_session_<N>_content.tex`) and 19 independent driver pairs
+  (`Main_Seminar_MLCoEP_Session_<N>_<ShortName>_{Presentation,CheatSheet}.tex`), compiled in one
+  pass via `make_all_sessions.bat` (all 38 drivers) / `make_all_cheatsheets.bat` (CheatSheets
+  only) — replacing the old one-session-at-a-time `prep-mlcoep-session` isolate/compile/restore
+  pipeline, which was too slow for a full 19-session run. Renamed `Course` → `Seminar` and
+  dropped the `course_mlcoep_*` prefix in favor of `seminar_mlcoep_*` to match this repo's
+  duration-based naming convention (~1-2hr sessions are Seminars, not Courses); output PDFs take
+  their name directly from the driver filename (`Main_Seminar_MLCoEP_Session_<N>_<ShortName>_*.pdf`),
+  no separate rename step. `prep-mlcoep-session.md` is deleted from both `~/.claude/commands/`
+  and `Code/claudecode/dot_claude/commands/` — its two mandatory (non-optional) preprocessing
+  steps were folded into `/upgrade-deck` so it remains the one generic command for
+  reviewing/upgrading any deck, MLCoEP session or otherwise: the REPL disambiguation step was
+  already present as Task 1c; the prose-dash cleanup step is now Task 1d (new, same exclusions:
+  table N/A placeholders, numeric ranges, commented-out blocks, quote-attribution dash → hyphen).
+  The old `course_mlcoep_content.tex` master file is retired (no longer `\input` by anything);
+  not yet deleted from disk as of this note.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames

@@ -1,0 +1,30 @@
+@echo off
+REM ML CoEP: Compile all 19 CheatSheet PDFs only
+REM Usage: make_all_cheatsheets.bat
+
+echo Compiling all 19 ML CoEP CheatSheets...
+echo.
+
+texify -cp Main_Seminar_MLCoEP_Session_1_AI_Overview_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_2_Python_Overview_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_3_EDA_DataPrep_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_4_Pandas_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_5_ML_Intro_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_6_ML_Concepts_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_7_Sklearn_Workflow_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_8_Linear_Regression_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_9_Logistic_Regression_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_10_Decision_Trees_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_11_Ensemble_RF_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_12_SVM_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_13_Naive_Bayes_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_14_KNN_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_15_KMeans_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_16_PCA_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_17_Titanic_Capstone_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_18_MLOps_Deployment_CheatSheet.tex
+texify -cp Main_Seminar_MLCoEP_Session_19_ME_Apps_CheatSheet.tex
+
+echo.
+echo All 19 CheatSheets compiled.
+pause

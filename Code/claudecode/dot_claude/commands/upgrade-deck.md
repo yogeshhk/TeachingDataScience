@@ -132,6 +132,25 @@ no inline output.
   result) -- the convention is only for transcript-style blocks that already mix input and output.
 - Precedent: Session 4 Pandas (`python_intro_pandas.tex`), Jul 2026.
 
+#### Task 1d: Prose Dash Cleanup
+
+Run this check on every source file discovered in Step 1. Unlike the other Task 1 sub-tasks,
+this one always runs unconditionally -- no package or content-pattern guard.
+
+- **Find:** literal `--` (TeX-style long dash) used as prose punctuation.
+- **Action:** replace each with a colon or comma, whichever reads most naturally -- or rewrite
+  into two sentences instead if the dash pair brackets an inserted clause.
+- **Leave these alone, they are not prose dashes:**
+  - A lone `--` sitting by itself in a table cell (a "missing value" / "not applicable" placeholder).
+  - A numeric range, e.g. `12--55` or `3--4` (standard range notation, not punctuation).
+  - Anything inside a commented-out (`%`-prefixed) block -- don't touch dead code/text.
+- If a quote-attribution dash reads awkwardly as a colon or comma, use a plain hyphen (`-`)
+  instead -- that's the one case where a hyphen beats colon/comma (precedent: the Jul 2026
+  em-dash cleanup noted in `CLAUDE.md`).
+- Precedent: `prep-mlcoep-session` Step 2 (now retired -- this task absorbs that pipeline's
+  mandatory dash-cleanup step so it applies to any deck run through `/upgrade-deck`, not just
+  MLCoEP sessions).
+
 ### Task 2: Redundancy
 
 - Identify duplicate or substantially redundant slides.
@@ -242,7 +261,7 @@ therefore activated for Task 1a. Also note any `_short.tex` sibling files found 
 
 ### 4. Task-by-Task Findings
 
-One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b/1c).
+One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b/1c/1d).
 Each section contains:
 
 - **Findings** -- what was observed
