@@ -42,6 +42,7 @@ equivalent preamble files) and record which packages are loaded. Specifically ch
 |---|---|
 | `\usepackage{listings}` | `lstlisting` environment is styled and ready -- flag every `\verbatim` block as a Task 1 finding |
 | `\lstdefinestyle{...}` | Record the default language and style name for use when converting verbatim blocks |
+| `\usepackage{tikz}` (or a package that loads it, e.g. `tikz-qtree`) | TikZ diagrams are available -- Task 5a (diagram opportunities) is active. If absent, skip Task 5a. |
 
 Only after completing this audit do you proceed to the tasks below.
 
@@ -190,6 +191,56 @@ this one always runs unconditionally -- no package or content-pattern guard.
     fresher-level reader would genuinely get lost -- not every slide.
 - **Action:** Rewrite affected slide content directly in the updated `.tex` output.
 
+#### Task 5a: TikZ Diagram Opportunities
+
+Run this check only if TikZ is available (confirm during Step 3's package audit: either
+`\usepackage{tikz}` directly, or a package that loads it, e.g. `tikz-qtree`). If unavailable,
+skip this sub-task entirely rather than proposing frames that won't compile.
+
+- **Find:** slides that describe a process, trajectory, relationship, or shape in words/equations
+  only (e.g. an iterative algorithm converging to a minimum, a decision boundary, a trend over
+  time, a structural relationship) where a small diagram would make the idea click faster than
+  prose alone, and where no image already exists on that slide.
+- **Why it matters:** some concepts (an algorithm taking steps toward a minimum, a curve's shape,
+  a boundary separating regions) are genuinely faster to grasp visually than from a bullet list
+  describing them.
+- **Action:** add a simple TikZ diagram using the deck's existing two-column layout convention
+  (the same `adjustbox`+`minipage` pattern already used for side-by-side comparisons in this
+  repo's decks): explanatory `itemize`/text stays in a left column (~0.55-0.56 `\linewidth`), the
+  diagram goes in a right column (~0.4 `\linewidth`), both wrapped in
+  `\adjustbox{valign=t}{\begin{minipage}{...} ... \end{minipage}}` separated by `\hfill`.
+
+  ```latex
+  \adjustbox{valign=t}{
+  \begin{minipage}{0.56\linewidth}
+  <existing explanatory content>
+  \end{minipage}
+  }
+  \hfill
+  \adjustbox{valign=t}{
+  \begin{minipage}{0.4\linewidth}
+  \begin{center}
+  \begin{tikzpicture}[scale=0.62]
+  <a handful of shapes/lines/arrows -- keep it simple>
+  \end{tikzpicture}
+  \end{center}
+  \tiny{<one-line caption explaining what the diagram shows>}
+  \end{minipage}
+  }
+  ```
+
+- Keep the diagram simple: a handful of lines/shapes/arrows with axis labels where relevant, a
+  slide aid, not a publication figure. Prefer `\small`/`\tiny` node labels inside the
+  `tikzpicture` so they don't dominate the small column width.
+- **Do not** force a diagram onto a slide that doesn't need one -- most slides won't. This is for
+  the specific case where prose is genuinely struggling to convey something inherently visual.
+- Precedent: Session 6 ML Concepts (`ml_concepts_short.tex`/`ml_concepts.tex`), Aug 2026 -- the
+  "How to Find Best Fit: Gradient Descent" frame's bowl-curve descent diagram (a $J(w)$ parabola
+  with a dot taking steps down to the minimum), added in exactly this two-column layout.
+- **Action:** Provide full `.tex` code for each new diagram, placed in the existing frame (do not
+  create a new frame just to hold a diagram unless the existing frame would overflow as a result --
+  in that case, split per the usual overflow-handling precedent).
+
 ### Task 6: Thought-Provoking Quizzes
 
 - First, infer the intended audience (Step 2), same as Task 5.
@@ -261,7 +312,7 @@ therefore activated for Task 1a. Also note any `_short.tex` sibling files found 
 
 ### 4. Task-by-Task Findings
 
-One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b/1c/1d).
+One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b/1c/1d/5a).
 Each section contains:
 
 - **Findings** -- what was observed

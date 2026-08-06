@@ -120,12 +120,15 @@ a quantitative response. The relationship between input
 variables $X = (X_1 , X_2 , \ldots X_p )$ and output variable $Y$ takes
 the form: $Y \approx \beta_0 + \beta_1 X_1 + \ldots + \beta_p X_p + \epsilon$
 \item $\beta_0 , \beta_1 ,\ldots \beta_p$ are the unknown coefficients (parameters) which
-we are trying to determine. 
+we are trying to determine.
 \item The best coefficients will lead us to the best ``fit'', which can be found by
 minimizing the residual sum squares (RSS), or the sum of the difference between the actual $i$th value and
-the predicted $i$th value. 
+the predicted $i$th value.
 \item $RSS = \sum_{i=1}^n e_i^2$ , where $e_i = y_i - \hat{y}_i$ (actual minus predicted)
 \end{itemize}
+\begin{block}{Intuition}
+This is just ``fitting a line (or plane) through points.'' The $\beta$'s are the slope and intercept, adjusting them tilts and shifts the line. RSS measures how far off the line's predictions are from the real points, squared so bigger misses count more, and the best-fit line is the one that makes this total miss as small as possible.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,28 +136,61 @@ the predicted $i$th value.
 Matrix Form:
 \begin{itemize}
 \item  We can solve the closed-form equation for coefficient vector $w$: $w = (X^T X)^{-1} X^T Y$.
-\item $X$ represents the input data and $Y$ represents the output data. 
+	\begin{itemize}
+	\item $X$: matrix of input data (each row is one data point, each column is one predictor); $Y$: column of output values
+	\item $X^T$: transpose of $X$ (its rows and columns swapped)
+	\item $X^T X$: a square matrix summarizing how the predictors relate to each other
+	\item $(X^T X)^{-1}$: the ``inverse'' of that matrix, it undoes it, much like dividing by a number
+	\item $X^T Y$: summarizes how each predictor relates to the output $Y$
+	\end{itemize}
 \item This method is used for smaller matrices, since inverting a matrix is computationally expensive.
 \end{itemize}
+\begin{block}{Intuition}
+For linear regression there is actually a direct formula, plug in your data and this equation hands you the best-fit coefficients in one shot, no trial and error needed. The catch is that ``inverting'' a matrix gets expensive fast as the data grows, which is why this exact approach is only practical for smaller datasets.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{How to find best fit?}
+\adjustbox{valign=t}{
+\begin{minipage}{0.56\linewidth}
 Gradient Descent:
 \begin{itemize}
 \item First-order optimization algorithm.
 \item We can find the minimum of a convex function by
 starting at an arbitrary point and repeatedly take steps
 in the downward direction, which can be found by taking
-the negative direction of the gradient. 
+the negative direction of the gradient.
 \item After several
 iterations, we will eventually converge to the minimum.
 In our case, the minimum corresponds to the coefficients
-with the minimum error, or the best line of fit. 
+with the minimum error, or the best line of fit.
 \item The
 learning rate $\alpha$ determines the size of the steps we take
 in the downward direction.
 \end{itemize}
+\end{minipage}
+}
+\hfill
+\adjustbox{valign=t}{
+\begin{minipage}{0.4\linewidth}
+\begin{center}
+\begin{tikzpicture}[scale=0.62]
+\draw[->] (-2.5,0) -- (2.5,0) node[right] {\small $w$};
+\draw[->] (0,-0.3) -- (0,3.2) node[above] {\small $J(w)$};
+\draw[thick, blue] plot[domain=-2.2:2.2, samples=60] (\x, {0.55*\x*\x});
+\filldraw[red] (-2,2.2) circle (2pt) node[above] {\tiny start};
+\draw[->, red, thick] (-2,2.2) -- (-1.3,0.93);
+\filldraw[red] (-1.3,0.93) circle (2pt);
+\draw[->, red, thick] (-1.3,0.93) -- (-0.7,0.27);
+\filldraw[red] (-0.7,0.27) circle (2pt);
+\draw[->, red, thick] (-0.7,0.27) -- (-0.2,0.02);
+\filldraw[green!60!black] (0,0) circle (2.5pt) node[below right] {\tiny minimum};
+\end{tikzpicture}
+\end{center}
+\tiny{Each step moves opposite to the gradient (steepest descent); $\alpha$ sets the step size.}
+\end{minipage}
+}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -333,6 +369,17 @@ How to divide dataset into Training, Validation, Testing sets?
 Cross Validation Error Estimate: $= \frac{1}{k} \sum Error_i$
 
 Note: Here weights of all 10 models are neither averaged nor the last weights are taken as final model. [PTO]
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Cross Validation}
+\begin{block}{Think About It}
+If you split your data into training and testing sets just once, and your model gets high accuracy, does that guarantee it will perform well on new, unseen data?
+\end{block}
+\pause
+\begin{block}{Answer}
+Not necessarily: a single split can be a ``lucky split'' where the testing set happens to be easy, or the training set happens to cover the harder cases well by chance. K-fold cross-validation guards against this by evaluating the model across multiple different splits and averaging the results, giving a more reliable estimate of true performance.
+\end{block}
 \end{frame}
 
 
@@ -1108,17 +1155,16 @@ Even if anyone is very high, we get balanced F1 score
 Roughly speaking, over-fitting typically occurs when the ratio $\frac{ComplexityOfTheModel}{TrainingSize}$ is too high.
 
 \begin{center}
-\includegraphics[width=0.4\linewidth,keepaspectratio]{ovefit1}
-
-\includegraphics[width=0.4\linewidth,keepaspectratio]{ovefit2}
-
+\includegraphics[width=0.32\linewidth,keepaspectratio]{ovefit1}%
+\hspace{0.03\linewidth}%
+\includegraphics[width=0.32\linewidth,keepaspectratio]{ovefit2}
 \end{center}
 	\begin{itemize}
 	\item If your data is in two dimensions, you have 10000 points in the training set and the model is a line, you are likely to under-fit.
-	\item If your data is in two dimensions, you have 10 points in the training set and the model is 100-degree polynomial, you are likely to over-fit. 
+	\item If your data is in two dimensions, you have 10 points in the training set and the model is 100-degree polynomial, you are likely to over-fit.
 	\end{itemize}
-	
-(Ref:Why Is Over-fitting Bad in Machine Learning? - StackOverflow)
+
+\tiny{(Ref: Why Is Over-fitting Bad in Machine Learning? - StackOverflow)}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1129,10 +1175,10 @@ Roughly speaking, over-fitting typically occurs when the ratio $\frac{Complexity
 	\item In case of Machine Learning, there no iterations. How to detect Over-fitting in case of Polynomial Regression?
 	\item Initially when, polynomial equation to start with is simple, it has not fit the data yet, so its under fitting phase. Losses are HIGH for both, training as well as testing (validation)
 	\item As more levels get added in tree or more degrees in polynomial regression, under-fitting reduces and losses come down.
-	\item At one point, training loss still reduces but validation los starts jumping up. Thats over-fitting. Model is fitting training data TOO tightly and is OFF the validation data.
+	\item At one point, training loss still reduces but validation loss starts jumping up. Thats over-fitting. Model is fitting training data TOO tightly and is OFF the validation data.
 	\end{itemize}
-	
-(Ref:Why Is Over-fitting Bad in Machine Learning? - StackOverflow)
+
+\tiny{(Ref: Why Is Over-fitting Bad in Machine Learning? - StackOverflow)}
 \end{frame}
 
 
@@ -1215,6 +1261,17 @@ Roughly speaking, over-fitting typically occurs when the ratio $\frac{Complexity
 \end{itemize}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Generalization}
+\begin{block}{Think About It}
+A model gets 99\% accuracy on training data but only 60\% on test data. Is this under-fitting or over-fitting, and what's one way to fix it?
+\end{block}
+\pause
+\begin{block}{Answer}
+Over-fitting: the model has memorized the training data (near-perfect training score) but hasn't learned patterns that generalize, so it fails on unseen data. Regularization (penalizing complexity) or reducing model complexity (e.g.\ fewer polynomial degrees or a shallower tree) are standard fixes.
+\end{block}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
@@ -1234,10 +1291,14 @@ Roughly speaking, over-fitting typically occurs when the ratio $\frac{Complexity
 \begin{frame}[fragile]\frametitle{Types of Errors}
 The prediction error can be broken down into:
 \begin{itemize}
+\item Noise Error
 \item Bias Error
 \item Variance Error
 \end{itemize}
 error(X) = noise(X) + bias(X) + variance(X)
+\begin{block}{Intuition}
+Noise is the irreducible randomness in the data itself, nothing can fix it. Bias is error from a model too simple to capture the true pattern. Variance is error from a model too sensitive to the specific training data it happened to see. The next few slides unpack bias and variance in detail.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1464,32 +1525,39 @@ error(X) = noise(X) + bias(X) + variance(X)
 \end{frame}
 
 
+% "Learning Method Bias" / "Learning Method Variance" removed here (Aug 2026
+% /upgrade-deck pass) -- both re-defined Bias and Variance from scratch using
+% nearly the same wording as the earlier "Bias"/"Variance" frames, and came
+% positionally after the trade-off frames had already used both terms without
+% redefinition. The StatQuest "Intuition" walkthrough (bv1-bv8) already teaches
+% and explicitly names both terms concretely and memorably in between, so this
+% was a third, redundant pass over the same two definitions.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Learning Method Bias}
-\begin{itemize}
-\item Bias: the error introduced by modeling a real-life problem (usually extremely complicated) by a much simpler model.
-\item High bias is a strong view of modeling with simplistic solution.
-
-\begin{itemize}
-\item Example: linear regression assumes a linear relationship between the target variable Y and the predictor variables X
-\item It's unlikely that the relationship is exactly linear, so some bias will be present in the model
-\end{itemize}
-\item The more flexible (complex) a method is, the less bias it will generally have.
-
-\end{itemize}
-\end{frame}
+% \begin{frame}[fragile]\frametitle{Learning Method Bias}
+% \begin{itemize}
+% \item Bias: the error introduced by modeling a real-life problem (usually extremely complicated) by a much simpler model.
+% \item High bias is a strong view of modeling with simplistic solution.
+%
+% \begin{itemize}
+% \item Example: linear regression assumes a linear relationship between the target variable Y and the predictor variables X
+% \item It's unlikely that the relationship is exactly linear, so some bias will be present in the model
+% \end{itemize}
+% \item The more flexible (complex) a method is, the less bias it will generally have.
+%
+% \end{itemize}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Learning Method Variance}
-\begin{itemize}
-\item Variance: how much the learned model will change if the training set was different 
-\begin{itemize}
-\item Does changing a few observations in the training set, dramatically affect the model?
-\item Ideally, answer is no.
-\end{itemize}
-\item Generally, the more flexible (complex) a method is, the more variance it has.
-\end{itemize}
-\end{frame}
+% \begin{frame}[fragile]\frametitle{Learning Method Variance}
+% \begin{itemize}
+% \item Variance: how much the learned model will change if the training set was different
+% \begin{itemize}
+% \item Does changing a few observations in the training set, dramatically affect the model?
+% \item Ideally, answer is no.
+% \end{itemize}
+% \item Generally, the more flexible (complex) a method is, the more variance it has.
+% \end{itemize}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Example }
@@ -1556,20 +1624,19 @@ error(X) = noise(X) + bias(X) + variance(X)
 %\adjustbox{valign=t}{
 %\begin{minipage}{0.45\linewidth}
 %\begin{itemize}
-%\item Bias: the difference 
-%between expected 
-%(average) prediction of the 
-%model and the correct 
-%value. 
-%\item Variance: how the 
-%predictions for a given point 
-%vary between different 
-%realizations for the model. 
+%\item Bias: the difference
+%between expected
+%(average) prediction of the
+%model and the correct
+%value.
+%\item Variance: how the
+%predictions for a given point
+%vary between different
+%realizations for the model.
 %\end{itemize}
 %
 %\end{minipage}
 %}
-{\tiny http://scott.fortmann-roe.com/docs/BiasVariance.html }
 \end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
