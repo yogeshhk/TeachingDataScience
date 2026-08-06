@@ -7,7 +7,7 @@ repo root gives a global picture without digging through every subfolder.
 
 | Area | TODO / status | Notes |
 |---|---|---|
-| `Code/mlcoep/` (COEP AIML course) | [`LaTeX/todo.md`](LaTeX/todo.md) | Course in progress (Jul 16 - Nov 30, 2026), updated session-by-session, 2 days/week. Setup (Python/conda) done; datasets/notebooks/assignments/exams dropped from scope (Aug 2026) in favor of slides + in-class code walkthroughs, so `Code/mlcoep/TODO_MLCOEP_TECHNICAL.md` was removed. Slide content: [`LaTeX/course_mlcoep_content.tex`](LaTeX/course_mlcoep_content.tex) (per-session compile via the `/prep-mlcoep-session` skill); compile verification tracked in `LaTeX/todo.md`. |
+| `Code/mlcoep/` (COEP AIML course) | See `CLAUDE.md` "19-session restructuring" note | Course in progress (Jul 16 - Nov 30, 2026), updated session-by-session, 2 days/week. Setup (Python/conda) done; datasets/notebooks/assignments/exams dropped from scope (Aug 2026) in favor of slides + in-class code walkthroughs, so `Code/mlcoep/TODO_MLCOEP_TECHNICAL.md` was removed. Slide content: 19 independent session drivers, `Main_Seminar_MLCoEP_Session_<N>_<ShortName>_{Presentation,CheatSheet}.tex` (compiled via `make_all_sessions.bat`/`make_all_cheatsheets.bat`; the old `/prep-mlcoep-session` skill is retired). No running todo.md — all 19 sessions have verified, compiled PDFs; per-session `/upgrade-deck` passes continue individually as bandwidth allows (Sessions 5-6 done, see `CLAUDE.md`). |
 
 ## Completed/maintained courses (no dedicated TODO.md tracked here)
 

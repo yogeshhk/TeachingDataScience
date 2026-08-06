@@ -519,8 +519,57 @@ commented placeholder) to 19 fully-active sessions:
   reviewing/upgrading any deck, MLCoEP session or otherwise: the REPL disambiguation step was
   already present as Task 1c; the prose-dash cleanup step is now Task 1d (new, same exclusions:
   table N/A placeholders, numeric ranges, commented-out blocks, quote-attribution dash → hyphen).
-  The old `course_mlcoep_content.tex` master file is retired (no longer `\input` by anything);
-  not yet deleted from disk as of this note.
+  `course_mlcoep_content.tex` is kept (not deleted, per explicit instruction) and repurposed: it
+  now just `\input`s all 19 `seminar_mlcoep_session_<N>_content.tex` files in order plus the
+  References/Datasets Used appendix, so `Main_Course_ML_CoEP_{Presentation,CheatSheet}.tex` still
+  works as a single all-in-one compile with zero content duplication — both the all-in-one Course
+  driver and the 19 independent Seminar drivers pull from the same 19 source files. Per explicit
+  instruction, this combined driver is not itself compiled as a verification step once its 19
+  constituent seminar files already compile clean individually (see
+  `TeachingQuantumTech/LaTeX/qcnp/workshops/README.md` for the precedent this follows).
+  `LaTeX/todo.md` (old session-by-session compile-verification checklist, tied to the retired
+  isolate/compile/restore procedure) and `LaTeX/todo_mlcoep_19session_pdfs.md` (old
+  `prep-mlcoep-session`-resume tracker, including its untouched dash-cleanup survey for Sessions
+  3, 7, 9-19) are both deleted — the goal both tracked (verified PDFs for all 19 sessions) is
+  achieved via the new mechanism (confirmed via `texify`, zero errors across all 38 PDFs), and any
+  session's outstanding dash cleanup will surface automatically the next time that session goes
+  through `/upgrade-deck` Task 1d, same as Sessions 5 and 6 below.
+- **Sessions 5 and 6 `/upgrade-deck` passes (Aug 2026)**, run individually via their own
+  `Main_Seminar_MLCoEP_Session_<N>_*` drivers per the restructuring above:
+  - Session 5 (`ml_intro_short.tex`/`ml_intro.tex`): 2 small Task 1 fixes (a formula/parameters
+    mismatch in "Model entities": `c` was missing from the named parameters despite being in the
+    formula; a run-on typo in "Decision Tree: Feature Selection"). Tasks 2-6 found nothing to
+    change, this deck had already been through an earlier pass (6 Quick Check quizzes, one per
+    section, already present) and is intentionally example-driven (Pokemon Go, Pizza Shop, Spam
+    Detection, University Admission) rather than formula-heavy, so Task 5 added nothing new.
+    Flagged (not fixed, out of scope for a surgical pass) a real content-drift between
+    `ml_intro_short.tex` and `ml_intro.tex`: each now has substantial live content the other
+    lacks entirely (the short version has "Hardware Revolution"/"ML Renaissance 2023-2025"/"Open
+    Source Ecosystem 2025"/all 6 quizzes; the full version has the ~15-frame "Hands-On Example:
+    Predicting House Price" walkthrough with 3 live code blocks) — an optional follow-up if a
+    full resync is ever wanted.
+  - Session 6 (`ml_concepts_short.tex`/`ml_concepts.tex`): this pass added a TikZ bowl-curve
+    diagram to "How to Find Best Fit: Gradient Descent" (precedent for the new Task 5a below),
+    5 "Intuition" callouts on the driest early math-framework slides, a symbol-by-symbol
+    breakdown of the `w = (X^TX)^{-1}X^TY` closed-form formula, and fixed the "Detection" frame's
+    vertical overflow (two stacked images → side-by-side). A follow-up full `/upgrade-deck` pass
+    then found: a genuine bug in "Bias vs Variations" (the same reference citation line rendered
+    twice in one frame, sandwiched around a block of commented-out content); a real redundancy
+    ("Learning Method Bias"/"Learning Method Variance" re-defined the same two terms already
+    covered by the earlier "Bias"/"Variance" frames AND the StatQuest bv1-bv8 intuitive
+    walkthrough — a third redundant pass, removed); a bare formula with no interpretation
+    ("Types of Errors" was missing a "Noise Error" bullet despite `noise(X)` appearing in its own
+    formula, and had zero plain-language explanation); and 2 sections (Cross Validation,
+    Generalization) missing their closing Quick Check quiz (added, matching the other 5
+    sections). All fixes mirrored into both files.
+- **New `/upgrade-deck` rule -- Task 5a: TikZ Diagram Opportunities (Aug 2026)**, added to
+  `upgrade-deck.md` (`~/.claude/commands/`, mirrored to `Code/claudecode/dot_claude/commands/`)
+  right after Task 5, plus a TikZ row in the Step 3 package audit table: for slides that describe
+  a process/trajectory/relationship in words/equations only (and have no existing image), add a
+  simple TikZ diagram using the repo's established two-column `adjustbox`+`minipage` convention
+  (explanatory content left, ~0.55-0.56 `\linewidth`; diagram right, ~0.4 `\linewidth`). Cites the
+  Session 6 Gradient Descent bowl-curve diagram above as the precedent. Explicitly guards against
+  forcing a diagram onto every slide -- most won't qualify.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
