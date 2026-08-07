@@ -152,8 +152,8 @@ For linear regression there is actually a direct formula, plug in your data and 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{How to Find Best Fit: Gradient Descent}
-\adjustbox{valign=t}{
-\begin{minipage}{0.56\linewidth}
+\adjustbox{valign=t}{%
+\begin{minipage}{0.55\linewidth}
 Gradient Descent:
 \begin{itemize}
 \item First-order optimization algorithm.
@@ -169,13 +169,13 @@ with the minimum error, or the best line of fit.
 learning rate $\alpha$ determines the size of the steps we take
 in the downward direction.
 \end{itemize}
-\end{minipage}
-}
-\hfill
-\adjustbox{valign=t}{
-\begin{minipage}{0.4\linewidth}
+\end{minipage}%
+}%
+\hfill%
+\adjustbox{valign=t}{%
+\begin{minipage}{0.42\linewidth}
 \begin{center}
-\begin{tikzpicture}[scale=0.62]
+\begin{tikzpicture}[scale=0.55]
 \draw[->] (-2.5,0) -- (2.5,0) node[right] {\small $w$};
 \draw[->] (0,-0.3) -- (0,3.2) node[above] {\small $J(w)$};
 \draw[thick, blue] plot[domain=-2.2:2.2, samples=60] (\x, {0.55*\x*\x});
@@ -189,7 +189,7 @@ in the downward direction.
 \end{tikzpicture}
 \end{center}
 \tiny{Each step moves opposite to the gradient (steepest descent); $\alpha$ sets the step size.}
-\end{minipage}
+\end{minipage}%
 }
 \end{frame}
 
@@ -621,7 +621,7 @@ $Accuracy = \frac{TP+TN}{P+N}$
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Sensitivity (Recall or True positive rate)}
+\begin{frame}[fragile]\frametitle{Recall (Sensitivity or True positive rate)}
 
 Sensitivity (SN) is calculated as the number of correct positive predictions divided by
 the total number of positives. It is also called recall (REC) or true positive rate (TPR). The best sensitivity is 1.0, whereas the worst is 0.0.
@@ -706,10 +706,73 @@ by the total number of positive predictions. It is also called positive predicti
 (PPV). The best precision is 1.0, whereas the worst is 0.0.
 
 \begin{center}
-\includegraphics[width=0.8\linewidth,keepaspectratio]{confmat9}
+\includegraphics[width=0.7\linewidth,keepaspectratio]{confmat9}
 \end{center}
 
 $PREC = \frac{TP}{TP+FP}$
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Precision: Intuition}
+\begin{block}{Fishing for a specific fish}
+You are out on the lake, but you only want rainbow trout. At the end of the day you look
+into your bucket and ask: of the fish I actually kept, what fraction were really rainbow
+trout?
+\end{block}
+	\begin{itemize}
+	\item That fraction is precision. The denominator is what you \textbf{claimed}, not what exists.
+	\item It says nothing about the trout still swimming in the lake; those never entered the calculation.
+	\item So precision punishes False Positives: every carp in your bucket drags it down.
+	\item Use a finer, more selective net (a stricter threshold) and precision goes up.
+	\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Recall (Coverage of actual positives)}
+Recall (REC) is calculated as the number of correct positive predictions divided by the
+total number of \textbf{actual} positives. This is the same quantity as sensitivity seen
+earlier; it is worth restating here, now that precision is on the table, because the two
+are always read as a pair.
+
+\begin{center}
+\includegraphics[width=0.7\linewidth,keepaspectratio]{confmat7}
+\end{center}
+
+$REC = \frac{TP}{TP+FN} = \frac{TP}{P}$
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Recall: Intuition}
+\begin{block}{Casting the net}
+Same lake, different question: of all the fish that were in the lake to begin with, what
+fraction ended up in my net?
+\end{block}
+	\begin{itemize}
+	\item That fraction is recall. The denominator is what \textbf{exists}, not what you claimed.
+	\item Fish that got away are False Negatives, so recall punishes misses.
+	\item Cast a wider net (a relaxed threshold) and recall goes up; in the limit, net the whole lake and recall is 1.0.
+	\item But that same wide net hauls in boots and weeds, so precision falls. Hence the trade-off.
+	\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Precision vs Recall: One Net, Two Questions}
+		\begin{center}
+		\small
+		\adjustbox{max width=\linewidth}{
+			\begin{tabular}{| p{0.26\linewidth} | p{0.29\linewidth} | p{0.29\linewidth} |}
+				\hline
+				 & \textbf{Precision} & \textbf{Recall} \\ \hline
+				Question & Of what I caught, how much was right? & Of what was there, how much did I catch? \\ \hline
+				Formula & $\frac{TP}{TP+FP}$ & $\frac{TP}{TP+FN}$ \\ \hline
+				Denominator & What the model claimed & What actually exists \\ \hline
+				Punishes & False Positives (false alarms) & False Negatives (misses) \\ \hline
+				Improved by & Stricter threshold, finer net & Relaxed threshold, wider net \\ \hline
+				Care when & A wrong flag is expensive: spam filter, arrest, costly recall of parts & A miss is expensive: cancer screening, fraud, crack detection \\ \hline
+			\end{tabular}
+			}
+\end{center}
+Note the two metrics have different denominators. That is exactly why they cannot both be pushed up freely, and why averaging them needs care (see F1).
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -847,6 +910,40 @@ Even if anyone is very high, we get balanced F1 score
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why Harmonic Mean and not the Others?}
+Three models, three ways of averaging their precision and recall:
+
+		\begin{center}
+		\adjustbox{max width=\linewidth}{
+			\begin{tabular}{| c | c | c | c | c |}
+				\hline
+				\textbf{P} & \textbf{R} & \textbf{Arithmetic} & \textbf{Geometric} & \textbf{Harmonic (F1)} \\ \hline
+				0.5 & 0.5 & 0.50 & 0.50 & 0.50 \\ \hline
+				0.9 & 0.1 & 0.50 & 0.30 & 0.18 \\ \hline
+				1.0 & 0.0 & 0.50 & 0.00 & 0.00 \\ \hline
+			\end{tabular}
+			}
+\end{center}
+
+	\begin{itemize}
+	\item The arithmetic mean scores all three rows at 0.50. It cannot tell a genuinely balanced model from one that is useless on one side.
+	\item Row 3 is the giveaway: a model with zero recall still scores 0.50. Averaging additively lets a strong metric pay for a failed one.
+	\item The harmonic mean collapses towards the weaker number, so it is 0.18 and 0.00 for the last two rows. F1 is high only when \textbf{both} are high.
+	\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why Harmonic Mean: The Reasoning}
+	\begin{itemize}
+	\item Precision and recall are \textbf{rates with different denominators} ($TP+FP$ versus $TP+FN$). The harmonic mean is the standard way to average rates, because it averages the denominators rather than the ratios.
+	\item It is deliberately pessimistic. Being the reciprocal of the average reciprocal, one small value blows up its reciprocal and drags the whole result down.
+	\item That pessimism is the point. It blocks the cheap way to game the metric: flag every sample positive and recall becomes 1.0 while precision drops to the base rate. Arithmetic mean rewards that trick, F1 does not.
+	\item The geometric mean also punishes imbalance and reaches 0 in the extreme, but harmonic punishes harder in the middle (0.18 versus 0.30 above), so it is the convention.
+	\item Order holds throughout: harmonic $\leq$ geometric $\leq$ arithmetic, with equality only when precision and recall are equal.
+	\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \begin{frame}[fragile]\frametitle{F1 Measure}
 % \begin{itemize}
 % \item Model 1's F1 is better but Accuracy is lower than Model 2. Which is better?
@@ -862,14 +959,15 @@ Even if anyone is very high, we get balanced F1 score
 
 % \end{frame}
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]\frametitle{Precision and Recall}
-% \begin{itemize}
-% \item Precision addresses False Positives and Recall addresses False Negatives
-% \item So, if you are hunting something rare (skewed) like Cancer detection, Fraud, you are typically concerned with FN, as the test should not wrongly say that you have cancer. Use Recall.
-% \item When you need to be very accurate then use Precision.
-% \end{itemize}
-% \end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Which One Should You Optimize?}
+\begin{itemize}
+\item Precision addresses False Positives and Recall addresses False Negatives, so the choice comes down to which of the two errors is more expensive for your problem.
+\item If you are hunting something rare (skewed) like Cancer detection or Fraud, you are typically concerned with FN, because the test must not wrongly clear someone who actually has the disease. A missed case is far costlier than a follow-up test on a false alarm. Use Recall.
+\item When a false alarm itself is expensive or disruptive, such as a spam filter deleting a genuine mail, or scrapping a good part on the shop floor, use Precision.
+\item When both errors matter and you need a single number to compare models, use F1.
+\end{itemize}
+\end{frame}
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

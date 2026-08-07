@@ -70,6 +70,24 @@ Every deliverable has two output forms sharing the same content file:
 
 CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `multicols{2}`.
 
+**Never use a float (`\begin{table}[h]`, `\begin{figure}`) in any content file that feeds a
+CheatSheet** (Aug 2026). Floats cannot be placed inside `multicols` and are silently
+*dropped* — no LaTeX error, no warning, the table just vanishes from the PDF while the
+surrounding prose renders normally. Use `\begin{center}` + a bare `tabular` instead. Found
+when two newly-added tables in `ml_concepts_short.tex` rendered fine in the Presentation but
+were missing entirely from the CheatSheet; only caught by rendering the PDF to an image, not
+by the compile log.
+
+**Two-column `adjustbox`+`minipage` frames need `%` line-endings** (Aug 2026). The repo's
+established side-by-side convention (explanatory content left ~0.55`\linewidth`, diagram right
+~0.4`\linewidth`, see Task 5a in `/upgrade-deck`) sums to ~0.96`\linewidth`, leaving no room
+for the inter-line spaces LaTeX inserts at each newline between `}`, `\hfill`, and the next
+`\adjustbox`. Those few pt tip it over `\linewidth`, the right minipage wraps *below* the
+left one, and the diagram runs off the bottom of the slide. Terminate those lines with `%`
+(`\end{minipage}%`, `}%`, `\hfill%`, `\adjustbox{valign=t}{%`). This silently broke the
+gradient-descent frame in `ml_concepts{,_short}.tex` from its Aug 2026 authoring until it was
+found by rendering slide 15 to an image; the only log signal was a single `Overfull \vbox`.
+
 `\usepackage{beamerarticle}` in `template_cheatsheet.tex` makes Beamer `\begin{frame}` environments compile correctly in article mode — no frame stripping needed.
 
 Both `template_presentation.tex` and `template_cheatsheet.tex` load `\usepackage{upquote}`
@@ -570,6 +588,84 @@ commented placeholder) to 19 fully-active sessions:
   (explanatory content left, ~0.55-0.56 `\linewidth`; diagram right, ~0.4 `\linewidth`). Cites the
   Session 6 Gradient Descent bowl-curve diagram above as the precedent. Explicitly guards against
   forcing a diagram onto every slide -- most won't qualify.
+- **Quick Check quiz format changed: `\pause` overlay -> two separate frames (Aug 2026)**.
+  Trigger: presenting MLCoEP Session 5 live, the question/answer reveal (a `\pause` overlay
+  splitting one frame into two PDF pages) was easy to click straight past without noticing the
+  answer had appeared -- overlay reveals don't read as a distinct "next slide" during a live
+  click-through. Fixed by converting every live (non-commented) Quick Check quiz to two
+  independent frames -- a question-only frame, then a same-titled answer frame with an
+  `\end{frame}` + separator comment + `\begin{frame}` in between instead of `\pause` -- content
+  and wording unchanged, purely a frame-structure split. Applied to all 27 live quizzes across
+  the 15 topic files any MLCoEP session currently pulls in via `\input`: `ml_intro_short.tex`
+  (Session 5, 6 quizzes), `ml_concepts_short.tex` (Session 6, 5 quizzes), `python_overview.tex`
+  (Session 2, 2 live + 1 already-commented quiz left untouched), `python_intro_pandas.tex`
+  (Session 4, 3), and one quiz each in `ml_eda_endtoend_churn.tex` (Session 3),
+  `ml_datapreparation_sklearn.tex`/`ml_evaluation_sklearn.tex` (Session 7),
+  `ml_logisticregression.tex` (Session 9), `ml_decisiontree_short.tex` (Session 10), `ml_svm.tex`
+  (Session 12), `ml_naivebayes_short.tex` (Session 13), `ml_knn.tex`/`ml_knn_sklearn.tex`
+  (Session 14), `ml_kmeans.tex` (Session 15), `ml_predictive_analytics.tex` (Session 18). 12 of
+  these 15 files are shared with non-MLCoEP decks (the standalone ML course's 10 seminars,
+  `seminar_python_overview_content.tex`, `seminar_artificialintelligencemachinelearning_content.tex`,
+  `seminar_deeplearning_foundations_content.tex` via `workshop_deeplearning_content.tex`) --
+  per explicit instruction, the change was applied to the shared files directly rather than
+  forked into MLCoEP-only sibling copies, so those quizzes now render the same two-frame way
+  everywhere they're used, not just in MLCoEP. `upgrade-deck.md`'s own Task 5 Quick Check
+  boilerplate (`~/.claude/commands/`, mirrored to `Code/claudecode/dot_claude/commands/`) was
+  updated to the two-frame pattern too, so future quiz slides (any deck, not just MLCoEP) are
+  generated in the new format by default. **Verification status**: Sessions 5, 6, 7, 9
+  recompiled clean with unchanged page counts (confirms nothing was lost/duplicated by the
+  split) and spot-checked via extracted PDF text. The other 9 MLCoEP session drivers and 12
+  non-MLCoEP driver decks pulling in the 15 edited files were NOT recompiled/verified after this
+  change (a batch compile was started, then stopped before completion at the author's request to
+  close the session) -- recompiling and visually verifying those is still open, next time any of
+  them is touched.
+- **Session 6 recall/precision/F1 expansion (Aug 2026)**: triggered by teaching the session live
+  and finding recall effectively missing -- it *was* defined, but titled "Sensitivity (Recall or
+  True positive rate)" and positioned immediately before Specificity, so it read as half of the
+  sensitivity/specificity pair and nothing followed Precision. Checked the sibling first per the
+  standing rule: the reusable commented material (Boy-Who-Cried-Wolf Recall/Precision frames, the
+  "Precision addresses FP / Recall addresses FN" frame) was commented in *both* files, so only one
+  frame could be uncommented and the rest was authored. Net +5 frames, 2 edited, mirrored into
+  `ml_concepts_short.tex` and `ml_concepts.tex`: retitled the sensitivity frame to lead with
+  "Recall"; added "Precision: Intuition" and "Recall: Intuition" built on one fishing analogy
+  (precision = of the fish you kept, what fraction were rainbow trout, denominator is what you
+  *claimed*; recall = of all the fish in the lake, what fraction reached your net, denominator is
+  what *exists*); a dedicated `REC = TP/(TP+FN)` frame after Precision that says outright it is the
+  same quantity as sensitivity; a "One Net, Two Questions" contrast table; and two frames on why F1
+  uses the harmonic mean (worked P/R table where arithmetic scores 0.5/0.5, 0.9/0.1 and 1.0/0.0 all
+  at 0.50 while harmonic gives 0.50/0.18/0.00, plus the rates-with-different-denominators argument
+  and the flag-everything-positive gaming case). The Boy-Who-Cried-Wolf frames were deliberately
+  left commented -- two competing analogies for the same pair in one deck. The uncommented
+  "Which One Should You Optimize?" frame carried a factual slip, fixed while bringing it live: it
+  justified Recall with "the test should not wrongly say that you have cancer", which describes a
+  false *positive*.
+- **MLCoEP CheatSheets restored to 3 columns (Aug 2026)**: all 19
+  `Main_Seminar_MLCoEP_Session_<N>_*_CheatSheet.tex` drivers were on `multicols{2}`, a regression
+  introduced by the Aug 2026 19-session restructuring -- the all-in-one
+  `Main_Course_ML_CoEP_CheatSheet.tex` was already `multicols{3}`, and Seminars take 3 per the
+  convention above. Switching them exposed overflow that 2 columns had been hiding (19 overfull
+  boxes across 7 sessions; the other 12 were clean immediately). Root cause was
+  `breakatwhitespace=true` in `template_cheatsheet.tex`'s `lstdefinestyle`: long URLs and dotted
+  module paths have no whitespace to break at, so they ran off the page rather than wrapping.
+  Fixed with a **driver-local** override in each of the 19 drivers, right after
+  `\graphicspath` -- `\lstset{basicstyle=\scriptsize\ttfamily, breakatwhitespace=false}` +
+  `\sloppy` -- deliberately not put in the shared template, which is used by every CheatSheet in
+  the repo including 2-column Workshops. Remaining fixes were content-level: 5 tables wrapped in
+  `\adjustbox{max width=\linewidth}` (`ml_concepts{,_short}`, `ml_eda_intro` ×2,
+  `data_preparation_short`) and 3 unbreakable identifiers given `\allowbreak` after each dot
+  (`ml_course_demo_regression_housing`, `data_preparation{,_short}`, plus
+  `ml_linearregression`'s coefficient output, which was also wrongly wrapped in `$...$` math
+  mode). End state: 19/19 compile clean, one 5pt overfull left in Session 13 and 5
+  `Overfull \vbox` from multicol column balancing at page breaks (absorbed by the 2cm bottom
+  margin). Verified downstream too: MLCoEP Presentations 3/6/8/19, `Main_Seminar_ML_Intro_*`,
+  `Main_Seminar_ML_Regression_*` and `Main_Workshop_Data_Analytics_*` all recompile clean, since
+  the edited topic files are shared with them.
+- **Methodology note (Aug 2026)**: when changing CheatSheet column count, baseline the *old*
+  column count first. Recompiling the affected drivers at 2 columns and diffing overfull-box
+  counts is what separated 3-column-induced overflow (6 of 7 sessions, clean at 2 columns) from
+  pre-existing breakage (Session 7's 193pt URL, already broken). Also note the compile log alone
+  is not sufficient: floats dropped inside `multicols` and wrapped minipages produce no error,
+  so render suspect pages to images (`pdftoppm -png -r 100 -f N -l N`) and look.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames

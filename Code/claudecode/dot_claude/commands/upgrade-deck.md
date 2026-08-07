@@ -250,14 +250,20 @@ skip this sub-task entirely rather than proposing frames that won't compile.
   quiz slide: a single thought-provoking conceptual question (not rote recall), followed
   by a brief answer/discussion.
 - One quiz per section maximum -- do not add a quiz after every slide.
-- Suggested frame pattern (adapt to the deck's existing block/alert style):
+- Suggested frame pattern (adapt to the deck's existing block/alert style). Question and
+  answer are **separate frames**, not a `\pause` overlay on one frame -- overlay reveals
+  are easy to miss/skip during a live click-through, so each is its own slide with the same
+  `\frametitle`:
 
   ```latex
   \begin{frame}[fragile]\frametitle{Quick Check: <Section Name>}
   \begin{block}{Think About It}
   <thought-provoking question>
   \end{block}
-  \pause
+  \end{frame}
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \begin{frame}[fragile]\frametitle{Quick Check: <Section Name>}
   \begin{block}{Answer}
   <brief answer/explanation>
   \end{block}
