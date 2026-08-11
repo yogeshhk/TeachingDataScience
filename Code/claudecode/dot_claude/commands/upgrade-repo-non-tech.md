@@ -109,6 +109,29 @@ Run each check across the repo. Do NOT fix anything yet: only gather findings.
       downloaded/copied for reference: don't assume everything in a folder is original just
       because the folder also contains original work.
 
+### 2g. Personal & Sensitive Information
+- [ ] Scan for the maintainer's own personal information sitting in a public repo: certificates
+      (course/degree/training completion scans), ID or exam records, resumes/CVs, personal
+      photos, home address, phone number, or any personal email distinct from a deliberately
+      published contact address.
+- [ ] Scan for unauthorized nonpublic material: another person's personal data, private
+      correspondence (emails, chat exports), internal-only documents from an employer or
+      institution, or anything marked confidential/internal/draft that ended up committed.
+- [ ] Check actual file content, not just filenames or folder names: a folder that looks like
+      course notes or admin paperwork can contain scanned certificates or exam records once
+      opened (this is exactly the shape of risk to look for, not a hypothetical).
+- [ ] Once a file is flagged, check its sibling files in the same folder/set (e.g. an exam
+      folder with question pages, answer pages, and a result PDF) before finalizing the list:
+      a set that is genuinely all one category (e.g. an entire exam record) should be flagged
+      and, once approved, moved as a complete unit rather than piecemeal, so the source folder
+      isn't left half-empty and inconsistent. But decide per file by actually checking its
+      content: don't assume every file in a folder shares the same status just because one
+      neighbor is personal (a folder can mix a personal admission form with a public program
+      flyer that has no personal information in it at all).
+- [ ] **Flag only, never act.** Do not move, delete, or otherwise touch anything found here as
+      part of routine execution, even if the rest of the plan is approved in bulk. This category
+      always needs its own explicit, separate decision from the maintainer.
+
 ---
 
 ## 3. Plan Presentation
@@ -141,6 +164,15 @@ Only report issues confirmed by actually checking: file sizes measured, links te
 ### ♻️ Clutter & Redundancy Findings
 *Stale/duplicate content, non-essential files bloating asset folders, folders whose contents
 don't match their apparent purpose.*
+
+### 🔒 Personal & Sensitive Information Flags
+*Anything that looks like the maintainer's personal information (certificates, ID/exam records,
+resumes, personal contact details) or unauthorized nonpublic material (someone else's private
+data, internal-only documents). Listed for the maintainer's decision only: no action is taken on
+these here, regardless of how the rest of the plan is approved.*
+
+| File/Folder | What was found | Why it's flagged |
+|--------------|-----------------|-------------------|
 
 ### 💡 Improvement Suggestions
 *First-impression polish, community signals, asset optimization: non-critical but meaningful.*
@@ -184,6 +216,12 @@ Once the user approves the plan (fully or partially), execute changes in this st
 - Create new folders before moving files into them
 - Relocate third-party/non-essential material (prefer moving outside the repo entirely over
   deleting, unless the user confirms deletion is fine)
+- Do **not** move or delete anything listed under Personal & Sensitive Information Flags as part
+  of this step, even if it was included in a bulk approval: that category is decided separately
+- Once the maintainer approves a personal/sensitive move, move an entire verified-personal set
+  together (e.g. all pages of one exam record) rather than leaving some files behind in the
+  source folder; after moving, check whether the source folder is now empty and remove it if so
+  so the repo doesn't carry a dangling empty directory
 - Note clearly: moving a file out of the working tree does **not** remove it from git history
   if it was already committed: flag this as a **follow-up for the maintainer** (purging git
   history is their call and their action, not something to do here)
@@ -250,6 +288,12 @@ Once the user approves the plan (fully or partially), execute changes in this st
 - **Attribution awareness:** always check whether content in the repo is the maintainer's own
   work or third-party material, and flag redistribution risk clearly rather than assuming
   everything in the repo is fine to keep public just because it's already there.
+- **Personal & sensitive info: flag only, never act.** Certificates, ID/exam records, resumes,
+  personal contact details, or unauthorized nonpublic material (someone else's private data,
+  internal-only documents) get listed in the plan's dedicated section and nowhere else. Never
+  move, delete, or otherwise touch these files during execution, even under a bulk "proceed with
+  all of the above" approval: this category always requires its own separate, explicit decision
+  from the maintainer about what to do next.
 - **Writing style, no em-dashes:** never use the em-dash character in any publicly-visible
   markdown you write (README, CONTRIBUTING, CODE_OF_CONDUCT, issue/PR templates, any doc a
   visitor would read). It reads as a tell that the text was AI-generated. Replace with a colon,

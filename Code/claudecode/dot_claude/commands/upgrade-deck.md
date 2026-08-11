@@ -241,6 +241,30 @@ skip this sub-task entirely rather than proposing frames that won't compile.
   create a new frame just to hold a diagram unless the existing frame would overflow as a result --
   in that case, split per the usual overflow-handling precedent).
 
+#### Task 5b: Language Clarity for Non-Native Readers
+
+Apply only to slide bullets, procedure steps, and quiz stems. Skip explanatory prose,
+analogies, and the Intuition callouts from Task 5: those depend on figurative language, and
+flattening them costs more than it gains.
+
+Six rules adapted from ASD-STE100 (Simplified Technical English), the controlled-English
+standard written for aerospace maintenance manuals read by non-native speakers. Only these
+carry over; the full standard is not applied.
+
+- **One term per concept**, fixed on first use, identical for the whole deck. Flag drift
+  ("qubit" vs "quantum bit" vs "two-level system") even when each individual use is correct.
+  This is the highest-value check in the task.
+- **Imperative mood, one instruction per step** in any procedure or lab guide.
+- **About 20 words maximum** per bullet or step.
+- **No noun cluster longer than three words**; break it with prepositions.
+- **No ambiguous `-ing`**, especially sentence-initial.
+- **Keep articles and complete sentences** in steps.
+
+If the repository has its own `CLAUDE.md` with a house language block, that takes precedence.
+
+- **Action:** Rewrite affected bullets directly in the updated `.tex` output. Do not raise a
+  finding for a rule broken only in speaker notes or `%` comments.
+
 ### Task 6: Thought-Provoking Quizzes
 
 - First, infer the intended audience (Step 2), same as Task 5.
@@ -318,7 +342,7 @@ therefore activated for Task 1a. Also note any `_short.tex` sibling files found 
 
 ### 4. Task-by-Task Findings
 
-One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b/1c/1d/5a).
+One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b/1c/1d/5a/5b).
 Each section contains:
 
 - **Findings** -- what was observed
