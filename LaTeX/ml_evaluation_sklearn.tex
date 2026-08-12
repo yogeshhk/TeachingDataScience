@@ -15,11 +15,10 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Read Data}
-Import Pima Inidans dataset and split into Features (X) and target (Y)
+\begin{frame}[fragile]\frametitle{Read Data: the Same Pima Dataset}
+Same load step as the preprocessing section, repeated so this section stands on its own.
 \begin{lstlisting}
 import pandas
-import scipy
 import numpy
 
 url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv"
@@ -38,11 +37,12 @@ Y = array[:,8]
 \begin{frame}[fragile]\frametitle{Classification Accuracy}
 
 	\begin{itemize}
-	\item Classification accuracy is the number of correct predictions made as a ratio of all predictions made.
-	\item This is the most common evaluation metric for classification problems, it is also the most misused. 
-	\item It is really only suitable when there are an equal number of observations in each class (which is rarely the case) and that all predictions and prediction errors are equally important, which is often not the case.
+	\item Classification accuracy is the number of correct predictions as a ratio of all predictions made.
+	\item This is the most common evaluation metric for classification problems, and also the most misused.
+	\item It is only suitable when each class has roughly the same number of observations, which is rarely the case.
+	\item It also assumes every kind of prediction error costs the same, which is often untrue.
 	\end{itemize}
-	
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,12 +54,13 @@ from sklearn.linear_model import LogisticRegression
 
 seed = 7
 kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
-model = LogisticRegression()
+model = LogisticRegression(max_iter=1000)
 scoring = 'accuracy'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
 print("Accuracy: %.3f (%.3f)" % (results.mean(), results.std()))
 
-Accuracy: 0.770 (0.048)
+# Output:
+# Accuracy: 0.772 (0.050)
 \end{lstlisting}
 \end{frame}
 
@@ -81,12 +82,13 @@ Smaller logloss is better with 0 representing a perfect logloss. As mentioned ab
 \begin{lstlisting}
 seed = 7
 kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
-model = LogisticRegression()
+model = LogisticRegression(max_iter=1000)
 scoring = 'neg_log_loss'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
 print("Logloss: %.3f (%.3f)" % (results.mean(), results.std()))
 
-Logloss: -0.493 (0.047)
+# Output:
+# Logloss: -0.485 (0.057)
 \end{lstlisting}
 \end{frame}
 
@@ -96,19 +98,37 @@ Logloss: -0.493 (0.047)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Area Under ROC Curve}
 
+\adjustbox{valign=t}{%
+\begin{minipage}{0.56\linewidth}%
 	\begin{itemize}
-	\item Area under ROC Curve (or AUC for short) is a performance metric for binary classification problems.
-	\item The AUC represents a model’s ability to discriminate between positive and negative classes. An area of 1.0 represents a model that made all predictions perfectly. An area of 0.5 represents a model as good as random.
-	\item ROC can be broken down into sensitivity and specificity. A binary classification problem is really a trade-off between sensitivity and specificity.
-		\begin{itemize}
-
-	\item Sensitivity is the true positive rate also called the recall. It is the number instances from the positive (first) class that actually predicted correctly.
-	\item Specificity is also called the true negative rate. Is the number of instances from the negative class (second) class that were actually predicted correctly.
+	\item Area under ROC Curve (AUC) measures how well a binary classifier separates positive cases from negative cases.
+	\item An area of 1.0 is a perfect model, an area of 0.5 is no better than random.
+	\item The curve trades off sensitivity (the true positive rate, also called recall) against specificity (the true negative rate).
 	\end{itemize}
-	\end{itemize}
+\end{minipage}%
+}%
+\hfill%
+\adjustbox{valign=t}{%
+\begin{minipage}{0.4\linewidth}%
+\begin{center}
+\begin{tikzpicture}[scale=0.62]
+\fill[gray!20] (0,0) .. controls (0.4,2.4) and (1.6,3.4) .. (4,4) -- (4,0) -- cycle;
+\draw[->] (0,0) -- (4.4,0) node[right,font=\tiny] {FPR};
+\draw[->] (0,0) -- (0,4.4) node[above,font=\tiny] {TPR};
+\draw[dashed] (0,0) -- (4,4);
+\draw[very thick] (0,0) .. controls (0.4,2.4) and (1.6,3.4) .. (4,4);
+\node[font=\tiny] at (2.5,1.5) {AUC};
+\node[font=\tiny,rotate=45] at (2.9,2.5) {random};
+\node[font=\tiny] at (0,-0.3) {0};
+\node[font=\tiny] at (4,-0.3) {1};
+\end{tikzpicture}
+\end{center}
+\tiny{The shaded area under the curve is the AUC. The dashed diagonal is a coin-flip model.}
+\end{minipage}%
+}%
 
 \begin{block}{Intuition}
-AUC = 0.5 isn't ``50\% accurate'': it means the model's ranking of positive vs. negative cases is no better than a coin flip. AUC is threshold-free: it asks ``if I pick one random positive and one random negative example, how often does the model score the positive one higher?'': which is why it stays meaningful even when the two classes are wildly imbalanced, unlike plain accuracy.
+AUC = 0.5 isn't ``50\% accurate'': it means the model ranks positive and negative cases no better than a coin flip. AUC is threshold-free: it asks how often the model scores a random positive case above a random negative one. That is why it stays meaningful even when the classes are wildly imbalanced, unlike plain accuracy.
 \end{block}
 
 \end{frame}
@@ -119,12 +139,13 @@ The AUC is relatively close to 1 and greater than 0.5, suggesting some skill in 
 \begin{lstlisting}
 seed = 7
 kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
-model = LogisticRegression()
+model = LogisticRegression(max_iter=1000)
 scoring = 'roc_auc'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
 print("AUC: %.3f (%.3f)" % (results.mean(), results.std()))
 
-AUC: 0.824 (0.041)
+# Output:
+# AUC: 0.829 (0.047)
 \end{lstlisting}
 \end{frame}
 
@@ -133,11 +154,37 @@ AUC: 0.824 (0.041)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Confusion Matrix}
 
+\adjustbox{valign=t}{%
+\begin{minipage}{0.56\linewidth}%
 	\begin{itemize}
-	\item The confusion matrix is a handy presentation of the accuracy of a model with two or more classes.
-	\item For example, a machine learning algorithm can predict 0 or 1 and each prediction may actually have been a 0 or 1. 
-	\item Predictions for 0 that were actually 0 appear in the cell for prediction=0 and actual=0, whereas predictions for 0 that were actually 1 appear in the cell for prediction = 0 and actual=1. And so on.
+	\item The confusion matrix presents the accuracy of a model with two or more classes.
+	\item Each cell counts how often an actual class was predicted as a given class.
+	\item Correct predictions land on the diagonal, every mistake lands off it.
+	\item The two mistakes are not the same: a false positive is a false alarm, a false negative is a miss.
 	\end{itemize}
+\end{minipage}%
+}%
+\hfill%
+\adjustbox{valign=t}{%
+\begin{minipage}{0.4\linewidth}%
+\begin{center}
+\begin{tikzpicture}[scale=0.62]
+\fill[gray!20] (0,2) rectangle (2,4);
+\fill[gray!20] (2,0) rectangle (4,2);
+\draw (0,0) grid (4,4);
+\node[font=\tiny] at (1,3) {TN};
+\node[font=\tiny] at (3,3) {FP};
+\node[font=\tiny] at (1,1) {FN};
+\node[font=\tiny] at (3,1) {TP};
+\node[font=\tiny] at (1,4.4) {pred 0};
+\node[font=\tiny] at (3,4.4) {pred 1};
+\node[font=\tiny,rotate=90] at (-0.4,3) {actual 0};
+\node[font=\tiny,rotate=90] at (-0.4,1) {actual 1};
+\end{tikzpicture}
+\end{center}
+\tiny{The shaded diagonal holds the correct predictions. Everything off it is an error.}
+\end{minipage}%
+}%
 
 \end{frame}
 
@@ -150,14 +197,15 @@ from sklearn.metrics import confusion_matrix
 test_size = 0.33
 seed = 7
 X_train, X_test, Y_train, Y_test = model_selection.train_test_split(X, Y, test_size=test_size, random_state=seed)
-model = LogisticRegression()
+model = LogisticRegression(max_iter=1000)
 model.fit(X_train, Y_train)
 predicted = model.predict(X_test)
 matrix = confusion_matrix(Y_test, predicted)
 print(matrix)
 
-[[141  21]
- [ 41  51]]
+# Output:
+# [[142  20]
+#  [ 34  58]]
 \end{lstlisting}
 \end{frame}
 
@@ -174,25 +222,26 @@ print(matrix)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Classification Report}
-You can see good prediction and recall for the algorithm.
+You can see good precision and recall for the algorithm.
 \begin{lstlisting}
 from sklearn.metrics import classification_report
 
 test_size = 0.33
 seed = 7
 X_train, X_test, Y_train, Y_test = model_selection.train_test_split(X, Y, test_size=test_size, random_state=seed)
-model = LogisticRegression()
+model = LogisticRegression(max_iter=1000)
 model.fit(X_train, Y_train)
 predicted = model.predict(X_test)
 report = classification_report(Y_test, predicted)
 print(report)
 
-             precision    recall  f1-score   support
-
-        0.0       0.77      0.87      0.82       162
-        1.0       0.71      0.55      0.62        92
-
-avg / total       0.75      0.76      0.75       254
+# Output:
+#               precision    recall  f1-score   support
+#          0.0       0.81      0.88      0.84       162
+#          1.0       0.74      0.63      0.68        92
+#     accuracy                           0.79       254
+#    macro avg       0.78      0.75      0.76       254
+# weighted avg       0.78      0.79      0.78       254
 \end{lstlisting}
 \end{frame}
 
@@ -213,7 +262,7 @@ import pandas
 
 url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/housing.data"
 names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'LSTAT', 'MEDV']
-dataframe = pandas.read_csv(url, delim_whitespace=True, names=names)
+dataframe = pandas.read_csv(url, sep='\s+', names=names)
 array = dataframe.values
 X = array[:,0:13]
 Y = array[:,13]
@@ -243,7 +292,8 @@ scoring = 'neg_mean_absolute_error'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
 print("MAE: %.3f (%.3f)" % (results.mean(), results.std()))
 
-MAE: -4.005 (2.084)
+# Output:
+# MAE: -3.387 (0.667)
 \end{lstlisting}
 \end{frame}
 
@@ -269,7 +319,8 @@ scoring = 'neg_mean_squared_error'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
 print("MSE: %.3f (%.3f)" % (results.mean(), results.std()))
 
-MSE: -34.705 (45.574)
+# Output:
+# MSE: -23.747 (11.143)
 \end{lstlisting}
 \end{frame}
 
@@ -279,7 +330,8 @@ MSE: -34.705 (45.574)
 
 	\begin{itemize}
 	\item The $R^2$ (or R Squared) metric provides an indication of the goodness of fit of a set of predictions to the actual values. In statistical literature, this measure is called the coefficient of determination.
-	\item $R^2 = 1$ is a perfect fit and $R^2 = 0$ means the model does no better than always predicting the mean; but $R^2$ is \emph{not} bounded below by 0: a model that fits worse than that mean-only baseline (common on a bad fold) can score negative, which is exactly why the example below has such a large standard deviation relative to its mean.
+	\item $R^2 = 1$ is a perfect fit, and $R^2 = 0$ means the model does no better than always predicting the mean.
+	\item $R^2$ is \emph{not} bounded below by 0: a model that fits worse than that mean-only baseline scores negative, which happens easily on an unrepresentative fold.
 	\end{itemize}
 
 \end{frame}
@@ -287,8 +339,9 @@ MSE: -34.705 (45.574)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{$R^2$ Metric}
 Unlike MAE and MSE above, \texttt{'r2'} is not negated by \texttt{cross\_val\_score()}: higher is
-already better, so this mean can be read directly. The large standard deviation relative to the
-mean here is exactly the negative-$R^2$-on-a-bad-fold effect described on the previous slide.
+already better, so this mean can be read directly. Note \texttt{shuffle=True} in the \texttt{KFold}
+below. This dataset is stored in a sorted order, so without shuffling the folds are unrepresentative,
+and the score collapses towards the negative-$R^2$ case from the previous slide.
 \begin{lstlisting}
 seed = 7
 kfold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
@@ -297,7 +350,8 @@ scoring = 'r2'
 results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
 print("R^2: %.3f (%.3f)" % (results.mean(), results.std()))
 
-R^2: 0.203 (0.595)
+# Output:
+# R^2: 0.718 (0.099)
 \end{lstlisting}
 \end{frame}
 
@@ -312,6 +366,20 @@ The Pima diabetes dataset has roughly twice as many non-diabetic (class 0) cases
 \begin{frame}[fragile]\frametitle{Quick Check: Model Evaluation}
 \begin{block}{Answer}
 AUC would immediately expose it: a constant-output model can't rank any example above another, so it scores AUC $\approx$ 0.5, no better than random, regardless of class imbalance. The confusion matrix would show the same story directly: an entire empty row or column, since class 1 is never predicted. Accuracy fails here because it only counts how many predictions matched, and on an imbalanced dataset ``always predict the majority class'' matches a lot of the time by construction: exactly why accuracy is called out on the first slide of this section as ``the most misused'' metric.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Regression Metrics}
+\begin{block}{Think About It}
+Two house-price models are each wrong by a total of 10 lakh rupees across 10 houses. Model A is off by 1 lakh on every house. Model B is perfect on 9 houses and off by 10 lakh on the tenth. They have the same MAE. Which model does MSE prefer, and which would you rather deploy?
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Regression Metrics}
+\begin{block}{Answer}
+MSE strongly prefers Model A. Squaring the errors makes one large mistake cost far more than many small ones: Model A scores $10 \times 1^2 / 10 = 1$, while Model B scores $100 / 10 = 10$, ten times worse, even though MAE rates them identically. Which model you deploy depends on the cost of being wrong. If one badly mispriced house is a disaster, use MSE and pick A. If all errors cost the same per rupee, MAE is the honest metric and the two really are equivalent. This is why the two are reported together rather than one replacing the other.
 \end{block}
 \end{frame}
 

@@ -19,7 +19,6 @@
 Import Pima Inidans dataset and split into Features (X) and target (Y)
 \begin{lstlisting}
 import pandas
-import scipy
 import numpy
 
 url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv"
@@ -38,11 +37,12 @@ Y = array[:,8]
 \begin{frame}[fragile]\frametitle{Rescale Data}
 
 	\begin{itemize}
-	\item Referred to as normalization and attributes are often rescaled into the range between 0 and 1. 
-	\item This is useful for optimization algorithms in used in the core of machine learning algorithms like gradient descent. 
-	\item It is also useful for algorithms that weight inputs like regression and neural networks and algorithms that use distance measures like K-Nearest Neighbors.
+	\item Also called normalization: every attribute is rescaled into the range 0 to 1.
+	\item This helps the optimization algorithms at the core of machine learning, such as gradient descent.
+	\item It also helps algorithms that weight their inputs, such as regression and neural networks.
+	\item It helps algorithms that use distance measures too, such as K-Nearest Neighbors.
 	\end{itemize}
-	
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,8 +78,9 @@ After rescaling you can see that all of the values are in the range between 0 an
 \begin{frame}[fragile]\frametitle{Standardize Data}
 
 	\begin{itemize}
-	\item Standardization is a useful technique to transform attributes with a Gaussian distribution and differing means and standard deviations to a standard Gaussian distribution with a mean of 0 and a standard deviation of 1.
-	\item It is most suitable for techniques that assume a Gaussian distribution in the input variables and work better with rescaled data, such as linear regression, logistic regression and linear discriminate analysis.
+	\item Standardization transforms an attribute so that it has a mean of 0 and a standard deviation of 1.
+	\item It suits attributes that already follow a Gaussian distribution, but with differing means and spreads.
+	\item It suits techniques that assume Gaussian inputs, such as linear regression, logistic regression and linear discriminant analysis.
 	\end{itemize}
 
 \begin{block}{Intuition}
@@ -194,6 +195,30 @@ You can see that all values equal or less than 0 are marked 0 and all of those a
 \end{lstlisting}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Putting It Together: Pipeline}
+
+	\begin{itemize}
+	\item Scaling the whole dataset before splitting it leaks test information into training.
+	\item A \texttt{Pipeline} chains preprocessing and model into one Estimator.
+	\item It exposes the same \texttt{fit} and \texttt{predict} methods as any single model.
+	\item Inside cross validation, the scaler is refitted on each training fold only.
+	\end{itemize}
+
+\begin{lstlisting}
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+pipe = make_pipeline(StandardScaler(),
+                     LogisticRegression(max_iter=1000))
+
+# scaler is fitted per fold, never on the held-out data
+pipe.fit(X, Y)
+predictions = pipe.predict(X)
+\end{lstlisting}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Quick Check: Data Preprocessing}
 \begin{block}{Think About It}
@@ -204,7 +229,7 @@ You fit a \texttt{StandardScaler} on your training data, then need to preprocess
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Quick Check: Data Preprocessing}
 \begin{block}{Answer}
-Always reuse the scaler fitted on the training data (\texttt{scaler.transform(X\_test)}, no re-fit). Fitting a new scaler on the test set would compute a \emph{different} mean/std from data the model has never seen, so the same raw value could be scaled differently between train and test -- silently corrupting the features the model was trained on. Fitting only ever happens once, on training data; every other split reuses that same fitted scaler.
+Always reuse the scaler fitted on the training data (\texttt{scaler.transform(X\_test)}, no re-fit). Fitting a new scaler on the test set would compute a \emph{different} mean/std from data the model has never seen, so the same raw value could be scaled differently between train and test, silently corrupting the features the model was trained on. Fitting only ever happens once, on training data; every other split reuses that same fitted scaler. A \texttt{Pipeline} enforces this for you.
 \end{block}
 \end{frame}
 

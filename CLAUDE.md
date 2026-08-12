@@ -666,6 +666,86 @@ commented placeholder) to 19 fully-active sessions:
   pre-existing breakage (Session 7's 193pt URL, already broken). Also note the compile log alone
   is not sufficient: floats dropped inside `multicols` and wrapped minipages produce no error,
   so render suspect pages to images (`pdftoppm -png -r 100 -f N -l N`) and look.
+- **Session 7 `/upgrade-deck` pass (Aug 2026)**, run via `Main_Seminar_MLCoEP_Session_7_Sklearn_Workflow_*`
+  over its 3 topic files (`ml_intro_sklearn`, `ml_datapreparation_sklearn`, `ml_evaluation_sklearn`).
+  None has a `_short` sibling, but all 3 are shared: `ml_intro_sklearn` with
+  `seminar_ml_intro_content.tex`, the other two with `seminar_ml_dataprep_content.tex`, so edits
+  were made in place and those decks recompiled too. 50 -> 54 live frames.
+  - **Every code block was executed** against `pandas 2.2.3` / `scikit-learn 1.7.2` before the
+    outputs were touched, and this is what the pass turned on. The stored outputs were stale
+    relative to the code: the `KFold`s already said `shuffle=True`, but the printed numbers were
+    from an unshuffled split. Confirmed exactly: unshuffled Boston gives `R^2: 0.203 (0.595)`
+    (the number that was on the slide, worst fold -1.006), shuffled gives `0.718 (0.099)`. All 8
+    outputs updated to verified values, and the two $R^2$ frames' prose rewritten: it had claimed
+    the large standard deviation was the negative-$R^2$-on-a-bad-fold effect, which is no longer
+    true of the shuffled numbers. **Lesson: when a deck shows both code and its output, re-run the
+    code, do not trust the pasted result.**
+  - Other Task 1 fixes: `delim_whitespace=True` -> `sep='\s+'` (deprecated in pandas 2.2);
+    `LogisticRegression()` -> `max_iter=1000` (5 sites, silent `ConvergenceWarning` on unscaled
+    Pima); `classification_report` output updated from the pre-0.20 `avg / total` format to
+    `accuracy`/`macro avg`/`weighted avg`; a stray Unicode right-quote in `model’s`; "linear
+    discriminate analysis" -> "discriminant"; "good prediction and recall" -> "precision";
+    Python-3.5-era install slide modernised (its `conda install` line omitted `pandas`/`seaborn`
+    that the very next slide imports).
+  - Task 2 removed one untitled frame that duplicated the "Estimator" frame; the second "Read Data"
+    frame was **kept** (both topic files must stand alone in `seminar_ml_dataprep_content.tex`) but
+    retitled "Read Data: the Same Pima Dataset" so the repetition reads as deliberate.
+  - Task 4 added a `Pipeline` frame: the existing Quick Check answer told students to fit only on
+    training data, but nothing in the session showed the mechanism that enforces it.
+  - Task 5a added 2 TikZ diagrams in the two-column `adjustbox`+`minipage` convention: an ROC
+    curve with shaded area (AUC frame) and a 2x2 confusion matrix with the diagonal shaded.
+    **The ROC frame overflowed 12.18pt and took 3 passes to fix** -- trimming the `Intuition`
+    block alone did nothing, because the *left* column was the tall one; only merging bullets
+    cleared it. Caught by rendering the page, since Beamer does not error on vertical overflow.
+  - Task 6 added 2 quiz pairs (Estimator API; MAE vs MSE outlier sensitivity), matching the
+    two-separate-frames format.
+  - **Datasets now local**: `Code/mlcoep/datasets/session07_sklearn/` holds
+    `pima-indians-diabetes.data.csv` (768 rows) and `housing.data` (506 rows) + a README, mirroring
+    the Session 4 precedent. Verified the local copies reproduce the slide numbers exactly. The
+    slides still load from the `jbrownlee/Datasets` URLs; these are an offline fallback.
+  - End state: Session 7 Presentation 59 pages, CheatSheet 5 pages, both compile clean; the 2
+    remaining presentation `Overfull \hbox` are the pre-existing title/footline ones, and the
+    CheatSheet has one 16.6pt overfull left. `Main_Seminar_ML_{Intro,DataPrep}_*` also recompile
+    clean. **`Main_Seminar_ML_Intro_Presentation` reports ~41k overfull boxes -- pre-existing and
+    unrelated to this pass** (a repeating structure in that 161-page deck), not investigated.
+- **Session 8 `/upgrade-deck` pass (Aug 2026)**, run via `Main_Seminar_MLCoEP_Session_8_Linear_Regression_*`
+  over its single topic file `ml_linearregression.tex`. No `_short` sibling; shared with
+  `seminar_ml_regression_content.tex` (`Main_Seminar_ML_Regression_*`). 53 -> 60 live frames,
+  65 pages, **zero overfull boxes** in the Presentation.
+  - **Count live frames, always**: the file is 1511 lines with 110 raw `\begin{frame}` but only 53
+    live: more than half is commented-out author material. Same trap as the Jul 2026 methodology
+    note above.
+  - **The committed PDF ended in a "Temporary page! LaTeX was unable to guess the total number of
+    frames" page** -- it had been built without a converged final pass. Gone after recompiling.
+    Worth checking for on any deck whose PDF predates its last edit.
+  - Genuine technical errors fixed: the $(X^TX)^{-1}$ slide claimed the matrix is singular "if any
+    two **rows** are same" (wrong -- duplicate samples are harmless, linearly dependent **columns**
+    are the problem); `x_{p,1}` -> `x_{p,i}` plus a missing intercept; the ISL data URL
+    `www-bcf.usc.edu/~gareth/...` is dead (USC retired that host) -> `statlearning.com`;
+    `+ -0.0010` -> subtraction; intercept quoted as both `-0.818` and `-0.8188`; "OLS minimizes RMS
+    error" -> sum of squared residuals; `Found'm'`, `$y_i$to`, "slopes means", "adverting".
+  - **Two defects only visible by rendering, not from the log** (same lesson as Session 7's ROC
+    frame): the "Coefficients" frame wrapped prose in math mode, so it rendered as run-together
+    italic **"TVModel"/"RadioModel"/"NewspaperModel"**, and its raw `[[0.04753664]][7.03259355]`
+    output never said which number was the slope; the "Advertising Dataset" frame used `eqnarray*`
+    with a single `&`, putting the relation in the alignment column and leaving a wide gap before
+    `≈ β0 + β1 × TV`. Fixed to labelled `\texttt{}` values and `align*`.
+  - **Content gap**: the frame *titled* "$R^2$ Statistics" only set up $SST = SSR + SSE$ and stopped;
+    a later frame then used $R^2$ as if defined. The definition was sitting commented out in the
+    file. Added a frame defining $R^2 = SSR/SST = 1 - SSE/SST$ and evaluating $90/120 = 0.75$ on the
+    tip-example numbers already on screen.
+  - **Nothing was deleted.** Three sets of repeated frames (`lab2` twice, `corrmat` twice, the
+    rotated-line sequence) look redundant but are deliberate question-answer / animation builds.
+    The real problem was navigational: **7 consecutive frames titled "Optimization"** and 3 titled
+    "Evaluation", all now given distinct titles.
+  - Added: a TikZ SST/SSR/SSE decomposition diagram (all three distances measured at the same data
+    point -- the first draft drew SSR at an x where it did not touch the regression line, caught by
+    rendering), 3 Intuition callouts, and 3 Quick Check pairs (the deck had **zero** quizzes).
+    60 frames slightly exceeds the ~50-55/hr target; accepted because quiz frames click through fast.
+  - **Open items from this pass** (compiled Session 8 only, at the author's request):
+    `Main_Seminar_ML_Regression_*` carries these edits but was **never recompiled**; and the Session 8
+    CheatSheet has one unresolved `Overfull \hbox` (9.86pt, log lines 322-323) that was never traced
+    to a frame, so it is unknown whether it predates this pass.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
