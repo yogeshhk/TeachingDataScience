@@ -708,6 +708,34 @@ commented placeholder) to 19 fully-active sessions:
     CheatSheet has one 16.6pt overfull left. `Main_Seminar_ML_{Intro,DataPrep}_*` also recompile
     clean. **`Main_Seminar_ML_Intro_Presentation` reports ~41k overfull boxes -- pre-existing and
     unrelated to this pass** (a repeating structure in that 161-page deck), not investigated.
+- **Session 7 follow-up: `ml_intro_sklearn.tex` individual-algorithm examples revived (Aug 2026)**,
+  triggered by teaching the session live and finding the jump from the abstract `Estimator`
+  pseudocode frame straight to the `Pipeline` frame too big a leap, with ~200 lines of concrete
+  regression/classification/clustering examples sitting commented out in between. Revived and
+  modernized (`sklearn.cross_validation` -> `model_selection`, deprecated `plt.cm.get_cmap` ->
+  `plt.get_cmap`, dropped the removed `LinearRegression(normalize=True)` kwarg) rather than
+  deleted outright: Iris dataset loading (2 frames), a "Sklearn: Algorithms" section divider, a
+  synthetic-data Linear Regression example + its 2-feature exercise variant, a K-Nearest-Neighbor
+  classifier example, PCA, and K-means clustering (feeding PCA's reduced `X` into the scatter plot)
+  -- 8 revived frames total, all on Iris/synthetic data, kept deliberately separate from Data
+  Prep/Evaluation's own Pima Indians + Boston Housing case study rather than forced onto one
+  dataset. Left commented, not revived: several near-duplicate/dead stubs superseded by the real
+  Pima/Boston code in `ml_datapreparation_sklearn.tex`/`ml_evaluation_sklearn.tex` (an SVM stub, a
+  generic `ClassifierEstimator()`/`RegressionEstimator()` pseudo-code pair, an old KNN
+  `predict_proba` stub, and an SVM classifier frame that depended on an undefined `X_train`), the
+  Cheat Sheet image frames, and the Digits/OCR mini-project (a separate tangent, not asked for).
+  Added one new frame, "Logistic Regression: Estimator API in Action" (concrete `fit`/`predict` on
+  Iris with a real train/test split), placed right before `Pipeline` so the arc reads Estimator API
+  -> concrete Logistic Regression example -> Pipeline, per explicit request. Every revived/new code
+  snippet was executed against the same `sklearn 1.7.2`/`numpy 2.2.6`/`matplotlib 3.10.8` (`genai`
+  env) before being trusted, same discipline as the Session 7 sklearn-workflow pass above. Session
+  7 Presentation 59 -> 68 pages, CheatSheet 5 -> 7 pages, both recompile clean (same 2 pre-existing
+  footline overfulls in the Presentation; same pre-existing 16.6pt overfull in
+  `ml_evaluation_sklearn.tex`'s CheatSheet section, confirmed by log line number this predates the
+  change). All new/edited pages rendered to images and visually confirmed no silent overflow.
+  `Main_Seminar_ML_Intro_{Presentation,CheatSheet}.tex` (the other consumer of
+  `ml_intro_sklearn.tex`) also recompiled without new errors (171-page Presentation still carries
+  the pre-existing ~41k-overfull-box issue noted above, unrelated).
 - **Session 8 `/upgrade-deck` pass (Aug 2026)**, run via `Main_Seminar_MLCoEP_Session_8_Linear_Regression_*`
   over its single topic file `ml_linearregression.tex`. No `_short` sibling; shared with
   `seminar_ml_regression_content.tex` (`Main_Seminar_ML_Regression_*`). 53 -> 60 live frames,
@@ -745,7 +773,120 @@ commented placeholder) to 19 fully-active sessions:
   - **Open items from this pass** (compiled Session 8 only, at the author's request):
     `Main_Seminar_ML_Regression_*` carries these edits but was **never recompiled**; and the Session 8
     CheatSheet has one unresolved `Overfull \hbox` (9.86pt, log lines 322-323) that was never traced
-    to a frame, so it is unknown whether it predates this pass.
+    to a frame, so it is unknown whether it predates this pass. **Note: this session is now Session 9**,
+    see the renumbering note below (Aug 2026) -- all Session-8-specific references above (filenames,
+    log line numbers) predate that shift and describe what was then Session 8.
+- **Session 8 inserted as a syllabus gap-fill session before the Units 1-3 MCQ test; old Sessions 8-19
+  renumbered to 9-20 (Aug 2026).** Triggered by comparing the official BTech Mechanical AIML-ML
+  syllabus (4 units, 30 hrs) against Sessions 1-7 as actually taught and finding real, verified gaps
+  within Units 1-3: Unit 1 (History of AI's classical era, the Reasoning/Knowledge-Representation/
+  Planning/Perception/Motion-\&-Manipulation capability framework, Approaches to AI --
+  Cybernetics/Symbolic/Sub-symbolic/Statistical, and "Need of AI in Mechanical Engineering" -- the
+  last of these already existed as `ml_mech_short.tex` but sitting in Session 19, not up front);
+  Unit 2 (Hyperparameter Tuning was live nowhere -- the only mention was inside an entirely
+  commented-out frame in `ml_intro_short.tex`; "Ranking" as a 4th problem-identification type;
+  an explicit "Model Selection" step); Unit 3 (Feature extraction's "Statistical features", feature
+  selection's "Ranking", and the wrapper search strategies -- Exhaustive, Best-first, Greedy
+  forward/backward). Unit 4 needed no new session -- it already maps onto the existing algorithm
+  sessions (old Sessions 8-16). Decision-tree entropy/info-gain and PCA, though nominally Unit-3
+  topics, were deliberately excluded from this pass since they land in their own sessions later
+  (old Sessions 10 and 16) -- confirmed by the author, not assumed.
+  - **Scope was narrowed twice by the author during planning, both kept**: (1) Unit 1's gaps were
+    dropped entirely from this session -- Session 1 was already delivered in class, and patching it
+    now wouldn't reach students before the test, so `ai_intro_tech.tex` was left untouched. (2) Of
+    the Unit 2/3 gaps, only the ones with no natural existing home became new content; the rest were
+    added as live frames directly into the already-taught reference decks they thematically belong
+    to, on the reasoning that keeping those decks complete matters even if not literally re-lectured:
+    Ranking + Model Selection into `ml_intro_short.tex` (mirrored into its full sibling `ml_intro.tex`
+    per the standing sibling-sync rule), Hyperparameter Tuning into `ml_concepts_short.tex` (mirrored
+    into `ml_concepts.tex`). Only the Unit 3 feature-extraction/-selection material, which fit neither
+    file, became the new `ml_featureselection.tex` that Session 8 actually delivers.
+  - **Content added**: `ml_intro_short.tex`/`ml_intro.tex` gained "Ranking: Overview" (framed as a 4th
+    problem type alongside the file's existing Classification/Regression/Clustering/Dimensional-
+    Reduction cluster) and "Model Selection". `ml_concepts_short.tex`/`ml_concepts.tex` gained a
+    revived (previously commented-out) "Practical Tip" frame plus "Hyperparameter Tuning", "...: Grid
+    Search", and "...: Randomized Search" (a verified `GridSearchCV`/`RandomizedSearchCV` run on the
+    Pima dataset, KNN's $k$, landing on $k=11$/0.749 and $k=13$/0.755 respectively) and a Quick Check
+    pair, inserted right where the revived Practical Tip frame already namedropped "hyper parameters"
+    in its pre-existing text. `ml_featureselection.tex` (new, 17 frames) builds one narrative: raw
+    signal $\to$ statistical features (a jargon-free sensor-reading example, per explicit instruction
+    to ease off Mechanical-Engineering-specific framing since wrapper methods were new to the author
+    too) $\to$ filter/ranking selection $\to$ all 4 wrapper strategies (Exhaustive, Greedy Forward,
+    Greedy Backward, Best-First), all grounded in one real, executed run on the familiar 8-feature
+    Pima dataset (small enough that exhaustive search over all 255 non-empty subsets is genuinely
+    runnable, not just asserted) -- exhaustive search proved dropping `skin` costs zero accuracy,
+    and greedy backward elimination's first move independently rediscovers exactly that same fact.
+    Every code snippet across all four files was executed against the `genai` conda env
+    (`sklearn`/`numpy`/`matplotlib` as in the Session 7 pass) before being trusted.
+  - **New template gotcha found**: `template_presentation.tex`'s `lstset` carries `belowskip=-15pt`
+    (a deliberate negative skip, presumably tuned for the common case of code being the last thing in
+    a frame). Any body text placed directly after `\end{lstlisting}` -- regardless of how short the
+    code block or the following sentence is -- gets pulled up into the code box, and the resulting
+    overlap is **not reliably reported** as `Overfull \vbox` (several instances here produced no log
+    warning at all and were only caught by rendering pages to images and reading the extracted text).
+    A blank line before the trailing text does not help. `\vspace{15pt}` immediately after
+    `\end{lstlisting}` fixes it when the frame has room to spare, but in a fuller frame (the
+    Grid/Randomized Search ones) that same 15pt pushed the trailing sentence down far enough to
+    interleave character-by-character with the footer/page-number instead -- also invisible in the
+    log, only caught by extracting page text and inspecting the last lines before the footer. The
+    robust fix used throughout this pass: fold the trailing interpretive sentence into the
+    `lstlisting` itself as a final `#` comment line, so nothing sits outside the box at all, rather
+    than tuning a `\vspace` value per frame.
+  - **Revised after author review (Aug 2026, same day)**: three corrections. (1) Session 8 must not
+    reference other session numbers at all -- "all sessions are sort of independent" -- so every
+    "(Session 3)"/"(Session 6)"/"(Session 7)" mention and every "same load as Session N" code comment
+    was removed; the Ranking worked example now re-imports the Pima CSV from scratch and shows
+    `df.head()` before any analysis, rather than assuming an earlier session's load happened. (2) Most
+    `\item` bullets had drifted into flowing paragraph sentences, not this repo's established terse
+    list style -- rewritten shorter throughout both files. (3) Hyperparameter Tuning, Grid Search, and
+    Randomized Search were moved back out of `ml_concepts_short.tex`/`ml_concepts.tex` entirely (the
+    revived "Practical Tip" frame stayed) into a new `ml_modeltuning.tex`, also `\input` by Session 8
+    -- reasoning: Session 8 needed to be self-contained and closer to a normal session's size (17 live
+    frames read as noticeably thin next to other ~50-55-frame sessions), and splitting new content
+    across an actively-taught Session 8 deck and a passively-updated Session 6 deck was an awkward
+    halfway house once independence was the explicit goal. Ranking (the 4th ML problem type) and
+    Model Selection stayed in `ml_intro_short.tex`/`ml_intro.tex` -- unlike the hyperparameter content
+    they never carried session references, and they fit that file's existing Classification/
+    Regression/Clustering cluster too well to relocate. Also added, per author request: a correlation-
+    with-target bar chart (`images/pima_corr_barplot.png`, generated and verified against real Pima
+    data, not a mockup) as a visual complement to the F-score ranking table, and an "F-score (a Sharper
+    Test)" framing to explicitly connect the two views. End state: `ml_featureselection.tex` 19 frames,
+    `ml_modeltuning.tex` 8 frames, 27 total (up from 17) -- both recompiled clean (Presentation:
+    just the 2 pre-existing footline overfulls; CheatSheet: zero warnings). Session 6 recompiled after
+    the reversion, 89 pages (down from 94, exactly the 5 removed frames), exit clean.
+  - **Hands-on revision exercise added (Aug 2026, same day)**, per author request for something
+    "before starting in depth understanding of ML algorithms" -- `ml_pipelineexercise.tex` (new, 18
+    frames), an 11-step, fully-executed, fully-verified pandas+sklearn pipeline (Load -> Inspect ->
+    Split -> Scale -> Select -> Train -> Evaluate -> Compare) on the sklearn-builtin Breast Cancer
+    Wisconsin dataset (30 features -- deliberately more than Pima's 8, an authentic stress test for
+    the session's feature-selection content). Filter selection (top 10 by F-score) actually *lost*
+    accuracy versus all 30 features (0.951 vs 0.986 test, 0.951 vs 0.975 CV) -- a genuine, unstaged
+    contrast with Pima's zero-cost `skin` drop, since not every dataset offers a free lunch. Greedy
+    forward selection down to just 6 features then beat all 30 on cross validation (0.979 vs 0.975),
+    a real result that lands the wrapper-vs-filter argument concretely rather than asserting it.
+    Closes with a Quick Check on cross-validation vs. held-out-test-set leakage (the greedy loop
+    scores candidates via CV over the full feature matrix `X`, not just `X_train` -- explored whether
+    that leaks, concluding it doesn't because CV still holds out a fold per score, and the final
+    `X_test` split from Step 3 was never touched by it either), a "Try It Yourself" prompt list, and a
+    recap framing the 8-step shape as reusable across every future algorithm session. One CheatSheet-
+    only fix needed: the Step 10 comparison table overflowed the narrow 3-column layout, same
+    `\adjustbox{max width=\linewidth}` fix as elsewhere in this pass. `seminar_mlcoep_session_8_
+    content.tex` now `\input`s all three files in sequence: `ml_featureselection`, `ml_modeltuning`,
+    `ml_pipelineexercise`. **End state: 45 content frames** (19+8+18, up from the original 17),
+    51 total pages with title/outline/about\_me/thanks boilerplate -- close to the ~50-55 norm without
+    padding for its own sake. Both Presentation and CheatSheet recompiled clean.
+  - **Mechanical renumbering**: for K = 19 down to 8 (descending, to avoid overwrite collisions),
+    renamed `Main_Seminar_MLCoEP_Session_K_<ShortName>_{Presentation,CheatSheet}.{tex,pdf}` to
+    `Session_{K+1}_...`, renamed `seminar_mlcoep_session_K_content.tex` to `_{K+1}_content.tex`
+    updating its `% Session K:` comment and `\section[...]{Session K: ...}` label, and updated each
+    renamed driver's `\input{seminar_mlcoep_session_K_content}` line -- the CheatSheet driver also
+    carries a second, independent hardcoded `Session K:` string in its title block that the
+    Presentation driver does not, easy to miss. `course_mlcoep_content.tex`, `make_all_sessions.bat`,
+    `make_all_cheatsheets.bat`, `COURSES.md`, and `TODO.md` updated to the new 20-session numbering;
+    `TODO.md`'s dated Aug 2026 recompile-backlog narrative was left describing the old numbering it
+    actually verified, with a note that it predates this shift, rather than rewritten to a numbering
+    that didn't exist yet at the time. Topic files themselves (`ml_linearregression.tex` etc.) were
+    untouched -- only the session-number wrapper around them moved.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames

@@ -1,0 +1,95 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Hyperparameter Tuning}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Hyperparameter Tuning}
+\begin{itemize}
+\item \textbf{Parameters}: learned from data during \texttt{fit()} -- e.g. regression coefficients, a tree's split points.
+\item \textbf{Hyperparameters}: set \emph{before} training, control how learning happens -- e.g. $k$ in KNN, \texttt{max\_depth} in a Decision Tree, $C$ in an SVM.
+\item Picking by hand (``try $k=3$, try $k=5$, \ldots'') doesn't scale past one hyperparameter.
+\item Fix: try many combinations, score each with cross validation, keep the best.
+\end{itemize}
+
+\begin{block}{Intuition}
+Parameters: what the model learns. Hyperparameters: the knobs you set before it starts learning -- oven temperature and bake time, chosen before the cake goes in.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Hyperparameter Tuning: Grid Search}
+Try every combination on a fixed grid, keep the best cross-validated score.
+\begin{lstlisting}
+import pandas as pd
+from sklearn.model_selection import GridSearchCV
+from sklearn.neighbors import KNeighborsClassifier
+
+url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv"
+names = ['preg', 'plas', 'pres', 'skin', 'test', 'mass', 'pedi', 'age', 'class']
+df = pd.read_csv(url, names=names)
+X, y = df.values[:, 0:8], df.values[:, 8]
+
+model = KNeighborsClassifier()
+param_grid = {'n_neighbors': [3, 5, 7, 9, 11, 15, 21]}
+
+grid = GridSearchCV(model, param_grid, cv=5, scoring='accuracy')
+grid.fit(X, y)
+
+# Output: Best k 11, accuracy 0.749
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Hyperparameter Tuning: Grid Search, Cost}
+\begin{itemize}
+\item 7 candidate values of $k$ $\times$ 5 folds = 35 model fits.
+\item All run automatically -- no manual loop.
+\item One hyperparameter is cheap. Cost multiplies fast with more: 3 hyperparameters, 10 values each, = 1000 fits.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Hyperparameter Tuning: Randomized Search}
+\begin{itemize}
+\item Grid Search checks every combination -- fine for one hyperparameter, explodes with more.
+\item \texttt{RandomizedSearchCV}: sample a fixed number of random combinations instead.
+\item Trades a guarantee of the single best combination for a large cut in compute.
+\end{itemize}
+
+\begin{lstlisting}
+from sklearn.model_selection import RandomizedSearchCV
+
+param_dist = {'n_neighbors': list(range(1, 30))}
+random_search = RandomizedSearchCV(model, param_dist, n_iter=5,
+                                    cv=5, scoring='accuracy', random_state=42)
+random_search.fit(X, y)
+
+# Output: tried 5 of 29 possible values -> Best k 13, accuracy 0.755
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Hyperparameter Tuning: Randomized Search, Result}
+\begin{itemize}
+\item Just 5 candidates out of 29 possible values of $k$.
+\item Matched Grid Search's result ($k=11$ vs. $k=13$, 0.749 vs. 0.755) at a fraction of the cost.
+\item In practice: often close to Grid Search's answer, rarely worse in any way that matters.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Hyperparameter Tuning}
+\begin{block}{Think About It}
+Why is it important to use cross-validated scores, not a single train/test split, when comparing hyperparameter values during Grid or Randomized Search?
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Hyperparameter Tuning}
+\begin{block}{Answer}
+A single split can hand a particular hyperparameter value a ``lucky'' or ``unlucky'' test set by chance. Averaging over $k$ folds gives a far more reliable estimate of how each candidate value actually generalizes, so the value selected as ``best'' is best on average, not best on one arbitrary split.
+\end{block}
+\end{frame}

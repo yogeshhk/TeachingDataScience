@@ -56,7 +56,7 @@ Driver: [`Main_Course_GenerativeAI_Presentation.tex`](LaTeX/Main_Course_Generati
 ### ML for Mechanical Engineers (CoEP)
 All-in-one driver: [`Main_Course_ML_CoEP_Presentation.tex`](LaTeX/Main_Course_ML_CoEP_Presentation.tex)
 
-A bespoke 19-session course built for College of Engineering Pune (CoEP), pairing Python/ML
+A bespoke 20-session course built for College of Engineering Pune (CoEP), pairing Python/ML
 fundamentals with mechanical-engineering-flavored applications and project ideas. Unlike the
 5 courses above, it has no separate workshop layer, but each session is independently reachable
 via its own driver pair (`Main_Seminar_MLCoEP_Session_<N>_<ShortName>_{Presentation,CheatSheet}.tex`),
@@ -67,18 +67,19 @@ not just chained inside the all-in-one course driver: [AI Overview](LaTeX/Main_S
 [Introduction to ML](LaTeX/Main_Seminar_MLCoEP_Session_5_ML_Intro_Presentation.tex),
 [Core ML Concepts](LaTeX/Main_Seminar_MLCoEP_Session_6_ML_Concepts_Presentation.tex),
 [ML Workflow & Model Evaluation](LaTeX/Main_Seminar_MLCoEP_Session_7_Sklearn_Workflow_Presentation.tex),
-[Linear Regression](LaTeX/Main_Seminar_MLCoEP_Session_8_Linear_Regression_Presentation.tex),
-[Logistic Regression](LaTeX/Main_Seminar_MLCoEP_Session_9_Logistic_Regression_Presentation.tex),
-[Decision Trees](LaTeX/Main_Seminar_MLCoEP_Session_10_Decision_Trees_Presentation.tex),
-[Ensemble Methods & Random Forest](LaTeX/Main_Seminar_MLCoEP_Session_11_Ensemble_RF_Presentation.tex),
-[SVM](LaTeX/Main_Seminar_MLCoEP_Session_12_SVM_Presentation.tex),
-[Naive Bayes](LaTeX/Main_Seminar_MLCoEP_Session_13_Naive_Bayes_Presentation.tex),
-[KNN](LaTeX/Main_Seminar_MLCoEP_Session_14_KNN_Presentation.tex),
-[K-Means](LaTeX/Main_Seminar_MLCoEP_Session_15_KMeans_Presentation.tex),
-[PCA](LaTeX/Main_Seminar_MLCoEP_Session_16_PCA_Presentation.tex),
-[Titanic Capstone](LaTeX/Main_Seminar_MLCoEP_Session_17_Titanic_Capstone_Presentation.tex),
-[MLOps & Deployment](LaTeX/Main_Seminar_MLCoEP_Session_18_MLOps_Deployment_Presentation.tex),
-[AI/ML Applications & Project Ideas for ME](LaTeX/Main_Seminar_MLCoEP_Session_19_ME_Apps_Presentation.tex).
+[Feature Selection](LaTeX/Main_Seminar_MLCoEP_Session_8_Feature_Selection_Presentation.tex),
+[Linear Regression](LaTeX/Main_Seminar_MLCoEP_Session_9_Linear_Regression_Presentation.tex),
+[Logistic Regression](LaTeX/Main_Seminar_MLCoEP_Session_10_Logistic_Regression_Presentation.tex),
+[Decision Trees](LaTeX/Main_Seminar_MLCoEP_Session_11_Decision_Trees_Presentation.tex),
+[Ensemble Methods & Random Forest](LaTeX/Main_Seminar_MLCoEP_Session_12_Ensemble_RF_Presentation.tex),
+[SVM](LaTeX/Main_Seminar_MLCoEP_Session_13_SVM_Presentation.tex),
+[Naive Bayes](LaTeX/Main_Seminar_MLCoEP_Session_14_Naive_Bayes_Presentation.tex),
+[KNN](LaTeX/Main_Seminar_MLCoEP_Session_15_KNN_Presentation.tex),
+[K-Means](LaTeX/Main_Seminar_MLCoEP_Session_16_KMeans_Presentation.tex),
+[PCA](LaTeX/Main_Seminar_MLCoEP_Session_17_PCA_Presentation.tex),
+[Titanic Capstone](LaTeX/Main_Seminar_MLCoEP_Session_18_Titanic_Capstone_Presentation.tex),
+[MLOps & Deployment](LaTeX/Main_Seminar_MLCoEP_Session_19_MLOps_Deployment_Presentation.tex),
+[AI/ML Applications & Project Ideas for ME](LaTeX/Main_Seminar_MLCoEP_Session_20_ME_Apps_Presentation.tex).
 
 ---
 

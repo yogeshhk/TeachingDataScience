@@ -1,0 +1,240 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Hands-On: End-to-End Mini Pipeline}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Dataset}
+\begin{itemize}
+\item Breast Cancer Wisconsin dataset, built into scikit-learn -- no download needed.
+\item 569 patients, 30 measurements each, one target: malignant or benign.
+\item 30 features -- too many to exhaustively search, a real test for ranking and wrapper methods.
+\item Goal: pandas to load and inspect, sklearn to preprocess/select/train/evaluate -- a revision lap before the algorithm-by-algorithm sessions start.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 1: Load and Look}
+\begin{lstlisting}
+import pandas as pd
+from sklearn.datasets import load_breast_cancer
+
+data = load_breast_cancer()
+df = pd.DataFrame(data.data, columns=data.feature_names)
+df['target'] = data.target
+print(df.shape)
+df.head(3)
+
+# Output: (569, 31)
+#    mean radius  mean texture  ...  worst fractal dimension  target
+# 0        17.99         10.38  ...                   0.1189       0
+# 1        20.57         17.77  ...                   0.0890       0
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 2: Missing Values and Class Balance}
+\begin{lstlisting}
+print(df.isna().sum().sum(), "missing values")
+print(df['target'].value_counts())
+
+# Output:
+# 0 missing values
+# target
+# 1    357   (benign)
+# 0    212   (malignant)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 3: Train/Test Split}
+Stratify on the target so both splits keep the same 63/37 class balance.
+\begin{lstlisting}
+from sklearn.model_selection import train_test_split
+
+X = df.drop(columns='target').values
+y = df['target'].values
+feature_names = df.drop(columns='target').columns.tolist()
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, random_state=42, stratify=y)
+
+# Output: X_train (426, 30)   X_test (143, 30)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 4: Scale the Features}
+Fit the scaler on training data only -- the same no-leakage rule from Data Preparation.
+\begin{lstlisting}
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler().fit(X_train)
+X_train_s = scaler.transform(X_train)
+X_test_s  = scaler.transform(X_test)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 5: Baseline, All 30 Features}
+\begin{lstlisting}
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
+model_all = LogisticRegression(max_iter=5000)
+model_all.fit(X_train_s, y_train)
+pred_all = model_all.predict(X_test_s)
+print("Accuracy:", accuracy_score(y_test, pred_all))
+
+# Output: Accuracy: 0.986
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 6: Rank Features (Filter)}
+Same \texttt{SelectKBest} approach as before, now on 30 candidates instead of 8.
+\begin{lstlisting}
+from sklearn.feature_selection import SelectKBest, f_classif
+
+skb = SelectKBest(score_func=f_classif, k=10).fit(X_train_s, y_train)
+top10 = [feature_names[i] for i in skb.get_support(indices=True)]
+print(top10)
+
+# Output: ['mean radius', 'mean perimeter', 'mean area',
+#          'mean concavity', 'mean concave points', 'worst radius',
+#          'worst perimeter', 'worst area', 'worst concavity',
+#          'worst concave points']
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 7: Retrain on the Top 10}
+\begin{lstlisting}
+idx = skb.get_support(indices=True)
+model_10 = LogisticRegression(max_iter=5000)
+model_10.fit(X_train_s[:, idx], y_train)
+pred_10 = model_10.predict(X_test_s[:, idx])
+print("Accuracy:", accuracy_score(y_test, pred_10))
+
+# Output: Accuracy: 0.951
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 8: Filter Result -- Not a Free Lunch}
+\begin{itemize}
+\item 30 features: 0.986 test accuracy.
+\item Filter top 10: 0.951 test accuracy.
+\item Unlike Pima's \texttt{skin} column, these 20 dropped features weren't dead weight -- accuracy fell.
+\item Real trade-off: 20 fewer features for $\sim$3.5 points of accuracy. Worth it or not depends on the deployment.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 9: Try a Wrapper Instead}
+Greedy Forward Selection, cross-validated, on all 30 features:
+\begin{lstlisting}
+from sklearn.model_selection import cross_val_score, KFold
+
+Xs = StandardScaler().fit_transform(X)
+kfold = KFold(n_splits=5, shuffle=True, random_state=7)
+selected, remaining = [], list(range(30))
+
+for step in range(6):
+    scores = [(f, cross_val_score(LogisticRegression(max_iter=5000),
+               Xs[:, selected + [f]], y, cv=kfold).mean()) for f in remaining]
+    best_f, best_s = max(scores, key=lambda t: t[1])
+    selected.append(best_f); remaining.remove(best_f)
+
+# Output: 6 rounds -> worst area, worst smoothness, worst texture,
+#         worst compactness, mean compactness, mean fractal dimension
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 10: Filter vs. Wrapper vs. Everything}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lcc}
+\textbf{Feature set} & \textbf{\# Features} & \textbf{5-fold CV Accuracy} \\ \hline
+All features & 30 & 0.975 \\
+Filter (top by F-score) & 10 & 0.951 \\
+Wrapper (greedy forward) & 6 & 0.979 \\
+\end{tabular}%
+}
+\end{center}
+\begin{block}{Intuition}
+6 wrapper-chosen features beat all 30 -- fewer, better-combined features can outperform throwing everything at the model. The filter's top 10, chosen one at a time, missed that combination entirely.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 11: Evaluate the Final Model}
+\begin{lstlisting}
+from sklearn.metrics import confusion_matrix, classification_report
+
+wrapper_cols = ['worst area', 'worst smoothness', 'worst texture',
+                 'worst compactness', 'mean compactness', 'mean fractal dimension']
+idx6 = [feature_names.index(f) for f in wrapper_cols]
+
+model_6 = LogisticRegression(max_iter=5000)
+model_6.fit(X_train_s[:, idx6], y_train)
+pred_6 = model_6.predict(X_test_s[:, idx6])
+print(confusion_matrix(y_test, pred_6))
+
+# Output: [[50  3]
+#          [ 4 86]]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Step 11: Classification Report}
+\begin{lstlisting}
+print(classification_report(y_test, pred_6,
+                             target_names=['malignant', 'benign']))
+
+# Output:
+#               precision  recall  f1-score  support
+#    malignant       0.93    0.94      0.93       53
+#       benign       0.97    0.96      0.96       90
+\end{lstlisting}
+\vspace{15pt}
+6 features, 95\% test accuracy, on par with the 10-feature filter model -- and better on cross validation.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: The Pipeline}
+\begin{block}{Think About It}
+Step 6 fits \texttt{SelectKBest} on \texttt{X\_train\_s} (the scaled training set), not the full scaled dataset. Step 9's greedy forward selection, however, scores each candidate using cross validation on \emph{all} of \texttt{X} (via \texttt{Xs}, not \texttt{X\_train\_s}). Is Step 9 leaking test information in a way Step 6 avoids?
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: The Pipeline}
+\begin{block}{Answer}
+No -- both are safe, but for different reasons. Step 6 never touches \texttt{X\_test\_s} at all. Step 9 does use every row of \texttt{X}, including what would later become test rows, but cross validation itself holds out a fold at a time during scoring -- so no fold's held-out data influences its own score. The real risk it does \emph{not} avoid: the final held-out test set (\texttt{X\_test\_s}) from Step 3 was never part of Step 9's cross validation either, so the eventual Step 11 evaluation is still a fair, unseen check on the wrapper-selected features.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Try It Yourself}
+\begin{itemize}
+\item Change \texttt{k=10} to \texttt{k=5} in Step 6 -- does accuracy hold up with even fewer features?
+\item Run Greedy Backward Elimination instead of Forward on all 30 features -- same 6 features at the end?
+\item Swap \texttt{LogisticRegression} for a different classifier -- does the winning feature set change?
+\item Plot the correlation matrix of the 6 wrapper-chosen features -- are any of them redundant with each other?
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Recap: The Pipeline Pattern}
+\begin{itemize}
+\item Load $\to$ Inspect $\to$ Split $\to$ Scale $\to$ Select $\to$ Train $\to$ Evaluate $\to$ Compare.
+\item Every step reused today: pandas for loading/inspecting, sklearn for the rest.
+\item This shape doesn't change once you swap in a real ML algorithm -- only Step 5/7's model does.
+\item Next: the algorithms themselves, one at a time, starting with Linear Regression.
+\end{itemize}
+\end{frame}

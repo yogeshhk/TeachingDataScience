@@ -1,9 +1,9 @@
 @echo off
-REM ML CoEP: Compile all 19 sessions (38 driver files: 19 Presentation + 19 CheatSheet)
+REM ML CoEP: Compile all 20 sessions (40 driver files: 20 Presentation + 20 CheatSheet)
 REM Usage: make_all_sessions.bat
 REM Each texify call compiles independently; failures in one do not stop the rest.
 
-echo Compiling all 19 ML CoEP sessions...
+echo Compiling all 20 ML CoEP sessions...
 echo.
 
 REM Session 1: AI Overview
@@ -34,54 +34,58 @@ REM Session 7: Sklearn Workflow
 texify -cp Main_Seminar_MLCoEP_Session_7_Sklearn_Workflow_Presentation.tex
 texify -cp Main_Seminar_MLCoEP_Session_7_Sklearn_Workflow_CheatSheet.tex
 
-REM Session 8: Linear Regression
-texify -cp Main_Seminar_MLCoEP_Session_8_Linear_Regression_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_8_Linear_Regression_CheatSheet.tex
+REM Session 8: Feature Selection
+texify -cp Main_Seminar_MLCoEP_Session_8_Feature_Selection_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_8_Feature_Selection_CheatSheet.tex
 
-REM Session 9: Logistic Regression
-texify -cp Main_Seminar_MLCoEP_Session_9_Logistic_Regression_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_9_Logistic_Regression_CheatSheet.tex
+REM Session 9: Linear Regression
+texify -cp Main_Seminar_MLCoEP_Session_9_Linear_Regression_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_9_Linear_Regression_CheatSheet.tex
 
-REM Session 10: Decision Trees
-texify -cp Main_Seminar_MLCoEP_Session_10_Decision_Trees_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_10_Decision_Trees_CheatSheet.tex
+REM Session 10: Logistic Regression
+texify -cp Main_Seminar_MLCoEP_Session_10_Logistic_Regression_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_10_Logistic_Regression_CheatSheet.tex
 
-REM Session 11: Ensemble RF
-texify -cp Main_Seminar_MLCoEP_Session_11_Ensemble_RF_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_11_Ensemble_RF_CheatSheet.tex
+REM Session 11: Decision Trees
+texify -cp Main_Seminar_MLCoEP_Session_11_Decision_Trees_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_11_Decision_Trees_CheatSheet.tex
 
-REM Session 12: SVM
-texify -cp Main_Seminar_MLCoEP_Session_12_SVM_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_12_SVM_CheatSheet.tex
+REM Session 12: Ensemble RF
+texify -cp Main_Seminar_MLCoEP_Session_12_Ensemble_RF_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_12_Ensemble_RF_CheatSheet.tex
 
-REM Session 13: Naive Bayes
-texify -cp Main_Seminar_MLCoEP_Session_13_Naive_Bayes_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_13_Naive_Bayes_CheatSheet.tex
+REM Session 13: SVM
+texify -cp Main_Seminar_MLCoEP_Session_13_SVM_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_13_SVM_CheatSheet.tex
 
-REM Session 14: KNN
-texify -cp Main_Seminar_MLCoEP_Session_14_KNN_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_14_KNN_CheatSheet.tex
+REM Session 14: Naive Bayes
+texify -cp Main_Seminar_MLCoEP_Session_14_Naive_Bayes_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_14_Naive_Bayes_CheatSheet.tex
 
-REM Session 15: KMeans
-texify -cp Main_Seminar_MLCoEP_Session_15_KMeans_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_15_KMeans_CheatSheet.tex
+REM Session 15: KNN
+texify -cp Main_Seminar_MLCoEP_Session_15_KNN_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_15_KNN_CheatSheet.tex
 
-REM Session 16: PCA
-texify -cp Main_Seminar_MLCoEP_Session_16_PCA_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_16_PCA_CheatSheet.tex
+REM Session 16: KMeans
+texify -cp Main_Seminar_MLCoEP_Session_16_KMeans_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_16_KMeans_CheatSheet.tex
 
-REM Session 17: Titanic Capstone
-texify -cp Main_Seminar_MLCoEP_Session_17_Titanic_Capstone_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_17_Titanic_Capstone_CheatSheet.tex
+REM Session 17: PCA
+texify -cp Main_Seminar_MLCoEP_Session_17_PCA_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_17_PCA_CheatSheet.tex
 
-REM Session 18: MLOps Deployment
-texify -cp Main_Seminar_MLCoEP_Session_18_MLOps_Deployment_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_18_MLOps_Deployment_CheatSheet.tex
+REM Session 18: Titanic Capstone
+texify -cp Main_Seminar_MLCoEP_Session_18_Titanic_Capstone_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_18_Titanic_Capstone_CheatSheet.tex
 
-REM Session 19: ME Apps
-texify -cp Main_Seminar_MLCoEP_Session_19_ME_Apps_Presentation.tex
-texify -cp Main_Seminar_MLCoEP_Session_19_ME_Apps_CheatSheet.tex
+REM Session 19: MLOps Deployment
+texify -cp Main_Seminar_MLCoEP_Session_19_MLOps_Deployment_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_19_MLOps_Deployment_CheatSheet.tex
+
+REM Session 20: ME Apps
+texify -cp Main_Seminar_MLCoEP_Session_20_ME_Apps_Presentation.tex
+texify -cp Main_Seminar_MLCoEP_Session_20_ME_Apps_CheatSheet.tex
 
 echo.
-echo All 19 sessions compiled. Check individual .log files for errors.
+echo All 20 sessions compiled. Check individual .log files for errors.
 pause
