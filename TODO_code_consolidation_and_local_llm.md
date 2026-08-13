@@ -5,7 +5,7 @@ partially executed already; the rest below is confirmed-but-not-yet-done. Delete
 once everything below is complete or explicitly dropped (matches this repo's usual
 todo_*.md convention).
 
-## Part 1: Code/ consolidation — remaining work
+## Part 1 (DONE, 2026-08-13): Code/ consolidation
 
 **Already done (2026-08-13):** deleted 12 stale/redundant folders after one-by-one
 confirmation: `activeloop/`, `animesh1012/`, `awesome_llm_apps/`, `deep_rl/`,
@@ -14,34 +14,42 @@ confirmation: `activeloop/`, `animesh1012/`, `awesome_llm_apps/`, `deep_rl/`,
 also removed a case-collision risk with root `LaTeX/`). Kept as-is after review:
 `dbpedia/`, `meta_bAbi_tasks/`, `ludwig/`, `mahamarathi/`, `orgpedia/`.
 
-**Still to do:**
+**All done (2026-08-13):**
 
-1. **`Code/agents/` overlap cleanup.** It mixes CrewAI scripts, LangGraph notebooks, and
-   AutoGen scripts, duplicating the dedicated `Code/crewai/` and `Code/langgraph/` folders.
-   Decision made: keep `agents/` as the AutoGen home, strip the duplicated CrewAI/LangGraph
-   content. **Not yet done** — needs actual file-by-file inspection of `agents/`'s 49 files
-   to identify which are `crew_*.py`/LangGraph notebooks (remove) vs AutoGen-specific
-   (keep); the earlier audit was folder-level, not file-level.
-2. **Gitignore hygiene.** Add `node_modules/`, `.pytest_cache/`, `.ruff_cache/`,
-   `.benchmarks/` to `Code/.gitignore`; remove the already-tracked
-   `Code/opencode/demo/.opencode/node_modules/` tree (784 files) from the working copy.
-3. **`Code/llamaindex/data/WikiTableQuestions*`** — remove the ~10,231 files / 160MB
-   benchmark dataset from the working copy, add a `.gitignore` entry so it can still be
-   downloaded locally without being tracked.
-4. **Docs catch-up in `CLAUDE.md`'s Code/ catalog table:**
-   - Add `gnn/`'s other 3 subfolders (`gnn-project-deepfindr/`, `molecule-deepfindr/`,
-     `odsc2021-sujitpal/`) — currently only `pyg/` is listed.
-   - Add `amd/`, `chromeext/`, `pritamMarathi/` — small, recent (2026), just never catalogued.
-   - Remove any stale references to the 12 folders deleted above (check none exist first).
+1. **`Code/agents/` overlap cleanup.** File-by-file inspection done. Moved 3 pure CrewAI
+   scripts to `Code/crewai/` (which got a new `README.md` + `environment.yml`, since it
+   only had `researcher/` before). Moved 9 LangGraph files — including 2 hybrid
+   CrewAI-running-inside-LangGraph scripts (`langgraph_rajibdeb_01_how_to_use_crew*`,
+   kept together since LangGraph is the driving framework there) — to `Code/langgraph/`
+   (added `crewai` to its `environment.yml`, documented the new files in its `README.md`).
+   `Code/agents/environment.yml` trimmed (`crewai`, `langgraph` deps removed — verified
+   nothing remaining there still imports either). `Code/agents/README.md` rewritten to
+   describe its narrowed AutoGen-plus-general-PoC scope accurately.
+2. **Gitignore hygiene.** `node_modules/`, `.pytest_cache/`, `.ruff_cache/`, `.benchmarks/`
+   added to `Code/.gitignore`; the tracked `Code/opencode/demo/.opencode/node_modules/`
+   tree (738 files) plus 3 sibling cache dirs removed from the working copy.
+3. **`Code/llamaindex/data/WikiTableQuestions*`** removed (160MB → 11MB remaining in
+   `data/`). Turned out `Code/llamaindex/.gitignore` already had a blanket `data/` rule —
+   the files were just tracked from before that rule existed, so no gitignore edit needed,
+   only the working-copy removal.
+4. **`CLAUDE.md`'s Code/ catalog table** updated: `gnn/` now lists all 4 subfolders,
+   `pritamMarathi/` added to Indic Language, new "Other" row for `amd/` (AMD Academy course
+   material) and `chromeext/` (a Chrome extension side-project, not AI/ML), `deep_rl/`
+   dropped from Deep Learning (deleted). Verified zero remaining references to any of the
+   12 deleted folders across `CLAUDE.md`, `TODO.md`, `COURSES.md`.
 
 ## Part 2: Local Qwen (LangChain/Python) integration
 
 **Model confirmed on disk:** `D:\Yogesh\models\lmstudio-community\Qwen3-1.7B-GGUF\Qwen3-1.7B-Q4_K_M.gguf`
-(~1.19GB). Everything needed to load it is already installed in the `genai` conda env —
-`llama-cpp-python` 0.2.72 + `langchain-community` 0.4.1 (`ChatLlamaCpp`, in-process, no
-server, so it satisfies "not via LM Studio"). CPU-only build (no CUDA in the installed
-`llama_cpp` binary); GPU is a thin 2GB MX570A anyway, not expected to matter at this model
-size.
+(~1.19GB). `langchain-community` provides `ChatLlamaCpp` (in-process, no server, satisfies
+"not via LM Studio"). **Correction (2026-08-13):** the earlier research fork's claim that
+the installed `llama-cpp-python` 0.2.72 "can load this GGUF directly" was wrong — actually
+tested it, got `ValidationError`, traced to the real llama.cpp error with verbose logging:
+`unknown model architecture: 'qwen3'` — 0.2.72 predates Qwen3 support entirely. **Fixed**:
+upgraded to `llama-cpp-python` 0.3.34 in the `genai` env (confirmed via `pip show`) after
+explicit go-ahead, since it's a shared env. Loading has not yet been re-tested since the
+upgrade — that's the next step. CPU-only build (no CUDA in the installed `llama_cpp`
+binary); GPU is a thin 2GB MX570A anyway, not expected to matter at this model size.
 
 **Design decided:** not automatic runtime fallback — write both the `ChatGroq` and
 `ChatLlamaCpp` instantiations in code, `ChatGroq` commented out, `ChatLlamaCpp` active by

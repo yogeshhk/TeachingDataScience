@@ -8,9 +8,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{The Dataset}
 \begin{itemize}
-\item Breast Cancer Wisconsin dataset, built into scikit-learn -- no download needed.
-\item 569 patients, 30 measurements each, one target: malignant or benign.
-\item 30 features -- too many to exhaustively search, a real test for ranking and wrapper methods.
+\item Steel Plates Faults dataset (UCI) -- a real manufacturing quality-control problem.
+\item 1941 steel plates, 27 geometric/luminosity measurements each, one of 7 recorded defect types per plate.
+\item Task: detect \texttt{K\_Scatch} -- a scratch-type surface defect -- vs. everything else.
+\item 27 features -- too many to exhaustively search, a real test for ranking and wrapper methods.
 \item Goal: pandas to load and inspect, sklearn to preprocess/select/train/evaluate -- a revision lap before the algorithm-by-algorithm sessions start.
 \end{itemize}
 \end{frame}
@@ -19,18 +20,23 @@
 \begin{frame}[fragile]\frametitle{Step 1: Load and Look}
 \begin{lstlisting}
 import pandas as pd
-from sklearn.datasets import load_breast_cancer
 
-data = load_breast_cancer()
-df = pd.DataFrame(data.data, columns=data.feature_names)
-df['target'] = data.target
+feature_names = ['X_Minimum', 'X_Maximum', 'Y_Minimum', 'Y_Maximum',
+    'Pixels_Areas', 'X_Perimeter', 'Y_Perimeter', 'Sum_of_Luminosity',
+    ]  # ... 27 columns total, see dataset README
+fault_names = ['Pastry', 'Z_Scratch', 'K_Scatch', 'Stains',
+               'Dirtiness', 'Bumps', 'Other_Faults']
+
+df = pd.read_csv('Faults.NNA', sep=r'\s+', header=None,
+                  names=feature_names + fault_names)
+df['target'] = df['K_Scatch']
 print(df.shape)
 df.head(3)
 
-# Output: (569, 31)
-#    mean radius  mean texture  ...  worst fractal dimension  target
-# 0        17.99         10.38  ...                   0.1189       0
-# 1        20.57         17.77  ...                   0.0890       0
+# Output: (1941, 35)
+#    X_Minimum  X_Maximum  Y_Minimum  ...  target
+# 0         42         50     270900  ...       0
+# 1        645        651    2538079  ...       0
 \end{lstlisting}
 \end{frame}
 
@@ -43,25 +49,24 @@ print(df['target'].value_counts())
 # Output:
 # 0 missing values
 # target
-# 1    357   (benign)
-# 0    212   (malignant)
+# 0    1550   (no K_Scatch defect)
+# 1     391   (K_Scatch defect)
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Step 3: Train/Test Split}
-Stratify on the target so both splits keep the same 63/37 class balance.
+Stratify on the target so both splits keep the same 80/20 class balance.
 \begin{lstlisting}
 from sklearn.model_selection import train_test_split
 
-X = df.drop(columns='target').values
+X = df[feature_names].values
 y = df['target'].values
-feature_names = df.drop(columns='target').columns.tolist()
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.25, random_state=42, stratify=y)
 
-# Output: X_train (426, 30)   X_test (143, 30)
+# Output: X_train (1455, 27)   X_test (486, 27)
 \end{lstlisting}
 \end{frame}
 
@@ -78,7 +83,7 @@ X_test_s  = scaler.transform(X_test)
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Step 5: Baseline, All 30 Features}
+\begin{frame}[fragile]\frametitle{Step 5: Baseline, All 27 Features}
 \begin{lstlisting}
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
@@ -88,13 +93,13 @@ model_all.fit(X_train_s, y_train)
 pred_all = model_all.predict(X_test_s)
 print("Accuracy:", accuracy_score(y_test, pred_all))
 
-# Output: Accuracy: 0.986
+# Output: Accuracy: 0.977
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Step 6: Rank Features (Filter)}
-Same \texttt{SelectKBest} approach as before, now on 30 candidates instead of 8.
+Same \texttt{SelectKBest} approach as before, now on 27 candidates instead of 8.
 \begin{lstlisting}
 from sklearn.feature_selection import SelectKBest, f_classif
 
@@ -102,10 +107,9 @@ skb = SelectKBest(score_func=f_classif, k=10).fit(X_train_s, y_train)
 top10 = [feature_names[i] for i in skb.get_support(indices=True)]
 print(top10)
 
-# Output: ['mean radius', 'mean perimeter', 'mean area',
-#          'mean concavity', 'mean concave points', 'worst radius',
-#          'worst perimeter', 'worst area', 'worst concavity',
-#          'worst concave points']
+# Output: ['Pixels_Areas', 'X_Perimeter', 'Sum_of_Luminosity',
+#          'Minimum_of_Luminosity', 'Outside_X_Index', 'Edges_Y_Index',
+#          'LogOfAreas', 'Log_X_Index', 'Log_Y_Index', 'SigmoidOfAreas']
 \end{lstlisting}
 \end{frame}
 
@@ -125,22 +129,22 @@ print("Accuracy:", accuracy_score(y_test, pred_10))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Step 8: Filter Result -- Not a Free Lunch}
 \begin{itemize}
-\item 30 features: 0.986 test accuracy.
+\item 27 features: 0.977 test accuracy.
 \item Filter top 10: 0.951 test accuracy.
-\item Unlike Pima's \texttt{skin} column, these 20 dropped features weren't dead weight -- accuracy fell.
-\item Real trade-off: 20 fewer features for $\sim$3.5 points of accuracy. Worth it or not depends on the deployment.
+\item 17 dropped features weren't dead weight -- accuracy fell by $\sim$2.6 points.
+\item Real trade-off: fewer features for a real accuracy cost. Worth it or not depends on the deployment.
 \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Step 9: Try a Wrapper Instead}
-Greedy Forward Selection, cross-validated, on all 30 features:
+Greedy Forward Selection, cross-validated, on all 27 features:
 \begin{lstlisting}
 from sklearn.model_selection import cross_val_score, KFold
 
 Xs = StandardScaler().fit_transform(X)
 kfold = KFold(n_splits=5, shuffle=True, random_state=7)
-selected, remaining = [], list(range(30))
+selected, remaining = [], list(range(27))
 
 for step in range(6):
     scores = [(f, cross_val_score(LogisticRegression(max_iter=5000),
@@ -148,8 +152,8 @@ for step in range(6):
     best_f, best_s = max(scores, key=lambda t: t[1])
     selected.append(best_f); remaining.remove(best_f)
 
-# Output: 6 rounds -> worst area, worst smoothness, worst texture,
-#         worst compactness, mean compactness, mean fractal dimension
+# Output: 6 rounds -> Log_X_Index, Steel_Plate_Thickness, Pixels_Areas,
+#         Square_Index, X_Minimum, Orientation_Index
 \end{lstlisting}
 \end{frame}
 
@@ -160,14 +164,14 @@ for step in range(6):
 \adjustbox{max width=\linewidth}{%
 \begin{tabular}{lcc}
 \textbf{Feature set} & \textbf{\# Features} & \textbf{5-fold CV Accuracy} \\ \hline
-All features & 30 & 0.975 \\
-Filter (top by F-score) & 10 & 0.951 \\
-Wrapper (greedy forward) & 6 & 0.979 \\
+All features & 27 & 0.975 \\
+Filter (top by F-score) & 10 & 0.949 \\
+Wrapper (greedy forward) & 6 & 0.963 \\
 \end{tabular}%
 }
 \end{center}
 \begin{block}{Intuition}
-6 wrapper-chosen features beat all 30 -- fewer, better-combined features can outperform throwing everything at the model. The filter's top 10, chosen one at a time, missed that combination entirely.
+6 wrapper-chosen features close most of the gap to all 27 (0.963 vs.\ 0.975) while clearly beating the 10-feature filter (0.963 vs.\ 0.949) -- fewer, better-combined features can rival throwing everything at the model. The filter's top 10, chosen one at a time, missed a combination the wrapper found.
 \end{block}
 \end{frame}
 
@@ -176,8 +180,8 @@ Wrapper (greedy forward) & 6 & 0.979 \\
 \begin{lstlisting}
 from sklearn.metrics import confusion_matrix, classification_report
 
-wrapper_cols = ['worst area', 'worst smoothness', 'worst texture',
-                 'worst compactness', 'mean compactness', 'mean fractal dimension']
+wrapper_cols = ['Log_X_Index', 'Steel_Plate_Thickness', 'Pixels_Areas',
+                 'Square_Index', 'X_Minimum', 'Orientation_Index']
 idx6 = [feature_names.index(f) for f in wrapper_cols]
 
 model_6 = LogisticRegression(max_iter=5000)
@@ -185,8 +189,8 @@ model_6.fit(X_train_s[:, idx6], y_train)
 pred_6 = model_6.predict(X_test_s[:, idx6])
 print(confusion_matrix(y_test, pred_6))
 
-# Output: [[50  3]
-#          [ 4 86]]
+# Output: [[384   4]
+#          [ 16  82]]
 \end{lstlisting}
 \end{frame}
 
@@ -194,18 +198,19 @@ print(confusion_matrix(y_test, pred_6))
 \begin{frame}[fragile]\frametitle{Step 11: Classification Report}
 \begin{lstlisting}
 print(classification_report(y_test, pred_6,
-                             target_names=['malignant', 'benign']))
+                             target_names=['no_k_scatch', 'k_scatch']))
 
 # Output:
 #               precision  recall  f1-score  support
-#    malignant       0.93    0.94      0.93       53
-#       benign       0.97    0.96      0.96       90
+#  no_k_scatch       0.96    0.99      0.97      388
+#     k_scatch       0.95    0.84      0.89       98
 \end{lstlisting}
 \vspace{15pt}
-6 features, 95\% test accuracy, on par with the 10-feature filter model -- and better on cross validation.
+6 features, 96\% test accuracy, beating both the 10-feature filter model and coming
+close to the full 27-feature model -- on cross validation too, not just this one split.
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Quick Check: The Pipeline}
 \begin{block}{Think About It}
 Step 6 fits \texttt{SelectKBest} on \texttt{X\_train\_s} (the scaled training set), not the full scaled dataset. Step 9's greedy forward selection, however, scores each candidate using cross validation on \emph{all} of \texttt{X} (via \texttt{Xs}, not \texttt{X\_train\_s}). Is Step 9 leaking test information in a way Step 6 avoids?
@@ -223,9 +228,9 @@ No -- both are safe, but for different reasons. Step 6 never touches \texttt{X\_
 \begin{frame}[fragile]\frametitle{Try It Yourself}
 \begin{itemize}
 \item Change \texttt{k=10} to \texttt{k=5} in Step 6 -- does accuracy hold up with even fewer features?
-\item Run Greedy Backward Elimination instead of Forward on all 30 features -- same 6 features at the end?
+\item Run Greedy Backward Elimination instead of Forward on all 27 features -- same 6 features at the end?
 \item Swap \texttt{LogisticRegression} for a different classifier -- does the winning feature set change?
-\item Plot the correlation matrix of the 6 wrapper-chosen features -- are any of them redundant with each other?
+\item Try a different target fault type (e.g.\ \texttt{Bumps}) -- does the same feature set still win? (Spoiler: no -- worth discussing why.)
 \end{itemize}
 \end{frame}
 

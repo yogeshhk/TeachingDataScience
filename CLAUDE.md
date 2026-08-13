@@ -875,6 +875,29 @@ commented placeholder) to 19 fully-active sessions:
     `ml_pipelineexercise`. **End state: 45 content frames** (19+8+18, up from the original 17),
     51 total pages with title/outline/about\_me/thanks boilerplate -- close to the ~50-55 norm without
     padding for its own sake. Both Presentation and CheatSheet recompiled clean.
+  - **`ml_pipelineexercise.tex` dataset swapped Breast Cancer -> Steel Plates Faults (Aug 2026,
+    same day, author request)**, per explicit "does not need to be very mechanical, but a medical
+    dataset isn't ideal either" steer plus a follow-up ask for a genuinely Mechanical-Engineering
+    dataset. Now UCI Steel Plates Faults (1941 plates, 27 geometric/luminosity features, target =
+    `K_Scatch`, a scratch-type defect, 391 positive/1550 negative) -- fetched via a direct UCI URL
+    (`sep=r'\s+'`, no header, matching this course's existing Boston Housing pattern) rather than
+    adding a new `ucimlrepo` dependency. **Verification caught a real dead end before it shipped**:
+    `Bumps` was tried as the target first and rejected -- greedy forward selection degenerated,
+    every step plateauing at exactly the 79.3% majority-class baseline (confusion matrix
+    `[[385,0],[101,0]]`, the model just always predicted "no fault"). `K_Scatch` gives a real,
+    cleanly-separable problem instead: all 27 features 0.975 CV, filter top-10 0.949 CV, wrapper
+    greedy-6 0.963 CV -- same "filter costs accuracy, wrapper recovers most of it" shape as the
+    Breast Cancer version, just not quite exceeding the full-feature model this time (unlike Breast
+    Cancer's 0.979-beats-0.975) -- reported honestly rather than cherry-picking a target that
+    overclaims. `Try It Yourself` now points students at the rejected `Bumps` case as a discussion
+    exercise instead of hiding it. Local offline copy saved to
+    `Code/mlcoep/datasets/session08_featureselection/Faults.NNA` + README (same pattern as
+    `session04_pandas/`, `session07_sklearn/`), for the author to distribute to the class in
+    advance -- **Session 8 only, `ml_datapreparation_sklearn.tex`/`ml_evaluation_sklearn.tex`
+    (Session 7) still use Pima/Housing, untouched.** One CheatSheet-only regression caught and
+    fixed: the Step 10 comparison table lost its `\adjustbox{max width=\linewidth}` wrap during the
+    rewrite (copy-paste miss), overflowing the narrow 3-column layout again -- same fix reapplied.
+    Both Presentation and CheatSheet recompiled clean afterward; frame count unchanged (45).
   - **Mechanical renumbering**: for K = 19 down to 8 (descending, to avoid overwrite collisions),
     renamed `Main_Seminar_MLCoEP_Session_K_<ShortName>_{Presentation,CheatSheet}.{tex,pdf}` to
     `Session_{K+1}_...`, renamed `seminar_mlcoep_session_K_content.tex` to `_{K+1}_content.tex`
@@ -932,12 +955,13 @@ Do not create `venv/` or `.venv/` folders — use conda environments only.
 | RAG Applications | `chatbot-faqs/`, `chatbot-multimodal/`, `omni-rag/`, `parsing/`, `graphrag/` |
 | LLM Fine-tuning | `fine-tuning/`, `ludwig/`, `gemma/` |
 | Document Parsing | `docling/`, `opendataloader/` |
-| Deep Learning | `keras/`, `dl_tf2/`, `pytorch/`, `deep_rl/` |
+| Deep Learning | `keras/`, `dl_tf2/`, `pytorch/` |
 | Classical ML | `ml/`, `math/`, `python/` |
 | NLP | `nlp/`, `dnlp/`, `spacy/` |
-| GNN | `pyg/` |
-| Indic Language | `mahamarathi/`, `sarvam/`, `orgpedia/` |
+| GNN | `gnn/pyg/`, `gnn/gnn-project-deepfindr/`, `gnn/molecule-deepfindr/`, `gnn/odsc2021-sujitpal/` |
+| Indic Language | `mahamarathi/`, `sarvam/`, `orgpedia/`, `pritamMarathi/` |
 | Research Refs | `txt2cad/`, `txt2sql/` (docs only, no runnable code) |
+| Other | `amd/` (AMD Academy: agents/fine-tuning/vLLM serving course materials), `chromeext/` (a small Chrome extension side-project, not AI/ML) |
 
 ### Code/.gitignore
 A repo-wide `Code/.gitignore` covers `__pycache__/`, `.ipynb_checkpoints/`, `.env`, `*.pyc`, model weights (`*.bin`, `*.pt`, `*.safetensors`).
