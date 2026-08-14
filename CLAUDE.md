@@ -134,7 +134,48 @@ the original author than a naive `\begin{frame}` grep would suggest — always c
 ### Known issues
 - `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
 - `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` (only active content: `ai_tools_claudecode_demo_cadcam.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CadCamWorkshop/` (untracked as of Jul 2026). As of Jul 2026 the deck and the PoC are back in sync: flat `src/` layout with no packaging (no `pyproject.toml`, no console-script entry point), the two-step `load_mesh`/`inspect_mesh` API, JSON-only reports (no Markdown report format), and a `thin_walls` check added alongside the original three. `CadCamWorkshop` now has both `.claude/skills/geometry-validation/` and `.claude/skills/inspection-report-summary/`; `.claude/agents/devops.md` was removed. `Code/claudecode/trial/` (also untracked) was a from-scratch dry run of the same workshop script, used to find and fix these drift points plus several missing/misplaced YAML-frontmatter fences in the tex's subagent/command/skill blocks — it's now redundant and pending manual deletion.
-- `workshop_deepnlp_content.tex` line 2 has `\input{nlp_intro_short}` but no `nlp_intro_short.tex` exists in `LaTeX/` (closest matches: `nlp_intro_short_old.tex`, `nlp_intro_short_w_embedding.tex`, `nlp_intro.tex`) — blocks `Main_Workshop_NLP_Deep_*` and (via `course_generativeai_content.tex`) `Main_Course_GenerativeAI_*` from compiling. Found during the short/full sync audit below (Oct 2026); pre-existing and unrelated, not fixed.
+- `workshop_deepnlp_content.tex` line 2 has `\input{nlp_intro_short}` but no `nlp_intro_short.tex` exists in `LaTeX/` (closest matches: `nlp_intro_short_w_embedding.tex`, `nlp_intro.tex`) — blocks `Main_Workshop_NLP_Deep_*` and (via `course_generativeai_content.tex`) `Main_Course_GenerativeAI_*` from compiling. Found during the short/full sync audit below (Oct 2026); pre-existing and unrelated, not fixed. **Correction, Aug 2026**: this entry used to list `nlp_intro_short_old.tex` as a third close match. That file does not exist on disk; verified during the repo-wide `\input` check below.
+
+#### Repo-wide `\input`-resolution check (Aug 2026)
+Static check (no compiling) of every `\input`/`\include` chain from all 339 `Main_*.tex` drivers
+(166 Presentation, 165 CheatSheet, 8 other), ignoring commented-out lines. Script pattern: walk each
+driver's chain transitively, flag any target with no `.tex` on disk. Result: **only 4 drivers are
+blocked**, by 13 missing files concentrated in 2 content files — the rest of the repo resolves
+cleanly. Worth re-running after any bulk rename; it is seconds of work and catches the class of bug
+that silently makes a deck unbuildable.
+- `Main_Workshop_NLP_Deep_{Presentation,CheatSheet}` — blocked solely by `nlp_intro_short.tex` above.
+- `Main_Course_GenerativeAI_{Presentation,CheatSheet}` — blocked by that plus **12 more** missing
+  from `course_generativeai_content.tex`. These split into two kinds, and the distinction matters:
+  - **4 look like renames with an unambiguous target on disk** (mechanical to fix, same shape as the
+    `sql_rag_concl` bug): `llm_autoagents_intro`/`_conclusions`/`_refs` -> the `llm_agents_*` family
+    (an `autoagents` -> `agents` rename), and the misspelled `llamaindex_implimentations` ->
+    `llamaindex_impl`.
+  - **9 have no counterpart at all**, i.e. content that was planned but never authored:
+    `llm_autoagents_opensource`, `langgraph_applications`, `langchain_agents`,
+    `langchain_applications`, `llamaindex_framework`, `llamaindex_applications`,
+    `llamaindex_conclusions`, and the ambiguous `nlp_ml` (four plausible targets exist:
+    `nlp_ml_intro`, `nlp_ml_impl`, `nlp_ml_nltk`, `nlp_ml_spacy`).
+  So this is **not** a typo bug like SQL RAG. `course_generativeai_content.tex` was written against a
+  planned intro/framework/impl/applications/conclusions/refs layout that was only partly authored;
+  fixing the 4 renames alone would not have made the course compile.
+
+**Resolution (Aug 2026)**: all 13 handled, and the check now reports **0 unresolved across all 339
+drivers**. The 9 with no counterpart were **commented out** (not deleted), each with a note saying
+why and naming the closest existing file if it is ever restored; the 4 renames were **repointed** to
+their real files rather than commented, since that preserves real content (`llm_agents_intro.tex`
+alone is 54 frames). For `nlp_intro_short` the `\section[Intro]{Introduction to NLP}` header was
+commented along with the `\input`, so no empty section is left in the TOC — note this edit is in
+`workshop_deepnlp_content.tex`, which both the NLP Deep workshop and the GenAI course pull in.
+- **Verified**: `Main_Workshop_NLP_Deep_{Presentation,CheatSheet}` now build for the first time —
+  122 and 17 pages, exit 0, and **zero content overfulls** (the Presentation's 242 boxes are all the
+  per-frame navigation-bar class documented elsewhere in this file).
+- **NOT verified**: `Main_Course_GenerativeAI_{Presentation,CheatSheet}` were never successfully
+  built. The Presentation compile was started and **cancelled by the author while still running**
+  (>10 min, log past 13 MB, a 35 MB PDF still growing and no page count reached — it pulls in three
+  full workshops plus ~30 extra topic files, none of it ever compiled before). Its `\input` chain
+  resolves, but that only proves the *files* exist: an unbuilt deck of this age can still fail on a
+  missing image or a stale macro. **Do not record this course as compiling until someone actually
+  builds it**, and budget well over 10 minutes if you try.
 
 ### Machine Learning course restructured (June 2026)
 Full 4-level hierarchy for the 40-hour ML course "Machine Learning for Graduate Students":
@@ -910,6 +951,94 @@ commented placeholder) to 19 fully-active sessions:
     actually verified, with a note that it predates this shift, rather than rewritten to a numbering
     that didn't exist yet at the time. Topic files themselves (`ml_linearregression.tex` etc.) were
     untouched -- only the session-number wrapper around them moved.
+- **Session 9 (Linear Regression) second `/upgrade-deck` pass (Aug 2026)**, over its single topic
+  file `ml_linearregression.tex` (no `_short` sibling; `ml_linearregression_sklearn.tex` is a
+  separate companion, not a comment-sibling). This is the same deck the Aug 2026 pass covered as
+  the then-Session 8; it **closes both open items that pass left behind**. 60 -> 61 live frames,
+  66 pages, Presentation now compiles with **zero** overfull/underfull boxes.
+  - **The CheatSheet's unresolved 9.86pt `Overfull \hbox` is traced and fixed.** The log's
+    `at lines 322--323` pointed into `ml_linearregression.tex`, at the SST/SSR/SSE TikZ diagram
+    added by the previous pass: at `scale=0.62` it fits a Presentation frame but not a 3-column
+    CheatSheet column. Fixed by wrapping the `tikzpicture` in `\adjustbox{max width=\linewidth}` --
+    the same fix already used for tables here. **Generalizable: any TikZ added under the Task 5a
+    two-column convention should get that wrap up front**, since the diagram is sized for the
+    Presentation and the shared content file also feeds a much narrower CheatSheet column. Both
+    diagrams added in this pass got it pre-emptively and both render correctly at 3 columns.
+  - Genuine technical errors fixed: *"There are no slope formulas for these $\beta$s"* on "Linear
+    Regression for Complex Problems" was **wrong and self-contradictory** -- the deck's own
+    "Possible Techniques" frame gives $W=(X^TX)^{-1}X^Ty$, a closed form for exactly those $\beta$s;
+    rewritten to say there is no simple *scalar* slope formula, the matrix one holds but inverting
+    $X^TX$ is impractical. "Multiple Linear Regression" had an $x_i$/$\beta_j$ index mismatch **and
+    omitted "holding every other predictor fixed"**, which is the entire basis of the newspaper
+    argument two frames later. Also: "a combination of others" -> "a *linear* combination"; roman
+    $B_{TV}$ -> $\beta_{TV}$; "and the starts increasing"; a stray apostrophe rendering as `The '"a"`;
+    "its not a independent variable"; "is called as".
+  - **Content gap, found by reading the deck's own promises**: the "Problem" frame poses four
+    questions and the live deck answered only the first: the other three answers were sitting
+    commented out. Revived condensed (12% typical error / ~90% of variance; only TV and radio;
+    residual plots), one existing frame plus one new. Worth repeating as a check on any deck: look
+    for a frame that opens a numbered list of questions and verify each one is actually answered
+    live, since the answers are exactly the kind of thing that gets commented out and forgotten.
+  - Task 3 finished work the previous pass started: it gave distinct titles to 7 "Optimization" and
+    3 "Evaluation" frames but stopped there, leaving 8 more duplicate-title runs (`Example: Tip
+    Amount` x3, `Advertising Dataset` x3, `Sum of Squared Errors for Rotated Line` x3, `Fitting
+    line` x2, `Important Concept` x2, `Calculations` x2, `EDA` x2, `Linear Regression` x2 across
+    sections). All retitled; titles only, no content or ordering changed.
+  - Task 5 added an RSS/SSR disambiguation where SSR is introduced. The deck defines "RSS (Residual
+    Sum of Squares)" as a synonym for SSE early, then introduces "SSR (sum of squares by
+    regression)" later: two near-anagram acronyms meaning opposite things, previously never
+    reconciled.
+  - Task 5a added 2 TikZ diagrams: line (1 predictor) over plane (2 predictors); and structureless
+    vs. curved residual scatter for "is the relationship linear?". No live `verbatim`/`lstlisting`
+    and no live prose `--` exist in this file, so Tasks 1a/1b/1c/1d found nothing.
+  - **The other open item closed: `Main_Seminar_ML_Regression_*` recompiled** (never done after the
+    previous pass). Its 217-page Presentation reports ~22.5k boxes -- **pre-existing and unrelated**,
+    the same per-frame Beamer navigation-bar overflow already recorded for
+    `Main_Seminar_ML_Intro_Presentation`: only 5 are genuine `in paragraph` content overfulls, the
+    rest are `detected at line N` at frame boundaries with just 26 distinct widths repeating in a
+    +3.98pt arithmetic ladder. Proof it is not content: the identical `ml_linearregression.tex`
+    compiles with zero boxes under the Session 9 driver.
+  - **`Main_Seminar_ML_Regression_CheatSheet.tex` had never received the Aug 2026 3-column
+    `\lstset{basicstyle=\scriptsize\ttfamily, breakatwhitespace=false}` + `\sloppy` driver-local
+    override** that the 19 MLCoEP CheatSheet drivers got -- that fix was scoped to MLCoEP only, and
+    this driver is `multicols{3}` too. Added it: 17 overfull boxes -> 1, 24 -> 23 pages. The one
+    survivor (14.42pt) is log-attributed near line 637 of the logistic-regression material, whose
+    cited lines are commented out so the attribution is approximate; not traced further, as it is
+    outside this session's scope.
+  - **Repo-wide audit of the same gap, and why it is mostly a false lead (Aug 2026).** 165 CheatSheet
+    drivers exist: 62 are `multicols{2}`, 103 are `multicols{3}`. Of the 103, only 21 carry the
+    driver-local override (the 20 MLCoEP ones plus `Main_Seminar_ML_Regression_CheatSheet` above),
+    so **82 lack it** -- and none of those 82 has a `.pdf` or `.log` on disk, i.e. they appear never
+    to have been built. **But do not bulk-add the override to them.** Tested on the worst offender
+    by static triage, `Main_Seminar_ML_Deployment_CheatSheet` (26 overfull boxes, worst 201pt):
+    adding the override changed **nothing at all** -- identical count, identical widths. The reason
+    is that its overfulls are **bare URLs sitting in ordinary prose**, e.g. a 201pt-too-wide
+    `Crypto Historical Data https://www.kaggle.com/datasets/.../cryptocurrencypricehistory`.
+    `breakatwhitespace=false` only reaches `lstlisting` environments, and `\sloppy` only stretches
+    interword spacing; neither can break a single word that is itself wider than the column. The
+    MLCoEP/ML_Regression override worked because those overfulls were **inside listings**. So the
+    two look identical in the log (a wide `Overfull \hbox` in a 3-column CheatSheet) but have
+    different root causes and different fixes: listings want the driver override, bare prose URLs
+    want a content-level fix (wrap in `\url{}`, since `hyperref` is already loaded and breaks at
+    `/` and `.`, or the `\allowbreak`-after-each-dot treatment used elsewhere here). **Diagnose
+    which kind you have by reading the offending line out of the log before choosing a fix.**
+  - **Separate pre-existing bug found during that audit, since fixed (Aug 2026)**:
+    `seminar_sql_rag_content.tex:14` did `\input{sql_rag_concl}`, a file that has never existed,
+    while the real `sql_rag_conclusions.tex` sat commented out on line 15 mislabelled
+    "older/alternative" -- it is in fact the only conclusions file there has ever been, and is
+    complete (divider + 4 live frames). Repointed to it and dropped the dead line; also capitalised
+    the section title (`\section[End]{conclusions}` -> `{Conclusions}`) to match every sibling
+    section. `Main_Seminar_LLM_SQL_RAG_{Presentation,CheatSheet}` now compile: 26 pages / zero
+    overfull, and 3 pages respectively.
+  - **First clean application of the diagnosis rule above.** The SQL RAG CheatSheet is one of the 82
+    without the override and showed 2 overfull boxes. Reading the offending lines out of the log
+    showed runs of unbreakable boxes, not prose, traced to SQLAlchemy connection URIs **inside an
+    `lstlisting`** (`create_engine('postgresql://user:password@host:port/database')`). That is the
+    listing flavour, so the driver-local override was the right tool here and it worked: 2 -> 0,
+    confirmed visually (the URIs now wrap mid-token inside the code box). Contrast
+    `Main_Seminar_ML_Deployment_CheatSheet`, where the same override achieved nothing because the
+    overfulls were bare prose URLs. **Same log symptom, opposite outcome -- read the offending line
+    before picking the fix.**
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
