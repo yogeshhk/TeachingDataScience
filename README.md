@@ -33,7 +33,7 @@ Content comes in three tiers, so you can pick exactly the depth you need:
 - **Workshops**: one topic in depth, ~1-2 days (8-16 hrs)
 - **Seminars**: a focused session, ~1-2 hrs
 
-Workshops and seminars span far more ground than the courses above: classical ML, linear algebra, LLMs, RAG, LangGraph, GNNs, blockchain, career advice, and more. There's also a growing set of runnable code projects in [`Code/`](Code/): LangChain, LangGraph, RAG pipelines, fine-tuning, classical ML, NLP, graph neural networks, and more.
+Workshops and seminars span far more ground than the courses above: classical ML, linear algebra, LLMs, RAG, LangGraph, GNNs, career advice, and more. There's also a growing set of runnable code projects in [`Code/`](Code/): LangChain, LangGraph, RAG pipelines, fine-tuning, classical ML, NLP, graph neural networks, and more.
 
 Every seminar/workshop compiles to **both** Beamer slides and two-column printable "cheat sheet" notes from the same source `.tex` files.
 
@@ -51,7 +51,7 @@ Each course is assembled from standalone **workshops**, which are assembled from
 
 ## Beyond these courses
 
-Many more standalone workshops and seminars exist outside the courses above, covering NLP (spaCy, Rasa chatbots, deep NLP), LLMs & GenAI (RAG, LangChain, LangGraph, agents, Docling), Graph ML (knowledge graphs, geometric deep learning, graph databases), Reinforcement Learning, Blockchain, Software Engineering practices, Data Analytics, and career/interview-prep seminars. See [`COURSES.md`](COURSES.md) for the full catalog.
+Many more standalone workshops and seminars exist outside the courses above, covering NLP (spaCy, Rasa chatbots, deep NLP), LLMs & GenAI (RAG, LangChain, LangGraph, agents, Docling), Graph ML (knowledge graphs, geometric deep learning, graph databases), Reinforcement Learning, Software Engineering practices, Data Analytics, and career/interview-prep seminars. See [`COURSES.md`](COURSES.md) for the full catalog.
 
 ## Code Projects
 

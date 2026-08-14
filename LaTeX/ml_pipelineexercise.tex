@@ -8,22 +8,28 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{The Dataset}
 \begin{itemize}
-\item Steel Plates Faults dataset (UCI) -- a real manufacturing quality-control problem.
+\item Steel Plates Faults dataset (UCI): a real manufacturing quality-control problem.
 \item 1941 steel plates, 27 geometric/luminosity measurements each, one of 7 recorded defect types per plate.
-\item Task: detect \texttt{K\_Scatch} -- a scratch-type surface defect -- vs. everything else.
-\item 27 features -- too many to exhaustively search, a real test for ranking and wrapper methods.
-\item Goal: pandas to load and inspect, sklearn to preprocess/select/train/evaluate -- a revision lap before the algorithm-by-algorithm sessions start.
+\item Task: detect \texttt{K\_Scatch}, a scratch-type surface defect, vs. everything else.
+\item 27 features: too many to exhaustively search, a real test for ranking and wrapper methods.
+\item Goal: pandas to load and inspect, sklearn to preprocess/select/train/evaluate, a revision lap before the algorithm-by-algorithm sessions start.
 \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Step 1: Load and Look}
-\begin{lstlisting}
+\begin{lstlisting}[basicstyle=\tiny\ttfamily]
 import pandas as pd
 
-feature_names = ['X_Minimum', 'X_Maximum', 'Y_Minimum', 'Y_Maximum',
-    'Pixels_Areas', 'X_Perimeter', 'Y_Perimeter', 'Sum_of_Luminosity',
-    ]  # ... 27 columns total, see dataset README
+feature_names = [
+    'X_Minimum', 'X_Maximum', 'Y_Minimum', 'Y_Maximum', 'Pixels_Areas',
+    'X_Perimeter', 'Y_Perimeter', 'Sum_of_Luminosity', 'Minimum_of_Luminosity',
+    'Maximum_of_Luminosity', 'Length_of_Conveyer', 'TypeOfSteel_A300',
+    'TypeOfSteel_A400', 'Steel_Plate_Thickness', 'Edges_Index', 'Empty_Index',
+    'Square_Index', 'Outside_X_Index', 'Edges_X_Index', 'Edges_Y_Index',
+    'Outside_Global_Index', 'LogOfAreas', 'Log_X_Index', 'Log_Y_Index',
+    'Orientation_Index', 'Luminosity_Index', 'SigmoidOfAreas',
+]
 fault_names = ['Pastry', 'Z_Scratch', 'K_Scatch', 'Stains',
                'Dirtiness', 'Bumps', 'Other_Faults']
 
@@ -72,7 +78,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Step 4: Scale the Features}
-Fit the scaler on training data only -- the same no-leakage rule from Data Preparation.
+Fit the scaler on training data only, the same no-leakage rule from Data Preparation.
 \begin{lstlisting}
 from sklearn.preprocessing import StandardScaler
 
@@ -127,11 +133,11 @@ print("Accuracy:", accuracy_score(y_test, pred_10))
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Step 8: Filter Result -- Not a Free Lunch}
+\begin{frame}[fragile]\frametitle{Step 8: Filter Result: Not a Free Lunch}
 \begin{itemize}
 \item 27 features: 0.977 test accuracy.
 \item Filter top 10: 0.951 test accuracy.
-\item 17 dropped features weren't dead weight -- accuracy fell by $\sim$2.6 points.
+\item 17 dropped features weren't dead weight: accuracy fell by $\sim$2.6 points.
 \item Real trade-off: fewer features for a real accuracy cost. Worth it or not depends on the deployment.
 \end{itemize}
 \end{frame}
@@ -171,7 +177,7 @@ Wrapper (greedy forward) & 6 & 0.963 \\
 }
 \end{center}
 \begin{block}{Intuition}
-6 wrapper-chosen features close most of the gap to all 27 (0.963 vs.\ 0.975) while clearly beating the 10-feature filter (0.963 vs.\ 0.949) -- fewer, better-combined features can rival throwing everything at the model. The filter's top 10, chosen one at a time, missed a combination the wrapper found.
+6 wrapper-chosen features close most of the gap to all 27 (0.963 vs.\ 0.975) while clearly beating the 10-feature filter (0.963 vs.\ 0.949): fewer, better-combined features can rival throwing everything at the model. The filter's top 10, chosen one at a time, missed a combination the wrapper found.
 \end{block}
 \end{frame}
 
@@ -196,6 +202,7 @@ print(confusion_matrix(y_test, pred_6))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Step 11: Classification Report}
+6 features, 96\% test accuracy, beating both the 10-feature filter model and coming close to the full 27-feature model, on cross validation too, not just this one split.
 \begin{lstlisting}
 print(classification_report(y_test, pred_6,
                              target_names=['no_k_scatch', 'k_scatch']))
@@ -205,9 +212,6 @@ print(classification_report(y_test, pred_6,
 #  no_k_scatch       0.96    0.99      0.97      388
 #     k_scatch       0.95    0.84      0.89       98
 \end{lstlisting}
-\vspace{15pt}
-6 features, 96\% test accuracy, beating both the 10-feature filter model and coming
-close to the full 27-feature model -- on cross validation too, not just this one split.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,17 +224,22 @@ Step 6 fits \texttt{SelectKBest} on \texttt{X\_train\_s} (the scaled training se
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Quick Check: The Pipeline}
 \begin{block}{Answer}
-No -- both are safe, but for different reasons. Step 6 never touches \texttt{X\_test\_s} at all. Step 9 does use every row of \texttt{X}, including what would later become test rows, but cross validation itself holds out a fold at a time during scoring -- so no fold's held-out data influences its own score. The real risk it does \emph{not} avoid: the final held-out test set (\texttt{X\_test\_s}) from Step 3 was never part of Step 9's cross validation either, so the eventual Step 11 evaluation is still a fair, unseen check on the wrapper-selected features.
+\begin{itemize}
+\item No, both are safe, but for different reasons.
+\item Step 6 never touches \texttt{X\_test\_s} at all.
+\item Step 9 uses every row of \texttt{X}, including future test rows, but cross validation holds out a fold at a time: no fold's held-out data influences its own score.
+\item Step 9's real safety net: \texttt{X\_test\_s} from Step 3 was never part of its cross validation either, so Step 11's evaluation is still a fair, unseen check on the wrapper-selected features.
+\end{itemize}
 \end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Try It Yourself}
 \begin{itemize}
-\item Change \texttt{k=10} to \texttt{k=5} in Step 6 -- does accuracy hold up with even fewer features?
-\item Run Greedy Backward Elimination instead of Forward on all 27 features -- same 6 features at the end?
-\item Swap \texttt{LogisticRegression} for a different classifier -- does the winning feature set change?
-\item Try a different target fault type (e.g.\ \texttt{Bumps}) -- does the same feature set still win? (Spoiler: no -- worth discussing why.)
+\item Change \texttt{k=10} to \texttt{k=5} in Step 6: does accuracy hold up with even fewer features?
+\item Run Greedy Backward Elimination instead of Forward on all 27 features: same 6 features at the end?
+\item Swap \texttt{LogisticRegression} for a different classifier: does the winning feature set change?
+\item Try a different target fault type (e.g.\ \texttt{Bumps}): does the same feature set still win? (Spoiler: no, worth discussing why.)
 \end{itemize}
 \end{frame}
 
@@ -239,7 +248,7 @@ No -- both are safe, but for different reasons. Step 6 never touches \texttt{X\_
 \begin{itemize}
 \item Load $\to$ Inspect $\to$ Split $\to$ Scale $\to$ Select $\to$ Train $\to$ Evaluate $\to$ Compare.
 \item Every step reused today: pandas for loading/inspecting, sklearn for the rest.
-\item This shape doesn't change once you swap in a real ML algorithm -- only Step 5/7's model does.
+\item This shape doesn't change once you swap in a real ML algorithm: only Step 5/7's model does.
 \item Next: the algorithms themselves, one at a time, starting with Linear Regression.
 \end{itemize}
 \end{frame}

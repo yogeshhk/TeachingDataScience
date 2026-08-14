@@ -974,6 +974,57 @@ A repo-wide `Code/.gitignore` covers `__pycache__/`, `.ipynb_checkpoints/`, `.en
 ### Security note
 `Code/google-adk/my_agent/.env` is gitignored but contains a real `GOOGLE_API_KEY` on disk — rotate it in Google Cloud Console.
 
+### Code/ consolidation (Aug 2026)
+12 stale/redundant folders deleted after one-by-one confirmation: `activeloop/`, `animesh1012/`,
+`awesome_llm_apps/`, `deep_rl/`, `gcp_notebooks/`, `google_generative-ai/`, `nvidia/`, `prodramp/`,
+`vizuara/`, `llama/`, `dl_curiousily/` (superseded by `curiosily_ai_bootcamp/`), `latex/` (2008 dead
+content, also a case-collision risk with root `LaTeX/`). `Code/agents/` overlap resolved: 3 pure
+CrewAI scripts moved to `Code/crewai/`, 9 LangGraph scripts (incl. 2 hybrid CrewAI-in-LangGraph
+files) moved to `Code/langgraph/`; `Code/agents/` narrowed to AutoGen-plus-general-PoC scope.
+Gitignore hygiene: `node_modules/`, `.pytest_cache/`, `.ruff_cache/`, `.benchmarks/` added;
+`Code/opencode/demo/.opencode/node_modules/` (738 files) and 3 cache dirs removed from the working
+copy. `Code/llamaindex/data/WikiTableQuestions*` removed (160MB → 11MB). `docs/Interview/src/`
+(67 files, LeetCode/PyTorch practice code that had been mixed in with genuine interview-prep docs)
+split out to new `Code/interview/` (own `environment.yml` + `README.md`); `docs/Interview/` now
+holds only docs.
+
+### Local LLM (Qwen3) as a Groq alternative — piloted, not rolled out (Aug 2026)
+Evaluated `Qwen3-1.7B-Q4_K_M.gguf` (`D:\Yogesh\models\lmstudio-community\Qwen3-1.7B-GGUF\`, on
+disk) via `langchain_community.chat_models.ChatLlamaCpp` (in-process, no server) as a local
+alternative to the `ChatGroq` calls used in 15 files across `Code/`. Needed `llama-cpp-python`
+upgraded to 0.3.34 in the `genai` env first (0.2.72 predates Qwen3 support, threw `unknown model
+architecture: 'qwen3'`). Findings:
+- **Loads and runs fine on CPU**: ~3.8s load, ~17-24 tok/s inference (no GPU offload — the machine's
+  MX570A is thin and untested for this, not expected to matter at this model size).
+- **Qwen3 defaults to a "thinking" mode** that silently consumes the whole `max_tokens` budget on
+  even trivial prompts, leaving responses truncated mid-`<think>` with no real answer. Fix:
+  append `/no_think` to the prompt (Qwen3's documented soft-switch) — cuts response time from
+  9-17s to under 1.5s per short reply and produces complete, correct answers. Always do this when
+  using this model via `ChatLlamaCpp`.
+- **`bind_tools()` is NOT reliable**: the model's raw text gets tool choice and arguments right,
+  but LangChain's `ChatLlamaCpp` doesn't parse Qwen's `<tool_call>{...}</tool_call>` text format
+  into the structured `response.tool_calls` field agent code actually reads (comes back empty every
+  time), and the model's own JSON has been observed with a syntax bug (extra `}`). Not investigated:
+  whether `llama-cpp-python`'s native grammar-constrained `chat_format="chatml-function-calling"`
+  (a different code path than LangChain's default wrapper) would fix this.
+- **Pilot confirmed working** for plain multi-turn chat (no tool calling) in
+  `Code/langchain/langchain_v1_models.py`: `ChatGroq`/`init_chat_model` block commented out,
+  `ChatLlamaCpp` active by default per the decided pattern (manual toggle in code, not automatic
+  fallback). Reran the file's existing 4-turn translate-to-French example unchanged — correct
+  output, multi-turn context handled correctly.
+- **Deliberately not done**: rolling this pattern out to the other 13 non-tool-calling `ChatGroq`
+  sites across `Code/` (a 13-file bulk edit, declined for now — `langchain_v1_models.py` stands as
+  the validated reference pattern if picked up later) and the 2 tool-calling sites
+  (`langchain_v1_createagent.py`, `omni-rag/agent.py`) stay on `ChatGroq`, blocked by the
+  `bind_tools()` finding above.
+- Separately, **OpenCode CLI + local Qwen was tested and found not viable**: an `opencode run`
+  request is ~32K tokens (`AGENTS.md` + tool/MCP schemas + project context), and CPU-only prefill
+  of that size timed out (`SSE read timed out` after 2m03s) even after raising the model's context
+  window to 32K. `Code/opencode/opencode.json`'s model reference was fixed to the real downloaded
+  model ID (`qwen/qwen3-1.7b`, was pointing at a model never downloaded) regardless. LM Studio's
+  server may still be left running with the model loaded from this test — harmless, but check
+  `lms server status` / `lms ps` if picking this back up.
+
 ## Test Suite
 
 All Python-script directories have a `test_*.py` file runnable with `pytest` in the `genai` conda environment.

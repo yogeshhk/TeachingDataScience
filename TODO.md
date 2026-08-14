@@ -5,9 +5,10 @@ repo root gives a global picture without digging through every subfolder.
 
 ## Actively developed
 
-| Area | TODO / status | Notes |
-|---|---|---|
-| `Code/mlcoep/` (COEP AIML course) | See `CLAUDE.md` "19-session restructuring" note | Course in progress (Jul 16 - Nov 30, 2026), updated session-by-session, 2 days/week. Setup (Python/conda) done; datasets/notebooks/assignments/exams dropped from scope (Aug 2026) in favor of slides + in-class code walkthroughs, so `Code/mlcoep/TODO_MLCOEP_TECHNICAL.md` was removed. Slide content: 20 independent session drivers (Session 8 "Feature Selection" inserted Aug 2026 as a syllabus Units 1-3 gap-fill before an MCQ test; old Sessions 8-19 shifted to 9-20 — see `CLAUDE.md`), `Main_Seminar_MLCoEP_Session_<N>_<ShortName>_{Presentation,CheatSheet}.tex` (compiled via `make_all_sessions.bat`/`make_all_cheatsheets.bat`; the old `/prep-mlcoep-session` skill is retired). No running todo.md; per-session `/upgrade-deck` passes continue individually as bandwidth allows (Sessions 5-6 done, see `CLAUDE.md`). **Recompile backlog: CLEARED (verified on disk 2026-08-07, before the Aug 2026 renumbering above).** The "Quick Check quiz format changed" edit (see `CLAUDE.md`) touched 15 topic files and this entry used to list Sessions 2,3,4,10,12,13,14,15,18 (old numbering) as still needing a rebuild. All 19 MLCoEP session PDFs as they existed then (Presentation and CheatSheet, 38 files) were newer than every one of those 15 topic files, so none of them was stale: Sessions 1,11,14,15,16,17,18 were rebuilt 2026-08-06, Sessions 2,4,5,7,9,10,12,13 on 2026-08-07 morning, and Sessions 3,6,8,19 on 2026-08-07 afternoon during the 3-column CheatSheet pass. The "12 non-MLCoEP decks sharing the same files" clause is also moot: those drivers (`Main_Seminar_ML_*`, `Main_Seminar_Python_Overview_*`, `Main_Seminar_AI-ML_*`, `Main_Seminar_Python_Advanced_DataLibs_*`) have no PDFs checked in at all, so there is nothing on disk to be stale; they get built on demand. |
+Nothing tracked here right now. `Code/mlcoep/` (COEP AIML course, in progress Jul 16 - Nov
+30, 2026, see `CLAUDE.md`'s MLCoEP notes for the full session-by-session history) is taught
+2 days/week; its per-session `/upgrade-deck` pass is done routinely right before each
+session is taught, not tracked as a standing backlog here.
 
 ## Completed/maintained courses (no dedicated TODO.md tracked here)
 

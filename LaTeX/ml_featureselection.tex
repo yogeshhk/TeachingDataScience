@@ -18,18 +18,18 @@
 \begin{frame}[fragile]\frametitle{Feature Extraction: Statistical Features}
 \begin{itemize}
 \item Real signals often arrive as a stream: a sensor reading, a week of sales, a semester of test scores.
-\item A model needs one row per example, not 1000 raw readings -- so summarize the stream instead.
+\item A model needs one row per example, not 1000 raw readings, so summarize the stream instead.
 \item Simplest, most common summaries: mean, standard deviation, minimum, maximum, range.
 \end{itemize}
 
 \begin{block}{Intuition}
-Describing a month of temperatures in one sentence? You wouldn't list 30 numbers -- ``averaged 22\textdegree C, swung between 18 and 27''. That sentence \emph{is} mean, min, max: statistical features.
+Describing a month of temperatures in one sentence? You wouldn't list 30 numbers, you'd say ``averaged 22\textdegree C, swung between 18 and 27''. That sentence \emph{is} mean, min, max: statistical features.
 \end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Feature Extraction: A Worked Example}
-A sensor logs one reading a minute, for 10 minutes:
+A sensor logs one reading a minute, for 10 minutes. Turn that into 5 summary features, one per sensor, per time window: several sensors, dozens of candidates.
 \begin{lstlisting}
 import numpy as np
 
@@ -48,8 +48,6 @@ print(features)
 # Output:
 # {'mean': 21.6, 'std': 0.44, 'min': 21.0, 'max': 22.4, 'range': 1.4}
 \end{lstlisting}
-\vspace{15pt}
-10 numbers became 5 features. Per sensor, per time window -- several sensors, dozens of candidates.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,14 +62,14 @@ print(features)
 \begin{itemize}
 \item Score each feature \emph{on its own} against the target, rank, keep the top few.
 \item ``Score'': a statistical test, e.g. an F-test (ANOVA) for a numeric feature vs. a class label.
-\item Fast -- one pass, no model training. Called a \textbf{filter}: features filtered before any model sees them.
+\item Fast, one pass, no model training. Called a \textbf{filter}: features filtered before any model sees them.
 \item Blind spot: scores features in isolation, can miss a feature that only helps \emph{in combination}.
 \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Ranking: Loading the Data}
-Pima Indians Diabetes dataset: 768 patients, 8 measurements, one outcome.
+Pima Indians Diabetes dataset: 768 patients, 8 measurements, one outcome. \texttt{class}: 1 = diabetic, 0 = not. Which of the 8 columns actually predicts it?
 \begin{lstlisting}
 import pandas as pd
 
@@ -86,8 +84,6 @@ df.head(3)
 # 1     1    85    66    29     0  26.6  0.351   31      0
 # 2     8   183    64     0     0  23.3  0.672   32      1
 \end{lstlisting}
-\vspace{15pt}
-\texttt{class}: 1 = diabetic, 0 = not. Which of the 8 columns actually predicts it?
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,7 +101,7 @@ print(corr.round(2))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Ranking: F-score (a Sharper Test)}
-Correlation is one lens; an F-test (ANOVA) is another, built for exactly this:
+Correlation is one lens; an F-test (ANOVA) is another, built for exactly this. Expect the same story as the correlation plot: \texttt{plas} dominating, \texttt{skin}/\texttt{pres} barely registering.
 \begin{lstlisting}
 from sklearn.feature_selection import SelectKBest, f_classif
 
@@ -117,15 +113,13 @@ ranked = sorted(zip(names[:8], skb.scores_), key=lambda t: -t[1])
 # plas 213  mass 72  age 46  preg 40
 # pedi  24  test 13  skin  4  pres  3
 \end{lstlisting}
-\vspace{15pt}
-Same story as the correlation plot: \texttt{plas} dominates, \texttt{skin}/\texttt{pres} barely register.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Feature Selection: Wrapper Methods}
 \begin{itemize}
 \item Filter scores each feature alone. \textbf{Wrapper}: train/cross-validate the model on different feature \emph{subsets}, let that score decide.
-\item Slower -- many models trained -- but catches combinations a filter would miss.
+\item Slower, many models trained, but catches combinations a filter would miss.
 \item Which subsets to try? Four classic strategies:
 	\begin{itemize}
 	\item Exhaustive Search
@@ -140,7 +134,8 @@ Same story as the correlation plot: \texttt{plas} dominates, \texttt{skin}/\text
 \begin{frame}[fragile]\frametitle{Wrapper: Exhaustive Search}
 \begin{itemize}
 \item Try \emph{every} non-empty subset, keep the best cross-validated score.
-\item $n$ features $\to$ $2^n - 1$ subsets. Pima's 8 $\to$ 255 -- small enough to actually run.
+\item $n$ features $\to$ $2^n - 1$ subsets. Pima's 8 $\to$ 255, small enough to actually run.
+\item Spoiler: dropping \texttt{skin} turns out to cost zero accuracy.
 \end{itemize}
 
 \begin{lstlisting}
@@ -162,8 +157,6 @@ for r in range(1, 9):
 # Best: all features except 'skin', accuracy=0.775
 # All 8 features:                    accuracy=0.775
 \end{lstlisting}
-\vspace{15pt}
-Proves \texttt{skin} adds nothing: dropping it costs zero accuracy.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -171,7 +164,7 @@ Proves \texttt{skin} adds nothing: dropping it costs zero accuracy.
 \begin{itemize}
 \item 8 features $\to$ 255 subsets: a few seconds.
 \item 3 sensors $\times$ 5 statistical features each = 15-20 candidates already.
-\item 20 features $\to$ $2^{20}-1 \approx$ 1 million subsets -- roughly 4{,}000$\times$ more work.
+\item 20 features $\to$ $2^{20}-1 \approx$ 1 million subsets, roughly 4{,}000$\times$ more work.
 \item Realistic only for a small, already-narrowed feature set.
 \end{itemize}
 \end{frame}
@@ -194,7 +187,7 @@ Same model and cross validation, on Pima:
 4 & pres & 0.772 \\
 \end{tabular}
 \end{center}
-3 features reach 0.773 -- within 0.002 of exhaustive search's best, at a fraction of the cost.
+3 features reach 0.773, within 0.002 of exhaustive search's best, at a fraction of the cost.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -215,14 +208,14 @@ start & (all 8) & 0.775 \\
 3 & preg & 0.775 \\
 \end{tabular}
 \end{center}
-First move -- drop \texttt{skin} -- already matches what exhaustive search proved was right.
+First move, drop \texttt{skin}, already matches what exhaustive search proved was right.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Wrapper: Best-First Search}
 \begin{itemize}
 \item Greedy commits forever: once added or removed, never reconsidered.
-\item Best-first keeps a pool of promising subsets, not just one -- can expand any of them next.
+\item Best-first keeps a pool of promising subsets, not just one, and can expand any of them next.
 \item Can back out of an early choice greedy would be stuck with.
 \item Costs more than greedy, far less than exhaustive.
 \end{itemize}
@@ -262,7 +255,13 @@ The filter ranking on Pima placed \texttt{preg} (number of pregnancies) 4th out 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Quick Check: Feature Selection}
 \begin{block}{Answer}
-No conflict -- they answer different questions. The filter score measures how strongly \texttt{preg} relates to the outcome \emph{by itself}, ignoring every other feature; on that measure it ranks 4th. Backward elimination asks a different question: given everything else already in the model, does \texttt{preg} add anything \emph{on top of it}? If the information \texttt{preg} carries is already captured by other features (e.g. \texttt{age} correlates with number of pregnancies), removing it costs nothing even though it looked useful alone. This is exactly the wrapper methods' advantage over filters: they can see redundancy that isolated ranking cannot.
+\begin{itemize}
+\item No conflict: they answer different questions.
+\item Filter score: how strongly \texttt{preg} relates to the outcome \emph{by itself}, ignoring every other feature. On that measure alone it ranks 4th.
+\item Backward elimination asks a different question: given everything else already in the model, does \texttt{preg} add anything \emph{on top of it}?
+\item \texttt{age} already correlates with number of pregnancies, so \texttt{preg}'s information is redundant: removing it costs nothing even though it looked useful alone.
+\item This is exactly the wrapper methods' advantage over filters: they can see redundancy that isolated ranking cannot.
+\end{itemize}
 \end{block}
 \end{frame}
 
@@ -273,6 +272,6 @@ No conflict -- they answer different questions. The filter score measures how st
 \item \textbf{Selection}: which candidate features earn a place in the model.
 \item \textbf{Filter (Ranking)}: fast, scores features independently.
 \item \textbf{Wrapper} (Exhaustive, Greedy Forward/Backward, Best-First): slower, sees combinations filters miss.
-\item Narrows the search -- you still decide what ships.
+\item Narrows the search, you still decide what ships.
 \end{itemize}
 \end{frame}
