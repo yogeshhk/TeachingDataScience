@@ -43,6 +43,7 @@ equivalent preamble files) and record which packages are loaded. Specifically ch
 | `\usepackage{listings}` | `lstlisting` environment is styled and ready -- flag every `\verbatim` block as a Task 1 finding |
 | `\lstdefinestyle{...}` | Record the default language and style name for use when converting verbatim blocks |
 | `\usepackage{tikz}` (or a package that loads it, e.g. `tikz-qtree`) | TikZ diagrams are available -- Task 5a (diagram opportunities) is active. If absent, skip Task 5a. |
+| A `Main_*_CheatSheet.tex` sibling of the Presentation driver | The content is rendered a second time via `beamerarticle`/`multicols` -- Task 1e (CheatSheet line-break artifact check) is active. If no CheatSheet driver exists, skip Task 1e. |
 
 Only after completing this audit do you proceed to the tasks below.
 
@@ -151,6 +152,30 @@ this one always runs unconditionally -- no package or content-pattern guard.
 - Precedent: `prep-mlcoep-session` Step 2 (now retired -- this task absorbs that pipeline's
   mandatory dash-cleanup step so it applies to any deck run through `/upgrade-deck`, not just
   MLCoEP sessions).
+
+#### Task 1e: CheatSheet Line-Break Artifact Check
+
+Run this check on every source file discovered in Step 1, whenever the deck has a CheatSheet
+driver (confirm in Step 1 whether a `Main_*_CheatSheet.tex` sibling of the Presentation driver
+exists). Unconditional otherwise -- no package guard.
+
+- **Find:** `\\[<length>]` (a manual line break with an optional spacing argument, e.g.
+  `\\[0.5em]`) used inside title/hero frames or centered text blocks.
+- **Why it matters:** the CheatSheet driver renders every frame in plain article mode via
+  `beamerarticle`, usually inside `multicols`. The optional spacing argument to `\\` is not
+  reliably consumed in that context -- the bracketed length prints as **literal visible text**
+  on the page (e.g. a stray `[0.5em]` next to the title) instead of being treated as spacing.
+  This produces no compile error or warning; the only way to catch it is to extract the actual
+  rendered text (e.g. `pdftotext -layout file.pdf -`) and read it, or to look at the rendered
+  page image. It compiles perfectly clean in the Presentation, so a log-only review will miss it.
+- **Action:** replace `\\[<length>]` with a plain `\\` followed by `\vspace{<length>}` on its own
+  line (or drop the extra spacing entirely if it isn't load-bearing).
+- **Do not** flag `\\` without a bracketed argument -- that form is unaffected.
+- Precedent: `ai_intro_project_managers.tex`'s opening hero frame (Aug 2026), found via
+  `pdftotext` extraction of the CheatSheet output after a user reported "stray bracketed text"
+  on the title slide. A repo-wide grep at the time found the same pattern in 13 other files,
+  not fixed as part of that pass since they were outside the deck under review -- worth a
+  dedicated sweep if raised again.
 
 ### Task 2: Redundancy
 
@@ -265,15 +290,52 @@ If the repository has its own `CLAUDE.md` with a house language block, that take
 - **Action:** Rewrite affected bullets directly in the updated `.tex` output. Do not raise a
   finding for a rule broken only in speaker notes or `%` comments.
 
+#### Task 5c: Point-wise Bullet Conciseness
+
+Run this check on every `itemize`/`enumerate` item in every source file discovered in Step 1.
+This is a general density check, distinct from Task 5b's non-native-language rules: a bullet can
+use perfectly clear English and still read as a paragraph rather than a slide point.
+
+- **Find:** any bullet item containing two or more complete sentences, or a single sentence long
+  enough (roughly 25+ words, or spanning 3+ clauses joined by commas) that it reads as prose
+  rather than a scannable point. A slide with several such items in a row reads as "paragraphs
+  after paragraphs" rather than a deck meant to support a live, spoken presentation.
+- **Why it matters:** slides are a scaffold for a spoken talk, not a document to be read silently.
+  A dense paragraph-bullet forces the audience to choose between listening to the presenter and
+  reading the slide, and it slows down a live click-through. Splitting the same content into
+  short fragments loses nothing and is faster to scan.
+- **Action:**
+  - Compress a long single sentence into a short fragment (drop connective tissue like "which
+    means that", restate as a noun phrase or short clause).
+  - Split a multi-sentence item into a short lead fragment (often a bolded label) plus one or two
+    concise nested sub-bullets, one idea per line.
+  - Preserve every distinct fact or claim in the original -- this is a reformatting pass, not a
+    content cut. If in doubt whether trimming a clause loses meaning, keep it as its own bullet
+    rather than dropping it.
+  - If elaboration is genuinely necessary beyond a short bullet, move it into a `\note{}` speaker
+    note rather than leaving it on the visible slide (same guidance as Task 5's own note on
+    verbosity).
+- **Do not apply this** to: quoted example prompts or dialogue (`\textit{``...''}`, meant to be
+  read verbatim); the deck's `\begin{block}{Answer}`/`{Intuition}` callouts, which Task 5 and
+  Task 6 already scope as short explanatory prose; table cells; or speaker notes.
+- Precedent: `ai_intro_project_managers.tex` (Aug 2026) -- e.g. "Myths vs.\ Reality" frame's
+  `Reality:` lines went from 2-3 sentence paragraphs to a bolded lead plus 2-3 short nested
+  bullets each, found after a user reported the deck as "paragraphs after paragraphs" on review.
+
 ### Task 6: Thought-Provoking Quizzes
 
 - First, infer the intended audience (Step 2), same as Task 5.
   - For beginner/fresher audiences, apply this task fully.
   - For advanced/practitioner audiences, apply lightly or skip if quizzes would feel out of place.
 - At the logical end of each section (per the section map from Task 3), add one short
-  quiz slide: a single thought-provoking conceptual question (not rote recall), followed
-  by a brief answer/discussion.
-- One quiz per section maximum -- do not add a quiz after every slide.
+  quiz slide: one or two thought-provoking conceptual multiple-choice questions (not rote
+  recall), each with four lettered options (A-D), followed by a separate answer slide.
+- One quiz per section maximum -- do not add a quiz after every slide. A quiz slide may hold
+  one or two questions if the section naturally raises more than one, but never more than that.
+- **Write real distractors, not filler.** Wrong options should be plausible-sounding
+  misconceptions a learner might actually hold (a common myth, a surface-level reading, a
+  mechanics-vs-judgment mix-up) -- not absurd options included only to pad out four choices.
+  The question must have exactly one best answer among the four.
 - Suggested frame pattern (adapt to the deck's existing block/alert style). Question and
   answer are **separate frames**, not a `\pause` overlay on one frame -- overlay reveals
   are easy to miss/skip during a live click-through, so each is its own slide with the same
@@ -283,17 +345,26 @@ If the repository has its own `CLAUDE.md` with a house language block, that take
   \begin{frame}[fragile]\frametitle{Quick Check: <Section Name>}
   \begin{block}{Think About It}
   <thought-provoking question>
+  \begin{enumerate}
+    \item[A.] <option>
+    \item[B.] <option>
+    \item[C.] <option>
+    \item[D.] <option>
+  \end{enumerate}
   \end{block}
   \end{frame}
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   \begin{frame}[fragile]\frametitle{Quick Check: <Section Name>}
   \begin{block}{Answer}
-  <brief answer/explanation>
+  \textbf{Correct: <Letter>.} <why it's right, and briefly why the closest distractor is wrong>
   \end{block}
   \end{frame}
   ```
 
+  If a quiz slide holds two questions, number them (1./2.) inside the same `block`, and give
+  the matching answer slide two `\textbf{Correct: <Letter>.}` lines in the same order, rather
+  than splitting into four frames.
 - **Action:** Provide full `.tex` code for each quiz slide, placed at the correct
   point in the file/section (typically just before the next `\section{}`).
 
@@ -342,7 +413,7 @@ therefore activated for Task 1a. Also note any `_short.tex` sibling files found 
 
 ### 4. Task-by-Task Findings
 
-One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b/1c/1d/5a/5b).
+One clearly labelled section per task (Tasks 1-6, including sub-tasks 1a/1b/1c/1d/1e/5a/5b/5c).
 Each section contains:
 
 - **Findings** -- what was observed
