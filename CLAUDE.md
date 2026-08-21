@@ -31,7 +31,7 @@ real codebases). Not yet run on any of them as of this note; run one at a time, 
 Compile a specific deck from the `LaTeX/` directory using MikTeX's `texify`:
 ```bat
 cd LaTeX
-texify -cp Main_Seminar_AI_ClaudeCode_Presentation.tex
+texify -cp Main_Seminar_AI_HandsOn_ClaudeCode_Presentation.tex
 ```
 
 Compile all decks matching a pattern (Windows):
@@ -45,6 +45,17 @@ Compile everything:
 cd LaTeX
 make_all.bat
 ```
+
+### Compiled output policy (Aug 2026)
+
+This repo is public; **compiled decks (`Main_*.pdf`) and build litter
+(`.aux .log .nav .out .snm .toc .vrb`) are never committed here** and are
+gitignored at `LaTeX/.gitignore`. Final PDFs for actual delivery get copied to
+the private `Publications/Presentations/` repo instead, after compiling
+locally. This is deliberate, not an oversight: people should compile the
+LaTeX themselves rather than getting a ready PDF for free from the public
+repo. `LaTeX/images/*.pdf` are source assets (diagrams etc.), not build
+output, and are unaffected by this rule.
 
 ## LaTeX Architecture
 
@@ -133,7 +144,7 @@ the original author than a naive `\begin{frame}` grep would suggest — always c
 
 ### Known issues
 - `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
-- `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` (only active content: `ai_tools_claudecode_demo_cadcam.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CadCamWorkshop/` (untracked as of Jul 2026). As of Jul 2026 the deck and the PoC are back in sync: flat `src/` layout with no packaging (no `pyproject.toml`, no console-script entry point), the two-step `load_mesh`/`inspect_mesh` API, JSON-only reports (no Markdown report format), and a `thin_walls` check added alongside the original three. `CadCamWorkshop` now has both `.claude/skills/geometry-validation/` and `.claude/skills/inspection-report-summary/`; `.claude/agents/devops.md` was removed. `Code/claudecode/trial/` (also untracked) was a from-scratch dry run of the same workshop script, used to find and fix these drift points plus several missing/misplaced YAML-frontmatter fences in the tex's subagent/command/skill blocks — it's now redundant and pending manual deletion.
+- `Main_Seminar_AI_HandsOn_ClaudeCode_CheatSheet.tex` (renamed from `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` in the Aug 2026 AI-talks consolidation; only active content: `ai_tools_claudecode_demo_cadcam.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CadCamWorkshop/` (untracked as of Jul 2026). As of Jul 2026 the deck and the PoC are back in sync: flat `src/` layout with no packaging (no `pyproject.toml`, no console-script entry point), the two-step `load_mesh`/`inspect_mesh` API, JSON-only reports (no Markdown report format), and a `thin_walls` check added alongside the original three. `CadCamWorkshop` now has both `.claude/skills/geometry-validation/` and `.claude/skills/inspection-report-summary/`; `.claude/agents/devops.md` was removed. `Code/claudecode/trial/` (also untracked) was a from-scratch dry run of the same workshop script, used to find and fix these drift points plus several missing/misplaced YAML-frontmatter fences in the tex's subagent/command/skill blocks — it's now redundant and pending manual deletion.
 - `workshop_deepnlp_content.tex` line 2 has `\input{nlp_intro_short}` but no `nlp_intro_short.tex` exists in `LaTeX/` (closest matches: `nlp_intro_short_w_embedding.tex`, `nlp_intro.tex`) — blocks `Main_Workshop_NLP_Deep_*` and (via `course_generativeai_content.tex`) `Main_Course_GenerativeAI_*` from compiling. Found during the short/full sync audit below (Oct 2026); pre-existing and unrelated, not fixed. **Correction, Aug 2026**: this entry used to list `nlp_intro_short_old.tex` as a third close match. That file does not exist on disk; verified during the repo-wide `\input` check below.
 
 #### Repo-wide `\input`-resolution check (Aug 2026)
@@ -1039,6 +1050,41 @@ commented placeholder) to 19 fully-active sessions:
     `Main_Seminar_ML_Deployment_CheatSheet`, where the same override achieved nothing because the
     overfulls were bare prose URLs. **Same log symptom, opposite outcome -- read the offending line
     before picking the fix.**
+- **Session 9 content split + gradient-descent elaboration (Aug 2026)**, per explicit request:
+  `ml_linearregression.tex` was split into `ml_linearregression_core.tex` (everything) and
+  `ml_linearregression_advertising.tex` (the "Linear Regression - Advertising Budget Example"
+  block, ~14 frames) -- `ml_linearregression.tex` itself is now just `\input{ml_linearregression_core}`
+  + `\input{ml_linearregression_advertising}`, so the standalone `Main_Seminar_ML_Regression_*` deck
+  is unaffected (same content, same order). `seminar_mlcoep_session_9_content.tex` now `\input`s
+  `ml_linearregression_core` only, dropping the advertising example from Session 9. `ml_linearregression_core.tex`
+  also gained 3 new frames adapted from `ml_concepts.tex`'s "How to find best fit?" sequence
+  (Gradient Descent: the Slope, Precisely -- a TikZ bowl-curve diagram with the learning rate
+  $\alpha$; the Update Rule -- the actual $a^{t+1}=a^t-\alpha\,\partial J/\partial a$ formulas;
+  Stochastic Gradient Descent), inserted right after the existing StatQuest "Optimization: Gradient
+  Descent Steps" frame, since that sequence narrated the descent pictorially but never showed the
+  update formula. Both `Main_Seminar_MLCoEP_Session_9_Linear_Regression_*` and
+  `Main_Seminar_ML_Regression_*` recompile clean; caught and fixed one real overflow along the way
+  (the Update Rule frame's Intuition block ran into the footer, invisible in the compile log, only
+  found by rendering the page).
+- **Session 10 ROC/AUC exclusion (Aug 2026)**, per explicit request: `ml_logisticregression.tex`
+  (used only by Session 10, no other consumer in the repo) had its ROC/AUC block -- "What is ROC?"
+  through the "Quick Check: Evaluation Metrics" answer, ~19 frames -- extracted into
+  `ml_logisticregression_rocauc.tex`, which nothing `\input`s, so the content is preserved on disk
+  but excluded from compilation. The rest of the "Evaluation Metrics" divider's content (Accuracy,
+  Accuracy Can Mislead, Confusion Matrix) was kept live. `Main_Seminar_MLCoEP_Session_10_Logistic_Regression_*`
+  recompiles clean, 52 pages.
+
+### AI for Project/Program Managers seminar (Aug 2026)
+Standalone seminar `Main_Seminar_AI_ProjectManagers_{Presentation,CheatSheet}.tex` ->
+`seminar_artificialintelligence_project_managers.tex` -> `ai_intro_project_managers.tex` (single
+content file, no `_short` sibling). Covers AI-assisted project planning, decision support, a live
+demo, tool landscape, and staying relevant, aimed at practicing PMs/program managers (non-technical
+audience) -- not part of the ML CoEP course. Went through a targeted fix pass (a harder Quick Check
+question, 3 tables widened via `\adjustbox{max width=\linewidth}`, two vertical-overflow frames
+fixed, a presenter-vs-attendee framing bullet removed, several verbose sentences tightened) followed
+by a full `/upgrade-deck` pass (a typo, a RAID-acronym expansion re-added after the earlier edit had
+accidentally dropped it, a noun-cluster fix, and two frames restructured into the deck's established
+bold-lead-plus-nested-bullet style, e.g. the "Myths vs. Reality" pattern). Both drivers compile clean.
 
 ### Adding a new topic
 1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
