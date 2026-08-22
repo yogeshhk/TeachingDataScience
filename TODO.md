@@ -5,10 +5,16 @@ repo root gives a global picture without digging through every subfolder.
 
 ## Actively developed
 
-Nothing tracked here right now. `Code/mlcoep/` (COEP AIML course, in progress Jul 16 - Nov
-30, 2026, see `CLAUDE.md`'s MLCoEP notes for the full session-by-session history) is taught
-2 days/week; its per-session `/upgrade-deck` pass is done routinely right before each
-session is taught, not tracked as a standing backlog here.
+`Code/mlcoep/` (COEP AIML course, in progress Jul 16 - Nov 30, 2026, see `CLAUDE.md`'s MLCoEP
+notes for the full session-by-session history) is taught 2 days/week; its per-session
+`/upgrade-deck` pass is done routinely right before each session is taught, not tracked as a
+standing backlog here.
+
+One deferred item recorded 2026-08-22, **not to be started until all 20 sessions are done**
+(10/20 done as of this note): retire the 20 individual per-session driver pairs in favor of the
+combined course driver, which already exists and already works
+(`Main_Course_ML_CoEP_{Presentation,CheatSheet}.tex`). See `CLAUDE.md`'s MLCoEP notes, the
+"Deferred: retire the 20 per-session drivers" entry, for the full plan.
 
 ## Completed/maintained courses (no dedicated TODO.md tracked here)
 

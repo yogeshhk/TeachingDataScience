@@ -296,8 +296,9 @@ same kind of redundancy Cluster 2 found.
 
 **Tech cluster (`Main_Seminar_Tech_*`)**:
 - HypeCycles_Gartner (`seminar_hypecyles_gartner_content.tex`, 942 lines) and LaTeX_Research
-  (`seminar_latex4research_conent.tex`, 896 lines, filename typo pre-existing/documented) are
-  both substantial, fully standalone, unique topics with no overlap anywhere else — no action.
+  (`seminar_latex4research_content.tex`, 896 lines; filename typo fixed 2026-08-21, was
+  `seminar_latex4research_conent.tex`) are both substantial, fully standalone, unique topics
+  with no overlap anywhere else — no action.
 - **Mentoring — retired (Aug 2026).** Its unique content (`seminar_mentorship_content.tex`) was a
   PAIC (Pune AI Community) mentee-project list: Ask Yogasutra, MidcurveNN, Mining Resume,
   Sarvadnya RAG Systems, Nature of Code — not duplicated anywhere else in the repo, so not

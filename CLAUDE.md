@@ -143,9 +143,26 @@ the original author than a naive `\begin{frame}` grep would suggest — always c
 (uncommented) frames, not raw occurrences, when judging a deck's size.
 
 ### Known issues
-- `seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`); the file and all references would need renaming together
+- ~~`seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`)~~ — **fixed
+  2026-08-21**: renamed to `seminar_latex4research_content.tex`, both driver `\input`s updated,
+  both `Main_Seminar_Tech_LaTeX_Research_{Presentation,CheatSheet}` recompiled clean (37 and 4
+  pages respectively).
 - `Main_Seminar_AI_HandsOn_ClaudeCode_CheatSheet.tex` (renamed from `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` in the Aug 2026 AI-talks consolidation; only active content: `ai_tools_claudecode_demo_cadcam.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CadCamWorkshop/` (untracked as of Jul 2026). As of Jul 2026 the deck and the PoC are back in sync: flat `src/` layout with no packaging (no `pyproject.toml`, no console-script entry point), the two-step `load_mesh`/`inspect_mesh` API, JSON-only reports (no Markdown report format), and a `thin_walls` check added alongside the original three. `CadCamWorkshop` now has both `.claude/skills/geometry-validation/` and `.claude/skills/inspection-report-summary/`; `.claude/agents/devops.md` was removed. `Code/claudecode/trial/` (also untracked) was a from-scratch dry run of the same workshop script, used to find and fix these drift points plus several missing/misplaced YAML-frontmatter fences in the tex's subagent/command/skill blocks — it's now redundant and pending manual deletion.
 - `workshop_deepnlp_content.tex` line 2 has `\input{nlp_intro_short}` but no `nlp_intro_short.tex` exists in `LaTeX/` (closest matches: `nlp_intro_short_w_embedding.tex`, `nlp_intro.tex`) — blocks `Main_Workshop_NLP_Deep_*` and (via `course_generativeai_content.tex`) `Main_Course_GenerativeAI_*` from compiling. Found during the short/full sync audit below (Oct 2026); pre-existing and unrelated, not fixed. **Correction, Aug 2026**: this entry used to list `nlp_intro_short_old.tex` as a third close match. That file does not exist on disk; verified during the repo-wide `\input` check below.
+- **Known, accepted, deprioritized (Aug 2026): git-index/disk casing drift on the 8
+  `Main_Seminar_AI_For_*`/`Main_Seminar_AI_for_*` seminar drivers** (WithML, Kids, BizLeaders,
+  ProjectManagers, TechLeaders, Educators, All_Tech, All_NonTech — Presentation + CheatSheet each).
+  Confirmed for the Educators pair specifically: the actual files on disk are `AI_For_Educators`
+  (capital F, matching `COURSES.md`'s links), but git's tracked index path is `AI_for_Educators`
+  (lowercase f) — a case-only rename that a case-insensitive Windows checkout never surfaces in
+  `git status`. Not verified for the other 7 pairs (would require running git, which Claude Code
+  is barred from doing in this repo). **Harmless on Windows; would only break links/compiles on a
+  case-sensitive clone (Linux, CI).** A proper `git mv` (two-step, through a temp filename, since a
+  single-step case-only `git mv` is unreliable on Windows) would fix it, but attempts to do so
+  did not work in practice and the author chose not to keep fighting it. A plain content edit
+  cannot fix this either — case-insensitive `git status` won't register a path-casing change from
+  content alone, only an actual rename operation does. Left as-is; revisit only if a case-sensitive
+  checkout of this repo is ever actually needed.
 
 #### Repo-wide `\input`-resolution check (Aug 2026)
 Static check (no compiling) of every `\input`/`\include` chain from all 339 `Main_*.tex` drivers
@@ -604,6 +621,25 @@ commented placeholder) to 19 fully-active sessions:
   achieved via the new mechanism (confirmed via `texify`, zero errors across all 38 PDFs), and any
   session's outstanding dash cleanup will surface automatically the next time that session goes
   through `/upgrade-deck` Task 1d, same as Sessions 5 and 6 below.
+- **Deferred: retire the 20 per-session drivers once all 20 sessions are done (recorded
+  2026-08-22, not to be started until then — 10/20 done as of this note).** The user's own plan,
+  clarified this session: once every session has real content, delete all 40
+  `Main_Seminar_MLCoEP_Session_<N>_<ShortName>_{Presentation,CheatSheet}.tex` driver files plus
+  `make_all_sessions.bat` and `make_all_cheatsheets.bat` (the two scripts that batch-compile them),
+  leaving only the combined course driver. **Important: the combined driver already exists** —
+  `Main_Course_ML_CoEP_Presentation.tex` / `_CheatSheet.tex` (note the naming inconsistency: an
+  underscore before `CoEP`, unlike every other MLCoEP file, which uses no underscore
+  — worth a rename to `Main_Course_MLCoEP_*` while doing this, but not decided yet), both already
+  correctly wired via `\input{course_mlcoep_content}` to chain all 20
+  `seminar_mlcoep_session_<N>_content.tex` files plus the References/Datasets Used appendix. So
+  this is **not** a build-something-new task, it's: (1) once all 20 sessions are individually done
+  and compile clean, compile+verify the combined driver pair end to end for the first time (it has
+  deliberately not been compiled since the 19-session restructuring, per the note above — a
+  60+-session-worth single deck may surface cross-session issues, e.g. duplicate labels, that
+  never show up compiling sessions independently), (2) then delete the 40 individual driver files
+  and the 2 aggregate make scripts named above, (3) update `README.md`/`make_all.bat` references
+  accordingly. No workshop/seminar intermediate tier needed — the user confirmed the flat
+  Course -> Session structure already in place is the one to keep, not a deeper hierarchy.
 - **Sessions 5 and 6 `/upgrade-deck` passes (Aug 2026)**, run individually via their own
   `Main_Seminar_MLCoEP_Session_<N>_*` drivers per the restructuring above:
   - Session 5 (`ml_intro_short.tex`/`ml_intro.tex`): 2 small Task 1 fixes (a formula/parameters
@@ -612,12 +648,15 @@ commented placeholder) to 19 fully-active sessions:
     change, this deck had already been through an earlier pass (6 Quick Check quizzes, one per
     section, already present) and is intentionally example-driven (Pokemon Go, Pizza Shop, Spam
     Detection, University Admission) rather than formula-heavy, so Task 5 added nothing new.
-    Flagged (not fixed, out of scope for a surgical pass) a real content-drift between
-    `ml_intro_short.tex` and `ml_intro.tex`: each now has substantial live content the other
-    lacks entirely (the short version has "Hardware Revolution"/"ML Renaissance 2023-2025"/"Open
-    Source Ecosystem 2025"/all 6 quizzes; the full version has the ~15-frame "Hands-On Example:
-    Predicting House Price" walkthrough with 3 live code blocks) — an optional follow-up if a
-    full resync is ever wanted.
+    Flagged at the time (not fixed then, out of scope for that surgical pass) a real content-drift
+    between `ml_intro_short.tex` and `ml_intro.tex`. **Re-checked and closed (2026-08-21)**: a
+    diff of live frame sequences in both files is now empty (63 live frames each, identical order
+    and titles) — whatever caused the drift described here no longer exists, most likely resolved
+    as a side effect of the later Session 8 "Ranking + Model Selection ... mirrored into its full
+    sibling `ml_intro.tex` per the standing sibling-sync rule" edit below, which was never
+    cross-referenced back to this note. The only remaining difference between the two files is 4
+    Quick Check quiz-pairs sitting a few lines earlier/later relative to neighboring *commented*
+    filler frames — cosmetic, no effect on either compiled deck. No merge needed.
   - Session 6 (`ml_concepts_short.tex`/`ml_concepts.tex`): this pass added a TikZ bowl-curve
     diagram to "How to Find Best Fit: Gradient Descent" (precedent for the new Task 5a below),
     5 "Intuition" callouts on the driest early math-framework slides, a symbol-by-symbol
@@ -664,13 +703,16 @@ commented placeholder) to 19 fully-active sessions:
   everywhere they're used, not just in MLCoEP. `upgrade-deck.md`'s own Task 5 Quick Check
   boilerplate (`~/.claude/commands/`, mirrored to `Code/claudecode/dot_claude/commands/`) was
   updated to the two-frame pattern too, so future quiz slides (any deck, not just MLCoEP) are
-  generated in the new format by default. **Verification status**: Sessions 5, 6, 7, 9
-  recompiled clean with unchanged page counts (confirms nothing was lost/duplicated by the
-  split) and spot-checked via extracted PDF text. The other 9 MLCoEP session drivers and 12
-  non-MLCoEP driver decks pulling in the 15 edited files were NOT recompiled/verified after this
-  change (a batch compile was started, then stopped before completion at the author's request to
-  close the session) -- recompiling and visually verifying those is still open, next time any of
-  them is touched.
+  generated in the new format by default. **Verification status: closed (2026-08-21).** Sessions
+  5, 6, 7, 10 recompiled clean with unchanged page counts (confirms nothing was lost/duplicated by
+  the split) and spot-checked via extracted PDF text. A follow-up sweep then recompiled the
+  remaining MLCoEP sessions (2, 3, 4, 11, 13, 14, 15, 16, 19) and the non-MLCoEP decks sharing the
+  15 edited files (`Main_Seminar_ML_{Intro,Regression,Clustering,Deployment,SVM_NB,KNN}`,
+  `Main_Seminar_AI_For_WithML`, `Main_Seminar_Python_Advanced_DataLibs`, `Main_Seminar_ML`,
+  `Main_Seminar_ML_DataPrep`) -- all 0 errors. `Main_Workshop_DL_Presentation` was the one deck
+  left unverified: its compile was cut short deliberately (an outsized, still-growing job, 124MB+
+  PDF after 16+ minutes, same class as `Main_Course_GenerativeAI` below) with 18 of the other 19
+  already clean as sufficient evidence -- not pursued further, not tracked as an open item.
 - **Session 6 recall/precision/F1 expansion (Aug 2026)**: triggered by teaching the session live
   and finding recall effectively missing -- it *was* defined, but titled "Sensitivity (Recall or
   True positive rate)" and positioned immediately before Specificity, so it read as half of the
@@ -1013,9 +1055,15 @@ commented placeholder) to 19 fully-active sessions:
     `\lstset{basicstyle=\scriptsize\ttfamily, breakatwhitespace=false}` + `\sloppy` driver-local
     override** that the 19 MLCoEP CheatSheet drivers got -- that fix was scoped to MLCoEP only, and
     this driver is `multicols{3}` too. Added it: 17 overfull boxes -> 1, 24 -> 23 pages. The one
-    survivor (14.42pt) is log-attributed near line 637 of the logistic-regression material, whose
-    cited lines are commented out so the attribution is approximate; not traced further, as it is
-    outside this session's scope.
+    survivor (14.42pt) is log-attributed near line 637 of the logistic-regression material.
+  - **That survivor closed (2026-08-22).** Traced precisely by matching the log's printed paragraph
+    text ("In the Glass Identification example, ...") rather than trusting the approximate line
+    number: it was `ml_logisticregression_sklearn.tex`'s "Quick Check: Logistic Regression with
+    Scikit-Learn" frame, where the prose repeated the full `\texttt{logreg.predict\_proba(X)[:, 1]}`
+    call inline at 8pt in a 3-column layout. That exact call already appears in the code listing a
+    few frames earlier, so the redundant `logreg.` prefix was dropped from the inline mention
+    (formatting only, no content change). Recompiled clean: 0 overfull boxes, 0 errors, 20 pages.
+    No open items remain for this driver.
   - **Repo-wide audit of the same gap, and why it is mostly a false lead (Aug 2026).** 165 CheatSheet
     drivers exist: 62 are `multicols{2}`, 103 are `multicols{3}`. Of the 103, only 21 carry the
     driver-local override (the 20 MLCoEP ones plus `Main_Seminar_ML_Regression_CheatSheet` above),
@@ -1073,6 +1121,41 @@ commented placeholder) to 19 fully-active sessions:
   but excluded from compilation. The rest of the "Evaluation Metrics" divider's content (Accuracy,
   Accuracy Can Mislead, Confusion Matrix) was kept live. `Main_Seminar_MLCoEP_Session_10_Logistic_Regression_*`
   recompiles clean, 52 pages.
+  - **Given a home elsewhere (2026-08-21)**: rather than leave it permanently orphaned, a curated
+    subset (8 of the 18 live frames -- the conceptual build-up: What is ROC?, Sensitivity/
+    Specificity, What is AUC?, then the pixel-histogram progression through Worked Picture,
+    Well-Separated Classifier, Poor Classifier, Sweeping All Thresholds, Reading the Area) plus
+    its own Quick Check pair were inserted into `ml_evaluation_sklearn.tex`, right before that
+    file's existing compact "Area Under ROC Curve" TikZ-diagram + `sklearn` `cross_val_score`
+    frames -- so the intuition build-up now precedes the formula/code version instead of jumping
+    straight to it. `ml_evaluation_sklearn.tex` backs both `Main_Seminar_MLCoEP_Session_7_Sklearn_Workflow`
+    and the standalone `Main_Seminar_ML_DataPrep`, so both decks gain it. The 8 frames not
+    selected then (threshold-setting mechanics, manual TPR/FPR-at-a-threshold computation, the
+    log-loss-vs-AUC digression) stayed on disk in `ml_logisticregression_rocauc.tex`, untouched,
+    unused by anything.
+  - **Tier 2 wired in, orphan file deleted (2026-08-22).** The 8 not-selected frames (ROC: Setting
+    a Threshold; Why Plot (1-Specificity)?; Reading the Histogram; Picking a Threshold at 0.5;
+    Computing TPR/FPR at 0.8; Computing TPR/FPR at 0.5; ROC AUC: What It Ignores; Log Loss) were
+    added to `ml_evaluation_sklearn.tex` as a distinct block right after the existing Quick Check
+    pair (not interleaved into the tier-1 sequence, so an instructor short on time can skip
+    straight to Confusion Matrix). The 2 quiz frames from the orphan file were not re-added: its
+    "always predict No Cancer" AUC=0.5 quiz duplicates the point already covered by tier-1's own
+    Quick Check. With everything now duplicated into the live file, `ml_logisticregression_rocauc.tex`
+    was fully redundant (nothing `\input` it, no unique content left), so it was deleted rather
+    than kept as a stale duplicate. All 4 driver combinations recompiled clean (0 errors): Session
+    7 Presentation 78->86 pages, CheatSheet 8->10 pages (the same pre-existing 16.6pt CheatSheet
+    overfull noted below, unchanged); `Main_Seminar_ML_DataPrep_Presentation` 122->130 pages,
+    CheatSheet 12->14 pages. No open items remain for this file.
+
+    (Historical, for the counts two paragraphs up: all 4 driver combinations recompiled clean
+    (0 errors) after the tier-1 pass too: Session 7 Presentation 68->78 pages, CheatSheet 7->8
+    pages (one pre-existing 16.6pt CheatSheet overfull, unchanged, already documented above);
+    `Main_Seminar_ML_DataPrep_Presentation` 122 pages, CheatSheet 12 pages. Every new frame
+    rendered to an image and visually confirmed on both the Presentation and the narrow 3-column
+    CheatSheet. The large overfull/underfull counts on the two Presentations (468 and ~17k) are
+    the same pre-existing per-page Beamer footline artifact already documented elsewhere in this
+    file for other large decks (confirmed via a baseline page far from any edited content showing
+    the identical, purely cosmetic pattern) -- not a defect introduced here.)
 
 ### AI for Project/Program Managers seminar (Aug 2026)
 Standalone seminar `Main_Seminar_AI_ProjectManagers_{Presentation,CheatSheet}.tex` ->
@@ -1176,22 +1259,46 @@ architecture: 'qwen3'`). Findings:
   append `/no_think` to the prompt (Qwen3's documented soft-switch) — cuts response time from
   9-17s to under 1.5s per short reply and produces complete, correct answers. Always do this when
   using this model via `ChatLlamaCpp`.
-- **`bind_tools()` is NOT reliable**: the model's raw text gets tool choice and arguments right,
-  but LangChain's `ChatLlamaCpp` doesn't parse Qwen's `<tool_call>{...}</tool_call>` text format
-  into the structured `response.tool_calls` field agent code actually reads (comes back empty every
-  time), and the model's own JSON has been observed with a syntax bug (extra `}`). Not investigated:
-  whether `llama-cpp-python`'s native grammar-constrained `chat_format="chatml-function-calling"`
-  (a different code path than LangChain's default wrapper) would fix this.
+- **`bind_tools()` with default `chat_format`: NOT reliable.** The model's raw text gets tool
+  choice and arguments right, but LangChain's `ChatLlamaCpp` doesn't parse Qwen's
+  `<tool_call>{...}</tool_call>` text format into the structured `response.tool_calls` field agent
+  code actually reads (comes back empty every time), and the model's own JSON has been observed
+  with a syntax bug (extra `}`).
+- **Investigated 2026-08-22: `chat_format="chatml-function-calling"` (passed via
+  `ChatLlamaCpp(model_kwargs={"chat_format": "chatml-function-calling"})`) fixes the parsing, but
+  only when `tool_choice` is forced to a specific tool.** This handler is `llama-cpp-python`'s own
+  model-agnostic function-calling implementation (`llama_chat_format.py`, grammar-constrained), a
+  different code path from Qwen3's native `<tool_call>` tags. Tested directly against
+  `langchain_v1_createagent.py`'s `get_weather` tool:
+  - `tool_choice={"type": "function", "function": {"name": "get_weather"}}` (forced): works
+    cleanly, `response.tool_calls` comes back correctly structured (one cosmetic artifact: a
+    trailing comma inside the string arg, e.g. `{'city': 'Pune,'}`).
+  - `tool_choice="auto"` (the model deciding whether/which tool to call, what a real agent needs):
+    still fails. Qwen3-1.7B reasons about the tool in its `<think>` block but never triggers
+    `llama_cpp`'s auto tool-detection heuristic, it just talks about the tool instead of invoking
+    it, so `response.tool_calls` stays empty.
+  - **Conclusion: the blocker is narrower than "bind_tools doesn't work."** It's specifically that
+    this 1.7B model doesn't reliably self-trigger the auto tool-detection path. A larger local
+    Qwen3 (4B/8B, if downloaded) is the next thing to try if this is picked up again, not a
+    different `chat_format` or a different LangChain wrapper.
 - **Pilot confirmed working** for plain multi-turn chat (no tool calling) in
   `Code/langchain/langchain_v1_models.py`: `ChatGroq`/`init_chat_model` block commented out,
   `ChatLlamaCpp` active by default per the decided pattern (manual toggle in code, not automatic
   fallback). Reran the file's existing 4-turn translate-to-French example unchanged — correct
   output, multi-turn context handled correctly.
-- **Deliberately not done**: rolling this pattern out to the other 13 non-tool-calling `ChatGroq`
-  sites across `Code/` (a 13-file bulk edit, declined for now — `langchain_v1_models.py` stands as
-  the validated reference pattern if picked up later) and the 2 tool-calling sites
-  (`langchain_v1_createagent.py`, `omni-rag/agent.py`) stay on `ChatGroq`, blocked by the
-  `bind_tools()` finding above.
+- **2026-08-22: `omni-rag/agent.py` was misclassified as tool-calling-blocked; it isn't.** Checked
+  the whole `omni-rag/` folder: `agent.py`'s LangGraph `StateGraph` never calls `bind_tools()`,
+  retrieval is a direct Python call to `retriever.invoke()`, and the LLM is only ever called with
+  `llm.invoke(prompt)` on a plain string, same shape as `langchain_v1_models.py`'s validated
+  pattern. **Switched to local `ChatLlamaCpp` the same day** (`temperature=0`, `/no_think` appended
+  to the `generate_node` prompt); `llama-cpp-python>=0.3.34` added to
+  `Code/omni-rag/environment.yml`. Only `langchain_v1_createagent.py` remains on `ChatGroq`, and
+  only because of the genuine auto-tool_choice finding above, not a blanket bind_tools limitation.
+- **Deliberately not done**: rolling the `ChatGroq` -> local `ChatLlamaCpp` pattern out to the
+  other 13 non-tool-calling `ChatGroq` sites across `Code/` (declined for now —
+  `langchain_v1_models.py` stands as the validated reference pattern if picked up later).
+  `langchain_v1_createagent.py` stays on `ChatGroq`, the one remaining genuinely tool-calling site,
+  blocked by the auto-tool_choice finding above.
 - Separately, **OpenCode CLI + local Qwen was tested and found not viable**: an `opencode run`
   request is ~32K tokens (`AGENTS.md` + tool/MCP schemas + project context), and CPU-only prefill
   of that size timed out (`SSE read timed out` after 2m03s) even after raising the model's context
