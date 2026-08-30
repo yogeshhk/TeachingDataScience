@@ -1,0 +1,141 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Conclusions}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% T1h: Rewrote "So, What is RAG?" — original framing said "new paradigm" (outdated),
+%      listed "diversity" as a motivation (incorrect for RAG), and named
+%      "text summarization" as a primary impact (misleading).
+\begin{frame}[fragile]\frametitle{So, What is RAG?}
+
+\begin{itemize}
+\item RAG grounds LLM responses in \textbf{retrieved, verifiable documents}: the LLM reasons; external documents supply the facts.
+\item \textbf{Motivation:} Overcome knowledge cutoff dates, hallucinations, and lack of access to private or real-time data.
+\item \textbf{Impact:} State-of-the-art performance on knowledge-intensive tasks: enterprise Q\&A, document search, code assistance, and medical/legal research.
+\end{itemize}
+
+		\begin{center}
+		\includegraphics[width=0.8\linewidth,keepaspectratio]{rag48}
+		\end{center}
+
+{\tiny (Ref: A Crash Course on Building RAG Systems -Daily Dose)}
+
+\end{frame}
+
+% [REMOVED R2: "RAG Architecture" image-only slide (chatgpt47).
+%  Immediately followed by the more complete "RAG Architecture: The Two Pipelines"
+%  text slide which renders the image redundant in the conclusions section.]
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Architecture: The Two Pipelines}
+
+\begin{itemize}
+  \item \textbf{Indexing Pipeline (offline):}
+  \begin{enumerate}
+    \item Load documents from diverse sources.
+    \item Split into chunks (chunk size: 256--512 tokens typical).
+    \item Embed each chunk $\rightarrow$ dense vector $\mathbf{v} \in \mathbb{R}^d$.
+    \item Store $(\mathbf{v}, \text{chunk text}, \text{metadata})$ in a vector database.
+  \end{enumerate}
+
+  \item \textbf{Query Pipeline (online, per user request):}
+  \begin{enumerate}
+    \item Embed user query $\mathbf{q} \in \mathbb{R}^d$.
+    \item Find top-$k$ chunks: $\arg\max_i \cos(\mathbf{q}, \mathbf{v}_i)$.
+    \item Build prompt: \texttt{[System] + [Retrieved chunks] + [User query]}.
+    \item LLM generates a grounded answer.
+  \end{enumerate}
+
+  \item \textbf{Evaluation Pipeline (optional):}
+  Assess Faithfulness and Context Precision using RAGAS on a test set.
+\end{itemize}
+
+{\tiny (Ref: RAG Architecture -- Abhinav Kimothi)}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% T1i: Fixed `top_k` (Python notation) -> `top-$k$` (math notation, consistent with rest of deck).
+% U4:  Softened unattributed "90%" statistic to "industry consensus suggests".
+\begin{frame}[fragile]\frametitle{The Core RAG Bottleneck}
+      \begin{itemize}
+        \item Industry consensus suggests 90\% of RAG quality issues stem from poor retrieval---not the LLM.
+        \item Better LLMs do not fix bad retrieval.
+        \item Naive RAG: chunk, embed, retrieve top-$k$ --- too simplistic for production.
+        \item Poor retrieval causes hallucinations, omissions, and vague outputs.
+        \item Quality of generation depends on quality of retrieved context.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% U5: Expanded MRR, NDCG, success@k to full terms for an intermediate audience.
+\begin{frame}[fragile]\frametitle{RAG Best-Practice Checklist}
+\begin{enumerate}
+  \item \textbf{Fix the Basics First:} Dynamic chunking that respects document structure; tune chunk size; metadata filtering; hybrid search (vector + keyword).
+  \item \textbf{Improve Retrieval:} Re-ranking (learned or rule-based); small-to-big retrieval; multi-hop and agentic retrieval for complex queries.
+  \item \textbf{Evaluate Systematically:} End-to-end RAGAS metrics; component-level MRR (Mean Reciprocal Rank), NDCG (Normalized Discounted Cumulative Gain), and success@$k$. Don't iterate blindly.
+  \item \textbf{Fine-Tune as a Last Resort:} Only if retrieval and prompting are fully optimised and the domain is highly specialised. Be aware of added cost, latency, and complexity.
+\end{enumerate}
+\vspace{0.3em}
+{\small Iterate in this order. 90\% of quality gains come from steps 1--3.}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pros and Cons of RAG}
+
+\textbf{Pros:}
+\begin{itemize}
+\item \textbf{No retraining required}: plug any LLM into the pipeline.
+\item \textbf{Grounded responses}: answer is traceable to source documents.
+\item \textbf{Knowledge stays current}: update the vector store, not the model.
+\item \textbf{Lower hallucination rate} than a standalone LLM on domain-specific queries.
+\item \textbf{Source attribution}: users can verify where the answer came from.
+\end{itemize}
+
+\textbf{Cons:}
+\begin{itemize}
+\item \textbf{Added latency}: retrieval + LLM call is slower than LLM alone.
+\item \textbf{Retrieval can fail}: bad chunking or embeddings means the right context is never found.
+\item \textbf{Context window limits}: only a finite number of chunks can be injected.
+\item \textbf{Garbage-in, garbage-out}: quality of answers depends on quality of the document corpus.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Agentic RAG: Beyond One-Shot Retrieval}
+\begin{itemize}
+  \item \textbf{Limitation of naive RAG:} A single retrieve-then-generate step fails on complex, multi-hop questions that require combining information from several sources.
+  \item \textbf{Agentic RAG:} An LLM agent decides \textit{whether} to retrieve, \textit{what} to retrieve, and \textit{when to stop}: iterating until the answer is sufficiently grounded.
+  \item \textbf{Key patterns:}
+    \begin{itemize}
+      \item \textbf{Self-RAG:} The LLM scores its own retrieval need and answer quality at each step; skips retrieval when unnecessary.
+      \item \textbf{CRAG (Corrective RAG):} Detects when retrieved context is irrelevant and triggers a corrective web search.
+      \item \textbf{ReAct + RAG:} Interleaves reasoning steps (\textit{Thought:}) with retrieval actions (\textit{Search:}) in a loop.
+    \end{itemize}
+  \item \textbf{Frameworks:} LangGraph, LlamaIndex Agents, OpenAI Assistants API.
+\end{itemize}
+\vspace{0.2em}
+{\small \textbf{Trade-off:} Higher answer quality on complex queries; variable latency and cost due to multi-step LLM calls.}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Challenges and Future Directions}
+
+\begin{itemize}
+\item \textbf{Multi-modal RAG:} Extend retrieval to images, tables, audio, and video (using CLIP-style embeddings or captioning models).
+\item \textbf{Long-Context RAG:} As LLMs support 1M+ token windows, the trade-off between retrieval and direct context injection will shift.
+\item \textbf{Self-Correcting RAG:} Systems that can detect their own retrieval failures and automatically re-query (Self-RAG, CRAG).
+\item \textbf{Graph RAG:} Using knowledge graphs instead of flat vector stores to capture entity relationships and improve multi-hop reasoning.
+\item \textbf{Privacy-Preserving RAG:} Federated retrieval across siloed enterprise systems without data leakage.
+\item \textbf{Bias Mitigation:} Ensuring retrieved documents do not introduce selection bias into generated answers.
+\end{itemize}
+
+\end{frame}

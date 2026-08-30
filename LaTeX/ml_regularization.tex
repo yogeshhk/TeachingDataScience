@@ -1,0 +1,631 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Regularizations}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Problem}
+Over-fitting
+
+\begin{itemize}
+\item Model built on training dataset works well, meaning, has less error.
+\item Same model when used on the testing/validation set, then errors are more.
+\item Reason: Over-fitting
+\item Model has fitted the training data too rigidly, so that it does not work well on the other dataset, means, High Variance also.
+\item Solution: to make model more generalized, less complex.
+\item One such technique: Regularization
+\item In regularization,normally we keep the same number of features, but reduce the magnitude of the coefficients. 
+\item How does reducing the coefficients will help us?
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Regularization}
+\begin{itemize}
+\item Example: Training data with x as weight and size as y.
+\item We try to fit a line with minimum sum of squares. 
+\item Say, we get the equation of the line
+\item More the points better the general line.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{regul1}
+\end{center}
+
+{\tiny (Ref: Regularization - StatQuest with Josh Starmer)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Regularization}
+\begin{itemize}
+\item But, say, we had very few points to train eg. only two!!
+\item With Least Square method, we get the line, which obvously passes through both the points.
+\item Whats the error while training?
+\item Zero.
+\item But what would be testing/validation (remaining points) error?
+\item Large. High Variance, Over-fitting.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.4\linewidth,keepaspectratio]{regul2}
+\end{center}
+
+{\tiny (Ref: Regularization - StatQuest with Josh Starmer)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Regularization}
+\begin{itemize}
+\item Main idea behind Ridge Regression is NOT to fit the line perfectly!! 
+\item So that variance with testing data is less.
+\item This is done by adding small amount of BIAS in the LOSS equation. 
+\item After Optimization, the Line shifts and thus the Variance reduces.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{regul3}
+\end{center}
+
+{\tiny (Ref: Regularization - StatQuest with Josh Starmer)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Ridge Regression}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ridge Regression}
+\begin{itemize}
+\item The Bias term is $\lambda \times slope^2$ (slope == weights or coefficients)
+\item Example: Lets have some over-fitted line equation. 
+\item As it passes through the point
+\item In the Loss function, the sum of squares will be Zero, but the new bias term will have some value
+\item Assume Lambda to be 1 for now, and the answer is 1.69. Meaning the Y intercept has SHIFTED!!.
+\item The line does not pass through the two points any more, its more general, and thus avoids the over-fitting.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{regul4}
+\end{center}
+
+{\tiny (Ref: Regularization - StatQuest with Josh Starmer)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ridge Regression}
+\begin{itemize}
+\item 1.69 is the Ridge Regression penalty.
+\item If we optimize including the pentalty term, we will get new line, a new equation, say
+ $Size = 0.9 + 0.8 \times Weight$ 
+\item Its Ridge Regression penalty comes, say, 0.74, far less!! Better.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{regul5}
+\end{center}
+
+{\tiny (Ref: Regularization - StatQuest with Josh Starmer)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ridge Regression}
+\begin{itemize}
+\item If the slope of the (original over-fit) line is steeper (meaning more weight value), meaning more y value change for same x change. More sensitive to small x change. 
+\item Better to have smaller slope, for less sensitivity.
+\item As seen before, due to Ridge regression, the slope got reduced.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{regul6}
+\end{center}
+
+{\tiny (Ref: Regularization - StatQuest with Josh Starmer)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ridge Regression}
+\begin{itemize}
+\item Minimization term in Ridge Regression line has the bias term also.
+\item For $\lambda = 0$ the penalty term is 0 thus the line becomes same as Overfit line, which has 0 sum of squares error also.
+\item But for Lambda values more than 0, it become flatter, with lambda as 2, more flatter, and so on.
+\item We can try cross-validation and grid search to get good lambda value.
+\item Ridge Regression penalty term has all the weight terms squared.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{regul7}
+\end{center}
+
+{\tiny (Ref: Regularization - StatQuest with Josh Starmer)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+
+\begin{lstlisting}
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import matplotlib
+matplotlib.rcParams.update({'font.size': 12})
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
+
+# load_boston() was removed from scikit-learn (ethical-concerns removal,
+# since v1.2) -- load the same dataset directly from its CSV instead
+url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/housing.data"
+names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'LSTAT', 'Price']
+boston_df = pd.read_csv(url, delim_whitespace=True, names=names)
+newX=boston_df.drop('Price',axis=1)
+print(newX[0:3]) # check
+newY=boston_df['Price']
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+Higher the alpha value, more restriction on the coefficients; low alpha $>$ more generalization, coefficients are barely restricted and in this case linear and ridge regression resembles.
+
+\begin{lstlisting}
+X_train,X_test,y_train,y_test=train_test_split(newX,newY,test_size=0.3,random_state=3)
+
+lr = LinearRegression()
+lr.fit(X_train, y_train)
+
+rr = Ridge(alpha=0.01)
+rr.fit(X_train, y_train)
+
+rr100 = Ridge(alpha=100) #  comparison with alpha value
+rr100.fit(X_train, y_train)
+\end{lstlisting}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+
+\begin{lstlisting}
+train_score=lr.score(X_train, y_train)
+test_score=lr.score(X_test, y_test)
+Ridge_train_score = rr.score(X_train,y_train)
+Ridge_test_score = rr.score(X_test, y_test)
+Ridge_train_score100 = rr100.score(X_train,y_train)
+Ridge_test_score100 = rr100.score(X_test, y_test)
+print("linear regression train score:", train_score)
+print("linear regression test score:", test_score)
+print("ridge regression train score low alpha:", Ridge_train_score)
+print("ridge regression test score low alpha:", Ridge_test_score)
+print("ridge regression train score high alpha:", Ridge_train_score100)
+print("ridge regression test score high alpha:", Ridge_test_score100)
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+
+\begin{lstlisting}
+plt.plot(rr.coef_,alpha=0.7,linestyle='none',marker='*',markersize=5,color='red',
+label=r'Ridge; $\alpha = 0.01$',zorder=7) # zorder for ordering the markers
+
+plt.plot(rr100.coef_,alpha=0.5,linestyle='none',marker='d',markersize=6,color='blue',
+label=r'Ridge; $\alpha = 100$') # alpha here is for transparency
+
+plt.plot(lr.coef_,alpha=0.4,linestyle='none',marker='o',markersize=7,color='green',
+label='Linear Regression')
+
+plt.xlabel('Coefficient Index',fontsize=16)
+plt.ylabel('Coefficient Magnitude',fontsize=16)
+plt.legend(fontsize=13,loc=4)
+plt.show()
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ridge Regression}
+\begin{itemize}
+\item 13 features on x axis
+\item For low value of $\alpha$, same as lambda (0.01), when the coefficients are less restricted, the magnitudes of the coefficients are almost same as of linear regression.
+\item For higher value of $\alpha$ (100), we see that for coefficient indices 3,4,5 the magnitudes are considerably less compared to linear regression case. 
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{regul8}
+\end{center}
+
+{\tiny (Ref: Ridge and Lasso Regression: A Complete Guide with Python Scikit-Learn - Saptashwa)}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{L2 Regularization (Ridge penalization| Gaussian Prior)}
+
+
+	% \begin{itemize}
+	% \item We can quantify complexity using the $L_2$ regularization formula, which defines the regularization term as the sum of the squares of all the feature weights: $L_2\text{ regularization term} = ||\boldsymbol w||_2^2 = {w_1^2 + w_2^2 + ... + w_n^2}$
+	% \item In this formula, weights close to zero have little effect on model complexity, while outliers weights can have a huge impact.
+	% \item Very large weights {\bf w} fit the training data very well, but poorly predict future data. 
+	% \item ``Regularization'' means modifying the optimization problem to prefer small weights. 
+	% \end{itemize}
+	
+	% % (Ref: https://developers.google.com/machine-learning/crash-course/regularization-for-simplicity/l2-regularization)
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Intuition}
+
+
+	% \begin{itemize}
+	% \item If you have two ways of fitting your data, such as $y=2x_1+0x_2$ or $y=x_1+x_2$, 
+	% \item You prefer the latter because the penalty is $2^2+0^2=4$ in the former and $1^2+1^2=2$ in the latter. 
+	% \item In general the effect of each weight on the prediction will be linear but its penalty will be quadratic. 
+	% \item Thus it will pay off to put lots of small values instead of just a few big ones.
+	% \end{itemize}
+	
+	% % (Ref: https://stats.stackexchange.com/questions/247940/how-does-the-l2-regularization-penalize-the-high-value-weights)
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition}
+
+\begin{center}
+\includegraphics[width=0.7\linewidth,keepaspectratio]{reg4}
+\end{center}
+
+	\begin{itemize}
+	\item Example: If we want to minimize the influence of two parameters, let's say $\theta_3$ and $\theta_4$, it seems like we have to give a large value of regularization parameter just like the equation below.
+	
+
+\item Why the bigger regularization parameter (lambda) reduces the influence instead of increasing it? How does this function work?
+
+	\end{itemize}
+	
+	% (Ref: https://stackoverflow.com/questions/44742122/how-does-regularization-parameter-work-in-regularization)
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Intuition}
+\begin{center}
+\includegraphics[width=0.7\linewidth,keepaspectratio]{reg4}
+\end{center}
+
+	\begin{itemize}
+\item As you increase the regularization parameter, optimization function will have to choose a smaller theta in order to minimize the total cost.
+\item In $L_2$ as thetas are enhanced by squaring, the reduction in their effect is more.
+\item Its like feature selection by suppression of unwanted.
+	\end{itemize}
+	
+	% (Ref: https://stackoverflow.com/questions/44742122/how-does-regularization-parameter-work-in-regularization)
+\end{frame}
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Regularization}
+
+
+	% \begin{itemize}
+	% \item For example, a linear model with the following weights: $\{w_1 = 0.2, w_2 = 0.5, w_3 = 5, w_4 = 1, w_5 = 0.25, w_6 = 0.75\}$
+	% \item Has an L2 regularization term of 26.915: $w_1^2 + w_2^2 + \boldsymbol{w_3^2} + w_4^2 + w_5^2 + w_6^2 = = 0.2^2 + 0.5^2 + \boldsymbol{5^2} + 1^2 + 0.25^2 + 0.75^2 = = 0.04 + 0.25 + \boldsymbol{25} + 1 + 0.0625 + 0.5625 = 26.915$
+	% \item But $w_3$, with a squared value of 25, contributes nearly all the complexity. The sum of the squares of all five other weights adds just 1.915 to the L2 regularization term.
+	% \end{itemize}
+	
+	% % (Ref: https://developers.google.com/machine-learning/crash-course/regularization-for-simplicity/l2-regularization)
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Regularization}
+
+
+	% \begin{itemize}
+	% \item Model developers tune the overall impact of the regularization term by multiplying its value by a scalar known as lambda (also called the regularization rate). That is, model developers aim to do the following: $minimize(Loss(Data|Model) + \lambda \text{ complexity(Model))}$
+	% \item Lambda decides how much we care about the model fitting well versus how we care about  {\bf w} being small. 
+	% \item Performing $L_2$ regularization has the following effect on a model
+	% \begin{itemize}
+
+		% \item Encourages weight values toward 0 (but not exactly 0) (near to 0 position)
+		% \item Encourages the mean of the weights toward 0, with a normal (bell-shaped or Gaussian) distribution.
+	% \end{itemize}
+		% \end{itemize}
+
+	% % (Ref: https://developers.google.com/machine-learning/crash-course/regularization-for-simplicity/l2-regularization)
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Regularization}
+% Increasing the lambda value strengthens the regularization effect. For example, the histogram of a typical set of weights for a high value of lambda might look as shown below:
+
+% \begin{center}
+% \includegraphics[width=0.6\linewidth,keepaspectratio]{reg2}
+% \end{center}
+
+	% % (Ref: https://developers.google.com/machine-learning/crash-course/regularization-for-simplicity/l2-regularization)
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Regularization}
+% Lowering the value of lambda tends to yield a flatter histogram, as shown below:
+
+% \begin{center}
+% \includegraphics[width=0.6\linewidth,keepaspectratio]{reg3}
+% \end{center}
+
+	% % (Ref: https://developers.google.com/machine-learning/crash-course/regularization-for-simplicity/l2-regularization)
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Regularization}
+
+% When choosing a lambda value, the goal is to strike the right balance between simplicity and training-data fit:
+	% \begin{itemize}
+	% \item If your lambda value is too high, your model will be simple, but you run the risk of under-fitting your data. Your model won't learn enough about the training data to make useful predictions.
+
+% \item If your lambda value is too low, your model will be more complex, and you run the risk of over-fitting your data. Your model will learn too much about the particularities of the training data, and won't be able to generalize to new data.
+		% \end{itemize}
+
+	% % (Ref: https://developers.google.com/machine-learning/crash-course/regularization-for-simplicity/l2-regularization)
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Lasso Regression}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Lasso Regression}
+\begin{itemize}
+\item Ridge Regression penalty is $\lambda \sum{weights^2}$
+\item For Lasso Regression the penalty is $\lambda \sum{|weights|}$
+\item Similarly, due to added bias, the line flattens a bit.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{regul9}
+\end{center}
+
+{\tiny (Ref: Regularization - StatQuest with Josh Starmer)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Similarity}
+Both Ridge and Lasso have similar looking formula, and they behave similarly ie they flatten the over-fit line. 
+
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{regul10}
+\end{center}
+
+{\tiny (Ref: Regularization - StatQuest with Josh Starmer)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Difference}
+As lambda increase slope can turn to 0 (not just TENDS to 0 as in Ridge Regression).
+That means it eliminates useless features completely.
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{regul12}
+\end{center}
+
+\begin{block}{Intuition}
+Squaring (Ridge, $L_2$) punishes large weights much harder than small ones, so the optimizer happily shrinks a weight from 0.3 to 0.01 but has little incentive to push it the rest of the way to exactly 0. Taking the absolute value (Lasso, $L_1$) penalizes every unit of weight equally regardless of size, so once a feature stops pulling its weight, driving it all the way to 0 is just as cheap as any other step -- which is why only Lasso does automatic feature selection.
+\end{block}
+
+{\tiny (Ref: Regularization - StatQuest with Josh Starmer)}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+
+\begin{lstlisting}
+import matplotlib.pyplot as plt
+import numpy as np 
+import pandas as pd
+import matplotlib
+from sklearn.linear_model import Lasso
+from sklearn.linear_model import LinearRegression
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+
+cancer = load_breast_cancer()
+cancer_df = pd.DataFrame(cancer.data, columns=cancer.feature_names)
+X = cancer.data
+Y = cancer.target
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+
+\begin{lstlisting}
+X_train,X_test,y_train,y_test=train_test_split(X,Y, test_size=0.3, random_state=31)
+
+lasso = Lasso()
+lasso.fit(X_train,y_train)
+train_score=lasso.score(X_train,y_train)
+test_score=lasso.score(X_test,y_test)
+coeff_used = np.sum(lasso.coef_!=0)
+print("training score:", train_score)
+print("test score:", test_score)
+print("number of features used:", coeff_used)
+\end{lstlisting}
+
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+
+\begin{lstlisting}
+lasso001 = Lasso(alpha=0.01, max_iter=10e5)
+lasso001.fit(X_train,y_train)
+train_score001=lasso001.score(X_train,y_train)
+test_score001=lasso001.score(X_test,y_test)
+coeff_used001 = np.sum(lasso001.coef_!=0)
+print("training score for alpha=0.01:", train_score001)
+print("test score for alpha =0.01:", test_score001)
+print("number of features used for alpha =0.01:", coeff_used001)
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+
+\begin{lstlisting}
+lasso00001 = Lasso(alpha=0.0001, max_iter=10e5)
+lasso00001.fit(X_train,y_train)
+train_score00001=lasso00001.score(X_train,y_train)
+test_score00001=lasso00001.score(X_test,y_test)
+coeff_used00001 = np.sum(lasso00001.coef_!=0)
+print("training score for alpha=0.0001:", train_score00001)
+print("test score for alpha =0.0001:", test_score00001)
+print("number of features used for alpha =0.0001:", coeff_used00001)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+
+\begin{lstlisting}
+lr = LinearRegression()
+lr.fit(X_train,y_train)
+lr_train_score=lr.score(X_train,y_train)
+lr_test_score=lr.score(X_test,y_test)
+print("LR training score:", lr_train_score)
+print("LR test score:", lr_test_score)
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+Output
+
+\begin{lstlisting}
+training score: 0.5600974529893081
+test score:  0.5832244618818156
+number of features used:  4
+training score for alpha=0.01: 0.7037865778498829
+test score for alpha =0.01:  0.664183157772623
+number of features used for alpha =0.01: 10
+training score for alpha=0.0001: 0.7754092006936697
+test score for alpha =0.0001:  0.7318608210757904
+number of features used: for alpha =0.0001: 22
+LR training score: 0.7842206194055068
+LR test score:  0.7329325010888681
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+
+\begin{lstlisting}
+plt.subplot(1,2,1)
+plt.plot(lasso.coef_,alpha=0.7,linestyle='none',marker='*',markersize=5,
+color='red',label=r'Lasso; $\alpha = 1$',zorder=7) # alpha here is for transparency
+
+plt.plot(lasso001.coef_,alpha=0.5,linestyle='none',marker='d',markersize=6,
+color='blue',label=r'Lasso; $\alpha = 0.01$') # alpha here is for transparency
+
+plt.xlabel('Coefficient Index',fontsize=16)
+plt.ylabel('Coefficient Magnitude',fontsize=16)
+plt.legend(fontsize=13,loc=4)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code}
+
+\begin{lstlisting}
+plt.subplot(1,2,2)
+plt.plot(lasso.coef_,alpha=0.7,linestyle='none',marker='*',markersize=5,
+color='red',label=r'Lasso; $\alpha = 1$',zorder=7) # alpha here is for transparency
+
+plt.plot(lasso001.coef_,alpha=0.5,linestyle='none',marker='d',markersize=6,
+color='blue',label=r'Lasso; $\alpha = 0.01$') # alpha here is for transparency
+
+plt.plot(lasso00001.coef_,alpha=0.8,linestyle='none',marker='v',markersize=6,
+color='black',label=r'Lasso; $\alpha = 0.00001$') # alpha here is for transparency
+
+plt.plot(lr.coef_,alpha=0.7,linestyle='none',marker='o',markersize=5,
+color='green',label='Linear Regression',zorder=2)
+
+plt.xlabel('Coefficient Index',fontsize=16)
+plt.ylabel('Coefficient Magnitude',fontsize=16)
+plt.legend(fontsize=13,loc=4)
+plt.tight_layout()
+plt.show()
+\end{lstlisting}
+
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Lasso Regression}
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{regul11}
+\end{center}
+
+{\tiny (Ref: Ridge and Lasso Regression: A Complete Guide with Python Scikit-Learn - Saptashwa)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Lasso Regression}
+\begin{itemize}
+\item With this, out of 30 features in cancer data-set, only 4 features are used (non zero value of the coefficient).
+\item Both training and test score (with only 4 features) are low; conclude that the model is under-fitting the cancer data-set.
+\item Reduce this under-fitting by reducing alpha and increasing number of iterations. Now $\alpha = 0.01$, non-zero features =10, training and test score increases.
+\item Comparison of coefficient magnitude for two different values of alpha are shown in the left panel of figure 2. For alpha =1, we can see most of the coefficients are zero or nearly zero, which is not the case for alpha=0.01.
+\item Further reduce $\alpha =0.0001$, non-zero features = 22. Training and test scores are similar to basic linear regression case.
+\item In the right panel of figure, for $\alpha = 0.0001$, coefficients for Lasso regression and linear regression show close resemblance.
+\end{itemize}
+
+
+{\tiny (Ref: Ridge and Lasso Regression: A Complete Guide with Python Scikit-Learn - Saptashwa)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Regularization}
+\begin{block}{Think About It}
+The breast cancer example shows: $\alpha=1$ uses 4 features, $\alpha=0.01$ uses 10, $\alpha=0.0001$ uses 22, and plain Linear Regression (no penalty at all) uses all 30. Training score also climbs the same direction: 0.56, 0.70, 0.78, 0.78. If a lower $\alpha$ keeps producing a better training score, why not always set $\alpha$ as close to 0 as possible?
+\end{block}
+\pause
+\begin{block}{Answer}
+Training score alone is a trap -- as $\alpha \to 0$, Lasso keeps more and more features and approaches plain Linear Regression, which fits the training data best precisely because it's the most free to overfit it. What actually matters is the \emph{test} score, and in this example it peaks around $\alpha=0.0001$ (0.732) rather than at $\alpha=0$ (0.733, barely different, using 8 more features for almost no gain). The right $\alpha$ is the one that generalizes, found via cross-validation on held-out data -- not the one that minimizes training error.
+\end{block}
+\end{frame}
+
+
+
+
+

@@ -1,0 +1,490 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Implementations}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Use as LLM}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Diff LLMs, Diff Calls}
+
+\begin{center}
+
+ \includegraphics[width=0.8\linewidth,keepaspectratio]{langchain18}
+		
+  {\tiny (Ref: What is LangChain - Yash Jain)}
+\end{center}
+
+Langchain provides abstraction. No LLM specific API calls, but a generic way. Need to install specific extension though and have to have respective KEYs.
+
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+
+pip install -U langchain langchain-openai langchain-anthropic langchain-google-genai langchain-groq
+\end{lstlisting}	
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Model Integration: Modern Approach}
+
+% \begin{lstlisting}[language=python, basicstyle=\tiny]
+% Updated Import Structure:
+
+% # OpenAI models
+% from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
+% # Hugging Face models
+% from langchain_huggingface import HuggingFaceEndpoint
+
+% # Google models (Gemini)
+% from langchain_google_genai import ChatGoogleGenerativeAI
+
+% # Anthropic models
+% from langchain_anthropic import ChatAnthropic
+
+% // Example Usage:
+% from langchain_groq import ChatGroq
+% from langchain_core.messages import HumanMessage, SystemMessage
+
+% # Initialize Groq with Gemma
+% chat = ChatGroq(model="gemma2-9b-it", temperature=0.7)
+
+% messages = [
+    % SystemMessage(content="You are a helpful assistant"),
+    % HumanMessage(content="Explain LangChain in 2 sentences")
+% ]
+
+% response = chat.invoke(messages)
+% print(response.content)
+% \end{lstlisting}
+
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Common Way of Calling Diff LLMs: V0}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
+from langchain_anthropic import ChatAnthropic
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage
+
+gpt_model = ChatOpenAI(
+    model="gpt-4o",
+    temperature=0.7,
+    max_tokens=500)
+
+groq_model = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    temperature=0.2,
+    # Groq-specific param example:
+    # reasoning_format="raw" )
+
+claude_model = ChatAnthropic(
+    model="claude-3-5-sonnet-latest",
+    timeout=None,
+    stop_sequences=["\n\nHuman:"])
+
+gemini_model = ChatGoogleGenerativeAI(
+    model="gemini-1.5-pro",
+    convert_system_message_to_human=True # Legacy helper for older models)
+
+def run_demo(model, provider_name):
+    message = [HumanMessage(content="Explain quantum entanglement in one sentence.")]
+    response = model.invoke(message)
+    print(f"Response: {response.content}\n")
+
+run_demo(gpt_model, "OpenAI")
+\end{lstlisting}	  
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Common Way of Calling Diff LLMs: V1}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+
+import os
+from langchain.chat_models import init_chat_model
+from langchain_core.messages import HumanMessage, SystemMessage
+
+# os.environ["OPENAI_API_KEY"] = "sk-..."
+# os.environ["ANTHROPIC_API_KEY"] = "sk-ant-..."
+# os.environ["GOOGLE_API_KEY"] = "..."
+# os.environ["GROQ_API_KEY"] = "gsk_..."
+
+def get_response(provider_string, user_query):
+    """
+    Initializes a model based on the provider string: 'openai', 'anthropic', 'google', or 'groq'.
+    """
+    llm = init_chat_model(provider_string, temperature=0) 
+    
+    messages = [
+        SystemMessage(content="You are a helpful research assistant."),
+        HumanMessage(content=user_query)    ]
+    return llm.invoke(messages)
+
+gpt_response = get_response("openai:gpt-4o", "What is LangChain v1?")
+print(f"GPT-4o: {gpt_response.content[:100]}...")
+
+claude_response = get_response("anthropic:claude-3-5-sonnet-latest", "What is LangChain v1?")
+print(f"Claude: {claude_response.content[:100]}...")
+
+gemini_response = get_response("google_genai:gemini-1.5-pro", "What is LangChain v1?")
+print(f"Gemini: {gemini_response.content[:100]}...")
+
+groq_response = get_response("groq:llama-3.3-70b-versatile", "What is LangChain v1?")
+print(f"Groq: {groq_response.content[:100]}...")
+\end{lstlisting}	  
+
+
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sentiment Analysis: Zero Shot}
+
+% Sentiment analysis involves analyzing a text to determine the sentiment, whether it is positive, negative, or neutral.
+% {\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# 1. Define the LLM
+model = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
+
+# 2. Create a prompt template
+prompt = ChatPromptTemplate.from_template(
+    "Analyze the sentiment of the following text. "
+    "Respond with only one word: Positive, Negative, or Neutral.\n"
+    "Text: {input_text}"
+)
+
+# 3. Create a simple output parser
+parser = StrOutputParser()
+
+# 4. Build the LCEL chain
+chain = prompt | model | parser
+
+# Define input text
+input_text = "I love LangChain! It's the best NLP library I've ever used."
+
+# 5. Invoke the chain
+sentiment = chain.invoke({"input_text": input_text})
+
+# Print the sentiment
+print(sentiment)
+\end{lstlisting}	  
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Named Entity Recognition (NER): Zero Shot}
+
+% Named Entity Recognition is the process of identifying and categorizing named entities such as people, places, organizations, and dates in text data.
+
+% % {\tiny (Ref: LangChain: New NLP/NLU Shining Armor - Sandeep Singh)}
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# 1. Setup Model
+model = ChatGroq(model="llama-3.3-70b-versatile")
+
+# 2. Create Prompt for NER extraction
+template = """
+Identify the named entities (Person, Organization, Amount) in the text.
+Format the output as a bulleted list.
+
+Text: {text}
+"""
+prompt = ChatPromptTemplate.from_template(template)
+
+# 3. Build Chain
+chain = prompt | model | StrOutputParser()
+
+# 4. Invoke
+input_text = "Microsoft is acquiring Nuance Communications for $19.7 billion."
+entities = chain.invoke({"text": input_text})
+print(entities)
+\end{lstlisting}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Use as Chains}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LCEL: Basic Example}
+
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+#  Old Pattern (Deprecated):
+from langchain.llms import OpenAI
+from langchain.chains import LLMChain
+
+llm = OpenAI()
+chain = LLMChain(llm=llm, prompt=prompt)
+result = chain.run("input")
+
+# Modern LCEL Pattern with Groq:
+
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# Set up Groq model, e.g., Gemma or Llama 3
+llm = ChatGroq(model_name="gemma2-9b-it")
+prompt = ChatPromptTemplate.from_template("Tell me about {topic}")
+output_parser = StrOutputParser()
+
+# Build chain with pipe operator
+chain = prompt | llm | output_parser
+
+# Invoke the chain
+result = chain.invoke({"topic": "LangChain"})
+print(result)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LCEL: Advanced Features}
+
+Streaming Support:
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+import asyncio
+
+async def main():
+    # Stream tokens as they're generated (Works in standard functions)
+    for chunk in chain.stream({"topic": "AI"}):
+        print(chunk, end="", flush=True)
+    print("\n")
+
+    # Async invocation (Must be inside async function)
+    result = await chain.ainvoke({"topic": "AI"})
+    print(f"Result: {result}\n")
+
+    # Async streaming
+    async for chunk in chain.astream({"topic": "AI"}):
+        print(chunk, end="", flush=True)
+    print("\n")
+
+    # Process multiple inputs in parallel (Sync version)
+    results = chain.batch([
+        {"topic": "AI"},
+        {"topic": "ML"},
+        {"topic": "LangChain"}
+    ])
+    print(f"Batch Results: {results}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LCEL: Complex Chains}
+
+Multi-step Chain with RunnablePassthrough:
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+from langchain_core.runnables import RunnablePassthrough
+
+chain = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | output_parser
+)
+
+result = chain.invoke("What is LangChain?")
+print(result)
+
+# Parallel Execution with RunnableParallel:
+from langchain_core.runnables import RunnableParallel
+
+chain = RunnableParallel(
+    summary=prompt1 | llm | output_parser,
+    keywords=prompt2 | llm | output_parser
+)
+
+result = chain.invoke({"text": "Long document..."})
+print(result)
+# Returns: {"summary": "...", "keywords": "..."}
+\end{lstlisting}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Use as RAG}
+\end{center}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Complete RAG Application: A Quick Start Example}
+
+% import os
+% from langchain_groq import ChatGroq
+% from langchain_huggingface import HuggingFaceEmbeddings
+% from langchain_community.document_loaders import PyPDFLoader
+% from langchain_text_splitters import RecursiveCharacterTextSplitter
+% from langchain_chroma import Chroma
+% from langchain_core.prompts import ChatPromptTemplate
+% from langchain_core.output_parsers import StrOutputParser
+% from langchain_core.runnables import RunnablePassthrough
+% from langchain.chat_models import init_chat_model
+
+\begin{lstlisting}[language=python, basicstyle=\tiny]
+# imports 
+
+loader = PyPDFLoader("data/ag-studio.pdf")
+docs = loader.load()
+
+splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+splits = splitter.split_documents(docs)
+
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings,collection_name="local-pdf-rag")
+retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+
+prompt = ChatPromptTemplate.from_template("""Answer the question based ONLY on the following context:
+{context} Question: {question}""")
+
+model = init_chat_model("llama-3.3-70b-versatile", model_provider="groq",temperature=0)
+
+# Note: retriever | format_docs ensures the model gets text, not Document objects
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+chain = ({"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt | model | StrOutputParser())
+
+response = chain.invoke("What is the main topic of this document?")
+print(response)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Use as Agent}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Modern Agent in LangChain v1}
+
+% % \textbf{Key Differences from v0:}
+% \begin{itemize}
+% \item No more \texttt{AgentExecutor} or \texttt{create\_tool\_calling\_agent}
+% \item Built on LangGraph internally
+% \item Returns full message history
+% % \item Durable execution by default
+% \end{itemize}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+from langchain_core.tools import tool
+
+@tool
+def get_weather(city: str) -> str:
+    """Get weather for a given city."""
+    # Add a print here so you can see when the function actually runs!
+    print(f"--- Executing get_weather for {city} ---")
+    return f"It's always sunny in {city}!"
+
+llm = init_chat_model("llama-3.3-70b-versatile", model_provider="groq")
+
+# In v1.0, create_agent creates a compiled graph.
+# We need to make sure the agent is permitted to call tools.
+agent = create_agent(
+    model=llm,
+    tools=[get_weather],
+    system_prompt="You are a helpful assistant. If you need weather info, use the tool."
+)
+
+# Use the invoke method
+inputs = {"messages": [("user", "What is the weather in Pune?")]}
+response = agent.invoke(inputs)
+
+# In v1.0, the response contains the full message history of the turn.
+# The last message should now be the assistant's final answer AFTER the tool result.
+for msg in response["messages"]:
+    msg.pretty_print()
+\end{lstlisting}
+
+
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Example: Defining a Simple Agent in LangChain 1.0}
+% \begin{lstlisting}[language=Python]
+% #  https://docs.langchain.com/oss/python/langchain/overview
+
+% # pip install -qU langchain langchain-groq
+% from langchain_groq import ChatGroq
+% from langchain.agents import create_agent
+% from langchain.tools import tool
+% from langchain.messages import ToolMessage
+
+% @tool
+% def get_weather(city: str) -> str:
+    % """Get weather for a given city."""
+    % return f"It's always sunny in {city}!"
+
+% # Initialize Groq LLM (ensure GROQ_API_KEY is set in your environment)
+% llm = ChatGroq(model="llama-3.3-70b-versatile")  # https://console.groq.com/docs/models
+
+% agent = create_agent(
+    % model= llm,
+    % tools=[get_weather],
+    % system_prompt="You are a helpful assistant. When you call a tool, its output IS the final answer. Do not respond after tool output. Do not explain.",
+% )
+
+% # Run the agent
+% response = agent.invoke(
+    % {"messages": [{"role": "user", "content": "what is the weather in Pune"}]},
+     % return_intermediate_steps=True
+% )
+
+% tool_output = next(
+    % m.content for m in response["messages"] if isinstance(m, ToolMessage)
+% )
+
+% print(tool_output)
+% \end{lstlisting}
+% \end{frame}

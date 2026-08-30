@@ -1,0 +1,376 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Topological Deep Learning}
+
+{\small Going Beyond Graphs}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reality Lacks a Universal Coordinate System}
+
+\begin{columns}
+  \begin{column}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{tdl35}
+  \end{column}
+  \begin{column}{0.42\textwidth}
+    \begin{itemize}
+      \item Euclidean methods assume a fixed grid and global coordinates
+      \item Real-world data --- social networks, molecules, 3D surfaces --- has \textbf{no underlying grid}
+      \item A rigid 3$\times$3 filter cannot slide over a curved surface or arbitrary topological connections
+      \item We need models that respect the \textbf{intrinsic shape} of data
+    \end{itemize}
+  \end{column}
+\end{columns}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Graph Bottleneck: Why Pairwise Is Not Enough}
+
+\begin{center}
+  \includegraphics[width=0.82\linewidth]{tdl21}
+\end{center}
+
+\begin{itemize}
+  \item Graphs encode only \textbf{pairwise} (binary) relationships: one edge connects exactly two nodes
+  \item Many real interactions are \textbf{multi-way}: a drug binds a protein complex, a paper has many co-authors, a reaction involves several molecules simultaneously
+  \item Standard GNNs cannot represent these higher-order interactions natively
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GNNs Hit a Pairwise Wall}
+
+\begin{center}
+  \includegraphics[width=0.82\linewidth]{tdl11}
+\end{center}
+
+\begin{itemize}
+  \item Left: standard graph --- every relation is an edge between \emph{two} nodes
+  \item Right: simplicial complex --- triangles and tetrahedra encode \textbf{group interactions}
+  \item Topological Deep Learning (TDL) lifts message passing to these richer structures
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What is Topology?}
+
+\begin{block}{Core Idea}
+Topology studies \textbf{geometric objects and continuous deformations} between them --- it describes shapes in various dimensions without requiring any notion of distance.
+\end{block}
+
+\begin{itemize}
+  \item Begins with the notion of an \textbf{open set} living in a topological space
+  \item A \textbf{space} is a set given some structure that defines relationships between its elements
+  \item Different structures give different spaces:
+    \begin{itemize}
+      \item Quantum states $\to$ Hilbert space
+      \item Abstract vectors $\to$ vector space
+      \item Shapes without distance $\to$ \textbf{topological space}
+    \end{itemize}
+  \item The topological space is the \textbf{most abstract and fundamental} of all mathematical spaces
+\end{itemize}
+
+{\tiny (Ref: Topology - YouTube lecture)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{A Hierarchy of Mathematical Spaces}
+
+Each space adds structure on top of the previous one:
+
+\vspace{0.2cm}
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Space} & \textbf{Added Structure} & \textbf{Enables} \\
+\hline
+Vector space      & Addition, scalar mult.  & Algebraic ops \\
+Inner product sp. & Inner product $\langle u,v \rangle$ & Angles, lengths \\
+Normed space      & Norm $\|v\|$            & Distances via norm \\
+Metric space      & Metric $d(x,y)$         & General distances \\
+\textbf{Topological space} & \textbf{Open sets only} & \textbf{Shape, continuity} \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.2cm}
+\begin{itemize}
+  \item Each smaller space is a \textbf{special case} of the larger one
+  \item Every metric space is a topological space; every normed space is a metric space
+  \item Topology strips away even distance --- only \textbf{set-theoretic structure} remains
+\end{itemize}
+
+{\tiny (Ref: Topology - YouTube lecture)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Building a Topology: Collections of Subsets}
+
+\textbf{Start with a 3-element set} $X = \{a, b, c\}$.
+
+All 8 subsets of $X$:
+\[
+\emptyset,\ \{a\},\ \{b\},\ \{c\},\ \{a,b\},\ \{a,c\},\ \{b,c\},\ \{a,b,c\}
+\]
+
+\begin{itemize}
+  \item A \textbf{topology} $\mathcal{T}$ is a \emph{collection} of these subsets satisfying 3 criteria
+  \item Two extreme choices always valid on any set:
+    \begin{itemize}
+      \item \textbf{Discrete topology}: collect \emph{all} subsets
+      \item \textbf{Indiscrete (trivial) topology}: collect only $\emptyset$ and $X$
+    \end{itemize}
+  \item The interesting topologies lie \textbf{in between} --- and grow fast:
+\end{itemize}
+
+\vspace{0.1cm}
+\begin{center}
+\begin{tabular}{cc}
+\hline
+\textbf{Set size} & \textbf{Number of topologies} \\
+\hline
+1 & 1 \\
+2 & 4 \\
+3 & 29 \\
+4 & 355 \\
+\hline
+\end{tabular}
+\end{center}
+
+{\tiny (Ref: Topology - YouTube lecture)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Three Axioms of a Topological Space}
+
+Given a set $X$, a collection $\mathcal{T}$ of subsets is a \textbf{topology} if and only if:
+
+\vspace{0.3cm}
+\begin{enumerate}
+  \item \textbf{Contains endpoints}: $\emptyset \in \mathcal{T}$ and $X \in \mathcal{T}$
+  \vspace{0.2cm}
+  \item \textbf{Closed under arbitrary unions}: for any (finite or infinite) family of sets in $\mathcal{T}$,
+  \[
+  \bigcup_\alpha U_\alpha \in \mathcal{T}
+  \]
+  \vspace{0.1cm}
+  \item \textbf{Closed under finite intersections}: for any finite family of sets in $\mathcal{T}$,
+  \[
+  U_1 \cap U_2 \cap \cdots \cap U_n \in \mathcal{T}
+  \]
+\end{enumerate}
+
+\vspace{0.2cm}
+\begin{block}{Why it matters}
+This is the \textbf{weakest structure} on a set that still enables two pivotal notions: \textbf{convergence of points} and \textbf{continuity of maps} --- the language TDL inherits.
+\end{block}
+
+{\tiny (Ref: Topology - YouTube lecture)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Geometric Building Blocks of Topology}
+
+\begin{center}
+  \includegraphics[width=0.88\linewidth]{tdl30}
+\end{center}
+
+\begin{itemize}
+  \item A \textbf{$k$-simplex} is the simplest possible $k$-dimensional shape
+  \item 0-simplex = node, 1-simplex = edge, 2-simplex = triangle (face), 3-simplex = tetrahedron
+  \item Gluing simplices together gives a \textbf{simplicial complex} --- a generalized graph
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Rule of Downward Closure}
+
+\begin{center}
+  \includegraphics[width=0.88\linewidth]{tdl39}
+\end{center}
+
+\begin{itemize}
+  \item Simplicial complexes obey \textbf{downward closure}: if a face exists, all its sub-faces must exist too
+  \item A triangle requires both its edges; an edge requires both its vertices
+  \item This constraint enables boundary/co-boundary operators and the Hodge Laplacian
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Mapping the Topological Landscape}
+
+\begin{center}
+  \includegraphics[width=0.85\linewidth]{tdl31}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{Graphs}: binary relations, no hierarchy, no downward closure
+  \item \textbf{Simplicial Complexes}: higher-order, strict downward closure required
+  \item \textbf{Cell Complexes}: higher-order, hierarchical rank, closure via boundary maps
+  \item \textbf{Hypergraphs}: set-type flexibility, no closure requirement
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Grand Synthesis: Combinatorial Complexes}
+
+\begin{center}
+  \includegraphics[width=0.78\linewidth]{tdl28}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{Combinatorial Complexes (CCs)} = Hypergraphs + Cell Complexes
+  \item Inherit set-type relational flexibility \emph{and} hierarchical rank structure
+  \item \textbf{Freedom from closure}: higher-order relations can exist without requiring every sub-relation
+  \item CCs serve as the \emph{unifying starting point} for topological learning frameworks
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Combinatorial Complexes: The Unified Framework}
+
+\begin{center}
+  \includegraphics[width=0.72\linewidth]{tdl32}
+\end{center}
+
+\begin{itemize}
+  \item CCs generalise all four domain types (graphs, simplicial, cell, hypergraphs)
+  \item Provide a \textbf{single data structure} that the TopoX toolkit is built on
+  \item Removes the need to choose a domain type upfront
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Encoding Structure with Incidence Matrices}
+
+\begin{center}
+  \includegraphics[width=0.85\linewidth]{tdl14}
+\end{center}
+
+\begin{itemize}
+  \item $B_1$: nodes $\times$ edges --- which nodes belong to each edge
+  \item $B_2$: edges $\times$ faces --- which edges bound each triangle
+  \item These matrices are the \textbf{computational backbone} for TDL: they replace the adjacency matrix
+  \item Boundary operator: $\partial_k = B_k$; co-boundary operator: $B_k^\top$
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Hodge Laplacian Unifies Message Passing}
+
+\begin{center}
+  \includegraphics[width=0.85\linewidth]{tdl24}
+\end{center}
+
+\begin{itemize}
+  \item The \textbf{Hodge Laplacian} $L_k = B_k^\top B_k + B_{k+1} B_{k+1}^\top$ generalises the graph Laplacian to any dimension $k$
+  \item \textbf{Up-flow}: information from higher-dimensional neighbours (e.g.\ edges $\to$ triangles)
+  \item \textbf{Down-flow}: information from lower-dimensional neighbours (e.g.\ triangles $\to$ edges)
+  \item Enables concurrent message passing \emph{across all ranks}
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Higher-Order Message Passing}
+
+\begin{center}
+  \includegraphics[width=0.82\linewidth]{tdl25}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{Self-update}: direct flow within the same dimension
+  \item \textbf{Down message}: lateral flow via shared boundaries (driven by Down-Laplacian)
+  \item \textbf{Up message}: lateral flow via higher-order inclusions (driven by Up-Laplacian)
+  \item Unlike GNNs (node-to-node only), TDL message passing operates \textbf{across all dimensional ranks}
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Applications: Non-Euclidean Structures Everywhere}
+
+\begin{center}
+  \includegraphics[width=0.82\linewidth]{tdl26}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{Biochemistry}: 3D spatial binding pockets and protein interactions
+  \item \textbf{Computer Graphics}: invariant tracking and local descriptor learning on 3D meshes
+  \item \textbf{Network Science}: detecting coverage holes, structural traffic bottlenecks
+  \item \textbf{Neuroscience}: mapping complex functional cycles and higher-order connectivity in brain networks
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{TopoX: The Software Suite}
+
+\begin{center}
+  \includegraphics[width=0.82\linewidth]{tdl8}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{TopoNetX}: build and manipulate simplicial, cell, and combinatorial complexes
+  \item \textbf{TopoEmbedX}: embed topological domains into vector spaces
+  \item \textbf{TopoModelX}: train topological neural network models (built on PyTorch)
+  \item Companion to PyTorch Geometric for graph-level tasks
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Getting Started with TopoX}
+
+\begin{center}
+  \includegraphics[width=0.82\linewidth]{tdl33}
+\end{center}
+
+\begin{itemize}
+  \item Import \texttt{toponetx as tnx} and \texttt{torch}, \texttt{networkx as nx}
+  \item Instantiate \texttt{tnx.SimplicialComplex()} for strict downward closure, or \texttt{tnx.CellComplex()} for flexible higher-order structures
+  \item Add nodes, edges, faces incrementally; TopoNetX enforces closure automatically
+\end{itemize}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Future of Deep Learning is Topological}
+
+\begin{center}
+  \includegraphics[width=0.82\linewidth]{tdl37}
+\end{center}
+
+\begin{enumerate}
+  \item \textbf{Data is Multi-Way}: pairwise graphs create artificial bottlenecks; true representation requires higher-order domains (faces, volumes, set-type relations)
+  \item \textbf{CCs Provide the Blueprint}: Combinatorial Complexes unify hypergraphs and simplicial complexes enabling the universal CCNN architecture
+  \item \textbf{TopoX Provides the Tools}: once pure algebraic topology is now accessible, production-ready PyTorch code
+\end{enumerate}
+
+{\tiny (Ref: Beyond the Graph - Byte Goose AI)}
+\end{frame}

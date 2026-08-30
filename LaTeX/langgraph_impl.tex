@@ -1,0 +1,291 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Implementation}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Node Implementation Examples}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Node with RAG}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+
+# Initialize RAG components
+vectorstore = FAISS.load_local("docs_index", OpenAIEmbeddings())
+llm = ChatOpenAI(model="gpt-4")
+
+def rag_node(state: State) -> State:
+    """Node that performs RAG operation"""
+    
+    # 1. Retrieve relevant documents
+    query = state.messages[-1]["content"]
+    docs = vectorstore.similarity_search(query, k=3)
+    context = "\n".join([doc.page_content for doc in docs])
+    
+    # 2. Generate answer with context
+    prompt = f"""Context: {context}
+    
+Question: {query}
+
+Answer based on the context provided:"""
+    
+    response = llm.invoke(prompt)
+    
+    # 3. Update state
+    return State(
+        messages=state.messages + [{"role": "assistant", "content": response.content}],
+        retrieved_docs=docs
+    )
+      \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Node with API Call}
+ Any REST API, database query, or external service can be called from nodes
+ 
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+import requests
+
+def weather_api_node(state: State) -> State:
+    """Node that calls external weather API"""
+    
+    # Extract location from state
+    location = state.location
+    
+    # Call external API
+    api_key = "your_api_key"
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={location}&appid={api_key}"
+    response = requests.get(url)
+    weather_data = response.json()
+    
+    # Process and update state
+    weather_info = f"Temperature: {weather_data['main']['temp']}deg C, "
+    weather_info += f"Conditions: {weather_data['weather'][0]['description']}"
+    
+    return State(
+        location=state.location,
+        weather=weather_info,
+        messages=state.messages + [{"role": "system", "content": weather_info}]
+    )
+      \end{lstlisting}
+      
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example: Node as Tool-Calling Agent}
+
+      \begin{itemize}
+        \item Node delegates to inner agent for complex tool-using tasks
+        \item Outer graph manages high-level workflow
+      \end{itemize}
+	  
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain.tools import Tool
+
+# Define tools
+search_tool = Tool(name="search", func=tavily_search, description="Search the web")
+calc_tool = Tool(name="calculator", func=calculator, description="Perform calculations")
+
+# Create agent with tools
+tools = [search_tool, calc_tool]
+agent = create_tool_calling_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools)
+
+def research_node(state: State) -> State:
+    """Node that is itself an agent with tools"""
+    
+    # This node runs a full agent loop internally
+    query = state.current_task
+    result = agent_executor.invoke({"input": query})
+    
+    return State(
+        current_task=state.current_task,
+        research_results=result["output"],
+        messages=state.messages + [{"role": "researcher", "content": result["output"]}]
+    )
+      \end{lstlisting}
+     
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large End-to-End example}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementing a Complete Tool-Calling Agent}
+      \begin{itemize}
+        \item Understand user input
+        \item Select the appropriate tool
+        \item Execute tool calls
+        \item Generate the final response
+      \end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Define State }
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing import List, Dict, Optional
+from pydantic import BaseModel
+
+from langchain_core.language_models import ChatOpenAI
+
+class Tool(BaseModel):
+    name: str
+    description: str
+    func: callable
+
+class AgentState(BaseModel):
+    messages: List[Dict[str, str]] = []
+    current_input: str = ""
+    thought: str = ""
+    selected_tool: Optional[str] = None
+    tool_input: str = ""
+    tool_output: str = ""
+    final_answer: str = ""
+    status: str = "STARTING"
+
+      \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Define Tools}
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+
+from langchain.tools import BaseTool
+from langchain.tools.calculator import CalculatorTool
+from langchain.tools.wikipedia import WikipediaQueryRun
+from langchain_core.language_models import ChatOpenAI
+
+# Define available tools
+tools = [
+    Tool(
+        name="calculator",
+        description="Used for performing mathematical calculations",
+        func=CalculatorTool()
+    ),
+    Tool(
+        name="wikipedia",
+        description="Used for querying Wikipedia information",
+        func=WikipediaQueryRun()
+    )
+]	
+      \end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implement Core Nodes}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+async def think(state: AgentState) -> AgentState:
+    """Think about the next action"""
+    prompt = f"""
+    Based on user input and current conversation history, think about the next action.
+    User input: {state.current_input}
+    Available tools: {[t.name + ': ' + t.description for t in tools]}
+    Decide:
+    1. Whether a tool is needed
+    2. If needed, which tool to use
+    3. What parameters to call the tool with
+    Return in JSON format: {{"thought": "thought process", "need_tool": true/false, "tool": "tool name", "tool_input": "parameters"}}
+    """
+    llm = ChatOpenAI(temperature=0)
+    response = await llm.ainvoke(prompt)
+    result = json.loads(response)
+    return AgentState(
+        **state.dict(),
+        thought=result["thought"],
+        selected_tool=result.get("tool"),
+        tool_input=result.get("tool_input"),
+        status="NEED_TOOL" if result["need_tool"] else "GENERATE_RESPONSE"
+    )
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implement Core Nodes}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+async def execute_tool(state: AgentState) -> AgentState:
+    """Execute tool call"""
+    tool = next((t for t in tools if t.name == state.selected_tool), None)
+    if not tool:
+        return AgentState(
+            **state.dict(),
+            status="ERROR",
+            thought="Selected tool not found"
+        )
+    try:
+        result = await tool.func.ainvoke(state.tool_input)
+        return AgentState(
+            **state.dict(),
+            tool_output=str(result),
+            status="GENERATE_RESPONSE"
+        )
+    except Exception as e:
+        return AgentState(
+            **state.dict(),
+            status="ERROR",
+            thought=f"Tool execution failed: {str(e)}"
+        )
+\end{lstlisting}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implement Core Nodes}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+async def generate_response(state: AgentState) -> AgentState:
+    """Generate the final response"""
+    prompt = f"""
+    Generate a response to the user based on the following information:
+    User input: {state.current_input}
+    Thought process: {state.thought}
+    Tool output: {state.tool_output}
+    Please generate a clear and helpful response.
+    """
+    llm = ChatOpenAI(temperature=0.7)
+    response = await llm.ainvoke(prompt)
+    return AgentState(
+        **state.dict(),
+        final_answer=response,
+        status="SUCCESS"
+    )
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Build the Complete Workflow}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Create graph structure
+workflow = StateGraph(AgentState)
+
+# Add nodes
+workflow.add_node("think", think)
+workflow.add_node("execute_tool", execute_tool)
+workflow.add_node("generate_response", generate_response)
+
+# Add edges
+workflow.add_edge("think", "execute_tool", condition=lambda s: s.status == "NEED_TOOL")
+workflow.add_edge("execute_tool", "generate_response", condition=lambda s: s.status == "GENERATE_RESPONSE")
+workflow.add_edge("generate_response", "think", condition=lambda s: s.status == "SUCCESS")
+\end{lstlisting}
+
+\end{frame}

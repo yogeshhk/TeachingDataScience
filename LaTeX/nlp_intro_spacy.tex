@@ -1,0 +1,958 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
+{\Large Introduction to spaCy}
+
+{\tiny (Ref: https://spacy.io/usage/spacy-101)}
+
+\end{center}
+
+
+\end{frame}
+%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What is spaCy?}
+  \begin{itemize}
+    \item spaCy is a free, open-source library for advanced Natural Language Processing (NLP) in Python.
+		\item Production ready.
+		\item Used to build information extraction or natural language understanding systems, or to pre-process text for deep learning.
+  \end{itemize}
+	
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What spaCy isn't?}
+  \begin{itemize}
+    \item Not a platform or “an API” or software as a service, or a web application
+		\item Not an out-of-the-box chat bot engine.
+		\item Not research software.  It's built on the latest research, but it's designed to get things done.
+		\item Not a company. It's an open-source library. Company's name is `Explosion AI'.
+  \end{itemize}
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Installation}
+Based on OS, version, etc an installation command can be generated at https://spacy.io/usage
+
+	
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{spacy3}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Core Idea}
+  \begin{itemize}
+    \item Model object, typically called as `nlp' is the core object.
+			\item Can use it like a function to analyze text.
+		\item It contains processing pipeline
+		\item It also includes language specific rules, say, for tokenization.
+		\item You can either load it \lstinline|nlp = spacy.load('...')| or instantiate from existing class \lstinline|nlp = English()|
+		\item `nlp' object after processing `text' produces `doc' object \lstinline|doc = nlp(text)|
+		\item `doc' has all the text processing results stored
+		\item `doc' can be instantiated also \lstinline|doc = Doc(nlp.vocab, words=words, spaces=spaces)|
+		\item `span' object has multiple tokens. Its just a view and not actual data. \lstinline|span = doc[1:3]|
+  \end{itemize}
+	
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{spacy17}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+  \begin{itemize}
+    \item Import the English class from spacy.lang.en and create the nlp object.
+    \item Create a doc and print its text.
+  \end{itemize}
+  
+  Extra: Import the German class from spacy.lang.de and create the nlp object and use it on ``Ich liebe!''
+
+
+  \begin{lstlisting}
+from spacy.lang.____ import ____
+
+nlp = ____
+
+doc = nlp("This is a sentence.")
+
+print(____.text)
+  \end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+  \begin{lstlisting}
+from spacy.lang.en import English
+
+nlp = English()
+
+doc = nlp("This is a sentence.")
+
+print(doc.text)
+
+# Extra:
+from spacy.lang.de import German
+
+nlp = German()
+doc = nlp("Ich liebe!")
+print(doc.text)
+  \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\frametitle{What happens when we call \texttt{nlp(text)}?}
+
+\begin{itemize}
+\item \lstinline|nlp(text)| is a function call, not a constructor; Here \lstinline|__call__| function gets called.
+\item Uses an already loaded \texttt{Language} pipeline
+\item \textbf{Tokenization}
+	\begin{itemize}
+	\item Text broken into tokens
+	\item Creates initial \texttt{Doc} object
+	\end{itemize}
+
+\item \textbf{Pipeline Components (in order)}
+	\begin{itemize}
+	\item Tagger $\rightarrow$ POS tags
+	\item Lemmatizer $\rightarrow$ base forms
+	\item Parser $\rightarrow$ dependencies
+	\item NER $\rightarrow$ named entities
+	\end{itemize}
+
+\item \textbf{In-place modification}
+	\begin{itemize}
+	\item Same \texttt{Doc} object updated
+	\item Linguistic annotations added
+	\end{itemize}
+
+\item \textbf{Return}
+	\begin{itemize}
+	\item Fully processed \texttt{Doc}
+	\item Ready for analysis
+	\end{itemize}
+
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+  \begin{itemize}
+    \item Import the English language class and create the nlp object.
+    \item Process the text and instantiate a Doc object in the variable doc.
+    \item Select the first token of the Doc and print its text.
+  \end{itemize}
+
+  \begin{lstlisting}
+from spacy.lang.____ import ____
+
+nlp = ____
+
+doc = nlp("I like tree kangaroos and narwhals.")
+
+first_token = doc[____]
+
+print(first_token.____)
+  \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+  \begin{lstlisting}
+from spacy.lang.en import English
+
+nlp = English()
+
+doc = nlp("I like tree kangaroos and narwhals.")
+
+first_token = doc[0]
+
+print(first_token.text)
+  \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practices}
+
+  \begin{itemize}
+    \item Doc and Span are very powerful and hold references and relationships of words and sentences
+    \item Convert result to strings as late as possible. 
+		\item If you do it too early, you'll lose all relationships between the tokens.
+    \item Use token attributes if available – for example, \lstinline|token.i|  for the token index
+    \item Don't forget to pass in the shared vocab
+  \end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Evaluate}
+
+Whats wrong with following code?
+
+  \begin{lstlisting}
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("Berlin looks like a nice city")
+
+# Get all tokens and part-of-speech tags
+token_texts = [token.text for token in doc]
+pos_tags = [token.pos_ for token in doc]
+
+for index, pos in enumerate(pos_tags):
+    # Check if the current token is a proper noun
+    if pos == "PROPN":
+        # Check if the next token is a verb
+        if pos_tags[index + 1] == "VERB":
+            result = token_texts[index]
+            print("Found proper noun before a verb:", result)
+  \end{lstlisting}
+
+\note{Two issues: (1) \texttt{pos\_tags[index + 1]} raises \texttt{IndexError} on the last token --- no bounds check. (2) Building parallel string lists discards all Doc/Token object relationships. Fix: iterate directly over \texttt{doc} tokens and use \texttt{doc[token.i + 1]} with a length guard --- see the Solution slide.}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Assignment}
+
+
+  \begin{itemize}
+    \item Rewrite the code to use the native token attributes instead of lists of token\_texts and pos\_tags.
+    \item Loop over each token in the doc and check the token.pos\_ attribute.
+    \item Use doc[token.i + 1] to check for the next token and its .pos\_ attribute.
+    \item If a proper noun before a verb is found, print its token.text.
+  \end{itemize}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+  \begin{lstlisting}
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("Berlin looks like a nice city")
+
+for token in doc:
+    # Check if the current token is a proper noun
+    if token.pos_ == "PROPN":
+        # Check if the next token is a verb (with bounds check)
+        if token.i + 1 < len(doc) and doc[token.i + 1].pos_ == "VERB":
+            print("Found proper noun before a verb:", token.text)
+  \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Features}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{spacy4}
+\end{center}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{How spaCy Works?}
+  \begin{itemize}
+    \item Example 1: ``Apple is looking at buying U.K. startup for \$1 billion''
+		\item Example 2: ``Ishu ate the Apple''
+		\item `Apple' in both the above examples is different. Can spaCy identify (named entity recognition) differently?
+  \end{itemize}
+	
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{spacy5}
+\end{center}
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pre Trained models}
+\begin{itemize}
+\item Pre-trained models, like 'en\_core\_web\_sm', have various NLP sub components defined. `sm' is for small.
+\item Similarly other models like  'en\_core\_web\_md' (medium) and 'en\_core\_web\_lg' (large) are some of the English models.
+\item Similarly `de\_core\_news\_sm' (German) and  `es\_core\_news\_sm' (Spanish) are some other language models.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{spacy7}
+\end{center}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{spaCy Load under the hood}
+  \begin{itemize}
+    \item Easy to create own pipeline with reusable components.
+		\item Includes spaCy's default tagger, parser and entity recognizer, but also your own custom processing functions.
+		\item At loading a model, spaCy looks at meta.json
+
+
+\item In spaCy v3, components are registered via \lstinline|@Language.component| or \lstinline|@Language.factory| decorators
+\item Components are looked up in the registry by name and instantiated automatically
+\item Added to the pipeline in order using \lstinline|nlp.add_pipe("component_name")|
+\item Note: \lstinline|create_pipe| from spaCy v2 is no longer available in v3
+
+  \end{itemize}
+	
+\begin{lstlisting}
+meta.json:
+{
+  "lang": "en",
+  "name": "core_web_sm",
+  "description": "Example model for spaCy",
+  "pipeline": ["tagger", "parser", "ner"]
+}
+\end{lstlisting}	
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pipeline under the hood}
+  \begin{itemize}
+    \item When you call nlp on a text, spaCy will tokenize it and then call each component on the Doc, in order.
+
+
+\item All components return the modified document, which is then processed by the component next in the pipeline.
+
+  \end{itemize}
+	
+	
+		\begin{lstlisting}
+doc = nlp.make_doc("This is a sentence")   # create a Doc from raw text
+for name, proc in nlp.pipeline:             # iterate over components in order
+    doc = proc(doc)                         # apply each component
+
+print(nlp.pipeline)
+# [('tagger', <spacy.pipeline.Tagger>), ('parser', <spacy.pipeline.DependencyParser>), ('ner', <spacy.pipeline.EntityRecognizer>)]
+print(nlp.pipe_names)
+# ['tagger', 'parser', 'ner']
+\end{lstlisting}	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Built-in pipeline components}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{spacy10}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Disabling}
+\begin{lstlisting}
+# If you don't need a particular component of the pipeline, for example, the tagger or the parser, you can disable loading it
+		
+nlp = spacy.load("en_core_web_sm", disable=["tagger", "parser"])
+nlp = English().from_disk("/model", disable=["ner"])
+
+# If you only need a Doc object with named entities, there's no need to run all pipeline components on it
+
+for doc in nlp.pipe(texts, disable=["tagger", "parser"]):
+    # Do something with the doc here
+\end{lstlisting}
+	
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom Component}
+  \begin{itemize}
+    \item A component receives a Doc object and can modify it
+
+
+\item  By adding a component to the pipeline, you'll get access to the Doc at any point during processing
+  \end{itemize}
+	
+		\begin{lstlisting}
+import spacy
+from spacy.language import Language
+
+# spaCy v3: register with decorator, then add by name
+@Language.component("print_info")
+def my_component(doc):
+    print("After tokenization, this doc has {} tokens.".format(len(doc)))
+    print("The part-of-speech tags are:", [token.pos_ for token in doc])
+    if len(doc) < 10:
+        print("This is a pretty short document.")
+    return doc
+
+nlp = spacy.load("en_core_web_sm")
+nlp.add_pipe("print_info", last=True)
+print(nlp.pipe_names)  # ['tagger', 'parser', 'ner', 'print_info']
+doc = nlp("This is a sentence.")
+\end{lstlisting}	
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+  \begin{itemize}
+    \item Complete the component function with the doc’s length.
+    \item Add the length\_component to the existing pipeline as the first component.
+    \item Try out the new pipeline and process any text with the nlp object – for example “This is a sentence.”.
+  \end{itemize}
+
+  \begin{lstlisting}
+import spacy
+
+# Define the custom component
+def length_component(doc):
+    # Get the doc's length
+    doc_length = ____
+    print(f"This document is {doc_length} tokens long.")
+    # Return the doc
+    ____
+nlp = spacy.load("en_core_web_sm")
+# Add the component first in the pipeline and print the pipe names
+____.____(____)
+print(nlp.pipe_names)
+# Process a text
+doc = ____
+  \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+  \begin{lstlisting}
+import spacy
+from spacy.language import Language
+
+# Register the component with a decorator (required in spaCy v3)
+@Language.component("length_component")
+def length_component(doc):
+    doc_length = len(doc)
+    print(f"This document is {doc_length} tokens long.")
+    return doc
+
+nlp = spacy.load("en_core_web_sm")
+nlp.add_pipe("length_component", first=True)
+print(nlp.pipe_names)
+
+doc = nlp("This is a sentence.")
+  \end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom Component Class}
+You can also wrap your component as a class to allow initializing it with custom settings and hold state within the component. This is useful for stateful components, especially ones which depend on shared data.
+		\begin{lstlisting}
+from spacy.language import Language
+
+@Language.factory("entity_matcher")
+def create_entity_matcher(nlp, name):
+    return EntityMatcher(nlp, ("cat", "dog", "tree kangaroo", "giant sea spider"), "ANIMAL")
+
+class EntityMatcher:
+    def __init__(self, nlp, terms, label):
+        patterns = [nlp.make_doc(text) for text in terms]
+        self.matcher = PhraseMatcher(nlp.vocab)
+        self.matcher.add(label, patterns)  # v3: list, no None
+    def __call__(self, doc):
+        matches = self.matcher(doc)
+        for match_id, start, end in matches:
+            span = Span(doc, start, end, label=match_id)
+            doc.ents = list(doc.ents) + [span]
+        return doc
+nlp = spacy.load("en_core_web_sm")
+nlp.add_pipe("entity_matcher", after="ner")
+\end{lstlisting}	
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Vocab, hashes and lexemes}
+  \begin{itemize}
+    \item Stores data in a vocabulary, the Vocab, that will be shared by multiple documents. 
+		\item To save memory, spaCy also encodes all strings to hash values – in this case for example, “coffee” has the hash 3197928453018144401. 
+		\item Entity labels like “ORG” and part-of-speech tags like “VERB” are also encoded. 
+		\item Internally, spaCy only “speaks” in hash values.
+  \end{itemize}
+	
+	\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{spacy14}
+\end{center}
+	
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example}
+
+
+
+  \begin{itemize}
+    \item All strings are encoded, the entries in the vocabulary don't need to include the word text themselves. Instead, they can look it up in the StringStore via its hash value. 
+		\item Each entry in the vocabulary, also called Lexeme, contains the context-independent information about a word. 
+		\item For example, no matter if “love” is used as a verb or a noun in some context, its spelling and whether it consists of alphabetic characters won't ever change. Its hash value will also always be the same.
+  \end{itemize}
+
+\begin{lstlisting}
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("I love coffee")
+print(doc.vocab.strings["coffee"])  # 3197928453018144401
+print(doc.vocab.strings[3197928453018144401])  # 'coffee'
+
+3197928453018144401
+coffee
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Example}
+
+
+
+	\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{spacy15}
+\end{center}
+
+\begin{lstlisting}
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("I love coffee")
+for word in doc:
+    lexeme = doc.vocab[word.text]
+    print(lexeme.text, lexeme.orth, lexeme.shape_, lexeme.prefix_, lexeme.suffix_,
+            lexeme.is_alpha, lexeme.is_digit, lexeme.is_title, lexeme.lang_)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise}
+
+  \begin{itemize}
+    \item Look up the string “cat” in nlp.vocab.strings to get the hash.
+    \item Look up the hash to get back the string.
+  \end{itemize}
+	
+	
+\begin{lstlisting}
+from spacy.lang.en import English
+
+nlp = English()
+doc = nlp("I have a cat")
+
+# Look up the hash for the word "cat"
+cat_hash = ____.____.____[____]
+print(cat_hash)
+
+# Look up the cat_hash to get the string
+cat_string = ____.____.____[____]
+print(cat_string)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution}
+
+\begin{lstlisting}
+from spacy.lang.en import English
+
+nlp = English()
+doc = nlp("I have a cat")
+
+# Look up the hash for the word "cat"
+cat_hash = nlp.vocab.strings["cat"]
+print(cat_hash)
+
+# Look up the cat_hash to get the string
+cat_string = nlp.vocab.strings[cat_hash]
+print(cat_string)
+\end{lstlisting}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Rule-based Matching}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Rule-based Matching}
+\begin{itemize}
+  \item \textbf{Matcher} finds sequences of tokens using pattern dictionaries.
+  \item Each pattern is a list of dicts, one dict per token, with attribute constraints.
+  \item Token attributes used in patterns: \texttt{LOWER}, \texttt{TEXT}, \texttt{POS}, \texttt{IS\_DIGIT}, \texttt{OP} (quantifier), etc.
+  \item More powerful than regex: patterns operate on linguistic annotations, not raw characters.
+\end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import spacy
+from spacy.matcher import Matcher
+
+nlp = spacy.load("en_core_web_sm")
+matcher = Matcher(nlp.vocab)
+
+# Pattern: an adjective optionally followed by a noun
+pattern = [{"POS": "ADJ", "OP": "?"}, {"POS": "NOUN"}]
+matcher.add("ADJ_NOUN", [pattern])
+
+doc = nlp("I have a big red apple and fresh coffee.")
+matches = matcher(doc)
+for match_id, start, end in matches:
+    print(nlp.vocab.strings[match_id], "->", doc[start:end].text)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Matcher: More Pattern Examples}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import spacy
+from spacy.matcher import Matcher
+
+nlp = spacy.load("en_core_web_sm")
+matcher = Matcher(nlp.vocab)
+
+# Pattern 1: "iPhone" followed by a digit model number
+iphone_pattern = [{"LOWER": "iphone"}, {"IS_DIGIT": True}]
+matcher.add("IPHONE_MODEL", [iphone_pattern])
+
+# Pattern 2: proper noun + "Inc" or "Corp" (company names)
+company_pattern = [{"POS": "PROPN", "OP": "+"}, {"TEXT": {"IN": ["Inc", "Corp", "Ltd"]}}]
+matcher.add("COMPANY", [company_pattern])
+
+doc = nlp("The iPhone 15 was released by Apple Inc in 2023.")
+for match_id, start, end in matcher(doc):
+    label = nlp.vocab.strings[match_id]
+    print(f"{label:15s}  '{doc[start:end].text}'")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercise: Matcher}
+\begin{itemize}
+  \item Create a \texttt{Matcher} pattern that finds a verb followed by a proper noun.
+  \item Test it on the sentence: \textit{``Tesla acquired SolarCity and hired engineers from Google.''}
+\end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import spacy
+from spacy.matcher import Matcher
+
+nlp = spacy.load("en_core_web_sm")
+matcher = Matcher(nlp.vocab)
+
+# Your pattern here: VERB followed by PROPN
+pattern = [{____: ____}, {____: ____}]
+matcher.add("VERB_PROPN", [____])
+
+doc = nlp("Tesla acquired SolarCity and hired engineers from Google.")
+for match_id, start, end in matcher(doc):
+    print(doc[start:end].text)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Solution: Matcher}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import spacy
+from spacy.matcher import Matcher
+
+nlp = spacy.load("en_core_web_sm")
+matcher = Matcher(nlp.vocab)
+
+# Pattern: VERB followed by PROPN
+pattern = [{"POS": "VERB"}, {"POS": "PROPN"}]
+matcher.add("VERB_PROPN", [pattern])
+
+doc = nlp("Tesla acquired SolarCity and hired engineers from Google.")
+for match_id, start, end in matcher(doc):
+    print(doc[start:end].text)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Sentence Segmentation}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sentence Segmentation}
+\begin{itemize}
+  \item spaCy splits text into sentences via the \textbf{dependency parser} by default.
+  \item Access sentences through \texttt{doc.sents} (a generator of \texttt{Span} objects).
+  \item Each sentence is a \texttt{Span}; its first token has \texttt{token.is\_sent\_start = True}.
+  \item For plain tokenisation without the parser, use the \textbf{Sentencizer} component.
+\end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("spaCy is fast. It handles many NLP tasks. Sentences are easy to extract.")
+
+print(f"Number of sentences: {len(list(doc.sents))}")
+for i, sent in enumerate(doc.sents):
+    print(f"  Sentence {i+1}: {sent.text}")
+
+# Sentence boundaries on individual tokens
+for token in doc:
+    if token.is_sent_start:
+        print(f"  Sent start token: '{token.text}'")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom Sentencizer}
+\begin{itemize}
+  \item When you don't need the full dependency parser, add only a \texttt{sentencizer}.
+  \item Lightweight: splits on punctuation like \texttt{.}, \texttt{!}, \texttt{?}.
+\end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import spacy
+
+# Blank English pipeline -- no parser loaded
+nlp = spacy.blank("en")
+nlp.add_pipe("sentencizer")
+print("Pipe names:", nlp.pipe_names)
+
+doc = nlp("First sentence. Second sentence! Third one?")
+for sent in doc.sents:
+    print(" -", sent.text)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Visualizing with displacy}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{displacy: NER Visualizer}
+\begin{itemize}
+  \item \texttt{displacy} is spaCy's built-in visualizer for NER and dependency parses.
+  \item \texttt{displacy.render()} renders HTML (use \texttt{jupyter=True} in notebooks).
+  \item \texttt{displacy.serve()} opens a local web server at \texttt{http://localhost:5000}.
+\end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import spacy
+from spacy import displacy
+
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("Apple is looking at buying U.K. startup for $1 billion.")
+
+# In a Jupyter notebook: displacy.render(doc, style="ent", jupyter=True)
+# As HTML string (useful in scripts):
+html = displacy.render(doc, style="ent", page=True)
+with open("ner_output.html", "w", encoding="utf-8") as f:
+    f.write(html)
+print("Saved ner_output.html -- open in a browser to view.")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{displacy: Dependency Parse Visualizer}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import spacy
+from spacy import displacy
+
+nlp = spacy.load("en_core_web_sm")
+doc = nlp("Autonomous cars shift insurance liability towards manufacturers.")
+
+# Dependency arc diagram -- shows head/child relationships
+html = displacy.render(doc, style="dep", page=True)
+with open("dep_output.html", "w", encoding="utf-8") as f:
+    f.write(html)
+print("Saved dep_output.html -- open in a browser to view.")
+
+# Print the same info as text table
+print(f"\n{'Token':15s}  {'Head':15s}  {'Dep relation':12s}  {'Children'}")
+print("-" * 65)
+for token in doc:
+    children = [c.text for c in token.children]
+    print(f"{token.text:15s}  {token.head.text:15s}  {token.dep_:12s}  {children}")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Word Vectors and Similarity}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Word Vectors and Similarity}
+\begin{itemize}
+  \item Word vectors are dense numeric representations of word meaning.
+  \item spaCy includes vectors in \texttt{md} and \texttt{lg} models (\textbf{not} \texttt{sm}).
+  \item \texttt{token.has\_vector}, \texttt{token.vector} (300-dim numpy array), \texttt{token.vector\_norm}.
+  \item Similarity is the \textbf{cosine similarity} between vectors: range $[-1, 1]$, closer to 1 = more similar.
+\end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Requires: python -m spacy download en_core_web_md
+import spacy
+
+nlp = spacy.load("en_core_web_md")   # md/lg have word vectors
+
+doc = nlp("dog cat banana")
+for token in doc:
+    print(f"{token.text:10s}  has_vector={token.has_vector}  "
+          f"vector_norm={token.vector_norm:.2f}")
+
+# Token-to-token similarity
+dog  = nlp("dog")[0]
+cat  = nlp("cat")[0]
+bana = nlp("banana")[0]
+print(f"\ndog  <-> cat    : {dog.similarity(cat):.3f}")
+print(f"dog  <-> banana : {dog.similarity(bana):.3f}")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document and Span Similarity}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Requires: python -m spacy download en_core_web_md
+import spacy
+
+nlp = spacy.load("en_core_web_md")
+
+# Doc-level similarity (average of token vectors)
+doc1 = nlp("I love fast food")
+doc2 = nlp("I like pizza")
+doc3 = nlp("The stock market crashed")
+print(f"'I love fast food' vs 'I like pizza'         : {doc1.similarity(doc2):.3f}")
+print(f"'I love fast food' vs 'stock market crashed' : {doc1.similarity(doc3):.3f}")
+
+# Span similarity
+tokens = nlp("dog cat banana apple")
+dog_cat   = tokens[0:2]   # "dog cat"
+bana_appl = tokens[2:4]   # "banana apple"
+print(f"\nSpan 'dog cat' vs 'banana apple' : {dog_cat.similarity(bana_appl):.3f}")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Batch Processing with nlp.pipe()}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Batch Processing with nlp.pipe()}
+\begin{itemize}
+  \item Calling \texttt{nlp(text)} in a loop is slow: the pipeline is initialised per call.
+  \item \texttt{nlp.pipe(texts)} processes texts as a \textbf{stream} with internal batching.
+  \item Much faster for hundreds or thousands of texts.
+  \item Use \texttt{disable} to skip unneeded components; use \texttt{batch\_size} to tune throughput.
+\end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import spacy, time
+
+nlp = spacy.load("en_core_web_sm")
+
+texts = [
+    "Apple was founded by Steve Jobs.",
+    "Google is based in Mountain View.",
+    "Amazon acquired Whole Foods in 2017.",
+    "Microsoft released Windows 11.",
+    "Tesla builds electric cars in Texas.",
+] * 200   # 1000 texts total
+
+# SLOW: loop
+t0 = time.time()
+docs_slow = [nlp(t) for t in texts]
+print(f"Loop  : {time.time()-t0:.2f}s  ({len(docs_slow)} docs)")
+
+# FAST: nlp.pipe()
+t0 = time.time()
+docs_fast = list(nlp.pipe(texts, batch_size=50, disable=["parser"]))
+print(f"pipe(): {time.time()-t0:.2f}s  ({len(docs_fast)} docs)")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{nlp.pipe() with Metadata}
+\begin{itemize}
+  \item Pass \texttt{(text, context)} tuples to keep metadata aligned with each doc.
+  \item Use \texttt{as\_tuples=True} to get \texttt{(doc, context)} pairs back.
+\end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+
+data = [
+    ("Apple was founded by Steve Jobs.", {"id": 1, "source": "wiki"}),
+    ("Tesla builds electric vehicles.",  {"id": 2, "source": "news"}),
+    ("Google acquired DeepMind in 2014.", {"id": 3, "source": "blog"}),
+]
+
+for doc, meta in nlp.pipe(data, as_tuples=True, disable=["parser"]):
+    orgs = [ent.text for ent in doc.ents if ent.label_ == "ORG"]
+    print(f"ID {meta['id']} [{meta['source']}]  ORGs: {orgs}")
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{When to Use spaCy vs. Hugging Face Transformers}
+\adjustbox{valign=t}{
+\begin{minipage}{0.47\linewidth}
+\textbf{spaCy}
+\begin{itemize}
+\item Fast, production-ready pipelines
+\item Rule-based matching, NER, POS, dependency parsing
+\item Low memory footprint
+\item Custom component architecture
+\item Best for: structured extraction, annotation, text preprocessing
+\end{itemize}
+\end{minipage}
+}
+\hfill
+\adjustbox{valign=t}{
+\begin{minipage}{0.47\linewidth}
+\textbf{Hugging Face Transformers}
+\begin{itemize}
+\item State-of-the-art BERT/GPT models
+\item Fine-tuning on custom data
+\item Higher compute cost
+\item Thousands of pre-trained models (Hub)
+\item Best for: classification, generation, Q\&A, translation
+\end{itemize}
+\end{minipage}
+}
+\vspace{0.3cm}
+{\small Tip: use spaCy for preprocessing and rule layers; use Hugging Face for model inference. They compose well together.}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Official Help}
+  \begin{itemize}
+    \item Troubleshooting Guide https://spacy.io/usage/\#troubleshooting
+		\item Github issues tracker https://github.com/explosion/spaCy/issues
+		\item Stack Overflow  https://stackoverflow.com/questions/tagged/spacy
+  \end{itemize}
+
+
+\end{frame}

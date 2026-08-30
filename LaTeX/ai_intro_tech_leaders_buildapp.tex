@@ -1,0 +1,59 @@
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Build a Simple Internal AI App}
+
+{\small Remove fear. Build confidence.}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Three App Examples to Build}
+\textbf{Option A: Internal Doc Q\&A Bot (RAG)}
+\begin{itemize}
+\item Upload your team's wiki / runbooks
+\item Ask natural language questions, get grounded answers with citations
+\item Stack: Python + LangChain + ChromaDB + Streamlit + OpenAI API
+\end{itemize}
+
+\textbf{Option B: Runbook Assistant Agent}
+\begin{itemize}
+\item Given an alert name, the agent finds the relevant runbook and executes steps
+\item Stack: LangChain Agent + custom tools (Confluence API, kubectl, PagerDuty)
+\end{itemize}
+
+\textbf{Option C: Log / Ticket Analysis Bot}
+\begin{itemize}
+\item Paste a log snippet or support ticket; get structured diagnosis + suggested fix
+\item Stack: OpenAI API + structured output + React UI
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sample Code, RAG Bot in 20 Lines}
+\begin{lstlisting}
+from langchain_community.document_loaders import DirectoryLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain.chains import RetrievalQA
+from langchain_openai import OpenAI
+
+# 1. Load your internal docs
+docs = DirectoryLoader("./runbooks/").load()
+
+# 2. Chunk and embed
+chunks = RecursiveCharacterTextSplitter(
+    chunk_size=500).split_documents(docs)
+db = Chroma.from_documents(chunks, OpenAIEmbeddings())
+
+# 3. Create RAG chain
+qa = RetrievalQA.from_chain_type(
+    llm=OpenAI(), retriever=db.as_retriever())
+
+# 4. Answer questions
+print(qa.run("How do I restart the auth service?"))
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

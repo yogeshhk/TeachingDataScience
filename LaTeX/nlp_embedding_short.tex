@@ -1,0 +1,257 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Vector Representation of Words, aka Word Embeddings}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why do we use word embeddings?}
+	\begin{itemize}
+	\item Computers cannot process words -- they need numbers.
+	\item Especially for Machine Learning, where we apply mathematical rules and matrix operations to inputs.
+	\item Word Embeddings are texts converted into numbers -- most ML and almost all DL architectures cannot process raw strings.
+	\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What is a Word Embedding?}
+	\begin{itemize}
+	\item Word embedding = vector representation of a word, `embedded' in $n$-dimensional space.
+	\item Once words are vectors, their properties can be utilized -- e.g. dot product giving cosine similarity.
+	\item Goal: capture some sort of relationship in that space -- meaning, morphology, context.
+	\item $n$ can be tens or hundreds, instead of the millions needed for one-hot encoding.
+	\item Based on Zellig Harris' ``distributional hypothesis'': words used close to one another typically have similar meaning.
+	\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Overview of Different Types of Word Vectors}
+	\begin{itemize}
+	\item \textbf{(Traditional) Frequency-based}: One-hot (Bag of Words), TF-IDF, Co-occurrence
+	\item \textbf{(Modern) Prediction-based}: Word2Vec (Google), GloVe (Stanford), BERT, \ldots
+	\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{One-hot Encoding}
+	\begin{itemize}
+	\item A vector with as many dimensions as the corpus has unique words.
+	\item Each unique word gets a unique dimension, represented by a 1 in that dimension with 0s everywhere else.
+	\end{itemize}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{w2v1}
+\end{center}
+Result: huge, sparse vectors that capture no relational information.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{TF-IDF Transform}
+	\begin{itemize}
+	\item Words are represented by term frequency $\times$ inverse document frequency.
+	\item Common words (``the'', ``and'') get down-weighted; words distinctive to a subset of documents get up-weighted.
+	\end{itemize}
+\begin{center}
+\includegraphics[width=0.45\linewidth,keepaspectratio]{tfidf1}
+\end{center}
+Still suffers from high dimensionality and doesn't capture semantic relatedness.
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Co-Occurrence Matrix}
+% 	\begin{itemize}
+% 	\item A giant matrix, as wide and long as the vocabulary.
+% 	\item If two words occur together (within a context window), the cell is incremented; otherwise it's 0.
+% 	\item If one-hot encoding was high-dimensional, co-occurrence is high-dimensional \emph{squared}.
+% 	\end{itemize}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{But, What is ``meaning''?}
+What is ``bardiwac''?
+
+\begin{itemize}
+\item He handed her a glass of \underline{bardiwac}.
+\item Beef dishes are made to complement the \underline{bardiwac}.
+\item Nigel staggered to his feet, face flushed from too much \underline{bardiwac}.
+\item Malbec, one of the lesser-known \underline{bardiwac} grapes, responds well to Australia's sunshine.
+\end{itemize}
+Anyone? Now, anyone?
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Context Helps}
+% ``Bardiwac is a red alcoholic beverage made from grapes.''
+%
+% 	\begin{itemize}
+% 	\item Distributional embeddings enable word vectors to encapsulate context: each embedding is represented based on the mutual information it has with other words in a corpus.
+% 	\item What other words could fit in those same sentence slots as ``bardiwac''? Won't they be similar to it?
+% 	\end{itemize}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Were These Good Vector Representations?}
+	\begin{itemize}
+	\item To have a ``semantic'' (meaning-wise) representation, similar words should be close together in the hyper-dimensional space.
+	\item Non-similar words should be far apart.
+	\item Traditional one-hot vectors (Apple = [1,0,0], Orange = [0,1,0], Plane = [0,0,1]) fail this test -- very few cells participate in the representation, and there's no notion of ``closeness''.
+	\end{itemize}
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Neural Probabilistic Model}
+% 	\begin{itemize}
+% 	\item Learns an embedding by achieving some task -- e.g. predicting context words, or the center word.
+% 	\item Clean text $\rightarrow$ one-hot encode $\rightarrow$ define representation size (300-dim is a common choice).
+% 	\item That one-hot vector is the entry point into the network; back-propagation modifies the embedding based on the goal task.
+% 	\end{itemize}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Word2Vec: Distributed Representation}
+Word2Vec (Google): all vector cells participate in representing each word -- dense, real-valued vectors of significantly smaller dimension (e.g. 100--1000) than one-hot.
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{word24}
+\end{center}
+Intuition: each vector cell represents some learned feature.
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{CBOW vs Skip-Gram}
+% \begin{center}
+% \begin{tabular}{lll}
+% \hline
+% \textbf{Aspect} & \textbf{CBOW} & \textbf{Skip-Gram} \\
+% \hline
+% Predicts & Target from context & Context from target \\
+% Training speed & Faster & Slower \\
+% Rare words & Weaker & Stronger \\
+% Dataset size & Small--medium & Large \\
+% \hline
+% \end{tabular}
+% \end{center}
+% {\small Rule of thumb: use \textbf{Skip-Gram} for downstream NLP tasks; use \textbf{CBOW} when training speed matters.}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Benefits of Word2Vec}
+	\begin{itemize}
+	\item Low space and time complexity to generate a rich representation.
+	\item Larger dimensionality gives more features in the representation.
+	\item Can efficiently train on billion-word corpora, while keeping dimensionality small.
+	\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{GloVe}
+	\begin{itemize}
+	\item Uses global context across the entire corpus, unlike Word2Vec's local window.
+	\item Builds a word-context co-occurrence matrix, then uses neural methods to decompose it into dense word vectors.
+	\end{itemize}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{w2v5}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{FastText -- Subword Embeddings}
+	\begin{itemize}
+	\item Facebook's extension to Word2Vec (2017).
+	\item Breaks words into character n-grams (3--6 chars) and sums them into a whole-word feature.
+	\item Handles out-of-vocabulary words -- e.g. ``circumnavigate'' borrows meaning from ``navigate''.
+	\item Pre-trained vectors available in 294 languages.
+	\end{itemize}
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Contextual Embeddings and Transformers}
+% 	\begin{itemize}
+% 	\item \textbf{ELMo (2018)}: bi-directional LSTM; different representations for the same word in different contexts (``bank'' in ``river bank'' vs. ``bank account'').
+% 	\item \textbf{BERT (2018--present)}: self-attention, pre-trained via Masked Language Modeling; fine-tuned per task. Variants: RoBERTa, ALBERT, DistilBERT.
+% 	\end{itemize}
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Recent Advances (2023--2026)}
+% 	\begin{itemize}
+% 	\item \textbf{LLMs}: GPT-4, Claude, Gemini -- 100B+ parameters, rich contextual embeddings.
+% 	\item \textbf{Embedding models}: OpenAI's text-embedding-3, Sentence Transformers (SBERT), Matryoshka Representation Learning.
+% 	\item \textbf{Multimodal}: CLIP (text + image), ImageBind (unified embedding space).
+% 	\item \textbf{Efficiency}: quantization, smaller/faster models (TinyBERT, MobileBERT).
+% 	\end{itemize}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Vector Arithmetic Examples}
+Vectors for King, Man, Queen, \& Woman:
+\begin{center}
+\includegraphics[width=0.4\linewidth,keepaspectratio]{word42}
+\includegraphics[width=0.4\linewidth,keepaspectratio]{word44}
+\end{center}
+Gender and plural relations, and word-pair/country-capital relationships all fall out of the same learned vector space.
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Word Representations: Traditional vs Modern}
+% \adjustbox{valign=t}{
+% \begin{minipage}{0.45\linewidth}
+% \textbf{Traditional -- Bag of Words}
+% 	\begin{itemize}
+% 	\item One-hot: 1 bit position per vocabulary word, in a HUGE vector.
+% 	\item Context information not utilized.
+% 	\end{itemize}
+% \end{minipage}
+% }
+% \hfill
+% \adjustbox{valign=t}{
+% \begin{minipage}{0.45\linewidth}
+% \textbf{Modern -- Word Vectors}
+% 	\begin{itemize}
+% 	\item Dense point in space, fixed dimensions (generally 300).
+% 	\item Unsupervised, learned from a huge corpus. Context information is utilized.
+% 	\end{itemize}
+% \end{minipage}
+% }
+% \end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Where Embeddings Are Used}
+% 	\begin{itemize}
+% 	\item \textbf{Word similarity, clustering, topic modeling} -- similar words occur in similar contexts.
+% 	\item \textbf{Machine translation, POS tagging, NER} -- replacing classic rule-based/sequential models.
+% 	\item \textbf{Sentiment analysis} -- mean-pool a document's word vectors, then classify (or just compare via cosine distance).
+% 	\item \textbf{RAG systems} -- vector databases (Pinecone, Weaviate, ChromaDB) power semantic search for chatbots and document Q\&A.
+% 	\item \textbf{Code embeddings} -- CodeBERT and friends power code search, completion, and bug detection.
+% 	\end{itemize}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Domain Understanding}
+	\begin{itemize}
+	\item A big advantage: pre-trained embeddings are applicable across many tasks.
+	\item Caution: generic-corpus embeddings carry generic meanings.
+	\item ``Shell'' in zoology means a sea creature's house; in CAD it means a hollowing operation. ``Draft'' in legal writing is a rough document; in CAD it's a tapering operation.
+	\item For domain-specific meanings, you need domain-specific embeddings.
+	\end{itemize}
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Ethical Considerations: Bias in Embeddings}
+% 	\begin{itemize}
+% 	\item Word embeddings can encode societal biases -- e.g. gender bias (``doctor'' closer to ``man'' than ``woman''), racial/ethnic stereotypes, age and ability biases.
+% 	\item Mitigation: debiasing algorithms (Bolukbasi et al., 2016), careful corpus curation, regular bias audits, fair representation in training data.
+% 	\item Important for responsible AI deployment.
+% 	\end{itemize}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Key Takeaways}
+\begin{enumerate}
+\item Embeddings convert text to numerical representations.
+\item Context is crucial for capturing meaning.
+\item Evolution: Frequency-based $\rightarrow$ Prediction-based $\rightarrow$ Contextual.
+\item Modern embeddings capture rich semantic relationships, with wide applications across NLP.
+\item Consider domain specificity, bias/fairness, and computational resources.
+\item Future: multimodal, efficient, specialized embeddings.
+\end{enumerate}
+\end{frame}

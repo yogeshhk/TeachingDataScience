@@ -1,0 +1,226 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
+{\Large Language Model}
+\end{center}
+\end{frame}
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Language modeling}
+  \begin{itemize}
+  \item What's the probability of the next word?
+  \item Can it be ``house'' or ``rat'' or ``malt''. Whats probability of each being the next?
+    \item $P(house| \text{This is the }) = ?$
+	\item You have read many books, seen texts, whats the likelihood of each, based on the reading?
+	\item Lets train machine to do this, using a toy corpus.
+  	  \end{itemize}
+  	  
+(Ref: https://www.coursera.org/learn/language-processing/lecture/IdJFl/count-n-gram-language-models)  	  
+ \end{frame} 
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Toy corpus}
+  \begin{lstlisting}
+This is the house that Jack built.
+This is the malt
+That lay in the house that Jack built.
+This is the rat,
+That ate the malt
+That lay in the house that Jack built.
+This is the cat,
+That killed the rat,
+That ate the malt
+That lay in the house that Jack built.
+  	  \end{lstlisting}
+  	  
+ Now, $P(house| \text{This is the }) = ?$
+ 
+ \end{frame} 
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Toy corpus}
+  \begin{itemize}
+  \item ``This is the'' comes 4 times.
+  \item Each time with different next-word: house, malt, rat, cat.
+  \item So $P(house| \text{This is the }) = 1/4$ and for other 3 as well.
+  \item Another example $P(jack|that) = 4/10 = 0.4$
+  \item We have seen such things at many places.
+
+  	  \end{itemize}
+  	  
+ 
+ \end{frame} 
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Where do we need Language Model?}
+  \begin{itemize}
+  \item Predictive words while typing on mobile.
+  \item Spelling correction
+  \item Machine translation
+  \item Speech recognition
+  \item Handwriting recognition
+  	  \end{itemize}
+  	  
+ 
+ \end{frame} 
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Mathematically}
+  \begin{itemize}
+  \item Predict probability of a sequence of words: $w = (w_1w_2w_3 \ldots w_k)$ 
+  \item Chain rule: Take first word's probability. Probability of next is based on all the previous ones till that time: $p(w) = p(w_1 )p(w_2 | w_1 ) \ldots  p(w_k | w_1  \ldots w_{k-1} )$
+  \item The last term is too long, complicated.
+  \item Rescue: Markov says, don't look too much into history!!! May be last few(n) terms.
+  	  \end{itemize}
+  	  
+ 
+ \end{frame} 
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Markov}
+$p(w) = p(w_1 )p(w_2 | w_1 ) \ldots  p(w_k | w_{k-1} )$
+
+Toy corpus: 
+  \begin{lstlisting}
+This is the malt
+That lay in the house that Jack built.
+ \end{lstlisting}
+  	  
+$p(\text{this is the house}) = p(this) p(is| this) p(the| is) p(house| the) = 1/12 x 1 x 1 x 1/2 = 1/24$
+ 
+ Problems?
+ \end{frame} 
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Problems}
+  \begin{itemize}
+  \item First word (start) is ``This or That'' in our toy corpus, and it can never be ``malt'' or ``cat''.
+  \item We should modify the first one with a fake ``start'' token. $p(w_1|start)$ that 1/2 as there are two candidates ``This or That'
+  \item Sentences are of varying lengths. Are this probabilities normalized then?
+  \item All unigrams probabilities will sum up to 1. Similarly for bi-grams, trigrams, etc separately.
+  \item But we want, total distribution of all possible sequences.
+  \item Add fake token at end as well $p(end|w_k)$
+  \item That makes all possible combinations FINITE and thus sum of probabilities will be 1.
+  	  \end{itemize}
+  	  
+ \end{frame} 
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Training of Language Models}
+  \begin{itemize}
+  \item  Sentence is $w = (w_1w_2w_3 \ldots w_k)$
+  \item In Bigram language model, next word depnds on previus word: $p(w) = \Pi  p(w_i | w_{i-1}$
+    \item In N-gram language model, next word depnds on past many words: $p(w) = \Pi  p(w_i | w^{i-1}_{i - n + 1})$
+    \item We can estimate these probabilities by (a crude way) counting previous occurances.
+    \item Better/rigourous way is Log Likelihood maximizatoin.
+  	  \end{itemize}
+  	  
+ \end{frame} 
+ 
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Log-likelihodd Maximization}
+  \begin{itemize}
+  \item  $\log p (w_{train}) = \sum \log p (w_i | w^{i-1}_{i-n+1}) \rightarrow max $
+  \item Log is taken as the product becomes addition, easier to optimize.
+  \item Here, $ p (w_i | w^{i-1}_{i-n+1}) = \frac{c(w^i_{i-n+1})}{\sum c(w^i_{i-n+1})} = \frac{c(w^i_{i-n+1})}{c(w^{i-1}_{i-n+1})} $
+  \item Counts normalzied by total counts.
+  	  \end{itemize}
+  	  
+ \end{frame} 
+ 
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Evaluation of Model on Test data}
+  \begin{itemize}
+  \item  Likelihood: $L =  p (w_{test}) = \sum p (w_i | w^{i-1}_{i-n+1}) $
+  \item Perplexisty $P = p (w_{test})^{- 1/N}$
+  \item Somewhat related to Entropy. Lower the better. More the likelihood. Good Predictions.
+  	  \end{itemize}
+  	  
+ \end{frame} 
+ 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Example I}
+  \begin{itemize}
+  \item Toy train corpus:
+This is the house that Jack built.
+\item Toy test corpus:
+This is the \textbf{malt}.
+\item What's the perplexity of the Bigram LM?
+  	  \end{itemize}
+  	  
+ \end{frame} 
+
+ 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Example I}
+  \begin{itemize}
+  \item Start computing probabilities first.
+  \item $p(malt | the) = \frac{c(the malt)}{c(the)} = 0$
+  \item $p(w_{test} ) = 0$ so $P = \infty$ beacuse ``malt'' is there in test but was not in train. Not good $P$.
+  \item How to fix?
+  	  \end{itemize}
+  	  
+ \end{frame} 
+ 
+     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Example I}
+  Simple idea:
+  \begin{itemize}
+  \item Build a vocabulary (e.g. by word frequencies)
+  \item Substitute Out-of-vocabulary words by $\text{<UNK>}$  (both in train and test!)
+  \item Compute counts as usual for all tokens.
+  \item Fixed.
+  	  \end{itemize}
+  	  
+ \end{frame} 
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Example II}
+  Lets say that we dont have any Out-of-vocabulary words
+  \begin{itemize}
+  \item Toy train corpus:
+This is the house that Jack built.
+  \item Toy test corpus:
+This is \textbf{Jack}.
+  \item What’s the perplexity of the Bigram LM?
+  \item  $p(Jack | is) = \frac{c(is Jack)}{c(is)} = 0$
+  \item $p(w_{test}) = 0$, So $P = \infty$ beacuse ``is Jack'' is not in train. Not good $P$.
+  \item How to fix? Smoothing technique.
+  	  \end{itemize}
+  	  
+ \end{frame} 
+ 
+     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Laplacian Smoothing}
+
+  \begin{itemize}
+  \item Having 0 probability is not good. 
+  	\item We can not just assign it to 1 also, as sum of all such probabilities need to be 1.
+  	\item TricK: Add 1 to numerator and all items in denominator.
+  	$\hat{p}(w_i | w^{i-1}_{i-n+1}) = \frac{c(w^i_{i-n+1}) + 1}{c(w^i_{i-n+1}) + V}$
+  	\item Its called ``add-one smoothing''
+  	\item Instead of 1 is you add $k$, its called ``add-k smoothing''.
+  	  \end{itemize}
+  	  
+ \end{frame} 
+
+

@@ -1,0 +1,277 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Feature Extraction and Selection}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{From Raw Data to Useful Features}
+\begin{itemize}
+\item Before training any model: which numbers do you feed it, and how many?
+\item \textbf{Feature Extraction}: raw data $\to$ a manageable set of numeric features.
+\item \textbf{Feature Selection}: given candidate features, which ones actually help?
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feature Extraction: Statistical Features}
+\begin{itemize}
+\item Real signals often arrive as a stream: a sensor reading, a week of sales, a semester of test scores.
+\item A model needs one row per example, not 1000 raw readings, so summarize the stream instead.
+\item Simplest, most common summaries: mean, standard deviation, minimum, maximum, range.
+\end{itemize}
+
+\begin{block}{Intuition}
+Describing a month of temperatures in one sentence? You wouldn't list 30 numbers, you'd say ``averaged 22\textdegree C, swung between 18 and 27''. That sentence \emph{is} mean, min, max: statistical features.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feature Extraction: A Worked Example}
+A sensor logs one reading a minute, for 10 minutes. Turn that into 5 summary features, one per sensor, per time window: several sensors, dozens of candidates.
+\begin{lstlisting}
+import numpy as np
+
+readings = np.array([21.1, 21.3, 21.0, 21.6, 22.0,
+                      22.4, 22.1, 21.8, 21.5, 21.2])
+
+features = {
+    'mean':  readings.mean(),
+    'std':   readings.std(),
+    'min':   readings.min(),
+    'max':   readings.max(),
+    'range': readings.max() - readings.min(),
+}
+print(features)
+
+# Output:
+# {'mean': 21.6, 'std': 0.44, 'min': 21.0, 'max': 22.4, 'range': 1.4}
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Feature Selection: Which Features Actually Help?}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feature Selection: Ranking (Filter Methods)}
+\begin{itemize}
+\item Score each feature \emph{on its own} against the target, rank, keep the top few.
+\item ``Score'': a statistical test, e.g. an F-test (ANOVA) for a numeric feature vs. a class label.
+\item Fast, one pass, no model training. Called a \textbf{filter}: features filtered before any model sees them.
+\item Blind spot: scores features in isolation, can miss a feature that only helps \emph{in combination}.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ranking: Loading the Data}
+Pima Indians Diabetes dataset: 768 patients, 8 measurements, one outcome. \texttt{class}: 1 = diabetic, 0 = not. Which of the 8 columns actually predicts it?
+\begin{lstlisting}
+import pandas as pd
+
+url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv"
+names = ['preg', 'plas', 'pres', 'skin', 'test', 'mass', 'pedi', 'age', 'class']
+df = pd.read_csv(url, names=names)
+df.head(3)
+
+# Output:
+#    preg  plas  pres  skin  test  mass   pedi  age  class
+# 0     6   148    72    35     0  33.6  0.627   50      1
+# 1     1    85    66    29     0  26.6  0.351   31      0
+# 2     8   183    64     0     0  23.3  0.672   32      1
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ranking: Correlation with the Outcome}
+Simplest ranking: correlation of each column with \texttt{class}.
+\begin{lstlisting}
+corr = df.corr()['class'].drop('class').sort_values(ascending=False)
+print(corr.round(2))
+\end{lstlisting}
+\vspace{15pt}
+\begin{center}
+\includegraphics[width=0.65\linewidth,keepaspectratio]{pima_corr_barplot}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Ranking: F-score (a Sharper Test)}
+Correlation is one lens; an F-test (ANOVA) is another, built for exactly this. Expect the same story as the correlation plot: \texttt{plas} dominating, \texttt{skin}/\texttt{pres} barely registering.
+\begin{lstlisting}
+from sklearn.feature_selection import SelectKBest, f_classif
+
+X, y = df.values[:, 0:8], df.values[:, 8]
+skb = SelectKBest(score_func=f_classif, k=4).fit(X, y)
+ranked = sorted(zip(names[:8], skb.scores_), key=lambda t: -t[1])
+
+# F-score, highest to lowest:
+# plas 213  mass 72  age 46  preg 40
+# pedi  24  test 13  skin  4  pres  3
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Feature Selection: Wrapper Methods}
+\begin{itemize}
+\item Filter scores each feature alone. \textbf{Wrapper}: train/cross-validate the model on different feature \emph{subsets}, let that score decide.
+\item Slower, many models trained, but catches combinations a filter would miss.
+\item Which subsets to try? Four classic strategies:
+	\begin{itemize}
+	\item Exhaustive Search
+	\item Greedy Forward Selection
+	\item Greedy Backward Elimination
+	\item Best-First Search
+	\end{itemize}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Wrapper: Exhaustive Search}
+\begin{itemize}
+\item Try \emph{every} non-empty subset, keep the best cross-validated score.
+\item $n$ features $\to$ $2^n - 1$ subsets. Pima's 8 $\to$ 255, small enough to actually run.
+\item Spoiler: dropping \texttt{skin} turns out to cost zero accuracy.
+\end{itemize}
+
+\begin{lstlisting}
+import itertools
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score, KFold
+
+model = LogisticRegression(max_iter=1000)
+kfold = KFold(n_splits=5, shuffle=True, random_state=7)
+best_score, best_subset = -1, None
+
+for r in range(1, 9):
+    for combo in itertools.combinations(range(8), r):
+        s = cross_val_score(model, X[:, combo], y, cv=kfold).mean()
+        if s > best_score:
+            best_score, best_subset = s, combo
+
+# Output (255 subsets evaluated):
+# Best: all features except 'skin', accuracy=0.775
+# All 8 features:                    accuracy=0.775
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Wrapper: Why Exhaustive Search Doesn't Scale}
+\begin{itemize}
+\item 8 features $\to$ 255 subsets: a few seconds.
+\item 3 sensors $\times$ 5 statistical features each = 15-20 candidates already.
+\item 20 features $\to$ $2^{20}-1 \approx$ 1 million subsets, roughly 4{,}000$\times$ more work.
+\item Realistic only for a small, already-narrowed feature set.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Wrapper: Greedy Forward Selection}
+\begin{itemize}
+\item Start empty. Each round: add whichever remaining feature helps most.
+\item Stop when nothing left improves the score.
+\end{itemize}
+
+Same model and cross validation, on Pima:
+\begin{center}
+\small
+\begin{tabular}{clc}
+\textbf{Step} & \textbf{Feature added} & \textbf{Accuracy so far} \\ \hline
+1 & plas & 0.750 \\
+2 & mass & 0.767 \\
+3 & pedi & 0.773 \\
+4 & pres & 0.772 \\
+\end{tabular}
+\end{center}
+3 features reach 0.773, within 0.002 of exhaustive search's best, at a fraction of the cost.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Wrapper: Greedy Backward Elimination}
+\begin{itemize}
+\item Start with \emph{all} features. Each round: remove whichever hurts least (or helps).
+\item Stop once every remaining removal costs accuracy.
+\end{itemize}
+
+On Pima:
+\begin{center}
+\small
+\begin{tabular}{clc}
+\textbf{Step} & \textbf{Feature removed} & \textbf{Accuracy after} \\ \hline
+start & (all 8) & 0.775 \\
+1 & skin & 0.775 \\
+2 & age & 0.772 \\
+3 & preg & 0.775 \\
+\end{tabular}
+\end{center}
+First move, drop \texttt{skin}, already matches what exhaustive search proved was right.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Wrapper: Best-First Search}
+\begin{itemize}
+\item Greedy commits forever: once added or removed, never reconsidered.
+\item Best-first keeps a pool of promising subsets, not just one, and can expand any of them next.
+\item Can back out of an early choice greedy would be stuck with.
+\item Costs more than greedy, far less than exhaustive.
+\end{itemize}
+
+\begin{block}{Intuition}
+Greedy: always take the steepest visible path uphill. Best-first: keep a mental map of your 3 best viewpoints, and choose which to climb from next.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Filter vs. Wrapper: Summary}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lll}
+\textbf{Method} & \textbf{Looks at} & \textbf{Cost} \\ \hline
+Ranking (Filter) & One feature at a time & Cheapest \\
+Exhaustive & Every possible subset & Guaranteed best, but explodes \\
+Greedy Forward & Builds up, one add at a time & Cheap, no backtracking \\
+Greedy Backward & Trims down, one remove at a time & Cheap, no backtracking \\
+Best-First & A pool of candidate subsets & Middle ground \\
+\end{tabular}%
+}
+\end{center}
+\begin{block}{Intuition}
+No method is ``correct.'' Ranking: fast first pass. Wrapper: costs more, sees combinations. Pick by budget.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Feature Selection}
+\begin{block}{Think About It}
+The filter ranking on Pima placed \texttt{preg} (number of pregnancies) 4th out of 8 individually. Yet Greedy Backward Elimination's best 5-feature subset dropped \texttt{preg} entirely without hurting accuracy. Are these two results in conflict? Why or why not?
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Feature Selection}
+\begin{block}{Answer}
+\begin{itemize}
+\item No conflict: they answer different questions.
+\item Filter score: how strongly \texttt{preg} relates to the outcome \emph{by itself}, ignoring every other feature. On that measure alone it ranks 4th.
+\item Backward elimination asks a different question: given everything else already in the model, does \texttt{preg} add anything \emph{on top of it}?
+\item \texttt{age} already correlates with number of pregnancies, so \texttt{preg}'s information is redundant: removing it costs nothing even though it looked useful alone.
+\item This is exactly the wrapper methods' advantage over filters: they can see redundancy that isolated ranking cannot.
+\end{itemize}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Recap: Feature Extraction and Selection}
+\begin{itemize}
+\item \textbf{Extraction}: raw data $\to$ manageable features (mean, std, min, max, range).
+\item \textbf{Selection}: which candidate features earn a place in the model.
+\item \textbf{Filter (Ranking)}: fast, scores features independently.
+\item \textbf{Wrapper} (Exhaustive, Greedy Forward/Backward, Best-First): slower, sees combinations filters miss.
+\item Narrows the search, you still decide what ships.
+\end{itemize}
+\end{frame}

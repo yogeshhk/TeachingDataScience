@@ -1,0 +1,94 @@
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large RAG Architecture \& Vector Databases}
+
+{\small Making LLMs know about YOUR data}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Why RAG? The Core Problem}
+\textbf{The problem with raw LLMs:}
+\begin{itemize}
+\item LLMs are trained on public internet data up to a cutoff date
+\item They know \textit{nothing} about your internal runbooks, your codebase, your product docs
+\item Fine-tuning is expensive (\$10k--\$100k+) and needs to be re-done for every update
+\end{itemize}
+
+\textbf{RAG = Retrieval-Augmented Generation}
+\begin{itemize}
+\item Idea: At query time, \textit{retrieve} relevant documents from your knowledge base and \textit{inject} them into the LLM prompt as context
+\item The LLM now has your private data, without fine-tuning, without data leakage
+\item Result: LLM answers based on \textit{your} documents, not just its training data
+\end{itemize}
+
+\textbf{Analogy:} Imagine giving an expert consultant your internal wiki right before the meeting, instead of hoping they already know it.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{RAG Architecture, End to End}
+\textbf{Indexing Phase (one-time):}
+\begin{enumerate}
+\item Load documents (PDFs, Confluence, code, Slack threads)
+\item Split into chunks (e.g., 500 tokens each with 50-token overlap)
+\item Convert each chunk to a vector embedding: $\vec{v} = \text{Embed}(\text{chunk})$\\
+  \textit{What is an embedding? A list of 1500 numbers that captures meaning. Similar text $\rightarrow$ similar numbers.}
+\item Store vectors + original text in a Vector Database
+\end{enumerate}
+
+\textbf{Query Phase (real-time):}
+\begin{enumerate}
+\item User asks: ``How do I restart the payment service?''
+\item Convert query to embedding: $\vec{q} = \text{Embed}(\text{query})$
+\item Retrieve top-$k$ most similar chunks (cosine similarity: $\cos(\vec{q}, \vec{v}) = \frac{\vec{q} \cdot \vec{v}}{|\vec{q}||\vec{v}|}$)\\
+  \textit{This measures the ``angle'' between two meaning vectors. Closer angle = more relevant.}
+\item Inject retrieved chunks + user query into LLM prompt $\rightarrow$ Get grounded answer
+\end{enumerate}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Vector Databases, Choosing the Right One}
+\textbf{What is a vector database?} A database optimized for storing and \textit{similarity-searching} vector embeddings at scale.
+
+\begin{center}
+\begin{tabular}{|p{1.2cm}|p{2cm}|p{3cm}|}
+\hline
+\textbf{DB} & \textbf{Best For} & \textbf{Notes} \\
+\hline
+Pinecone & Production SaaS & Fully managed, simple API \\
+Weaviate & Hybrid search & Open-source, graph features \\
+pgvector & Existing Postgres & Easiest for teams with Postgres \\
+Chroma & Local dev / prototyping & Easiest to get started \\
+Qdrant & High performance & Rust-based, great filtering \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Recommendation for GTC teams:} Start with \textbf{pgvector} if you already use Postgres. Migrate to Pinecone/Qdrant if scale demands it.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Designing a Knowledge Base, Best Practices}
+\textbf{Content Strategy:}
+\begin{itemize}
+\item Identify sources: runbooks, Confluence, JIRA history, Slack threads, support tickets, API docs
+\item Prefer structured, clean text over scanned PDFs or screenshots
+\item Keep documents versioned and dated, stale context is dangerous
+\end{itemize}
+
+\textbf{Chunking Strategy:}
+\begin{itemize}
+\item Fixed-size: simple, good for homogeneous docs (500 tokens, 10\% overlap)
+\item Semantic: split at paragraph/section boundaries, better for wikis
+\item Hierarchical: store both summary and detail, allow coarse-then-fine retrieval
+\end{itemize}
+
+\textbf{Metadata:}
+\begin{itemize}
+\item Always store: source URL, date, author, doc type, team
+\item Use metadata for pre-filtering (``only search runbooks from AppOps team'')
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

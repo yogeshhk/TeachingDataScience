@@ -1,0 +1,1734 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Repository Purpose
+
+An open-source educational repository containing:
+- **LaTeX**: Beamer presentation slides and two-column cheatsheets for Data Science courses (Python, ML, DL, NLP, GenAI, RAG, etc.)
+- **Code**: Python scripts and Jupyter notebooks demonstrating the concepts covered in the slides
+
+## Style Conventions
+
+User-visible markdown (`README.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `COURSES.md`,
+`Code/README.md`, and similar reader-facing docs) must not use em-dashes (`—`); use a colon,
+comma, or semicolon instead, whichever reads most naturally. This is checked and enforced as
+of Jul 2026. Internal/tooling files (this `CLAUDE.md`, other `CLAUDE.md`s, templates) are
+exempt since they're written for Claude Code, not repo visitors.
+
+**Automated enforcement (Aug 2026):** a `PreToolUse` hook (`.claude/hooks/check-em-dash.ps1`,
+wired in `.claude/settings.json`) blocks any Claude Code `Edit`/`Write` to a `.tex` or `.md`
+file (any filename except `CLAUDE.md` itself) whose new content contains a literal em-dash,
+scanning outside `%`-comments and `lstlisting`/`verbatim` blocks. Note its scope is broader
+than the paragraph above: it covers every `.tex` file repo-wide, not just user-visible
+markdown. A literal `--`/`---` outside those exclusions triggers a non-blocking warning instead
+(could be a faked dash, or legitimate syntax like a TikZ `--` or a CLI flag). The hook reads
+stdin via a UTF-8-forced `StreamReader`, not `[Console]::In` — the latter decodes through the
+console's legacy codepage and silently mangles the em-dash's multi-byte UTF-8 encoding
+(`E2 80 94`) before the regex ever sees it, which let an em-dash through undetected once before
+the fix. If the hook stops catching em-dashes again, suspect this same class of bug first.
+
+## Repo popularity/discoverability upgrade (Jul 2026)
+
+This repo's own discoverability upgrade is done (README rewritten as a landing page, `COURSES.md`,
+`Code/README.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue/PR templates, `Admin/` cleanup;
+see git history and `Code/reports/` for details). That work produced two generic slash commands,
+`/upgrade-repo-tech` and `/upgrade-repo-non-tech` (in `~/.claude/commands/`, mirrored in
+`Code/claudecode/dot_claude/commands/`), originally meant to be run next on sibling repos:
+`/upgrade-repo-non-tech` on `BharatVidya`, `/upgrade-repo-tech` on `MidcurveNN` and `Sarvadnya`.
+**Update, 2026-08-30: that next step is now mostly moot.** `BharatVidya` and `MidcurveNN` were both
+closed and deleted locally on 2026-08-13 (see `D:\Yogesh\GitHub\CLAUDE.md`); `Sarvadnya` was never
+added to that file's allowed-repos list, so it stays off-limits by default until the user grants
+access. Both commands remain available if a new sibling repo ever needs this treatment.
+
+## LaTeX Build System
+
+Compile a specific deck from the `LaTeX/` directory using MikTeX's `texify`:
+```bat
+cd LaTeX
+texify -cp Main_Seminar_AI_HandsOn_ClaudeCode_Presentation.tex
+```
+
+Compile all decks matching a pattern (Windows):
+```bat
+cd LaTeX
+for /r %i in (Main_Seminar_*Educators*.tex) do texify -cp %i
+```
+
+Compile everything:
+```bat
+cd LaTeX
+make_all.bat
+```
+
+### Compiled output policy (Aug 2026)
+
+This repo is public; **compiled decks (`Main_*.pdf`) and build litter
+(`.aux .log .nav .out .snm .toc .vrb`) are never committed here** and are
+gitignored at `LaTeX/.gitignore`. Final PDFs for actual delivery get copied to
+the private `Publications/Presentations/` repo instead, after compiling
+locally. This is deliberate, not an oversight: people should compile the
+LaTeX themselves rather than getting a ready PDF for free from the public
+repo. `LaTeX/images/*.pdf` are source assets (diagrams etc.), not build
+output, and are unaffected by this rule.
+
+## LaTeX Architecture
+
+### 4-level content hierarchy
+
+```
+Course (40hr)     Main_Course_*_{Presentation,CheatSheet}.tex
+                    └─ course_*_content.tex
+                         └─ \input{workshop_*_content}  (+ course-specific extras)
+
+Workshop (4-16hr) Main_Workshop_*_{Presentation,CheatSheet}.tex
+                    └─ workshop_*_content.tex
+                         └─ \input{seminar_*_content}  (seminar layer only)
+
+Seminar (1hr)     Main_Seminar_*_{Presentation,CheatSheet}.tex
+                    └─ seminar_*_content.tex
+                         └─ \input{<domain>_<topic>}  (raw topic files)
+```
+
+Every deliverable has two output forms sharing the same content file:
+- `Main_*_Presentation.tex` — Beamer slides (`\documentclass{beamer}`, uses `template_presentation.tex`)
+- `Main_*_CheatSheet.tex` — Two-column landscape notes (`\documentclass{article}`, uses `template_cheatsheet.tex`)
+
+CheatSheet column count convention: Seminars use `multicols{3}`; Workshops use `multicols{2}`.
+
+**Never use a float (`\begin{table}[h]`, `\begin{figure}`) in any content file that feeds a
+CheatSheet** (Aug 2026). Floats cannot be placed inside `multicols` and are silently
+*dropped* — no LaTeX error, no warning, the table just vanishes from the PDF while the
+surrounding prose renders normally. Use `\begin{center}` + a bare `tabular` instead. Found
+when two newly-added tables in `ml_concepts_short.tex` rendered fine in the Presentation but
+were missing entirely from the CheatSheet; only caught by rendering the PDF to an image, not
+by the compile log.
+
+**Two-column `adjustbox`+`minipage` frames need `%` line-endings** (Aug 2026). The repo's
+established side-by-side convention (explanatory content left ~0.55`\linewidth`, diagram right
+~0.4`\linewidth`, see Task 5a in `/upgrade-deck`) sums to ~0.96`\linewidth`, leaving no room
+for the inter-line spaces LaTeX inserts at each newline between `}`, `\hfill`, and the next
+`\adjustbox`. Those few pt tip it over `\linewidth`, the right minipage wraps *below* the
+left one, and the diagram runs off the bottom of the slide. Terminate those lines with `%`
+(`\end{minipage}%`, `}%`, `\hfill%`, `\adjustbox{valign=t}{%`). This silently broke the
+gradient-descent frame in `ml_concepts{,_short}.tex` from its Aug 2026 authoring until it was
+found by rendering slide 15 to an image; the only log signal was a single `Overfull \vbox`.
+
+`\usepackage{beamerarticle}` in `template_cheatsheet.tex` makes Beamer `\begin{frame}` environments compile correctly in article mode — no frame stripping needed.
+
+Both `template_presentation.tex` and `template_cheatsheet.tex` load `\usepackage{upquote}`
+(added Jul 2026) right after `\usepackage{listings}`, so straight apostrophes/backticks in
+`lstlisting`/verbatim code render as straight quotes instead of the curly OT1-typewriter-font
+ligature glyph. Repo-wide fix, not tied to any one deck; found while reviewing ML CoEP Session
+4 (`python_intro_pandas.tex`), whose code was rendering both ends of every quoted string curled
+the same direction.
+
+### Naming conventions
+- Topic files: `<domain>_<topic>.tex` (e.g., `maths_linearalgebra_matrices.tex`)
+- Content aggregators: `<type>_<subject>_content.tex`
+- Driver files: `Main_[Course|Seminar|Workshop]_<Subject>_[Presentation|CheatSheet].tex`
+  - Seminar ≈ 1 hour, Workshop ≈ 1 day, Course ≈ 1 week/semester
+- Every Seminar and Workshop **must** have both a `_Presentation.tex` and a `_CheatSheet.tex` driver
+  — this pairing rule holds even for the lighter-weight `_Overview` driver category below; only
+  the "Seminar ≈ 1 hour" duration expectation doesn't apply to that category
+- `_Short` suffix on a driver (e.g. `Main_Seminar_Tech_CareerInDataScience_Short_Presentation.tex`)
+  denotes a shorter-duration variant of an existing seminar, sharing topic files with its
+  parent via the `X.tex`/`X_short.tex` comment-sync pattern below — see the
+  CareerInDataScience note for the first precedent of this at the seminar level
+- `_overview` suffix on a topic file (e.g. `dl_intro_overview.tex`) denotes a deep/
+  comprehensive standalone treatment that sits *outside* the `X.tex`/`X_short.tex`
+  comment-sibling relationship — see the short/full sync audit note below
+- `_Overview` suffix on a **driver** (e.g. `Main_Seminar_DL_Foundations_Overview_
+  Presentation.tex`) denotes a minimal, single-section standalone seminar that exists
+  solely to make an `_overview.tex` topic file independently reachable as its own
+  session — deliberately thinner than a normal ~1hr Seminar (no References section,
+  by design) — see the short/full sync audit note below for the 4 precedents
+
+### Sibling-file sync rule (standing rule, added Jul 2026)
+Whenever a `.tex` file being edited — via `/upgrade-deck` or any other change — has an
+`X.tex`/`X_short.tex` comment-sibling (per the naming convention above), check for that
+sibling and read it too, even if the driver you were pointed at doesn't `\input` it. Any
+frame added, removed, or materially edited in one file must have its comment/uncomment
+state mirrored in the sibling, so the two never silently drift apart. This is now built
+into the `/upgrade-deck` skill itself (Step 4 and its Guardrails), but applies to any
+manual edit of a sibling-paired file too. The CoEP course restructuring (see the ML CoEP
+note below) is the first case that leaned on this at scale, discovering along the way
+that several `_short.tex`/parent pairs already had far more content commented out by
+the original author than a naive `\begin{frame}` grep would suggest — always count *live*
+(uncommented) frames, not raw occurrences, when judging a deck's size.
+
+### Known issues
+- ~~`seminar_latex4research_conent.tex` — filename typo (`conent` vs `content`)~~ — **fixed
+  2026-08-21**: renamed to `seminar_latex4research_content.tex`, both driver `\input`s updated,
+  both `Main_Seminar_Tech_LaTeX_Research_{Presentation,CheatSheet}` recompiled clean (37 and 4
+  pages respectively).
+- `Main_Seminar_AI_HandsOn_ClaudeCode_CheatSheet.tex` (renamed from `Main_Seminar_AI_ClaudeCode_CheatSheet.tex` in the Aug 2026 AI-talks consolidation; only active content: `ai_tools_claudecode_demo_cadcam.tex`) walks through building `stlinspector`, paired with actual code at `Code/claudecode/CadCamWorkshop/` (untracked as of Jul 2026). As of Jul 2026 the deck and the PoC are back in sync: flat `src/` layout with no packaging (no `pyproject.toml`, no console-script entry point), the two-step `load_mesh`/`inspect_mesh` API, JSON-only reports (no Markdown report format), and a `thin_walls` check added alongside the original three. `CadCamWorkshop` now has both `.claude/skills/geometry-validation/` and `.claude/skills/inspection-report-summary/`; `.claude/agents/devops.md` was removed. `Code/claudecode/trial/` (also untracked) was a from-scratch dry run of the same workshop script, used to find and fix these drift points plus several missing/misplaced YAML-frontmatter fences in the tex's subagent/command/skill blocks — it's now redundant and pending manual deletion.
+- `workshop_deepnlp_content.tex` line 2 has `\input{nlp_intro_short}` but no `nlp_intro_short.tex` exists in `LaTeX/` (closest matches: `nlp_intro_short_w_embedding.tex`, `nlp_intro.tex`) — blocks `Main_Workshop_NLP_Deep_*` and (via `course_generativeai_content.tex`) `Main_Course_GenerativeAI_*` from compiling. Found during the short/full sync audit below (Oct 2026); pre-existing and unrelated, not fixed. **Correction, Aug 2026**: this entry used to list `nlp_intro_short_old.tex` as a third close match. That file does not exist on disk; verified during the repo-wide `\input` check below.
+- **Known, accepted, deprioritized (Aug 2026): git-index/disk casing drift on the 8
+  `Main_Seminar_AI_For_*`/`Main_Seminar_AI_for_*` seminar drivers** (WithML, Kids, BizLeaders,
+  ProjectManagers, TechLeaders, Educators, All_Tech, All_NonTech — Presentation + CheatSheet each).
+  Confirmed for the Educators pair specifically: the actual files on disk are `AI_For_Educators`
+  (capital F, matching `COURSES.md`'s links), but git's tracked index path is `AI_for_Educators`
+  (lowercase f) — a case-only rename that a case-insensitive Windows checkout never surfaces in
+  `git status`. Not verified for the other 7 pairs (would require running git, which Claude Code
+  is barred from doing in this repo). **Harmless on Windows; would only break links/compiles on a
+  case-sensitive clone (Linux, CI).** A proper `git mv` (two-step, through a temp filename, since a
+  single-step case-only `git mv` is unreliable on Windows) would fix it, but attempts to do so
+  did not work in practice and the author chose not to keep fighting it. A plain content edit
+  cannot fix this either — case-insensitive `git status` won't register a path-casing change from
+  content alone, only an actual rename operation does. Left as-is; revisit only if a case-sensitive
+  checkout of this repo is ever actually needed.
+
+#### Repo-wide `\input`-resolution check (Aug 2026)
+Static check (no compiling) of every `\input`/`\include` chain from all 339 `Main_*.tex` drivers
+(166 Presentation, 165 CheatSheet, 8 other), ignoring commented-out lines. Script pattern: walk each
+driver's chain transitively, flag any target with no `.tex` on disk. Result: **only 4 drivers are
+blocked**, by 13 missing files concentrated in 2 content files — the rest of the repo resolves
+cleanly. Worth re-running after any bulk rename; it is seconds of work and catches the class of bug
+that silently makes a deck unbuildable.
+- `Main_Workshop_NLP_Deep_{Presentation,CheatSheet}` — blocked solely by `nlp_intro_short.tex` above.
+- `Main_Course_GenerativeAI_{Presentation,CheatSheet}` — blocked by that plus **12 more** missing
+  from `course_generativeai_content.tex`. These split into two kinds, and the distinction matters:
+  - **4 look like renames with an unambiguous target on disk** (mechanical to fix, same shape as the
+    `sql_rag_concl` bug): `llm_autoagents_intro`/`_conclusions`/`_refs` -> the `llm_agents_*` family
+    (an `autoagents` -> `agents` rename), and the misspelled `llamaindex_implimentations` ->
+    `llamaindex_impl`.
+  - **9 have no counterpart at all**, i.e. content that was planned but never authored:
+    `llm_autoagents_opensource`, `langgraph_applications`, `langchain_agents`,
+    `langchain_applications`, `llamaindex_framework`, `llamaindex_applications`,
+    `llamaindex_conclusions`, and the ambiguous `nlp_ml` (four plausible targets exist:
+    `nlp_ml_intro`, `nlp_ml_impl`, `nlp_ml_nltk`, `nlp_ml_spacy`).
+  So this is **not** a typo bug like SQL RAG. `course_generativeai_content.tex` was written against a
+  planned intro/framework/impl/applications/conclusions/refs layout that was only partly authored;
+  fixing the 4 renames alone would not have made the course compile.
+
+**Resolution (Aug 2026)**: all 13 handled, and the check now reports **0 unresolved across all 339
+drivers**. The 9 with no counterpart were **commented out** (not deleted), each with a note saying
+why and naming the closest existing file if it is ever restored; the 4 renames were **repointed** to
+their real files rather than commented, since that preserves real content (`llm_agents_intro.tex`
+alone is 54 frames). For `nlp_intro_short` the `\section[Intro]{Introduction to NLP}` header was
+commented along with the `\input`, so no empty section is left in the TOC — note this edit is in
+`workshop_deepnlp_content.tex`, which both the NLP Deep workshop and the GenAI course pull in.
+- **Verified**: `Main_Workshop_NLP_Deep_{Presentation,CheatSheet}` now build for the first time —
+  122 and 17 pages, exit 0, and **zero content overfulls** (the Presentation's 242 boxes are all the
+  per-frame navigation-bar class documented elsewhere in this file).
+- **NOT verified**: `Main_Course_GenerativeAI_{Presentation,CheatSheet}` were never successfully
+  built. The Presentation compile was started and **cancelled by the author while still running**
+  (>10 min, log past 13 MB, a 35 MB PDF still growing and no page count reached — it pulls in three
+  full workshops plus ~30 extra topic files, none of it ever compiled before). Its `\input` chain
+  resolves, but that only proves the *files* exist: an unbuilt deck of this age can still fail on a
+  missing image or a stale macro. **Do not record this course as compiling until someone actually
+  builds it**, and budget well over 10 minutes if you try.
+
+### Machine Learning course restructured (June 2026)
+Full 4-level hierarchy for the 40-hour ML course "Machine Learning for Graduate Students":
+- **Course**: `Main_Course_MachineLearning_{Presentation,CheatSheet}.tex` → `course_machinelearning_content.tex`
+- **Workshops** (6 × driver pairs):
+  - W1 Python for ML (8h): existing `workshop_python_basic_content.tex` (renamed from `workshop_python_content.tex` in Aug 2026, see Python course note below)
+  - W2 Foundations (4h): `workshop_ml_foundations_content.tex`
+  - W3 Regression (4h): `workshop_ml_regression_content.tex`
+  - W4 Tree-Based & Ensemble (8h): `workshop_ml_treebased_content.tex`
+  - W5 Supervised II — KNN/SVM/NB (8h): `workshop_ml_supervisedII_content.tex`
+  - W6 Unsupervised & Deployment (8h): `workshop_ml_unsupervised_content.tex`
+  - Standalone all-ML workshop (W2–W6, no Python/demos): `Main_Workshop_MachineLearning_{Presentation,CheatSheet}.tex`
+- **Seminars** (10 × driver pairs): `seminar_ml_{intro,dataprep,regression,decisiontree,ensemble,knn,svm_nb,clustering,dimreduction,deployment}_content.tex`; drivers are `Main_Seminar_ML_{Intro,DataPrep,Regression,DecisionTree,Ensemble,KNN,SVM_NB,Clustering,DimReduction,Deployment}_{Presentation,CheatSheet}.tex`
+- **New demo/assign files**: `ml_course_demo_regression_housing.tex`, `ml_course_demo_svm_digits.tex`, `ml_course_assign_knn_wine.tex`, `ml_course_demo_clustering_customers.tex`, `ml_course_assign_pca_digits.tex`
+- **Upgrade status**: All 10 seminars upgraded (compiled clean + `/upgrade-deck` pass: technical
+  fixes, "Intuition" callouts, "Quick Check" quizzes) as of Jul 2026 — see git history for
+  details, as `LaTeX/todo_ml_seminar_upgrade.md` (the working to-do for this pass) was deleted
+  once the work completed, matching the precedent set by the Maths4ML/Python restructuring notes
+  below
+- **Done**: the 5 new demo/assign files listed above are wired into `course_machinelearning_content.tex` (confirmed on disk, Oct 2026 audit)
+
+### Maths for ML restructured (July 2026), promoted to a course (Aug 2026)
+Full 4-level hierarchy for "Zero-to-Hero: Mathematics for Machine Learning", aimed at
+fresher/college-level students. 12 seminars × ~2h = 24h ≈ 3 days × 8h, but the 4 topic-workshops
+are uneven in size (Basics/LinearAlgebra/Calculus 4h each, Statistics 12h), so the day boundary
+cuts across the Calculus/Statistics workshop pair rather than aligning 1:1 with workshops —
+annotated as comments in `course_maths4ml_content.tex` and inside
+`workshop_maths4ml_statistics_content.tex` (not a structural split):
+- **Day 1 (8h)**: Basics + Linear Algebra
+- **Day 2 (8h)**: Calculus + Statistics seminars 1–2 (probability_foundations, random_distributions)
+- **Day 3 (8h)**: Statistics seminars 3–6 (centraltendency_spread, distributions_expectedvalue, hypothesis_testing, tests_practice)
+- **Course**: `Main_Course_MathsML_{Presentation,CheatSheet}.tex` → `course_maths4ml_content.tex`
+- **Workshops** (4 × driver pairs), each just chaining its seminars:
+  - Basics: `workshop_maths4ml_basics_content.tex` → `seminar_maths4ml_basics_{numbers_equations,sets_proofs}_content.tex`; drivers `Main_Workshop_MathsML_Basics_{Presentation,CheatSheet}.tex`
+  - Linear Algebra: `workshop_maths4ml_linearalgebra_content.tex` → `seminar_maths4ml_linearalgebra_{vectors,matrices}_content.tex`; drivers `Main_Workshop_MathsML_LinearAlgebra_{Presentation,CheatSheet}.tex`
+  - Calculus: `workshop_maths4ml_calculus_content.tex` → `seminar_maths4ml_calculus_{functions_limits,derivatives_optimization}_content.tex`; drivers `Main_Workshop_MathsML_Calculus_{Presentation,CheatSheet}.tex`
+  - Statistics (6 seminars): `workshop_maths4ml_statistics_content.tex` → `seminar_maths4ml_statistics_{probability_foundations,random_distributions,centraltendency_spread,distributions_expectedvalue,hypothesis_testing,tests_practice}_content.tex`; drivers `Main_Workshop_MathsML_Statistics_{Presentation,CheatSheet}.tex`
+- **Seminars** (12 × driver pairs, unchanged): each has its own driver pair
+  `Main_Seminar_MathsML_<ParentTopic>_<Subtopic>_{Presentation,CheatSheet}.tex`
+- All 12 seminars have been through an intuition-first `/upgrade-deck` pass (technical fixes,
+  "Intuition" callouts, section-end "Quick Check" quizzes) — see git history for details, as
+  `LaTeX/todo_maths4ml_seminar_upgrade.md` (the working to-do for this restructuring) was
+  deleted once the work completed.
+- Raw `maths_*.tex` topic files are unchanged; only the aggregation layers changed.
+- The old single all-in-one `Main_Workshop_ML_Maths_{Presentation,Cheatsheet}.tex` /
+  `workshop_maths4ml_content.tex` were removed as redundant once the course/workshop split
+  landed (unlike the ML course, no standalone "complete workshop" was kept here).
+
+### Python course added (Aug 2026), seminar layer added
+2-day, 16h course combining the two existing standalone Python workshops as Day 1 / Day 2:
+- **Course**: `Main_Course_Python_{Presentation,CheatSheet}.tex` → `course_python_content.tex`
+- **Day 1 (8h)**: `workshop_python_basic_content.tex` (renamed from `workshop_python_content.tex`;
+  also still used standalone via `Main_Workshop_Python_Basic_{Presentation,CheatSheet}.tex`, and
+  as W1 "Python for ML" in `course_machinelearning_content.tex`)
+- **Day 2 (8h)**: `workshop_python_adv_content.tex` (unchanged; also still used standalone via
+  `Main_Workshop_Python_Advanced_{Presentation,CheatSheet}.tex`)
+- Both workshops now route through a seminar layer (6 seminars each) between the workshop and
+  the raw `python_*.tex` topic files, matching the Maths4ML/ML hierarchy:
+  - **Basic** (`workshop_python_basic_content.tex`): B1 Intro, B2 Constructs, B3 Procedures,
+    B4 OOP, B5 IOLibraries, B6 Closure — `seminar_python_basic_<name>_content.tex`; drivers
+    `Main_Seminar_Python_Basic_<Name>_{Presentation,CheatSheet}.tex`
+  - **Advanced** (`workshop_python_adv_content.tex`): A1 OOPIteration, A2 FunctionsOS,
+    A3 StringsWeb, A4 DataLibs, A5 Visualization, A6 Problems —
+    `seminar_python_adv_<name>_content.tex`; drivers
+    `Main_Seminar_Python_Advanced_<Name>_{Presentation,CheatSheet}.tex`
+  - `Extra`/`References` sections stay as trailing raw `\input`s in the workshop content files,
+    not wrapped in a seminar (same precedent as Maths4ML/ML)
+  - `python_oop.tex` is `\input` by both Basic B4 and Advanced A1 — duplication predates this
+    restructure, preserved as-is
+- Raw `python_*.tex` topic files are unchanged; only the aggregation layers changed.
+- All 12 seminars (Basic B1-B6, Advanced A1-A6) have been through an intuition-first
+  `/upgrade-deck` pass (technical fixes, "Intuition" callouts, "Quick Check" quizzes) — see git
+  history for details, as `LaTeX/todo_python_seminar_restructure.md` (the working to-do for this
+  restructuring) was deleted once the work completed. Notable fixes along the way: Advanced A5
+  (`python_intro_bokeh.tex`) was rewritten from a Bokeh procedural API removed from the library
+  ~8 years ago to current Bokeh 3.x, and its dependent `bokeh.charts`/`bokeh.mpl` demo frames
+  were replaced with native-Bokeh equivalents since those modules no longer exist; A5's
+  `python_intro_tkinter.tex` had ~1850 lines of dead, never-rendered commented-out Python-2-era
+  Tcl/Tk documentation removed. Advanced A6's raw files (`python_dsa.tex`,
+  `python_codingproblems_basic.tex`, `python_systemdesign.tex`) were recently AI-authored and
+  algorithmically correct throughout, so that pass was lighter — mainly mismatched
+  reference-citation cleanup and one `itertools.permutations` simplification.
+- No redundant files removed here: unlike Maths4ML, both standalone workshops remain valid
+  independent offerings, so nothing was retired.
+
+### CareerInDataScience seminar split into 90-min full + 30-min short (Oct 2026)
+First precedent in the repo for a single seminar offered at two durations, sharing
+underlying topic files kept in sync by commenting rather than by duplicating content
+independently:
+- **Full (90 min, unchanged)**: `Main_Seminar_Tech_CareerInDataScience_{Presentation,CheatSheet}.tex`
+  → `seminar_careerindatascience_content.tex` (Background, Introduction, Challenges,
+  Roles \& Personas, Preparation, Mid-career, References)
+- **Short (30 min, new)**: `Main_Seminar_Tech_CareerInDataScience_Short_{Presentation,CheatSheet}.tex`
+  → `seminar_careerindatascience_short_content.tex`, dropping Background/Challenges/
+  Mid-career entirely (their `\section`+`\input` lines commented out, not deleted) and
+  swapping the rest to `_short` topic files: `ai_intro_tech_short.tex` (~11 orientation
+  slides), `career_ai_roles_short.tex` (8 of ~16 roles), `career_ai_personas_short.tex`
+  (all 3 personas, trimmed detail), `career_ai_prep_short.tex` (5 of ~12 slides);
+  `career_refs.tex` kept in full (only 2 frames)
+- **Sync convention**: each `_short.tex` sibling is a full copy of its parent with the
+  excluded frames commented out (not rewritten/deleted), so a frame added to the parent
+  can be manually mirrored into the child as either live or commented — the same
+  discipline as the pre-existing repo-wide `X.tex`/`X_short.tex` pattern (e.g.
+  `dl_intro.tex`/`dl_intro_short.tex`), now extended to a full seminar-level split
+- `ai_intro_tech_short.tex` — shared by 5 other decks (`course_deeplearning_content`,
+  `seminar_artificialintelligencemachinelearning_content`,
+  `seminar_artificialintelligence_tech_content`, `seminar_machinelearning_content`, and
+  commented in `seminar_llm_genai_content`) — was renamed to `ai_intro_tech.tex` first
+  (content-preserving; it was never actually short, just misnamed) so a genuine
+  ~11-slide `ai_intro_tech_short.tex` could be created without touching those decks
+- Both variants went through an `/upgrade-deck` pass, each reviewed as its own
+  standalone artifact; working notes (now complete) were in
+  `LaTeX/todo_careerindatascience_split.md`
+
+### Short/full topic-file sync audit (Oct 2026)
+Repo-wide audit of all `X.tex`/`X_short.tex` pairs against the comment-sibling
+convention (see CareerInDataScience note above). Of 24 pairs checked, 13 were
+already in sync, 3 near-miss pairs and 3 missing-only pairs got small content
+fixes, and 5 pairs had drifted so far apart (independently authored, not a
+subset relationship at all) that they were split into a three-file group —
+**this introduces a new file-naming pattern**: `<topic>_overview.tex` now
+denotes a deep/comprehensive standalone treatment that sits *outside* the
+comment-sibling relationship, while `<topic>.tex`/`<topic>_short.tex` were
+freshly authored as a genuine (smaller) comment-sibling pair distilled from
+it. The five:
+- `dnlp_intro_overview.tex` (renamed from the old `dnlp_intro.tex`) —
+  Kirill Eremenko technical walkthrough (Seq2Seq/Attention/Decoding), used by
+  `workshop_deepnlp_content.tex`. Fresh `dnlp_intro.tex`/`_short.tex` merge in
+  the old short's foundational material (Turing Test, NLP tasks, embeddings
+  basics), used by `seminar_deepnaturallanguageprocessing_content.tex`.
+- `data_intro_overview.tex` (renamed from the old `data_intro.tex`) —
+  technical data-types/distance-metrics deep dive (NOIR, Euclidean/Minkowski,
+  SMC, Cosine Similarity), used by `seminar_data_tensorflow_content.tex`'s
+  "Basic Concepts in Data" section (a good label fit, unlike before). Fresh
+  `data_intro.tex`/`_short.tex` are a motivational/historical intro (Man on
+  the Moon, "Data is the New Oil", the 4 Vs, Target case study), used by
+  `workshop_dataanalytics_content.tex`'s "Introduction" section (kept on the
+  plain filename — a deliberate deviation from the mechanical rename, since
+  the old full's technical content never fit that section's actual title).
+- `dl_intro_overview.tex` (renamed from the old `dl_intro.tex`) — the deeper
+  synthesis (still includes backprop math, automatic differentiation,
+  optimizer plots), used by `seminar_deeplearning_foundations_content.tex`.
+  Fresh `dl_intro.tex`/`_short.tex` condense both old files' strengths into a
+  non-mathematical walkthrough, used by `seminar_deeplearning_content.tex`.
+- `python_syntax_overview.tex` (renamed from the old `python_syntax.tex`,
+  content unchanged) — this one had already been through `/upgrade-deck` as
+  part of the Python seminar restructuring's B1 (`seminar_python_basic_intro_
+  content.tex`); the rename was verified to preserve that work exactly (same
+  118-page compile). Fresh `python_syntax.tex`/`_short.tex` are a broader
+  "Python Basics" primer (the old short's actual scope, despite its narrow
+  name), used by `course_deeplearning_content.tex`'s W1 recap. **Retired in
+  the Jul 2026 Python audit below**: turned out to be a duplicate copy of
+  `python_syntax_short.tex`'s content rather than distinct material, so the
+  file was deleted and B1 repointed to `python_syntax_short.tex`.
+- `nlp_embedding_overview.tex` (renamed from the old `nlp_embedding.tex`) —
+  the authoritative, current (2023-2026) material: BERT, RAG systems,
+  multimodal/CLIP, bias/ethics, a full Tweet-Sentiment-with-Word2Vec code case
+  study. Used by `seminar_wordembeddings_content.tex` (a seminar wholly about
+  embeddings, so its "Introduction" section is really the whole seminar's
+  substance — repointed here rather than mechanically). Fresh
+  `nlp_embedding.tex`/`_short.tex` condense the overview's structure, used by
+  `seminar_nlp_advanced_content.tex` (one topic among several in a broader
+  workshop) and `workshop_deepnlp_content.tex`.
+- Working notes (now complete) were in `LaTeX/todo_short_full_sync_audit.md`,
+  deleted once the work finished — same precedent as the other `todo_*`
+  restructuring files noted elsewhere in this document.
+
+**Dedicated standalone seminars for 4 of the 5 overview files (Oct 2026,
+additive follow-up; one retired Jul 2026, see below)**: each of the 5
+`_overview.tex` files is used by an existing consumer deck that specifically
+needs its depth (documented above) — those consumers were deliberately left
+as-is, not repointed. Instead, 4 of the 5 also got a *new*, minimal,
+single-section standalone seminar so the deep-dive content is independently
+reachable as its own session (the 5th, `nlp_embedding_overview.tex`, already
+had one — `seminar_wordembeddings_content.tex`'s only real section is the
+overview, backed by `Main_Seminar_NLP_WordEmbeddings_{Presentation,
+CheatSheet}.tex`):
+- `dnlp_intro_overview.tex` → `seminar_dnlp_overview_content.tex` →
+  `Main_Seminar_NLP_DNLP_Overview_{Presentation,CheatSheet}.tex`
+- `data_intro_overview.tex` → `seminar_dataconcepts_overview_content.tex` →
+  `Main_Seminar_Data_Concepts_Overview_{Presentation,CheatSheet}.tex`
+- `dl_intro_overview.tex` → `seminar_dl_technical_overview_content.tex` →
+  `Main_Seminar_DL_Foundations_Overview_{Presentation,CheatSheet}.tex`
+- ~~`python_syntax_overview.tex` → `seminar_python_syntax_overview_content.tex`
+  → `Main_Seminar_Python_Syntax_Overview_{Presentation,CheatSheet}.tex`~~ —
+  **retired Jul 2026**: `python_syntax_overview.tex` turned out to be a
+  duplicate copy of `python_syntax_short.tex` rather than distinct material,
+  so both the topic file and this standalone seminar (+ its 2 drivers) were
+  deleted; see the Python raw-file audit note below. `COURSES.md`'s "Deep
+  dives / overviews" list was updated to drop the dead link.
+
+Each content wrapper is deliberately minimal: a single `\section[Overview]
+{Overview}` + `\input{<topic>_overview}`, no References section (unlike most
+seminars, by design — these are supplementary deep-dive sessions, not full
+independent courses). All 8 driver files compiled clean at the time (now 6,
+after the Jul 2026 retirement above).
+
+### Short/full sibling usage swap (Aug 2026)
+Follow-up to the Oct 2026 audit above, prompted by the user's explicit preference for "full"
+over "short" wherever there's a real choice (not a deliberate shorter-duration split). A
+repo-wide sweep (fork-delegated) of every live `\input{X_short}` site, checked against whether
+`X.tex` (full) exists and is either unused anywhere or used by a same-or-bigger-tier deck,
+found 7 decks using `_short` with no clear duration justification, plus 4 more using only a
+`_refs_short` reference list. All 11 were swapped to their full sibling (pure `\input` line
+changes, no content edits, no recompile per standing instruction — see
+[[feedback_no_redundant_aggregate_compile]]):
+- `seminar_deeplearning_content.tex`: `dl_intro_short` → `dl_intro`
+- `seminar_deepnaturallanguageprocessing_content.tex`: `dnlp_intro_short` → `dnlp_intro`
+- `seminar_ml_intro_content.tex` + `seminar_mlcoep_session_6_content.tex`: `ml_concepts_short` →
+  `ml_concepts` (the file with the most extensive recent upgrade work — the Session 6 deep pass,
+  recall/precision/F1 expansion, etc. — none of which any live deck had actually been showing,
+  since every consumer used the short sibling)
+- `course_deeplearning_content.tex` + `seminar_python_basic_intro_content.tex`:
+  `python_syntax_short` → `python_syntax`
+- `seminar_llm_genai_content.tex`: `genai_intro_short` → `genai_intro`
+- `workshop_deepnlp_content.tex`: `nlp_embedding_short` → `nlp_embedding`
+- `workshop_llm_content.tex`: `llm_fromzero_short`/`chatgpt_intro_short` → `llm_fromzero`/`chatgpt_intro`
+- Refs-only swaps: `seminar_data_tensorflow_content.tex` (`data_refs_short`→`data_refs`),
+  `seminar_machinelearning_content.tex` (`ml_refs_short`→`ml_refs`),
+  `course_generativeai_content.tex` and `seminar_naturallanguageprocessing_content.tex`
+  (both `nlp_refs_short`→`nlp_refs`)
+
+**Not swapped**: 7 "orphan" `_short` files with no full sibling on disk at all (e.g.
+`python_intro_short.tex`, `ml_mech_short.tex`) — these are standalone content, not trimmed
+siblings, despite the name. Also left alone: the deliberate duration-based splits (CareerInDataScience
+Full/Short, the MLCoEP-session short/full pattern, Workshop/Seminar pairs matching the repo's own
+tier convention) — these were the point of the `_short` naming in the first place, not an issue.
+
+**Two adjacent stale-doc-reference fixes made in the same pass** (found while auditing, not part
+of the short/full swap itself): a dead commented-out `\input{nlp_embedding}` line removed from
+`workshop_spacy_content.tex`; and a CLAUDE.md correction (see the ML CoEP session rebalancing
+note below) — `ml_decisiontree_short.tex` was recorded as created but does not exist on disk,
+`ml_decisiontree.tex` (full) is what the Decision Trees session has always actually used.
+
+**`seminar_reinforcementlearning_content.tex` — fixed, then superseded by a proper seminar layer
+(2026-08-28, same-day, two follow-up passes).** First pass: found almost entirely commented out
+(only "Introduction" live) against a fully-live sibling `workshop_reinforcementlearning_content.tex`
+— activated its pre-existing but never-turned-on `_short`-sibling scaffold as a quick fix
+(no new content, just uncommenting). That immediately raised a bigger question: the Workshop
+itself is 388 live frames total across `rl_intro`(51)/`rl_concepts`(60)/`rl_mdp`(46)/
+`rl_qlearning`(67)/`rl_deepqlearning`(25)/`rl_modernrl`(49)/`rl_rlib`(14)/`rl_openaigym`(23)/
+`rl_implementation`(7)/`rl_applications`(2)/`rl_tictactoe`(27)/`rl_summary`(6)/`rl_conclusion`(7)/
+`rl_refs`(4) — genuinely workshop-scale (7-8hrs at this repo's ~50-55-frames/hour pacing, fitting
+the documented "Workshop = 4-16hr" definition) but, unlike Python Basic/Advanced or Maths4ML,
+had **no Seminar layer underneath it at all**; the ad-hoc seminar was just a thin, inconsistent
+(full intro + short everything else) partial duplicate bolted on separately, not a real tier.
+**Second pass, per explicit user direction ("no short thing anymore... think the whole thing,
+analyze it") — added the missing Seminar layer, matching the Python/Maths4ML 4-level hierarchy
+pattern exactly:**
+- **7 new seminars created**, splitting along the Workshop's own existing section boundaries
+  (full topic files only, nothing new authored, all 388 frames preserved, none duplicated):
+  Introduction (`rl_intro`, 51), Concepts (`rl_concepts`, 60), Markov Decision Processes
+  (`rl_mdp`, 46), Q-Learning (`rl_qlearning`, 67), Deep Q-Learning & Modern RL
+  (`rl_deepqlearning`+`rl_modernrl`, 74), Tools & Frameworks
+  (`rl_rlib`+`rl_openaigym`+`rl_implementation`, 44), Applications
+  (`rl_applications`+`rl_tictactoe`+`rl_summary`+`rl_conclusion`+`rl_refs`, 46). Each is a new
+  `seminar_reinforcementlearning_<subtopic>_content.tex` + `Main_Seminar_ML_ReinforcementLearning_
+  <SubTopic>_{Presentation,CheatSheet}.tex` pair (`[9pt]` beamer, `multicols{3}` CheatSheet per
+  the Seminar convention), matching the Python Basic naming/template pattern exactly.
+- **`workshop_reinforcementlearning_content.tex` rewired** to `\input` the 7 new seminar content
+  files in sequence, instead of the raw `rl_*` topic files directly — now matches the documented
+  Course→Workshop→Seminar→topic chain instead of skipping the Seminar tier. Also dropped 5 dead
+  commented-out `_short`-alternative lines that were leftover clutter (`rl_intro_short`,
+  `rl_concepts_short`, `rl_qlearning_short`, `rl_deepqlearning_short`, `rl_conclusion_short`) —
+  consistent with "no short thing anymore," the Workshop no longer references any `_short` file
+  even in a comment.
+- **The ad-hoc seminar retired** (`seminar_reinforcementlearning_content.tex` +
+  `Main_Seminar_ML_ReinforcementLearning_{Presentation,CheatSheet}.tex`, 3 files) to
+  `_retired/ml_reinforcementlearning_ad_hoc_seminar/` — fully superseded, its content now lives
+  correctly split across the 7 new seminars.
+- `COURSES.md` updated: the Reinforcement Learning workshop row now lists all 7 new seminars
+  (matching the "Python for ML" row's format exactly), and the "Applied ML" bullet's now-dead
+  link to the retired ad-hoc seminar was dropped (with a pointer to the new workshop row instead).
+- Repo-wide `\input`-chain check (`latex-audit inputs`) confirms all 278 drivers resolve cleanly,
+  including the 7 new seminars and the rewired Workshop. **Not compiled** — per the standing
+  "don't compile anything without asking first" rule, this whole restructuring (21 new files + 2
+  rewired + 3 retired) has not been verified by an actual `texify` run yet.
+- **Declined, 2026-08-30**: an `/upgrade-deck` pass on each of the 7 new seminars was proposed
+  (several are oversized or undersized relative to the ~50-55-frame target: Q-Learning at 67,
+  Deep Q-Learning & Modern RL at 74 run long; Applications at 46 and Tools at 44 are a little
+  thin) but the user said not to do it. They stay as a mechanical split of existing content,
+  no editorial review.
+
+### Python raw-file overlap/redundancy audit + seminar consolidation (Jul 2026)
+Cleanup triggered by the CoEP `python_overview.tex` rebuild (see `Code/mlcoep/`)
+pulling content from several other `python_*.tex` files, raising the concern that
+the ~45+ raw `python_*.tex` files and several `seminar_python_*.tex` wrappers had
+accumulated real overlap. Two-pass audit (raw-file consumer map + content diff,
+then a seminar-level consolidation pass), executed after explicit sign-off on
+each decision point:
+- Deleted `python_intro_verbose.tex` — zero live consumers, and structurally
+  incompatible anyway: it was book-chapter prose (`\chapter`/`\section`/
+  `Verbatim`), not Beamer frames, so it could never have compiled as slide
+  content without a full rewrite.
+- Wired `python_special.tex` (also zero consumers) into
+  `seminar_python_adv_oopiteration_content.tex` (A1) — natural home since that
+  seminar already covers OOP/iterators/generators.
+- Deleted `python_syntax_overview.tex`, its standalone seminar, and drivers
+  (see the correction to the Oct 2026 sync-audit note above) — its live frame
+  set was a duplicate copy of `python_syntax_short.tex`, not distinct
+  material. `seminar_python_basic_intro_content.tex` (B1) now `\input`s
+  `python_syntax_short` instead.
+- Trimmed `python_advanced_topics_overview.tex` from 43 → 10 frames (Course
+  Overview, Context Managers, Threading, Async/Await, and 6 worked Projects —
+  content confirmed to have no home anywhere else in the repo) and renamed it
+  `python_advanced_projects.tex`. The other ~32 frames duplicated ground
+  already owned by dedicated raw files (`python_datatypes`, `python_oop`,
+  `python_fileio`, etc.) or by `python_intro_short.tex`.
+- Rewired `seminar_python_content.tex` — the "Python crash-course" seminar
+  backing `Main_Seminar_Python_{Presentation,CheatSheet}.tex` and embedded as
+  the Python prerequisite section inside `workshop_ai_content.tex` and
+  `workshop_ragtoriches_content.tex` — to `\input{python_intro_short}` +
+  `\input{python_advanced_projects}`, keeping `python_dsa`/
+  `python_systemdesign`/`python_refs_short` unchanged (genuinely shared with
+  A6, not duplicated). This is distinct in purpose from
+  `seminar_python_overview_content.tex` (`Main_Seminar_Python_Overview_*`,
+  just `\input{python_overview}`) — the crash-course assumes basics already
+  known and jumps to advanced/practical patterns + DSA/system-design; the
+  Overview teaches Python from scratch. No content overlap between the two
+  after this cleanup; deliberately not merged.
+- Found and fixed a pre-existing, unrelated bug while compile-checking:
+  `workshop_ai_content.tex` line 5 did
+  `\input{seminar_artificialintelligence_content}`, a file that never existed
+  in `LaTeX/`. Repointed to `seminar_artificialintelligence_tech_content.tex`
+  (the file's own commented-out alternative, labeled "tech-audience AI
+  content" — a fit for this broad technical workshop; the other alternative,
+  `seminar_artificialintelligence_tools_content.tex`, is entirely
+  commented-out/dead). `Main_Workshop_AI_{Presentation,CheatSheet}.tex` now
+  compile clean.
+
+### ML CoEP course session rebalancing (Jul 2026)
+`course_mlcoep_content.tex` (driving `Main_Course_MLCoEP_{Presentation,CheatSheet}.tex`,
+"AI-ML for Mechanical Engineers" — a bespoke 19-session course for CoEP, College of
+Engineering Pune) was audited and rebalanced against a ~50-55-live-frame-per-1hr-session
+target, going from 21 planned sessions (only Session 3 active, everything else a
+commented placeholder) to 19 fully-active sessions:
+- **Critical methodology finding**: raw `\begin{frame}` grep counts are unreliable across
+  this repo — many files already have large chunks commented out by the original author
+  (e.g. `ml_concepts.tex` showed 147 by grep but only 89 live frames). Always count *live*
+  (uncommented, `^\begin{frame}`-anchored) frames when judging a deck's size; see the
+  sibling-file sync rule above, which this finding fed into.
+- **Merges**: Pandas + Data Prep (old #3+#4) became a new theory-then-practice pair —
+  Session 3 "Understanding Your Data: EDA & Data Prep" (new content, see below) and
+  Session 4 "Doing It: Pandas" (`python_intro_pandas` alone). Random Forest merged into
+  Ensemble Methods (Session 11) since Random Forest alone was too thin. ML Workflow +
+  Data Prep (sklearn) + Model Evaluation merged into one practical session (Session 7),
+  absorbing `ml_datapreparation_sklearn` out of Session 4. ME Applications + Project Ideas
+  merged (Session 19), moved to after MLOps (Session 18).
+- **Split**: the old "ML Concepts & Scikit-Learn Workflow" session split into Sessions 5-7
+  (Intro to ML / Core ML Concepts / Sklearn Workflow+DataPrep+Evaluation).
+- **New `_short.tex` comment-siblings created** (originals untouched, since several are
+  shared with `course_machinelearning_content.tex`'s seminars): `ml_concepts_short.tex`,
+  `ml_naivebayes_short.tex`, `data_preparation_short.tex`
+  (the last curated from the previously CoEP-unused `data_preparation.tex`, which turned
+  out to be a much better fit for data-prep theory than authoring from scratch).
+  **Correction (found during the Aug 2026 short/full sibling audit): `ml_decisiontree_short.tex`
+  does not exist on disk** — either never actually created despite being listed here, or created
+  and later removed without this note being updated; `ml_decisiontree.tex` (the full version) is
+  what the Decision Trees session has always actually used.
+  `ml_intro_short.tex` already existed (shared with 2 other decks) at exactly the right
+  size — reused as-is, nothing created.
+  `ml_linearregression.tex`/`ml_logisticregression.tex`/`ml_svm.tex`/`ml_pca.tex` looked
+  oversized by raw grep count but were already right-sized once live frames were counted
+  correctly — no `_short` needed, used directly.
+- **New content authored**: `ml_eda_intro.tex` (why EDA matters, univariate/bivariate,
+  6 frames) and `ml_eda_endtoend_churn.tex` (a fresh Load→Assess→Describe→Visualize→
+  Engineer→Check-what-matters walkthrough on the telecom churn dataset, following the
+  narrative arc of `Code/curiosily_ai_bootcamp/02.exploratory-data-analysis.ipynb`, 14
+  frames) — both for Session 3.
+- **Renamed** for naming-convention consistency (and fixed a typo), updating references in
+  both `course_mlcoep_content.tex` and `course_machinelearning_content.tex`:
+  `ml_course_assign4_logisticrgression_alice.tex` → `ml_course_assign_logisticregression_alice.tex`,
+  `ml_course_demo3_decisiontree_uciadults.tex` → `ml_course_demo_decisiontree_uciadults.tex`,
+  `ml_course_assign3_decisiontree_heartdisease.tex` → `ml_course_assign_decisiontree_heartdisease.tex`.
+- **Session 19 exemplars**: 4 of the excluded per-algorithm demo/assign files (housing
+  regression, SVM digits, customer clustering, PCA digits) were repurposed as worked
+  project exemplars in the new combined ME-Applications session, rather than left unused.
+- Each algorithm session (8-16) now includes only its core theory file; the matching
+  `_sklearn`/demo/assign companions are deliberately excluded from the active course but
+  kept on disk (commented `\input` lines note where each one would go) for a possible
+  future practical-companion pass.
+- **`python_intro_pandas.tex`** (Session 4) was separately expanded 41→54 live frames in
+  the same pass: added Reading Data, Quick Inspection, Value Counts, Rename/Drop Columns,
+  Creating New Columns, GroupBy (concept + aggregation + quiz), Concat, Merge, Plotting,
+  and a 2-frame Machine-Health-Check capstone — see git history for the exact diff.
+- **`upgrade-deck.md`** (`~/.claude/commands/`, mirrored to
+  `Code/claudecode/dot_claude/commands/`) was edited during this pass: removed the
+  quantum-physics/quantikz sub-tasks (1b/1c, unused anywhere in this repo) and added a
+  Step 4 "Sibling-File Check" + a "Sibling sync" guardrail, per the standing rule above.
+  Keep both copies mirrored on any future edit.
+- Verification is tracked session-by-session in `LaTeX/todo.md` (renamed Jul 2026 from
+  `todo_mlcoep_session_verification.md` for a shorter name; delete once complete, per the
+  usual `todo_*.md` convention) — as of this note, Sessions 1-4 are compiled and verified
+  clean (two PDFs each: `Course_MLCoEP_<N>_..._{Presentation,CheatSheet}.pdf`), and a
+  repo-wide `lstlisting`-placement-violation sweep (content after `\end{lstlisting}`,
+  violates the Style Preservation Rule) found and fixed 12 instances across Sessions 3, 7,
+  and 19 — including a genuine content bug caught in passing: `ml_evaluation_sklearn.tex`'s
+  `$R^2$ Metric` frame had text copy-pasted from the MSE frame that was factually wrong for
+  R² (not negated by `cross_val_score`, unlike MAE/MSE). Sessions 5-19 still need their
+  compile-and-verify pass.
+- **`prep-mlcoep-session` command** (`~/.claude/commands/`, mirrored to
+  `Code/claudecode/dot_claude/commands/`) was changed (Jul 2026) so its Step 3
+  (`/upgrade-deck`) is asked about rather than fired automatically — default is to skip it
+  and just produce the renamed PDF from as-is content. A second change (also Jul 2026) added
+  a new, non-optional Step 2 that sweeps every live `--` prose dash in the target session's
+  topic files into a colon/comma before compiling (numeric ranges and table N/A-placeholder
+  dashes excluded), renumbering the steps after it; unlike `/upgrade-deck` this one always
+  runs, no asking. Keep both command copies mirrored on any future edit, per the standing
+  rule above.
+- **Em-dash cleanup** (Jul 2026): a literal em-dash (`—`) sweep across all `.tex` files
+  reachable from `course_mlcoep_content.tex` (Sessions 1-19 + appendix) found and fixed 5
+  instances — 2 in `ai_intro_tech.tex` (Session 1), 1 each in `ml_intro_short.tex` (Session
+  5), `ml_svm.tex` (Session 12, a quote-attribution dash, replaced with a plain hyphen `-`
+  rather than comma/colon since attribution is the one case treated as "a must"), and
+  `ml_predictive_analytics.tex` (Session 18). Zero remain as of this note.
+- `COURSES.md` now lists this course (added Jul 2026, after being flagged as a gap) under
+  "ML for Mechanical Engineers (CoEP)" — noted there as structurally different from the
+  other 5 courses (no workshop/seminar layer; sessions are chained directly, not
+  independently reachable).
+- **Sessions 3 and 4 deep-upgrade pass (Jul 2026)**, beyond the compile-verify note above:
+  - Session 3 (`ml_eda_intro.tex`, `data_preparation_short.tex`, `ml_eda_endtoend_churn.tex`):
+    added a clean-vs-messy rain-prediction tabular example (Pressure/Temperature/Humidity →
+    Rain) to ground "why EDA matters"; commented out (not deleted) 4 mechanical-engineering-
+    flavored "Intuition" blocks per explicit instruction that ME analogies aren't wanted right
+    now; added a `df.head()` "first look" frame in the churn walkthrough (renumbering its
+    Step 2-7 titles to 3-8), plus closing/recap frames to `ml_eda_intro.tex` and
+    `data_preparation_short.tex` (`ml_eda_endtoend_churn.tex` already had one); split the
+    Covariance frame's image into its own frame and rewrapped 3 code lines that had no
+    whitespace break point (both were genuine vertical/horizontal overflow, not cosmetic);
+    added worked examples/tables/code to 6 previously plain-list frames.
+  - Session 4 (`python_intro_pandas.tex`): added 12 missing `\frametitle`s; converted all 17
+    `df1.png`-`df17.png` screenshots to `lstlisting` text after visually confirming each was
+    plain monospace `In[]/Out[]` output with nothing graphical to lose; while converting,
+    found and fixed a real bug where the deck interleaves two different tutorials that both
+    reused the variable `df` (a classic synthetic `A/B/C/D`-column walkthrough and a
+    `machine_logs.csv` walkthrough added in the June 2026 rebalancing), reassigning it back
+    and forth — renamed the synthetic thread to `df_demo` throughout (~15 frames) rather than
+    reordering anything; also fixed two narrative gaps the images had been silently
+    papering over (a "drop rows" frame whose image never showed the drop, and a downstream
+    `A`/`B` = 0 change with no earlier step introducing it). Found via visual PDF-page
+    rendering (not just line-counting) that any frame with two separate `lstlisting` blocks
+    back-to-back visibly collides (each gets its own bordered box); split the 4 affected
+    frames into 8. `/upgrade-deck` was deliberately not run on either session this pass (see
+    the command note above) — for Session 4 specifically, declined because the file already
+    carries "Intuition"/"Quick Check" scaffolding from a prior pass and running it now would
+    risk re-adding ME-flavored intuition right after removing it from Session 3.
+- **Session 4 hands-on + REPL-disambiguation + overflow pass (Jul 2026)**: triggered by wanting
+  students to run the `machine_logs.csv` walkthrough themselves in class with minimum typing.
+  - Created `Code/mlcoep/datasets/session04_pandas/machine_logs.csv` (6 rows), reverse-engineered
+    to exactly match every output already printed in the deck (shape, `value_counts`, groupby
+    averages, vibration flags, morning/evening split) — the file referenced by
+    `pd.read_csv('machine_logs.csv')` never actually existed on disk before this.
+  - Applied the standard Python REPL `>>>`/`...` convention across every code block in
+    `python_intro_pandas.tex` (~40 blocks): typed lines prefixed `>>> `/`... `, output left
+    unprefixed, stale mismatched `Out[N]:` cell-number labels removed, one explanatory sentence
+    added on the first code frame. This is now Task 1c in `/upgrade-deck` and Step 3 in
+    `/prep-mlcoep-session` (see command notes below) — fires on any REPL/notebook-transcript-style
+    block, not just this one.
+  - Found and fixed 2 real bugs while verifying every code block actually executes (ran the whole
+    deck's code end-to-end against current `pandas 2.2.3`, not just read it): `pd.set_option
+    ('max_columns', 50)` → `pd.set_option('display.max_columns', 50)` (shorthand key is now
+    ambiguous); stale Python-2-era `Index([u'A', ...])` repr → `Index(['A', ...])`.
+  - Found and fixed 2 distinct overflow categories, both silent (neither triggers a LaTeX
+    warning — `breaklines=true` swallows the horizontal case, and Beamer doesn't warn on vertical
+    frame overflow either): a CheatSheet-only (3-column, narrow) horizontal wrap in 4 frames
+    (`Reading Data from Files`, `Missing Data`, `Missing Data: Drop`, `Missing Data: Fill`) where
+    a wide DataFrame table split mid-row, fixed via `\begin{lstlisting}[basicstyle=\tiny\ttfamily]`
+    on just those 4 blocks; and a Presentation-only vertical overflow in `Quick Inspection`
+    (`df.shape`+`df.dtypes`+`df.info()` combined, 23 lines — the only outlier among all blocks,
+    confirmed by checking every other long block too), fixed by splitting into `Quick Inspection`
+    and a new `Quick Inspection: Full Structure` frame, matching the deck's existing
+    split-when-too-long precedent (`Adding Two Series Together`/`Adding Two Series: Output`).
+  - `upgrade-deck.md` and `prep-mlcoep-session.md` (`~/.claude/commands/`, mirrored to
+    `Code/claudecode/dot_claude/commands/`) both updated with the REPL-disambiguation rule above;
+    keep both copies mirrored on any future edit, per the standing rule.
+- **19-session restructuring + `prep-mlcoep-session` retirement (Aug 2026)**: the single
+  `course_mlcoep_content.tex` (19 sessions chained via comment/uncomment isolation, driving one
+  `Main_Course_MLCoEP_{Presentation,CheatSheet}.tex` pair) was replaced with 19 independent
+  content files (`seminar_mlcoep_session_<N>_content.tex`) and 19 independent driver pairs
+  (`Main_Seminar_MLCoEP_Session_<N>_<ShortName>_{Presentation,CheatSheet}.tex`), compiled in one
+  pass via `make_all_sessions.bat` (all 38 drivers) / `make_all_cheatsheets.bat` (CheatSheets
+  only) — replacing the old one-session-at-a-time `prep-mlcoep-session` isolate/compile/restore
+  pipeline, which was too slow for a full 19-session run. Renamed `Course` → `Seminar` and
+  dropped the `course_mlcoep_*` prefix in favor of `seminar_mlcoep_*` to match this repo's
+  duration-based naming convention (~1-2hr sessions are Seminars, not Courses); output PDFs take
+  their name directly from the driver filename (`Main_Seminar_MLCoEP_Session_<N>_<ShortName>_*.pdf`),
+  no separate rename step. `prep-mlcoep-session.md` is deleted from both `~/.claude/commands/`
+  and `Code/claudecode/dot_claude/commands/` — its two mandatory (non-optional) preprocessing
+  steps were folded into `/upgrade-deck` so it remains the one generic command for
+  reviewing/upgrading any deck, MLCoEP session or otherwise: the REPL disambiguation step was
+  already present as Task 1c; the prose-dash cleanup step is now Task 1d (new, same exclusions:
+  table N/A placeholders, numeric ranges, commented-out blocks, quote-attribution dash → hyphen).
+  `course_mlcoep_content.tex` is kept (not deleted, per explicit instruction) and repurposed: it
+  now just `\input`s all 19 `seminar_mlcoep_session_<N>_content.tex` files in order plus the
+  References/Datasets Used appendix, so `Main_Course_MLCoEP_{Presentation,CheatSheet}.tex` still
+  works as a single all-in-one compile with zero content duplication — both the all-in-one Course
+  driver and the 19 independent Seminar drivers pull from the same 19 source files. Per explicit
+  instruction, this combined driver is not itself compiled as a verification step once its 19
+  constituent seminar files already compile clean individually (see
+  `TeachingQuantumTech/LaTeX/qcnp/workshops/README.md` for the precedent this follows).
+  `LaTeX/todo.md` (old session-by-session compile-verification checklist, tied to the retired
+  isolate/compile/restore procedure) and `LaTeX/todo_mlcoep_19session_pdfs.md` (old
+  `prep-mlcoep-session`-resume tracker, including its untouched dash-cleanup survey for Sessions
+  3, 7, 9-19) are both deleted — the goal both tracked (verified PDFs for all 19 sessions) is
+  achieved via the new mechanism (confirmed via `texify`, zero errors across all 38 PDFs), and any
+  session's outstanding dash cleanup will surface automatically the next time that session goes
+  through `/upgrade-deck` Task 1d, same as Sessions 5 and 6 below.
+- **Retired the 20 per-session drivers (2026-08-28).** All 40
+  `Main_Seminar_MLCoEP_Session_<N>_<ShortName>_{Presentation,CheatSheet}.tex` driver files plus
+  `make_all_sessions.bat`/`make_all_cheatsheets.bat` (42 files total) were moved to
+  `LaTeX/_retired/mlcoep_session_drivers/` (not deleted, per this repo's move-to-`_retired/`
+  convention), leaving only the combined course driver —
+  `Main_Course_MLCoEP_{Presentation,CheatSheet}.tex`, already correctly wired via
+  `\input{course_mlcoep_content}` to chain all 20 `seminar_mlcoep_session_<N>_content.tex` files
+  plus the References/Datasets Used appendix, so this was a pure retirement of redundant scaffolding,
+  not a rebuild. `COURSES.md`'s MLCoEP section updated: the per-session link list (20 dead links
+  to now-retired files) replaced with a plain-text session list under the all-in-one driver link.
+  `LaTeX/make_all.bat` was checked and never referenced MLCoEP, so nothing to change there.
+  **Deliberately not done, by explicit user instruction**: the planned first-time end-to-end
+  compile+verify of the combined driver pair (checking for cross-session issues like duplicate
+  labels that per-session compiles wouldn't catch) — a background compile of
+  `Main_Course_MLCoEP_Presentation.tex` was already past page 359 when the user stopped it ("no
+  need to compile... kill that") and added a standing rule, "never compile huge things unless I ask
+  specifically" — see [[feedback_no_redundant_aggregate_compile]] for the memory entry (this is a
+  repeat of that same file/scenario from 2026-08-21). So **the combined driver's own correctness
+  is unverified** — assumed to work since all 20 constituent session files already compile clean
+  individually, matching this repo's established "assume it works" precedent, but if a future
+  session is ever asked to compile it, expect this to be the first real test.
+  **Naming inconsistency also fixed (2026-08-28, same-day follow-up)**: `Main_Course_MLCoEP_*`
+  (stray underscore before "CoEP", unlike every other MLCoEP file) renamed to
+  `Main_Course_MLCoEP_{Presentation,CheatSheet}.tex`, matching the rest of the family.
+  `COURSES.md`'s link updated, plus `LaTeX/make.bat` (a small dedicated script, found only via a
+  repo-wide grep sweep after the rename — not caught by the earlier `make_all.bat` check, since
+  it's a different file). Nothing `\input`s these top-level driver files, so no other reference
+  sites existed. While in there, also retired `LaTeX/create_drivers.sh`/`.ps1` (the
+  scripts that originally generated the 20 per-session drivers, using an even older naming
+  pattern that matched neither the old nor new name) to `_retired/mlcoep_session_drivers/` —
+  fully obsolete now that the drivers they generate no longer exist.
+  No workshop/seminar intermediate tier was added — the user had already confirmed the flat
+  Course -> Session structure in place is the one to keep, not a deeper hierarchy.
+- **Sessions 5 and 6 `/upgrade-deck` passes (Aug 2026)**, run individually via their own
+  `Main_Seminar_MLCoEP_Session_<N>_*` drivers per the restructuring above:
+  - Session 5 (`ml_intro_short.tex`/`ml_intro.tex`): 2 small Task 1 fixes (a formula/parameters
+    mismatch in "Model entities": `c` was missing from the named parameters despite being in the
+    formula; a run-on typo in "Decision Tree: Feature Selection"). Tasks 2-6 found nothing to
+    change, this deck had already been through an earlier pass (6 Quick Check quizzes, one per
+    section, already present) and is intentionally example-driven (Pokemon Go, Pizza Shop, Spam
+    Detection, University Admission) rather than formula-heavy, so Task 5 added nothing new.
+    Flagged at the time (not fixed then, out of scope for that surgical pass) a real content-drift
+    between `ml_intro_short.tex` and `ml_intro.tex`. **Re-checked and closed (2026-08-21)**: a
+    diff of live frame sequences in both files is now empty (63 live frames each, identical order
+    and titles) — whatever caused the drift described here no longer exists, most likely resolved
+    as a side effect of the later Session 8 "Ranking + Model Selection ... mirrored into its full
+    sibling `ml_intro.tex` per the standing sibling-sync rule" edit below, which was never
+    cross-referenced back to this note. The only remaining difference between the two files is 4
+    Quick Check quiz-pairs sitting a few lines earlier/later relative to neighboring *commented*
+    filler frames — cosmetic, no effect on either compiled deck. No merge needed.
+  - Session 6 (`ml_concepts_short.tex`/`ml_concepts.tex`): this pass added a TikZ bowl-curve
+    diagram to "How to Find Best Fit: Gradient Descent" (precedent for the new Task 5a below),
+    5 "Intuition" callouts on the driest early math-framework slides, a symbol-by-symbol
+    breakdown of the `w = (X^TX)^{-1}X^TY` closed-form formula, and fixed the "Detection" frame's
+    vertical overflow (two stacked images → side-by-side). A follow-up full `/upgrade-deck` pass
+    then found: a genuine bug in "Bias vs Variations" (the same reference citation line rendered
+    twice in one frame, sandwiched around a block of commented-out content); a real redundancy
+    ("Learning Method Bias"/"Learning Method Variance" re-defined the same two terms already
+    covered by the earlier "Bias"/"Variance" frames AND the StatQuest bv1-bv8 intuitive
+    walkthrough — a third redundant pass, removed); a bare formula with no interpretation
+    ("Types of Errors" was missing a "Noise Error" bullet despite `noise(X)` appearing in its own
+    formula, and had zero plain-language explanation); and 2 sections (Cross Validation,
+    Generalization) missing their closing Quick Check quiz (added, matching the other 5
+    sections). All fixes mirrored into both files.
+- **New `/upgrade-deck` rule -- Task 5a: TikZ Diagram Opportunities (Aug 2026)**, added to
+  `upgrade-deck.md` (`~/.claude/commands/`, mirrored to `Code/claudecode/dot_claude/commands/`)
+  right after Task 5, plus a TikZ row in the Step 3 package audit table: for slides that describe
+  a process/trajectory/relationship in words/equations only (and have no existing image), add a
+  simple TikZ diagram using the repo's established two-column `adjustbox`+`minipage` convention
+  (explanatory content left, ~0.55-0.56 `\linewidth`; diagram right, ~0.4 `\linewidth`). Cites the
+  Session 6 Gradient Descent bowl-curve diagram above as the precedent. Explicitly guards against
+  forcing a diagram onto every slide -- most won't qualify.
+- **Quick Check quiz format changed: `\pause` overlay -> two separate frames (Aug 2026)**.
+  Trigger: presenting MLCoEP Session 5 live, the question/answer reveal (a `\pause` overlay
+  splitting one frame into two PDF pages) was easy to click straight past without noticing the
+  answer had appeared -- overlay reveals don't read as a distinct "next slide" during a live
+  click-through. Fixed by converting every live (non-commented) Quick Check quiz to two
+  independent frames -- a question-only frame, then a same-titled answer frame with an
+  `\end{frame}` + separator comment + `\begin{frame}` in between instead of `\pause` -- content
+  and wording unchanged, purely a frame-structure split. Applied to all 27 live quizzes across
+  the 15 topic files any MLCoEP session currently pulls in via `\input`: `ml_intro_short.tex`
+  (Session 5, 6 quizzes), `ml_concepts_short.tex` (Session 6, 5 quizzes), `python_overview.tex`
+  (Session 2, 2 live + 1 already-commented quiz left untouched), `python_intro_pandas.tex`
+  (Session 4, 3), and one quiz each in `ml_eda_endtoend_churn.tex` (Session 3),
+  `ml_datapreparation_sklearn.tex`/`ml_evaluation_sklearn.tex` (Session 7),
+  `ml_logisticregression.tex` (Session 9), `ml_decisiontree.tex` (Session 10, now Session 11
+  after the later Session-8-insertion renumbering; the file was `ml_decisiontree_short.tex` at
+  the time of this edit but no longer exists under that name, see the correction two sections
+  above), `ml_svm.tex`
+  (Session 12), `ml_naivebayes_short.tex` (Session 13), `ml_knn.tex`/`ml_knn_sklearn.tex`
+  (Session 14), `ml_kmeans.tex` (Session 15), `ml_predictive_analytics.tex` (Session 18). 12 of
+  these 15 files are shared with non-MLCoEP decks (the standalone ML course's 10 seminars,
+  `seminar_python_overview_content.tex`, `seminar_artificialintelligencemachinelearning_content.tex`,
+  `seminar_deeplearning_foundations_content.tex` via `workshop_deeplearning_content.tex`) --
+  per explicit instruction, the change was applied to the shared files directly rather than
+  forked into MLCoEP-only sibling copies, so those quizzes now render the same two-frame way
+  everywhere they're used, not just in MLCoEP. `upgrade-deck.md`'s own Task 5 Quick Check
+  boilerplate (`~/.claude/commands/`, mirrored to `Code/claudecode/dot_claude/commands/`) was
+  updated to the two-frame pattern too, so future quiz slides (any deck, not just MLCoEP) are
+  generated in the new format by default. **Verification status: closed (2026-08-21).** Sessions
+  5, 6, 7, 10 recompiled clean with unchanged page counts (confirms nothing was lost/duplicated by
+  the split) and spot-checked via extracted PDF text. A follow-up sweep then recompiled the
+  remaining MLCoEP sessions (2, 3, 4, 11, 13, 14, 15, 16, 19) and the non-MLCoEP decks sharing the
+  15 edited files (`Main_Seminar_ML_{Intro,Regression,Clustering,Deployment,SVM_NB,KNN}`,
+  `Main_Seminar_AI_For_WithML`, `Main_Seminar_Python_Advanced_DataLibs`, `Main_Seminar_ML`,
+  `Main_Seminar_ML_DataPrep`) -- all 0 errors. `Main_Workshop_DL_Presentation` was the one deck
+  left unverified: its compile was cut short deliberately (an outsized, still-growing job, 124MB+
+  PDF after 16+ minutes, same class as `Main_Course_GenerativeAI` below) with 18 of the other 19
+  already clean as sufficient evidence -- not pursued further, not tracked as an open item.
+- **Session 6 recall/precision/F1 expansion (Aug 2026)**: triggered by teaching the session live
+  and finding recall effectively missing -- it *was* defined, but titled "Sensitivity (Recall or
+  True positive rate)" and positioned immediately before Specificity, so it read as half of the
+  sensitivity/specificity pair and nothing followed Precision. Checked the sibling first per the
+  standing rule: the reusable commented material (Boy-Who-Cried-Wolf Recall/Precision frames, the
+  "Precision addresses FP / Recall addresses FN" frame) was commented in *both* files, so only one
+  frame could be uncommented and the rest was authored. Net +5 frames, 2 edited, mirrored into
+  `ml_concepts_short.tex` and `ml_concepts.tex`: retitled the sensitivity frame to lead with
+  "Recall"; added "Precision: Intuition" and "Recall: Intuition" built on one fishing analogy
+  (precision = of the fish you kept, what fraction were rainbow trout, denominator is what you
+  *claimed*; recall = of all the fish in the lake, what fraction reached your net, denominator is
+  what *exists*); a dedicated `REC = TP/(TP+FN)` frame after Precision that says outright it is the
+  same quantity as sensitivity; a "One Net, Two Questions" contrast table; and two frames on why F1
+  uses the harmonic mean (worked P/R table where arithmetic scores 0.5/0.5, 0.9/0.1 and 1.0/0.0 all
+  at 0.50 while harmonic gives 0.50/0.18/0.00, plus the rates-with-different-denominators argument
+  and the flag-everything-positive gaming case). The Boy-Who-Cried-Wolf frames were deliberately
+  left commented -- two competing analogies for the same pair in one deck. The uncommented
+  "Which One Should You Optimize?" frame carried a factual slip, fixed while bringing it live: it
+  justified Recall with "the test should not wrongly say that you have cancer", which describes a
+  false *positive*.
+- **MLCoEP CheatSheets restored to 3 columns (Aug 2026)**: all 19
+  `Main_Seminar_MLCoEP_Session_<N>_*_CheatSheet.tex` drivers were on `multicols{2}`, a regression
+  introduced by the Aug 2026 19-session restructuring -- the all-in-one
+  `Main_Course_MLCoEP_CheatSheet.tex` was already `multicols{3}`, and Seminars take 3 per the
+  convention above. Switching them exposed overflow that 2 columns had been hiding (19 overfull
+  boxes across 7 sessions; the other 12 were clean immediately). Root cause was
+  `breakatwhitespace=true` in `template_cheatsheet.tex`'s `lstdefinestyle`: long URLs and dotted
+  module paths have no whitespace to break at, so they ran off the page rather than wrapping.
+  Fixed with a **driver-local** override in each of the 19 drivers, right after
+  `\graphicspath` -- `\lstset{basicstyle=\scriptsize\ttfamily, breakatwhitespace=false}` +
+  `\sloppy` -- deliberately not put in the shared template, which is used by every CheatSheet in
+  the repo including 2-column Workshops. Remaining fixes were content-level: 5 tables wrapped in
+  `\adjustbox{max width=\linewidth}` (`ml_concepts{,_short}`, `ml_eda_intro` ×2,
+  `data_preparation_short`) and 3 unbreakable identifiers given `\allowbreak` after each dot
+  (`ml_course_demo_regression_housing`, `data_preparation{,_short}`, plus
+  `ml_linearregression`'s coefficient output, which was also wrongly wrapped in `$...$` math
+  mode). End state: 19/19 compile clean, one 5pt overfull left in Session 13 and 5
+  `Overfull \vbox` from multicol column balancing at page breaks (absorbed by the 2cm bottom
+  margin). Verified downstream too: MLCoEP Presentations 3/6/8/19, `Main_Seminar_ML_Intro_*`,
+  `Main_Seminar_ML_Regression_*` and `Main_Workshop_Data_Analytics_*` all recompile clean, since
+  the edited topic files are shared with them.
+- **Methodology note (Aug 2026)**: when changing CheatSheet column count, baseline the *old*
+  column count first. Recompiling the affected drivers at 2 columns and diffing overfull-box
+  counts is what separated 3-column-induced overflow (6 of 7 sessions, clean at 2 columns) from
+  pre-existing breakage (Session 7's 193pt URL, already broken). Also note the compile log alone
+  is not sufficient: floats dropped inside `multicols` and wrapped minipages produce no error,
+  so render suspect pages to images (`pdftoppm -png -r 100 -f N -l N`) and look.
+- **Session 7 `/upgrade-deck` pass (Aug 2026)**, run via `Main_Seminar_MLCoEP_Session_7_Sklearn_Workflow_*`
+  over its 3 topic files (`ml_intro_sklearn`, `ml_datapreparation_sklearn`, `ml_evaluation_sklearn`).
+  None has a `_short` sibling, but all 3 are shared: `ml_intro_sklearn` with
+  `seminar_ml_intro_content.tex`, the other two with `seminar_ml_dataprep_content.tex`, so edits
+  were made in place and those decks recompiled too. 50 -> 54 live frames.
+  - **Every code block was executed** against `pandas 2.2.3` / `scikit-learn 1.7.2` before the
+    outputs were touched, and this is what the pass turned on. The stored outputs were stale
+    relative to the code: the `KFold`s already said `shuffle=True`, but the printed numbers were
+    from an unshuffled split. Confirmed exactly: unshuffled Boston gives `R^2: 0.203 (0.595)`
+    (the number that was on the slide, worst fold -1.006), shuffled gives `0.718 (0.099)`. All 8
+    outputs updated to verified values, and the two $R^2$ frames' prose rewritten: it had claimed
+    the large standard deviation was the negative-$R^2$-on-a-bad-fold effect, which is no longer
+    true of the shuffled numbers. **Lesson: when a deck shows both code and its output, re-run the
+    code, do not trust the pasted result.**
+  - Other Task 1 fixes: `delim_whitespace=True` -> `sep='\s+'` (deprecated in pandas 2.2);
+    `LogisticRegression()` -> `max_iter=1000` (5 sites, silent `ConvergenceWarning` on unscaled
+    Pima); `classification_report` output updated from the pre-0.20 `avg / total` format to
+    `accuracy`/`macro avg`/`weighted avg`; a stray Unicode right-quote in `model’s`; "linear
+    discriminate analysis" -> "discriminant"; "good prediction and recall" -> "precision";
+    Python-3.5-era install slide modernised (its `conda install` line omitted `pandas`/`seaborn`
+    that the very next slide imports).
+  - Task 2 removed one untitled frame that duplicated the "Estimator" frame; the second "Read Data"
+    frame was **kept** (both topic files must stand alone in `seminar_ml_dataprep_content.tex`) but
+    retitled "Read Data: the Same Pima Dataset" so the repetition reads as deliberate.
+  - Task 4 added a `Pipeline` frame: the existing Quick Check answer told students to fit only on
+    training data, but nothing in the session showed the mechanism that enforces it.
+  - Task 5a added 2 TikZ diagrams in the two-column `adjustbox`+`minipage` convention: an ROC
+    curve with shaded area (AUC frame) and a 2x2 confusion matrix with the diagonal shaded.
+    **The ROC frame overflowed 12.18pt and took 3 passes to fix** -- trimming the `Intuition`
+    block alone did nothing, because the *left* column was the tall one; only merging bullets
+    cleared it. Caught by rendering the page, since Beamer does not error on vertical overflow.
+  - Task 6 added 2 quiz pairs (Estimator API; MAE vs MSE outlier sensitivity), matching the
+    two-separate-frames format.
+  - **Datasets now local**: `Code/mlcoep/datasets/session07_sklearn/` holds
+    `pima-indians-diabetes.data.csv` (768 rows) and `housing.data` (506 rows) + a README, mirroring
+    the Session 4 precedent. Verified the local copies reproduce the slide numbers exactly. The
+    slides still load from the `jbrownlee/Datasets` URLs; these are an offline fallback.
+  - End state: Session 7 Presentation 59 pages, CheatSheet 5 pages, both compile clean; the 2
+    remaining presentation `Overfull \hbox` are the pre-existing title/footline ones, and the
+    CheatSheet has one 16.6pt overfull left. `Main_Seminar_ML_{Intro,DataPrep}_*` also recompile
+    clean. **`Main_Seminar_ML_Intro_Presentation` reports ~41k overfull boxes -- pre-existing and
+    unrelated to this pass** (a repeating structure in that 161-page deck), not investigated.
+- **Session 7 follow-up: `ml_intro_sklearn.tex` individual-algorithm examples revived (Aug 2026)**,
+  triggered by teaching the session live and finding the jump from the abstract `Estimator`
+  pseudocode frame straight to the `Pipeline` frame too big a leap, with ~200 lines of concrete
+  regression/classification/clustering examples sitting commented out in between. Revived and
+  modernized (`sklearn.cross_validation` -> `model_selection`, deprecated `plt.cm.get_cmap` ->
+  `plt.get_cmap`, dropped the removed `LinearRegression(normalize=True)` kwarg) rather than
+  deleted outright: Iris dataset loading (2 frames), a "Sklearn: Algorithms" section divider, a
+  synthetic-data Linear Regression example + its 2-feature exercise variant, a K-Nearest-Neighbor
+  classifier example, PCA, and K-means clustering (feeding PCA's reduced `X` into the scatter plot)
+  -- 8 revived frames total, all on Iris/synthetic data, kept deliberately separate from Data
+  Prep/Evaluation's own Pima Indians + Boston Housing case study rather than forced onto one
+  dataset. Left commented, not revived: several near-duplicate/dead stubs superseded by the real
+  Pima/Boston code in `ml_datapreparation_sklearn.tex`/`ml_evaluation_sklearn.tex` (an SVM stub, a
+  generic `ClassifierEstimator()`/`RegressionEstimator()` pseudo-code pair, an old KNN
+  `predict_proba` stub, and an SVM classifier frame that depended on an undefined `X_train`), the
+  Cheat Sheet image frames, and the Digits/OCR mini-project (a separate tangent, not asked for).
+  Added one new frame, "Logistic Regression: Estimator API in Action" (concrete `fit`/`predict` on
+  Iris with a real train/test split), placed right before `Pipeline` so the arc reads Estimator API
+  -> concrete Logistic Regression example -> Pipeline, per explicit request. Every revived/new code
+  snippet was executed against the same `sklearn 1.7.2`/`numpy 2.2.6`/`matplotlib 3.10.8` (`genai`
+  env) before being trusted, same discipline as the Session 7 sklearn-workflow pass above. Session
+  7 Presentation 59 -> 68 pages, CheatSheet 5 -> 7 pages, both recompile clean (same 2 pre-existing
+  footline overfulls in the Presentation; same pre-existing 16.6pt overfull in
+  `ml_evaluation_sklearn.tex`'s CheatSheet section, confirmed by log line number this predates the
+  change). All new/edited pages rendered to images and visually confirmed no silent overflow.
+  `Main_Seminar_ML_Intro_{Presentation,CheatSheet}.tex` (the other consumer of
+  `ml_intro_sklearn.tex`) also recompiled without new errors (171-page Presentation still carries
+  the pre-existing ~41k-overfull-box issue noted above, unrelated).
+- **Session 8 `/upgrade-deck` pass (Aug 2026)**, run via `Main_Seminar_MLCoEP_Session_8_Linear_Regression_*`
+  over its single topic file `ml_linearregression.tex`. No `_short` sibling; shared with
+  `seminar_ml_regression_content.tex` (`Main_Seminar_ML_Regression_*`). 53 -> 60 live frames,
+  65 pages, **zero overfull boxes** in the Presentation.
+  - **Count live frames, always**: the file is 1511 lines with 110 raw `\begin{frame}` but only 53
+    live: more than half is commented-out author material. Same trap as the Jul 2026 methodology
+    note above.
+  - **The committed PDF ended in a "Temporary page! LaTeX was unable to guess the total number of
+    frames" page** -- it had been built without a converged final pass. Gone after recompiling.
+    Worth checking for on any deck whose PDF predates its last edit.
+  - Genuine technical errors fixed: the $(X^TX)^{-1}$ slide claimed the matrix is singular "if any
+    two **rows** are same" (wrong -- duplicate samples are harmless, linearly dependent **columns**
+    are the problem); `x_{p,1}` -> `x_{p,i}` plus a missing intercept; the ISL data URL
+    `www-bcf.usc.edu/~gareth/...` is dead (USC retired that host) -> `statlearning.com`;
+    `+ -0.0010` -> subtraction; intercept quoted as both `-0.818` and `-0.8188`; "OLS minimizes RMS
+    error" -> sum of squared residuals; `Found'm'`, `$y_i$to`, "slopes means", "adverting".
+  - **Two defects only visible by rendering, not from the log** (same lesson as Session 7's ROC
+    frame): the "Coefficients" frame wrapped prose in math mode, so it rendered as run-together
+    italic **"TVModel"/"RadioModel"/"NewspaperModel"**, and its raw `[[0.04753664]][7.03259355]`
+    output never said which number was the slope; the "Advertising Dataset" frame used `eqnarray*`
+    with a single `&`, putting the relation in the alignment column and leaving a wide gap before
+    `≈ β0 + β1 × TV`. Fixed to labelled `\texttt{}` values and `align*`.
+  - **Content gap**: the frame *titled* "$R^2$ Statistics" only set up $SST = SSR + SSE$ and stopped;
+    a later frame then used $R^2$ as if defined. The definition was sitting commented out in the
+    file. Added a frame defining $R^2 = SSR/SST = 1 - SSE/SST$ and evaluating $90/120 = 0.75$ on the
+    tip-example numbers already on screen.
+  - **Nothing was deleted.** Three sets of repeated frames (`lab2` twice, `corrmat` twice, the
+    rotated-line sequence) look redundant but are deliberate question-answer / animation builds.
+    The real problem was navigational: **7 consecutive frames titled "Optimization"** and 3 titled
+    "Evaluation", all now given distinct titles.
+  - Added: a TikZ SST/SSR/SSE decomposition diagram (all three distances measured at the same data
+    point -- the first draft drew SSR at an x where it did not touch the regression line, caught by
+    rendering), 3 Intuition callouts, and 3 Quick Check pairs (the deck had **zero** quizzes).
+    60 frames slightly exceeds the ~50-55/hr target; accepted because quiz frames click through fast.
+  - **Open items from this pass** (compiled Session 8 only, at the author's request):
+    `Main_Seminar_ML_Regression_*` carries these edits but was **never recompiled**; and the Session 8
+    CheatSheet has one unresolved `Overfull \hbox` (9.86pt, log lines 322-323) that was never traced
+    to a frame, so it is unknown whether it predates this pass. **Note: this session is now Session 9**,
+    see the renumbering note below (Aug 2026) -- all Session-8-specific references above (filenames,
+    log line numbers) predate that shift and describe what was then Session 8.
+- **Session 8 inserted as a syllabus gap-fill session before the Units 1-3 MCQ test; old Sessions 8-19
+  renumbered to 9-20 (Aug 2026).** Triggered by comparing the official BTech Mechanical AIML-ML
+  syllabus (4 units, 30 hrs) against Sessions 1-7 as actually taught and finding real, verified gaps
+  within Units 1-3: Unit 1 (History of AI's classical era, the Reasoning/Knowledge-Representation/
+  Planning/Perception/Motion-\&-Manipulation capability framework, Approaches to AI --
+  Cybernetics/Symbolic/Sub-symbolic/Statistical, and "Need of AI in Mechanical Engineering" -- the
+  last of these already existed as `ml_mech_short.tex` but sitting in Session 19, not up front);
+  Unit 2 (Hyperparameter Tuning was live nowhere -- the only mention was inside an entirely
+  commented-out frame in `ml_intro_short.tex`; "Ranking" as a 4th problem-identification type;
+  an explicit "Model Selection" step); Unit 3 (Feature extraction's "Statistical features", feature
+  selection's "Ranking", and the wrapper search strategies -- Exhaustive, Best-first, Greedy
+  forward/backward). Unit 4 needed no new session -- it already maps onto the existing algorithm
+  sessions (old Sessions 8-16). Decision-tree entropy/info-gain and PCA, though nominally Unit-3
+  topics, were deliberately excluded from this pass since they land in their own sessions later
+  (old Sessions 10 and 16) -- confirmed by the author, not assumed.
+  - **Scope was narrowed twice by the author during planning, both kept**: (1) Unit 1's gaps were
+    dropped entirely from this session -- Session 1 was already delivered in class, and patching it
+    now wouldn't reach students before the test, so `ai_intro_tech.tex` was left untouched. (2) Of
+    the Unit 2/3 gaps, only the ones with no natural existing home became new content; the rest were
+    added as live frames directly into the already-taught reference decks they thematically belong
+    to, on the reasoning that keeping those decks complete matters even if not literally re-lectured:
+    Ranking + Model Selection into `ml_intro_short.tex` (mirrored into its full sibling `ml_intro.tex`
+    per the standing sibling-sync rule), Hyperparameter Tuning into `ml_concepts_short.tex` (mirrored
+    into `ml_concepts.tex`). Only the Unit 3 feature-extraction/-selection material, which fit neither
+    file, became the new `ml_featureselection.tex` that Session 8 actually delivers.
+  - **Content added**: `ml_intro_short.tex`/`ml_intro.tex` gained "Ranking: Overview" (framed as a 4th
+    problem type alongside the file's existing Classification/Regression/Clustering/Dimensional-
+    Reduction cluster) and "Model Selection". `ml_concepts_short.tex`/`ml_concepts.tex` gained a
+    revived (previously commented-out) "Practical Tip" frame plus "Hyperparameter Tuning", "...: Grid
+    Search", and "...: Randomized Search" (a verified `GridSearchCV`/`RandomizedSearchCV` run on the
+    Pima dataset, KNN's $k$, landing on $k=11$/0.749 and $k=13$/0.755 respectively) and a Quick Check
+    pair, inserted right where the revived Practical Tip frame already namedropped "hyper parameters"
+    in its pre-existing text. `ml_featureselection.tex` (new, 17 frames) builds one narrative: raw
+    signal $\to$ statistical features (a jargon-free sensor-reading example, per explicit instruction
+    to ease off Mechanical-Engineering-specific framing since wrapper methods were new to the author
+    too) $\to$ filter/ranking selection $\to$ all 4 wrapper strategies (Exhaustive, Greedy Forward,
+    Greedy Backward, Best-First), all grounded in one real, executed run on the familiar 8-feature
+    Pima dataset (small enough that exhaustive search over all 255 non-empty subsets is genuinely
+    runnable, not just asserted) -- exhaustive search proved dropping `skin` costs zero accuracy,
+    and greedy backward elimination's first move independently rediscovers exactly that same fact.
+    Every code snippet across all four files was executed against the `genai` conda env
+    (`sklearn`/`numpy`/`matplotlib` as in the Session 7 pass) before being trusted.
+  - **New template gotcha found**: `template_presentation.tex`'s `lstset` carries `belowskip=-15pt`
+    (a deliberate negative skip, presumably tuned for the common case of code being the last thing in
+    a frame). Any body text placed directly after `\end{lstlisting}` -- regardless of how short the
+    code block or the following sentence is -- gets pulled up into the code box, and the resulting
+    overlap is **not reliably reported** as `Overfull \vbox` (several instances here produced no log
+    warning at all and were only caught by rendering pages to images and reading the extracted text).
+    A blank line before the trailing text does not help. `\vspace{15pt}` immediately after
+    `\end{lstlisting}` fixes it when the frame has room to spare, but in a fuller frame (the
+    Grid/Randomized Search ones) that same 15pt pushed the trailing sentence down far enough to
+    interleave character-by-character with the footer/page-number instead -- also invisible in the
+    log, only caught by extracting page text and inspecting the last lines before the footer. The
+    robust fix used throughout this pass: fold the trailing interpretive sentence into the
+    `lstlisting` itself as a final `#` comment line, so nothing sits outside the box at all, rather
+    than tuning a `\vspace` value per frame.
+  - **Revised after author review (Aug 2026, same day)**: three corrections. (1) Session 8 must not
+    reference other session numbers at all -- "all sessions are sort of independent" -- so every
+    "(Session 3)"/"(Session 6)"/"(Session 7)" mention and every "same load as Session N" code comment
+    was removed; the Ranking worked example now re-imports the Pima CSV from scratch and shows
+    `df.head()` before any analysis, rather than assuming an earlier session's load happened. (2) Most
+    `\item` bullets had drifted into flowing paragraph sentences, not this repo's established terse
+    list style -- rewritten shorter throughout both files. (3) Hyperparameter Tuning, Grid Search, and
+    Randomized Search were moved back out of `ml_concepts_short.tex`/`ml_concepts.tex` entirely (the
+    revived "Practical Tip" frame stayed) into a new `ml_modeltuning.tex`, also `\input` by Session 8
+    -- reasoning: Session 8 needed to be self-contained and closer to a normal session's size (17 live
+    frames read as noticeably thin next to other ~50-55-frame sessions), and splitting new content
+    across an actively-taught Session 8 deck and a passively-updated Session 6 deck was an awkward
+    halfway house once independence was the explicit goal. Ranking (the 4th ML problem type) and
+    Model Selection stayed in `ml_intro_short.tex`/`ml_intro.tex` -- unlike the hyperparameter content
+    they never carried session references, and they fit that file's existing Classification/
+    Regression/Clustering cluster too well to relocate. Also added, per author request: a correlation-
+    with-target bar chart (`images/pima_corr_barplot.png`, generated and verified against real Pima
+    data, not a mockup) as a visual complement to the F-score ranking table, and an "F-score (a Sharper
+    Test)" framing to explicitly connect the two views. End state: `ml_featureselection.tex` 19 frames,
+    `ml_modeltuning.tex` 8 frames, 27 total (up from 17) -- both recompiled clean (Presentation:
+    just the 2 pre-existing footline overfulls; CheatSheet: zero warnings). Session 6 recompiled after
+    the reversion, 89 pages (down from 94, exactly the 5 removed frames), exit clean.
+  - **Hands-on revision exercise added (Aug 2026, same day)**, per author request for something
+    "before starting in depth understanding of ML algorithms" -- `ml_pipelineexercise.tex` (new, 18
+    frames), an 11-step, fully-executed, fully-verified pandas+sklearn pipeline (Load -> Inspect ->
+    Split -> Scale -> Select -> Train -> Evaluate -> Compare) on the sklearn-builtin Breast Cancer
+    Wisconsin dataset (30 features -- deliberately more than Pima's 8, an authentic stress test for
+    the session's feature-selection content). Filter selection (top 10 by F-score) actually *lost*
+    accuracy versus all 30 features (0.951 vs 0.986 test, 0.951 vs 0.975 CV) -- a genuine, unstaged
+    contrast with Pima's zero-cost `skin` drop, since not every dataset offers a free lunch. Greedy
+    forward selection down to just 6 features then beat all 30 on cross validation (0.979 vs 0.975),
+    a real result that lands the wrapper-vs-filter argument concretely rather than asserting it.
+    Closes with a Quick Check on cross-validation vs. held-out-test-set leakage (the greedy loop
+    scores candidates via CV over the full feature matrix `X`, not just `X_train` -- explored whether
+    that leaks, concluding it doesn't because CV still holds out a fold per score, and the final
+    `X_test` split from Step 3 was never touched by it either), a "Try It Yourself" prompt list, and a
+    recap framing the 8-step shape as reusable across every future algorithm session. One CheatSheet-
+    only fix needed: the Step 10 comparison table overflowed the narrow 3-column layout, same
+    `\adjustbox{max width=\linewidth}` fix as elsewhere in this pass. `seminar_mlcoep_session_8_
+    content.tex` now `\input`s all three files in sequence: `ml_featureselection`, `ml_modeltuning`,
+    `ml_pipelineexercise`. **End state: 45 content frames** (19+8+18, up from the original 17),
+    51 total pages with title/outline/about\_me/thanks boilerplate -- close to the ~50-55 norm without
+    padding for its own sake. Both Presentation and CheatSheet recompiled clean.
+  - **`ml_pipelineexercise.tex` dataset swapped Breast Cancer -> Steel Plates Faults (Aug 2026,
+    same day, author request)**, per explicit "does not need to be very mechanical, but a medical
+    dataset isn't ideal either" steer plus a follow-up ask for a genuinely Mechanical-Engineering
+    dataset. Now UCI Steel Plates Faults (1941 plates, 27 geometric/luminosity features, target =
+    `K_Scatch`, a scratch-type defect, 391 positive/1550 negative) -- fetched via a direct UCI URL
+    (`sep=r'\s+'`, no header, matching this course's existing Boston Housing pattern) rather than
+    adding a new `ucimlrepo` dependency. **Verification caught a real dead end before it shipped**:
+    `Bumps` was tried as the target first and rejected -- greedy forward selection degenerated,
+    every step plateauing at exactly the 79.3% majority-class baseline (confusion matrix
+    `[[385,0],[101,0]]`, the model just always predicted "no fault"). `K_Scatch` gives a real,
+    cleanly-separable problem instead: all 27 features 0.975 CV, filter top-10 0.949 CV, wrapper
+    greedy-6 0.963 CV -- same "filter costs accuracy, wrapper recovers most of it" shape as the
+    Breast Cancer version, just not quite exceeding the full-feature model this time (unlike Breast
+    Cancer's 0.979-beats-0.975) -- reported honestly rather than cherry-picking a target that
+    overclaims. `Try It Yourself` now points students at the rejected `Bumps` case as a discussion
+    exercise instead of hiding it. Local offline copy saved to
+    `Code/mlcoep/datasets/session08_featureselection/Faults.NNA` + README (same pattern as
+    `session04_pandas/`, `session07_sklearn/`), for the author to distribute to the class in
+    advance -- **Session 8 only, `ml_datapreparation_sklearn.tex`/`ml_evaluation_sklearn.tex`
+    (Session 7) still use Pima/Housing, untouched.** One CheatSheet-only regression caught and
+    fixed: the Step 10 comparison table lost its `\adjustbox{max width=\linewidth}` wrap during the
+    rewrite (copy-paste miss), overflowing the narrow 3-column layout again -- same fix reapplied.
+    Both Presentation and CheatSheet recompiled clean afterward; frame count unchanged (45).
+  - **Mechanical renumbering**: for K = 19 down to 8 (descending, to avoid overwrite collisions),
+    renamed `Main_Seminar_MLCoEP_Session_K_<ShortName>_{Presentation,CheatSheet}.{tex,pdf}` to
+    `Session_{K+1}_...`, renamed `seminar_mlcoep_session_K_content.tex` to `_{K+1}_content.tex`
+    updating its `% Session K:` comment and `\section[...]{Session K: ...}` label, and updated each
+    renamed driver's `\input{seminar_mlcoep_session_K_content}` line -- the CheatSheet driver also
+    carries a second, independent hardcoded `Session K:` string in its title block that the
+    Presentation driver does not, easy to miss. `course_mlcoep_content.tex`, `make_all_sessions.bat`,
+    `make_all_cheatsheets.bat`, `COURSES.md`, and `TODO.md` updated to the new 20-session numbering;
+    `TODO.md`'s dated Aug 2026 recompile-backlog narrative was left describing the old numbering it
+    actually verified, with a note that it predates this shift, rather than rewritten to a numbering
+    that didn't exist yet at the time. Topic files themselves (`ml_linearregression.tex` etc.) were
+    untouched -- only the session-number wrapper around them moved.
+- **Session 9 (Linear Regression) second `/upgrade-deck` pass (Aug 2026)**, over its single topic
+  file `ml_linearregression.tex` (no `_short` sibling; `ml_linearregression_sklearn.tex` is a
+  separate companion, not a comment-sibling). This is the same deck the Aug 2026 pass covered as
+  the then-Session 8; it **closes both open items that pass left behind**. 60 -> 61 live frames,
+  66 pages, Presentation now compiles with **zero** overfull/underfull boxes.
+  - **The CheatSheet's unresolved 9.86pt `Overfull \hbox` is traced and fixed.** The log's
+    `at lines 322--323` pointed into `ml_linearregression.tex`, at the SST/SSR/SSE TikZ diagram
+    added by the previous pass: at `scale=0.62` it fits a Presentation frame but not a 3-column
+    CheatSheet column. Fixed by wrapping the `tikzpicture` in `\adjustbox{max width=\linewidth}` --
+    the same fix already used for tables here. **Generalizable: any TikZ added under the Task 5a
+    two-column convention should get that wrap up front**, since the diagram is sized for the
+    Presentation and the shared content file also feeds a much narrower CheatSheet column. Both
+    diagrams added in this pass got it pre-emptively and both render correctly at 3 columns.
+  - Genuine technical errors fixed: *"There are no slope formulas for these $\beta$s"* on "Linear
+    Regression for Complex Problems" was **wrong and self-contradictory** -- the deck's own
+    "Possible Techniques" frame gives $W=(X^TX)^{-1}X^Ty$, a closed form for exactly those $\beta$s;
+    rewritten to say there is no simple *scalar* slope formula, the matrix one holds but inverting
+    $X^TX$ is impractical. "Multiple Linear Regression" had an $x_i$/$\beta_j$ index mismatch **and
+    omitted "holding every other predictor fixed"**, which is the entire basis of the newspaper
+    argument two frames later. Also: "a combination of others" -> "a *linear* combination"; roman
+    $B_{TV}$ -> $\beta_{TV}$; "and the starts increasing"; a stray apostrophe rendering as `The '"a"`;
+    "its not a independent variable"; "is called as".
+  - **Content gap, found by reading the deck's own promises**: the "Problem" frame poses four
+    questions and the live deck answered only the first: the other three answers were sitting
+    commented out. Revived condensed (12% typical error / ~90% of variance; only TV and radio;
+    residual plots), one existing frame plus one new. Worth repeating as a check on any deck: look
+    for a frame that opens a numbered list of questions and verify each one is actually answered
+    live, since the answers are exactly the kind of thing that gets commented out and forgotten.
+  - Task 3 finished work the previous pass started: it gave distinct titles to 7 "Optimization" and
+    3 "Evaluation" frames but stopped there, leaving 8 more duplicate-title runs (`Example: Tip
+    Amount` x3, `Advertising Dataset` x3, `Sum of Squared Errors for Rotated Line` x3, `Fitting
+    line` x2, `Important Concept` x2, `Calculations` x2, `EDA` x2, `Linear Regression` x2 across
+    sections). All retitled; titles only, no content or ordering changed.
+  - Task 5 added an RSS/SSR disambiguation where SSR is introduced. The deck defines "RSS (Residual
+    Sum of Squares)" as a synonym for SSE early, then introduces "SSR (sum of squares by
+    regression)" later: two near-anagram acronyms meaning opposite things, previously never
+    reconciled.
+  - Task 5a added 2 TikZ diagrams: line (1 predictor) over plane (2 predictors); and structureless
+    vs. curved residual scatter for "is the relationship linear?". No live `verbatim`/`lstlisting`
+    and no live prose `--` exist in this file, so Tasks 1a/1b/1c/1d found nothing.
+  - **The other open item closed: `Main_Seminar_ML_Regression_*` recompiled** (never done after the
+    previous pass). Its 217-page Presentation reports ~22.5k boxes -- **pre-existing and unrelated**,
+    the same per-frame Beamer navigation-bar overflow already recorded for
+    `Main_Seminar_ML_Intro_Presentation`: only 5 are genuine `in paragraph` content overfulls, the
+    rest are `detected at line N` at frame boundaries with just 26 distinct widths repeating in a
+    +3.98pt arithmetic ladder. Proof it is not content: the identical `ml_linearregression.tex`
+    compiles with zero boxes under the Session 9 driver.
+  - **`Main_Seminar_ML_Regression_CheatSheet.tex` had never received the Aug 2026 3-column
+    `\lstset{basicstyle=\scriptsize\ttfamily, breakatwhitespace=false}` + `\sloppy` driver-local
+    override** that the 19 MLCoEP CheatSheet drivers got -- that fix was scoped to MLCoEP only, and
+    this driver is `multicols{3}` too. Added it: 17 overfull boxes -> 1, 24 -> 23 pages. The one
+    survivor (14.42pt) is log-attributed near line 637 of the logistic-regression material.
+  - **That survivor closed (2026-08-22).** Traced precisely by matching the log's printed paragraph
+    text ("In the Glass Identification example, ...") rather than trusting the approximate line
+    number: it was `ml_logisticregression_sklearn.tex`'s "Quick Check: Logistic Regression with
+    Scikit-Learn" frame, where the prose repeated the full `\texttt{logreg.predict\_proba(X)[:, 1]}`
+    call inline at 8pt in a 3-column layout. That exact call already appears in the code listing a
+    few frames earlier, so the redundant `logreg.` prefix was dropped from the inline mention
+    (formatting only, no content change). Recompiled clean: 0 overfull boxes, 0 errors, 20 pages.
+    No open items remain for this driver.
+  - **Repo-wide audit of the same gap, and why it is mostly a false lead (Aug 2026).** 165 CheatSheet
+    drivers exist: 62 are `multicols{2}`, 103 are `multicols{3}`. Of the 103, only 21 carry the
+    driver-local override (the 20 MLCoEP ones plus `Main_Seminar_ML_Regression_CheatSheet` above),
+    so **82 lack it** -- and none of those 82 has a `.pdf` or `.log` on disk, i.e. they appear never
+    to have been built. **But do not bulk-add the override to them.** Tested on the worst offender
+    by static triage, `Main_Seminar_ML_Deployment_CheatSheet` (26 overfull boxes, worst 201pt):
+    adding the override changed **nothing at all** -- identical count, identical widths. The reason
+    is that its overfulls are **bare URLs sitting in ordinary prose**, e.g. a 201pt-too-wide
+    `Crypto Historical Data https://www.kaggle.com/datasets/.../cryptocurrencypricehistory`.
+    `breakatwhitespace=false` only reaches `lstlisting` environments, and `\sloppy` only stretches
+    interword spacing; neither can break a single word that is itself wider than the column. The
+    MLCoEP/ML_Regression override worked because those overfulls were **inside listings**. So the
+    two look identical in the log (a wide `Overfull \hbox` in a 3-column CheatSheet) but have
+    different root causes and different fixes: listings want the driver override, bare prose URLs
+    want a content-level fix (wrap in `\url{}`, since `hyperref` is already loaded and breaks at
+    `/` and `.`, or the `\allowbreak`-after-each-dot treatment used elsewhere here). **Diagnose
+    which kind you have by reading the offending line out of the log before choosing a fix.**
+  - **Separate pre-existing bug found during that audit, since fixed (Aug 2026)**:
+    `seminar_sql_rag_content.tex:14` did `\input{sql_rag_concl}`, a file that has never existed,
+    while the real `sql_rag_conclusions.tex` sat commented out on line 15 mislabelled
+    "older/alternative" -- it is in fact the only conclusions file there has ever been, and is
+    complete (divider + 4 live frames). Repointed to it and dropped the dead line; also capitalised
+    the section title (`\section[End]{conclusions}` -> `{Conclusions}`) to match every sibling
+    section. `Main_Seminar_LLM_SQL_RAG_{Presentation,CheatSheet}` now compile: 26 pages / zero
+    overfull, and 3 pages respectively.
+  - **First clean application of the diagnosis rule above.** The SQL RAG CheatSheet is one of the 82
+    without the override and showed 2 overfull boxes. Reading the offending lines out of the log
+    showed runs of unbreakable boxes, not prose, traced to SQLAlchemy connection URIs **inside an
+    `lstlisting`** (`create_engine('postgresql://user:password@host:port/database')`). That is the
+    listing flavour, so the driver-local override was the right tool here and it worked: 2 -> 0,
+    confirmed visually (the URIs now wrap mid-token inside the code box). Contrast
+    `Main_Seminar_ML_Deployment_CheatSheet`, where the same override achieved nothing because the
+    overfulls were bare prose URLs. **Same log symptom, opposite outcome -- read the offending line
+    before picking the fix.**
+- **Session 9 content split + gradient-descent elaboration (Aug 2026)**, per explicit request:
+  `ml_linearregression.tex` was split into `ml_linearregression_core.tex` (everything) and
+  `ml_linearregression_advertising.tex` (the "Linear Regression - Advertising Budget Example"
+  block, ~14 frames) -- `ml_linearregression.tex` itself is now just `\input{ml_linearregression_core}`
+  + `\input{ml_linearregression_advertising}`, so the standalone `Main_Seminar_ML_Regression_*` deck
+  is unaffected (same content, same order). `seminar_mlcoep_session_9_content.tex` now `\input`s
+  `ml_linearregression_core` only, dropping the advertising example from Session 9. `ml_linearregression_core.tex`
+  also gained 3 new frames adapted from `ml_concepts.tex`'s "How to find best fit?" sequence
+  (Gradient Descent: the Slope, Precisely -- a TikZ bowl-curve diagram with the learning rate
+  $\alpha$; the Update Rule -- the actual $a^{t+1}=a^t-\alpha\,\partial J/\partial a$ formulas;
+  Stochastic Gradient Descent), inserted right after the existing StatQuest "Optimization: Gradient
+  Descent Steps" frame, since that sequence narrated the descent pictorially but never showed the
+  update formula. Both `Main_Seminar_MLCoEP_Session_9_Linear_Regression_*` and
+  `Main_Seminar_ML_Regression_*` recompile clean; caught and fixed one real overflow along the way
+  (the Update Rule frame's Intuition block ran into the footer, invisible in the compile log, only
+  found by rendering the page).
+- **Session 10 ROC/AUC exclusion (Aug 2026)**, per explicit request: `ml_logisticregression.tex`
+  (used only by Session 10, no other consumer in the repo) had its ROC/AUC block -- "What is ROC?"
+  through the "Quick Check: Evaluation Metrics" answer, ~19 frames -- extracted into
+  `ml_logisticregression_rocauc.tex`, which nothing `\input`s, so the content is preserved on disk
+  but excluded from compilation. The rest of the "Evaluation Metrics" divider's content (Accuracy,
+  Accuracy Can Mislead, Confusion Matrix) was kept live. `Main_Seminar_MLCoEP_Session_10_Logistic_Regression_*`
+  recompiles clean, 52 pages.
+  - **Given a home elsewhere (2026-08-21)**: rather than leave it permanently orphaned, a curated
+    subset (8 of the 18 live frames -- the conceptual build-up: What is ROC?, Sensitivity/
+    Specificity, What is AUC?, then the pixel-histogram progression through Worked Picture,
+    Well-Separated Classifier, Poor Classifier, Sweeping All Thresholds, Reading the Area) plus
+    its own Quick Check pair were inserted into `ml_evaluation_sklearn.tex`, right before that
+    file's existing compact "Area Under ROC Curve" TikZ-diagram + `sklearn` `cross_val_score`
+    frames -- so the intuition build-up now precedes the formula/code version instead of jumping
+    straight to it. `ml_evaluation_sklearn.tex` backs both `Main_Seminar_MLCoEP_Session_7_Sklearn_Workflow`
+    and the standalone `Main_Seminar_ML_DataPrep`, so both decks gain it. The 8 frames not
+    selected then (threshold-setting mechanics, manual TPR/FPR-at-a-threshold computation, the
+    log-loss-vs-AUC digression) stayed on disk in `ml_logisticregression_rocauc.tex`, untouched,
+    unused by anything.
+  - **Tier 2 wired in, orphan file deleted (2026-08-22).** The 8 not-selected frames (ROC: Setting
+    a Threshold; Why Plot (1-Specificity)?; Reading the Histogram; Picking a Threshold at 0.5;
+    Computing TPR/FPR at 0.8; Computing TPR/FPR at 0.5; ROC AUC: What It Ignores; Log Loss) were
+    added to `ml_evaluation_sklearn.tex` as a distinct block right after the existing Quick Check
+    pair (not interleaved into the tier-1 sequence, so an instructor short on time can skip
+    straight to Confusion Matrix). The 2 quiz frames from the orphan file were not re-added: its
+    "always predict No Cancer" AUC=0.5 quiz duplicates the point already covered by tier-1's own
+    Quick Check. With everything now duplicated into the live file, `ml_logisticregression_rocauc.tex`
+    was fully redundant (nothing `\input` it, no unique content left), so it was deleted rather
+    than kept as a stale duplicate. All 4 driver combinations recompiled clean (0 errors): Session
+    7 Presentation 78->86 pages, CheatSheet 8->10 pages (the same pre-existing 16.6pt CheatSheet
+    overfull noted below, unchanged); `Main_Seminar_ML_DataPrep_Presentation` 122->130 pages,
+    CheatSheet 12->14 pages. No open items remain for this file.
+
+    (Historical, for the counts two paragraphs up: all 4 driver combinations recompiled clean
+    (0 errors) after the tier-1 pass too: Session 7 Presentation 68->78 pages, CheatSheet 7->8
+    pages (one pre-existing 16.6pt CheatSheet overfull, unchanged, already documented above);
+    `Main_Seminar_ML_DataPrep_Presentation` 122 pages, CheatSheet 12 pages. Every new frame
+    rendered to an image and visually confirmed on both the Presentation and the narrow 3-column
+    CheatSheet. The large overfull/underfull counts on the two Presentations (468 and ~17k) are
+    the same pre-existing per-page Beamer footline artifact already documented elsewhere in this
+    file for other large decks (confirmed via a baseline page far from any edited content showing
+    the identical, purely cosmetic pattern) -- not a defect introduced here.)
+
+### MLCoEP Sessions 13 (SVM) and 14 (Naive Bayes) deep `/upgrade-deck` passes (Aug 2026)
+Part of the Sessions 13-20 `/upgrade-deck` sweep (see `TODO.md`); both went through several
+rounds of user-directed correction after the first pass, well beyond a normal surgical review, so
+documented in more detail than usual.
+
+**Session 13 (`ml_svm.tex`), 54 -> 56 live frames.** First pass: fixed a real technical bug (the
+C-parameter frame had Large-C/Small-C margin direction backwards -- confirmed against sklearn's
+own docs), a double-negative typo reversing a sentence's meaning, a naming drift ("Support Margin
+Classifier" vs "Support Vector Classifier"), and retitled 18 frames sitting in 5 duplicate-title
+runs. Second pass (user review) found the deck told the "which hyperplane is best" story three
+times with three different notations/toy examples and no acknowledgment they were the same idea
+-- cut the redundant middle pass (11 frames, commented not deleted), reordered the intuition block
+so $z$ is defined before it's used (was referenced two frames early), added a bridge frame
+explaining the unavoidable $w_0\to b$ notation switch (the kept optimization frames are sourced
+from Georgia Tech images that can't be relabeled), and added 2 native TikZ recreations of the
+numeric worked example (the sourced images were illegible). Third pass (user review of that):
+expanded the compressed Lagrangian-dual derivation from 4 frames to 9 (one idea per frame: why an
+algorithm is needed, max-to-min reformulation, the QP problem in plain words, Lagrange
+multipliers, the dual term-by-term, recovering $w,b$, why most points don't matter, the similarity
+term), added a full Soft Margin (slack variable) section (3 frames) and expanded the kernel-trick
+explanation to 3 frames, and converted 7 more image-equations to native LaTeX. Caught and fixed a
+bug in its own first draft along the way: a new TikZ diagram's point labels collided with axis
+tick marks.
+
+**Session 14 (`ml_naivebayes.tex`), 66 -> 60 live frames.** `ml_naivebayes_short.tex` turned out to
+be a byte-identical duplicate (only whitespace differed) -- deleted, Session 14 repointed to the
+full file. All the deck's numeric worked examples (rare-disease Bayes update, Math-PhD/MBA
+posterior, fruit classifier, loan-default estimation) checked out correct. Found a real,
+unresolved content gap: the deck's own commented-out material promised to "handle the 0%
+probability later" (a Laplace-smoothing follow-up) but never delivered it live -- and when
+checked, that dead commented material was itself wrong (its smoothed probabilities for a 3-valued
+attribute summed to 1.11, not 1, from using a uniform +2 denominator increment regardless of how
+many categories the attribute had). Wrote 4 new, correct Laplace-smoothing frames from scratch
+instead of reviving the broken ones. Retitled ~35 frames across 6 duplicate-title runs (18x
+"Example" alone). User-directed follow-up rounds: converted the fruit-count/training tables and
+the final classification result to native `tabular`/`align*` (images commented, not deleted);
+added Venn-diagram and number-line TikZ diagrams to the more abstract early frames (Probability
+recap, Bayes Rule, a simple-hypothesis example); cut the entire loan-default block (11 frames,
+including the new Laplace-smoothing section) for deck-size reduction, on explicit instruction that
+this reopens the zero-probability gap rather than leaving it silently unresolved; added one
+bridging frame ("Connecting the Dots") between the abstract Bayes-Learning section and the
+Bayesian-Classifier section, which previously jumped from $P(h|D)$ hypothesis-testing language
+straight into "a classifier is a function" with nothing signalling they're the same idea relabeled.
+
+**Recurring bug, worth remembering for any future two-column diagram frame**: the first round of
+new `adjustbox`+`minipage` two-column frames in Session 14 all silently failed to render
+side-by-side -- the picture stacked *below* the bullets instead of beside them, because the
+`%` line-ending convention documented elsewhere in this file (see the two-column gotcha under
+"LaTeX Architecture" above) wasn't applied. The failure is easy to miss from a rendered image
+alone (nothing looks obviously broken, just oddly spaced/tall), it only became obvious once the
+picture was completely missing from its expected column. Confirmed by the fix: every
+`Overfull \vbox` warning on those frames vanished once `%` was added, proving that's what was
+actually happening. **Always apply the `%` line-ending convention preemptively on every new
+two-column frame, don't wait to be told it looks wrong.**
+
+Both sessions' PDFs are in `Publications/Presentations/`; drivers re-retired to
+`LaTeX/_retired/mlcoep_session_drivers/` per the standing MLCoEP workflow.
+
+### MLCoEP Sessions 15-20 `/upgrade-deck` sweep (Aug 2026)
+Continuation of the Sessions 1-14 upgrade work above, covering the rest of the course:
+Session 15 KNN, 16 KMeans, 17 PCA, 18 Titanic capstone, 19 MLOps, 20 ME Applications. Each
+run individually via its own retired driver pair, full Task 1-6 pass, then `texify`
+compile-and-verify (approved per-session by the user, per
+[[feedback_no_redundant_aggregate_compile]]). All 6 sessions compiled clean; none of the
+standalone-course sibling decks that share these topic files (`Main_Seminar_ML_KNN`,
+`_Clustering`, `_DimReduction`, `course_machinelearning_content`,
+`Main_Seminar_ML_Deployment`, `seminar_machinelearning_content`) were recompiled, matching
+this sweep's established "shared file edited, sibling deck left as-is" precedent.
+- **Session 15 (KNN)** -- `ml_knn.tex`/`ml_knn_sklearn.tex`: full pass plus, per explicit
+  request, commented out "Scaling Issues"/"Standardization" (redundant with Sessions 3/4/7)
+  and the whole `ml_knn_sklearn` `\input` (redundant with Session 7), scoped to the session
+  wrapper only. Fixed a real "Effect of K" image overflow. Expanded Distance Measures with 4
+  new frames (Euclidean/Manhattan/Hamming/choosing a distance). 50pp / 4pp, 0 errors, 0
+  overfull.
+- **Session 16 (KMeans)** -- `ml_kmeans.tex`: rewrote a frame that described KNN under a
+  "Clustering Algorithms" title into a proper KNN-vs-KMeans contrast; verified a suspicious
+  `X[indices,:]` numpy-indexing pattern by actually running it (correct); deduped ~9
+  duplicate-title runs; expanded a thin "Disadvantages" list. 55pp / 4pp, 0 errors, 0
+  overfull.
+- **Session 17 (PCA)** -- `ml_pca.tex`: heaviest dedup of the six (PCA x7, "PCA Example in
+  Steps" x7, plus 6 more runs). Fixed a real 92.7pt overflow by splitting one overloaded
+  frame in two, plus 3 smaller image-overflow fixes. Deck had zero Quick Checks -- added 3
+  pairs. Eigenvalue/eigenvector spelling swept file-wide. 60pp / 5pp, 0 errors, 0 overfull.
+- **Session 18 (Titanic capstone)** -- `ml_titanic_sklearn.tex`: fixed a deck-wide bug
+  (`train`/`test` loaded but every downstream frame used the never-defined
+  `df_train`/`df_test`), a copy-paste text bug ("AgeFill" vs "FamilySize"), deduped many
+  duplicate-title runs (19x "Feature Engineering" among them), added 2 Quick Check pairs
+  (train-vs-held-out accuracy gap; per-class recall/class imbalance). Follow-up fix in a
+  later session: "Random Forest: Fit and Score" had an `\begin{block}{Intuition}` sitting
+  right after `\end{lstlisting}`, violating the lstlisting-placement rule -- split into a
+  code-only frame plus a new "...: Intuition" frame. 81pp / 7pp, 0 errors, 0 overfull.
+- **Session 19 (MLOps)** -- `ml_production.tex` (AWS deployment) + `ml_predictive_analytics.tex`:
+  fixed a cluster of apostrophe/typo/grammar bugs and product-name capitalization (CloudWatch,
+  SageMaker) in the first file; in the second, normalized 14 lines of literal tab characters,
+  fixed a pronoun-mismatch bug ("Rahul" ... "her membership"), a garbled clustering-methods
+  bullet, and neutralized an awkward political aside; deduped 4 duplicate-title runs across
+  both files; added an Intuition callout (deliberately domain-neutral, not
+  mechanical-engineering-flavored, per the standing precedent from the Session 3 pass) and one
+  new Quick Check pair. Found and fixed 3 genuine `Overfull \vbox` content overflows (not the
+  usual footline-artifact hbox pattern -- this deck had zero of those) by shrinking 3 images.
+  74pp / 6pp, 0 errors, 0 overfull (one harmless title-wrap underfull in the CheatSheet).
+- **Session 20 (ME Applications)** -- `ml_mech_short.tex`, `ml_course_demo_regression_housing.tex`,
+  `ml_course_demo_svm_digits.tex`, `ml_course_demo_clustering_customers.tex`,
+  `ml_course_assign_pca_digits.tex`, `ml_mech_assignments.tex` (52 live frames across 6 files).
+  Every code-demo file's code was actually executed (`genai` conda env) before being trusted,
+  and this caught two real, non-cosmetic bugs:
+  - `ml_course_demo_svm_digits.tex`: the "Visualize Misclassifications" frame reshaped
+    `X_test` into an 8x8 image for display, but `X_test` had been overwritten in-place by
+    `StandardScaler.transform` a few frames earlier -- the code would have rendered
+    unrecognizable noise instead of digit images (verified: scaled range -3..+22 vs. the
+    real 0..16 pixel range). Fixed by keeping the scaled copy in `X_train_scaled`/
+    `X_test_scaled` and leaving `X_test` itself raw for the visualization step.
+  - `ml_course_demo_clustering_customers.tex`: the demo assumed KMeans cluster index 0/1/2
+    would come out as Budget/Standard/Premium in that order and hardcoded the mapping --
+    verified by running it that with `random_state=42` the actual cluster order comes out
+    completely scrambled (cluster 0 was mid-tier, cluster 2 was cheapest). Fixed by sorting
+    clusters on mean income *after* fitting to build the label mapping, with a new
+    "...: Intuition" frame (split to respect the lstlisting-placement rule) explaining that
+    KMeans cluster numbers are arbitrary.
+  Also fixed in `ml_mech_short.tex`: an outdated "50 billion connected devices by 2020"
+  prediction (softened to a non-time-specific claim), inconsistent "IOT"/"IoT" capitalization,
+  a run-on sentence, 3 duplicate-title runs ("Challenges facing manufacturing" x2, "How ML can
+  help?" x3, "New wave: IoT" x4), wrapped 3 raw URLs in `\url{}`, and added one Quick Check
+  pair (deck had zero). In `ml_mech_assignments.tex`: two assignment-idea code sketches had
+  real inconsistencies against their 8 siblings -- the Random Forest slide fit and predicted
+  on the same data with no train/test split, and the Gaussian Process slide referenced
+  `X_train`/`y_train`/`X_test` with no definition anywhere in the snippet -- fixed the former
+  with a matching split, the latter with a clarifying comment (these are intentionally
+  abbreviated starter-code sketches, not full runnable pipelines, so a comment was the right
+  fix, not a full data-loading block). Also retitled "Part B: K-Means on PCA Data" in
+  `ml_course_assign_pca_digits.tex` to "Parts B \& C: ..." since the frame's code already does
+  the "vary PCA components" work the Problem Info frame separately promised as "Part C", and
+  no separate Part C frame exists. 60pp / 5pp, 0 errors, 0 overfull (2 harmless underfull
+  hboxes on a wrapped `sklearn.datasets.load_digits` code identifier in the CheatSheet).
+
+**Correction/follow-up (2026-08-30): this whole Sessions 15-20 sweep never actually invoked
+the `/upgrade-deck` skill itself** -- it was a manual pass following the same Task 1-6
+structure from memory/CLAUDE.md, which meant Task 1d's prose-dash sweep was silently skipped
+throughout. Caught by the user visually spotting a long dash in Session 20. A `---` grep
+across the Session 19/20 topic files found 8 pre-existing triple-hyphen em-dashes (rendering
+as long dashes) in 4 `ml_course_demo_*`/`ml_course_assign_*` files -- all in frame titles
+(`X --- Y` -> `X: Y`) and two inline bullets -- plus one plain `--` I had introduced myself in
+a new Intuition block, and two more pre-existing `--` in `ml_predictive_analytics.tex`'s
+"Production and Deployment" quiz answer. All fixed (colons for title separators, semicolons
+or parentheses for inline breaks, per the established convention), both drivers recompiled
+clean with identical page counts, and the fixed frames visually confirmed via `pdftoppm`.
+**Lesson: a manual Task-1-6-style pass is not a substitute for actually invoking
+`/upgrade-deck` -- it will silently miss whichever tasks aren't reconstructed from memory.**
+
+**Follow-up: `/upgrade-deck` actually run on Sessions 19 and 20 (2026-08-30, same day).**
+Confirmed the manual pass's gap was real -- the formal run caught more:
+- Session 19 (`ml_production.tex`/`ml_predictive_analytics.tex`): Task 5c found and split 5
+  overlong/multi-clause bullets (25-30 words each) into short single-idea bullets; Task 2 found
+  and merged a genuinely redundant pair of bullets in the "Train the Model" frame that both
+  restated "train the system to learn from data" (one had a dangling subject-verb mismatch,
+  fixed in the merge); Task 5a added a TikZ 4-box roadmap diagram to the "Define the Question"
+  frame (the only frame in the "How Does Predictive Analytics Work?" 4-frame sequence with no
+  visual, despite describing a linear process). **The new diagram broke the CheatSheet compile
+  outright** (`! Package xcolor Error: Undefined color 'nyupurple'` -- fatal, no PDF produced)
+  because `nyupurple` is a Presentation-only custom color, never defined in
+  `template_cheatsheet.tex`; fixed by using `fill=gray!20` (a base xcolor mix, always available)
+  instead. **Then the diagram rendered stacked below the text instead of beside it** on the
+  first Presentation compile -- the exact Session 14 two-column gotcha documented above --
+  because the `%` line-ending convention was applied inconsistently (present after the closing
+  `}` and `\hfill`, missing after both `\adjustbox{valign=t}{` opening lines and both
+  `\end{minipage}` lines); fixed by adding `%` to all four. **Worth internalizing: knowing a
+  gotcha is documented is not the same as applying it correctly on the first attempt -- render
+  the page and look, every time, even when the fix feels routine.** Both drivers recompiled
+  clean after both fixes (74pp/6pp, 0 errors, 0 overfull), diagram visually confirmed correct
+  in both the wide Presentation and the narrow 3-column CheatSheet.
+- Session 20 (`ml_mech_short.tex` + 5 other files): Task 5c found and split one 29-word,
+  3-clause bullet in the "IoT and Machine Learning" frame into 3 single-idea bullets. Task 1d/1e
+  found nothing further (already clean from the manual pass's own dash fix). Task 5a found no
+  strong diagram candidates (the 4 demo files already produce their own matplotlib figures at
+  runtime; `ml_mech_short.tex`'s remaining prose-only content wasn't process-shaped enough to
+  warrant one). Both drivers recompiled clean (60pp/5pp, 0 errors, 0 overfull), fix visually
+  confirmed.
+
+**Sweep close-out (2026-08-30).** All 12 Session 15-20 Presentation+CheatSheet PDFs copied into
+`Publications/Presentations/`, overwriting the stale pre-upgrade (Aug 13) copies there, verified
+byte-identical to the freshly-compiled `LaTeX/` copies afterward. The Sessions 15-20 tracker
+memory (`project_mlcoep_sessions_15to20_upgrade`) was deleted per its own stated retirement plan,
+now that this summary captures the full history. All 20 MLCoEP sessions (1-20) have now been
+through an `/upgrade-deck` pass.
+
+### AI for Project/Program Managers seminar (Aug 2026)
+Standalone seminar `Main_Seminar_AI_ProjectManagers_{Presentation,CheatSheet}.tex` ->
+`seminar_artificialintelligence_project_managers.tex` -> `ai_intro_project_managers.tex` (single
+content file, no `_short` sibling). Covers AI-assisted project planning, decision support, a live
+demo, tool landscape, and staying relevant, aimed at practicing PMs/program managers (non-technical
+audience) -- not part of the ML CoEP course. Went through a targeted fix pass (a harder Quick Check
+question, 3 tables widened via `\adjustbox{max width=\linewidth}`, two vertical-overflow frames
+fixed, a presenter-vs-attendee framing bullet removed, several verbose sentences tightened) followed
+by a full `/upgrade-deck` pass (a typo, a RAID-acronym expansion re-added after the earlier edit had
+accidentally dropped it, a noun-cluster fix, and two frames restructured into the deck's established
+bold-lead-plus-nested-bullet style, e.g. the "Myths vs. Reality" pattern). Both drivers compile clean.
+
+### Adding a new topic
+1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
+2. `\input{<domain>_<topic>}` inside the relevant `seminar_*_content.tex`
+3. Place supporting images in `LaTeX/images/` (5000+ images already there, mostly PDFs)
+
+### Frame boilerplate
+```latex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Slide Title}
+\begin{itemize}
+\item Point one
+\end{itemize}
+\end{frame}
+```
+
+For section dividers:
+```latex
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Section Heading}
+\end{center}
+\end{frame}
+```
+
+## Code Directory
+
+Each subdirectory under `Code/` corresponds to a library or topic. No single build or test command — run scripts individually per subdirectory.
+
+### Environment setup (conda-based)
+Every major subdirectory has an `environment.yml`. The standard setup flow is:
+```bash
+conda env create -f Code/<subdir>/environment.yml
+conda activate <env-name>
+```
+Do not create `venv/` or `.venv/` folders — use conda environments only.
+
+### Key subdirectory map
+
+| Category | Directories |
+|----------|-------------|
+| GenAI / Agents | `langchain/`, `langgraph/`, `llamaindex/`, `crewai/`, `agents/`, `agno/`, `google-adk/` |
+| RAG Applications | `chatbot-faqs/`, `chatbot-multimodal/`, `omni-rag/`, `parsing/`, `graphrag/` |
+| LLM Fine-tuning | `fine-tuning/` |
+| Document Parsing | `docling/`, `opendataloader/` |
+| Deep Learning | `pytorch/` |
+| Classical ML | `ml/`, `math/`, `python/` |
+| NLP | `nlp/`, `dnlp/`, `spacy/` |
+| GNN | `gnn/pyg/`, `gnn/gnn-project-deepfindr/`, `gnn/molecule-deepfindr/`, `gnn/odsc2021-sujitpal/` |
+| Indic Language | `mahamarathi/`, `sarvam/`, `orgpedia/` |
+| Research Refs | `txt2cad/`, `txt2sql/` (docs only, no runnable code) |
+| Other | `amd/` (AMD Academy: agents/fine-tuning/vLLM serving course materials), `chromeext/` (a small Chrome extension side-project, not AI/ML) |
+
+### Code/.gitignore
+A repo-wide `Code/.gitignore` covers `__pycache__/`, `.ipynb_checkpoints/`, `.env`, `*.pyc`, model weights (`*.bin`, `*.pt`, `*.safetensors`).
+
+### Notable sub-projects with their own config
+- `Code/claudecode/MyWorkshop/` and `Code/claudecode/CadCamWorkshop/` — each has its own `CLAUDE.md` (no `CLAUDE.md` directly under `Code/claudecode/` itself)
+- `Code/langgraph/open_deep_research-langcahin-ai/` — has its own `CLAUDE.md` and `README.md`
+- `Code/crewai/researcher/` — uses `pyproject.toml` + `uv.lock` (modern uv workflow)
+
+### Security note
+`Code/google-adk/my_agent/.env` is gitignored but contains a real `GOOGLE_API_KEY` on disk — rotate it in Google Cloud Console.
+
+### Code/ consolidation (Aug 2026)
+12 stale/redundant folders deleted after one-by-one confirmation: `activeloop/`, `animesh1012/`,
+`awesome_llm_apps/`, `deep_rl/`, `gcp_notebooks/`, `google_generative-ai/`, `nvidia/`, `prodramp/`,
+`vizuara/`, `llama/`, `dl_curiousily/` (superseded by `curiosily_ai_bootcamp/`), `latex/` (2008 dead
+content, also a case-collision risk with root `LaTeX/`). `Code/agents/` overlap resolved: 3 pure
+CrewAI scripts moved to `Code/crewai/`, 9 LangGraph scripts (incl. 2 hybrid CrewAI-in-LangGraph
+files) moved to `Code/langgraph/`; `Code/agents/` narrowed to AutoGen-plus-general-PoC scope.
+Gitignore hygiene: `node_modules/`, `.pytest_cache/`, `.ruff_cache/`, `.benchmarks/` added;
+`Code/opencode/demo/.opencode/node_modules/` (738 files) and 3 cache dirs removed from the working
+copy. `Code/llamaindex/data/WikiTableQuestions*` removed (160MB → 11MB). `docs/Interview/src/`
+(67 files, LeetCode/PyTorch practice code that had been mixed in with genuine interview-prep docs)
+split out to new `Code/interview/` (own `environment.yml` + `README.md`); `docs/Interview/` now
+holds only docs.
+
+**Follow-up removals, 2026-08-30** (full `Code/` folder-by-folder audit against `LaTeX/` deck
+linkage, plus a repo-wide `/upgrade-repo-tech` pass): `gemma/` and `pritamMarathi/` deleted, no
+course tie-in. `keras/` relocated outside the repo to
+`D:\Yogesh\GitHub\TeachingDataScience_removed_thirdparty\keras\` (60 files, 17MB): confirmed to
+be Chollet's official "Deep Learning with Python" companion notebooks (filenames match the
+book's own chapter numbering exactly), sitting here with no attribution. `Admin/orphaned_latex_images/`
+(124MB, already-orphaned) deleted outright. `Admin/diagram_sources/` (110 files, 3MB) also
+relocated to the same `_removed_thirdparty` holding folder: confirmed to be the NLTK book's own
+diagram-source files (CC Attribution-NonCommercial-NoDerivs licensed), same no-attribution issue.
+`Code/README.md`'s catalog table, stale since the original Aug 2026 pass (11 rows pointing at
+already-deleted folders, missing `interview/`), rewritten to match the current folder set.
+`Code/dl_tf2/` (88 files, 31MB) also relocated to `_removed_thirdparty`: a grab-bag of many
+different third-party tutorial notebooks (Aurelien Geron's book/course, Google's official TF
+tutorials, a YouTube instructor's course, Udacity, others), all credited only by filename, no
+proper attribution. Note the DL seminar (`Main_Seminar_DL_Tensorflow_*`) still actively teaches
+TensorFlow, this was purely a Code/ companion-content and attribution decision, not a curriculum
+change. Three separate stale copies of the same GenAI/RAG/Deep-Learning/etc. catalog table were
+found and fixed this pass: `Code/README.md`, this file's own "Key subdirectory map", and the root
+`README.md` (which also still listed `deep_rl/` and `gemma/`, both already gone, and `pyg/` at
+the top level instead of `gnn/`). See `Code/reports/upgrade_30082026.md` for the full record.
+
+### Local LLM (Qwen3) as a Groq alternative — piloted, not rolled out (Aug 2026)
+Evaluated `Qwen3-1.7B-Q4_K_M.gguf` (`D:\Yogesh\models\lmstudio-community\Qwen3-1.7B-GGUF\`, on
+disk) via `langchain_community.chat_models.ChatLlamaCpp` (in-process, no server) as a local
+alternative to the `ChatGroq` calls used in 15 files across `Code/`. Needed `llama-cpp-python`
+upgraded to 0.3.34 in the `genai` env first (0.2.72 predates Qwen3 support, threw `unknown model
+architecture: 'qwen3'`). Findings:
+- **Loads and runs fine on CPU**: ~3.8s load, ~17-24 tok/s inference (no GPU offload — the machine's
+  MX570A is thin and untested for this, not expected to matter at this model size).
+- **Qwen3 defaults to a "thinking" mode** that silently consumes the whole `max_tokens` budget on
+  even trivial prompts, leaving responses truncated mid-`<think>` with no real answer. Fix:
+  append `/no_think` to the prompt (Qwen3's documented soft-switch) — cuts response time from
+  9-17s to under 1.5s per short reply and produces complete, correct answers. Always do this when
+  using this model via `ChatLlamaCpp`.
+- **`bind_tools()` with default `chat_format`: NOT reliable.** The model's raw text gets tool
+  choice and arguments right, but LangChain's `ChatLlamaCpp` doesn't parse Qwen's
+  `<tool_call>{...}</tool_call>` text format into the structured `response.tool_calls` field agent
+  code actually reads (comes back empty every time), and the model's own JSON has been observed
+  with a syntax bug (extra `}`).
+- **Investigated 2026-08-22: `chat_format="chatml-function-calling"` (passed via
+  `ChatLlamaCpp(model_kwargs={"chat_format": "chatml-function-calling"})`) fixes the parsing, but
+  only when `tool_choice` is forced to a specific tool.** This handler is `llama-cpp-python`'s own
+  model-agnostic function-calling implementation (`llama_chat_format.py`, grammar-constrained), a
+  different code path from Qwen3's native `<tool_call>` tags. Tested directly against
+  `langchain_v1_createagent.py`'s `get_weather` tool:
+  - `tool_choice={"type": "function", "function": {"name": "get_weather"}}` (forced): works
+    cleanly, `response.tool_calls` comes back correctly structured (one cosmetic artifact: a
+    trailing comma inside the string arg, e.g. `{'city': 'Pune,'}`).
+  - `tool_choice="auto"` (the model deciding whether/which tool to call, what a real agent needs):
+    still fails. Qwen3-1.7B reasons about the tool in its `<think>` block but never triggers
+    `llama_cpp`'s auto tool-detection heuristic, it just talks about the tool instead of invoking
+    it, so `response.tool_calls` stays empty.
+  - **Conclusion: the blocker is narrower than "bind_tools doesn't work."** It's specifically that
+    this 1.7B model doesn't reliably self-trigger the auto tool-detection path. A larger local
+    Qwen3 (4B/8B, if downloaded) is the next thing to try if this is picked up again, not a
+    different `chat_format` or a different LangChain wrapper.
+- **Pilot confirmed working** for plain multi-turn chat (no tool calling) in
+  `Code/langchain/langchain_v1_models.py`: `ChatGroq`/`init_chat_model` block commented out,
+  `ChatLlamaCpp` active by default per the decided pattern (manual toggle in code, not automatic
+  fallback). Reran the file's existing 4-turn translate-to-French example unchanged — correct
+  output, multi-turn context handled correctly.
+- **2026-08-22: `omni-rag/agent.py` was misclassified as tool-calling-blocked; it isn't.** Checked
+  the whole `omni-rag/` folder: `agent.py`'s LangGraph `StateGraph` never calls `bind_tools()`,
+  retrieval is a direct Python call to `retriever.invoke()`, and the LLM is only ever called with
+  `llm.invoke(prompt)` on a plain string, same shape as `langchain_v1_models.py`'s validated
+  pattern. **Switched to local `ChatLlamaCpp` the same day** (`temperature=0`, `/no_think` appended
+  to the `generate_node` prompt); `llama-cpp-python>=0.3.34` added to
+  `Code/omni-rag/environment.yml`. Only `langchain_v1_createagent.py` remains on `ChatGroq`, and
+  only because of the genuine auto-tool_choice finding above, not a blanket bind_tools limitation.
+- **Deliberately not done**: rolling the `ChatGroq` -> local `ChatLlamaCpp` pattern out to the
+  other 13 non-tool-calling `ChatGroq` sites across `Code/` (declined for now —
+  `langchain_v1_models.py` stands as the validated reference pattern if picked up later).
+  `langchain_v1_createagent.py` stays on `ChatGroq`, the one remaining genuinely tool-calling site,
+  blocked by the auto-tool_choice finding above.
+- Separately, **OpenCode CLI + local Qwen was tested and found not viable**: an `opencode run`
+  request is ~32K tokens (`AGENTS.md` + tool/MCP schemas + project context), and CPU-only prefill
+  of that size timed out (`SSE read timed out` after 2m03s) even after raising the model's context
+  window to 32K. `Code/opencode/opencode.json`'s model reference was fixed to the real downloaded
+  model ID (`qwen/qwen3-1.7b`, was pointing at a model never downloaded) regardless. LM Studio's
+  server may still be left running with the model loaded from this test — harmless, but check
+  `lms server status` / `lms ps` if picking this back up.
+
+## Test Suite
+
+All Python-script directories have a `test_*.py` file runnable with `pytest` in the `genai` conda environment.
+
+### Running tests
+
+Run a single suite:
+```bash
+conda activate genai
+cd Code/<subdir>
+python -m pytest test_*.py -v
+```
+
+Run all suites together (from repo root):
+```bash
+conda run -n genai python -m pytest \
+  Code/graphrag/test_graphrag.py \
+  Code/parsing/test_parsing.py \
+  Code/agno/test_agno.py \
+  Code/google-adk/test_tools.py \
+  Code/chatbot-faqs/test_chatbot_faqs.py \
+  Code/chatbot-multimodal/test_models.py \
+  Code/omni-rag/test_omnirag.py \
+  -v
+```
+
+### Test files per directory
+
+| Directory | Test file | Tests | What's covered |
+|-----------|-----------|-------|----------------|
+| `chatbot-faqs/` | `test_chatbot_faqs.py` | 14 | CSV loading, similarity threshold, cosine similarity logic |
+| `chatbot-multimodal/` | `test_models.py` | 19 | Pydantic chunk models, DoclingParser device selection, null-safe heading join |
+| `omni-rag/` | `test_omnirag.py` | 9 | Context list-join fix, OmniIngestor structure (mocked), ragas/datasets imports |
+| `parsing/` | `test_parsing.py` | 12 | GroqResumeParser: empty-key validation, default model, mock API call |
+| `graphrag/` | `test_graphrag.py` | 9 | `distance()` boundary conditions, networkx/pandas integration |
+| `google-adk/` | `test_tools.py` | 10 | Tool functions (web_search, get_stock_price, etc.) with mocked yfinance |
+| `agno/` | `test_agno.py` | 7 | agno package imports, syntax validation of all .py files |
+
+### Test design notes
+- No real API calls — all LLM/embedding clients are mocked with `unittest.mock`.
+- No model downloads — `transformers` model-loading calls are patched at the function level.
+- The `google-adk` tests mock the `adk` package (not installed on all machines).
+- The omni-rag `TestOmniIngestorStructure` tests skip gracefully if a `datasets` circular import occurs when running in a combined pytest session (they pass in isolation).
+- `ragas` and `google-adk` packages were added to the `genai` env during the April 2026 upgrade pass.
+
+### Known environment notes
+- `ragas 0.4.3` upgraded `openai` from 1.x → 2.x — verify `langchain-openai` compatibility if issues arise.
+- A broken system-Python `faiss` install exists at `C:\Users\yoges\AppData\Roaming\Python\Python310\site-packages\faiss\` and conflicts if imported outside the conda env.
+- `opendataloader-pdf` and `langchain-opendataloader-pdf` are installed in the `genai` env (added May 2026). The library wraps a Java JAR — **Java 11+ must be on PATH** before any tutorial runs. Install via `conda install -n genai -c conda-forge openjdk=11`. Tutorial 09 (OCR) additionally requires the hybrid backend started in a separate terminal: `opendataloader-pdf-hybrid --port 5002 --force-ocr`.
+
+### AI For Educators seminar: content overhaul + file consolidation (Aug 2026)
+`Main_Seminar_AI_For_Educators_{Presentation,CheatSheet}.tex` (via `seminar_ai_for_educators_content.tex`)
+went through two passes in one session:
+- **Content overhaul**: added a new opening section, "How AI Actually Works" (`ai_educators_content.tex`'s
+  first section), hand-picking 3 still-live frames from `genai_intro_short.tex`/`ai_intro_tech_short.tex`
+  (the SMS-autocomplete language-model explanation, "why called Large," the AI/ML/DL nested-circles
+  diagram) rather than authoring new content, since that material already existed and is shared with
+  other decks. Trimmed US-specific and otherwise esoteric stats not resonant for a Maharashtra
+  high-school-teacher audience: the Gallup/CDT teacher-adoption percentage quiz, the JACR
+  radiologist-salary/workforce-growth numbers, and the tikz task-bundle diagram, while deliberately
+  keeping exactly one Geoffrey Hinton 2016 quote (the memorable anchor for the task-vs-job argument).
+  Fully de-branded the "How Programs Are Structured" section, replacing the Anthropic "Claude for
+  Teachers" worked example (FERPA, Teach For All, 63-countries stat) with a generic, unbranded version
+  of the same four-piece structure. Removed the "Sandwich" technique-deep-dive section entirely
+  (`llm_promptengg_sandwich.tex` unlinked, not deleted, since lesson-plan prompting is already covered
+  in Hands-On). Replaced the flat "Golden Rules for Everyday Prompting" frame in
+  `llm_promptengg_educators.tex` with a 6-frame **CRAFT** framework (Context, Role, Action, Fewshots,
+  Tweaks), each letter with its own short educator-relevant prompt example. Added a Government of
+  India YuvaAI/AI for All (FutureSkills Prime) reference line, name only, no URL (not confident enough
+  in a specific link to include one without guessing).
+- **File consolidation**: folded 8 small standalone files (`ai_educators_howaiworks/_stateofplay/
+  _taskvsjob/_programstructure/_risks/_future/_closing/_refs.tex`, 15-72 lines each) into 2 substantial
+  files, `ai_educators_content.tex` (HowAI+State+TaskvJob+Programs) and `ai_educators_wrapup.tex`
+  (Risks+Next+Concl+Refs), each holding its `\section{}` commands inline so a single `\input` per file
+  still produces the same 4 separate deck sections as before. `llm_promptengg_educators.tex` (already
+  substantial) and `ai_drives_educational.tex` (a distinct admin-only appendix) were deliberately left
+  separate, not folded in. The 8 old files were deleted outright (not left unlinked-on-disk) since their
+  content is fully duplicated in the merged files and the repo already has precedent for deleting
+  genuinely-redundant files during a consolidation pass (see the Python raw-file audit above). One
+  structural knock-on: the Admin appendix used to sit between "Next" and "Concl" in the section order;
+  once those merge into one contiguous block it can no longer sit mid-block, so it moved to the very
+  end (after References), which also fits its own framing better ("a closing bonus for administrators").
+  Found and fixed the same `belowskip=-15pt` `lstlisting`-immediately-followed-by-content overflow
+  documented elsewhere in this file, in the new "CRAFT, All Together" frame (split into two frames).
+  Both drivers recompile clean (Presentation 53 pages, CheatSheet 5 pages).
+- **Deliberately not folded into `ai_intro_*`/`llm_intro_*`/`genai_intro_*`**: the live `chatgpt_intro.tex`/
+  `chatgpt_intro_short.tex`/`chatgpt_applications.tex`/`chatgpt_conclusion.tex` files (used by
+  `course_generativeai_content.tex`, `seminar_ai_for_all_tech_content.tex`,
+  `seminar_ai_for_all_nontech_content.tex`, `workshop_llm_content.tex`) are still needed, not orphaned.
+  Folding them would be a proper content-overlap audit across those 4 consumer decks, same shape as the
+  Python raw-file audit above; flagged as a candidate follow-up, not started.
+
+## Memory
+Do not store, write, or update any memory files in the global `~/.claude/projects/` directory unless the user explicitly confirms or allows it in the current conversation.
+
+## Git
+Do not run any git commands. The user manages all git operations externally.

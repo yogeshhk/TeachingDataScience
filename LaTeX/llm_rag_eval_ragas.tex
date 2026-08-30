@@ -1,0 +1,426 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large RAG Evaluation with RAGAS}
+\end{center}
+\end{frame}
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{}
+% \begin{center}
+% {\Large Introduction to RAGAS Framework}
+% \end{center}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What is RAGAS?}
+  \begin{itemize}
+    \item \textbf{Full Form:} Retrieval-Augmented Generation Assessment
+    \item \textbf{Purpose:} Framework for evaluating RAG pipelines on a component level
+    \item \textbf{Active Research:} Determining right evaluation metrics and validation data is evolving
+    \item \textbf{Various Approaches:} RAG Triad, ROUGE, ARES, BLEU, and RAGAs
+    \item \textbf{Reference-Free Evaluation:} Leverages LLMs for evaluation instead of human-annotated ground truth
+    \item \textbf{Cost Effective:} Cheaper and faster evaluation method
+  \end{itemize}
+  
+  {\tiny (Ref: GitHub, Docs - RAGAs)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Evaluation Data Requirements}
+  \begin{itemize}
+    \item \textbf{question:} The user query that is the input of the RAG pipeline
+    \item \textbf{answer:} The generated answer from the RAG pipeline (output)
+    \item \textbf{contexts:} The contexts retrieved from the external knowledge source
+    \item \textbf{ground\_truths:} The ground truth answer (only human-annotated information)
+    \item Required only for context\_recall metric
+    \item Framework expanded to provide metrics requiring ground truth labels
+    \item Provides tooling for automatic test data generation
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reference-Free Evaluation}
+  \begin{itemize}
+    \item \textbf{LLM-based Assessment:} Uses LLMs under the hood for conducting evaluations
+    \item \textbf{Active Research:} Promising but with discussions about shortcomings
+    \item \textbf{Potential Bias:} Some concerns about evaluation bias
+    \item \textbf{Promising Results:} Research papers show encouraging outcomes
+    \item \textbf{Human Annotation:} Minimal requirement reduces costs and time
+    \item \textbf{Evolving Topic:} Quickly developing field with new approaches
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large RAGAS Evaluation Metrics}
+\end{center}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Component-Level Metrics}
+  \begin{itemize}
+    \item \textbf{Retrieval Component Metrics:}
+      \begin{itemize}
+        \item Context Precision
+        \item Context Recall
+      \end{itemize}
+    \item \textbf{Generative Component Metrics:}
+      \begin{itemize}
+        \item Faithfulness
+        \item Answer Relevancy
+      \end{itemize}
+    \item \textbf{Score Range:} All metrics scaled to [0, 1]
+    \item \textbf{Higher is Better:} Higher values indicate better performance
+    \item \textbf{End-to-end Metrics:} Answer semantic similarity and answer correctness
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Context Precision}
+  \begin{itemize}
+    \item \textbf{Definition:} Measures signal-to-noise ratio of retrieved context
+    \item \textbf{Inputs:} Computed using question and contexts
+    \item \textbf{Purpose:} Evaluates how relevant retrieved information is
+    \item \textbf{Application:} Helps optimize number of retrieved contexts
+    \item \textbf{Noise Reduction:} Identifies irrelevant information in retrieval
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Context Recall}
+  \begin{itemize}
+    \item \textbf{Definition:} Measures if all relevant information was retrieved
+    \item \textbf{Inputs:} Computed based on ground\_truth and contexts
+    \item \textbf{Unique Feature:} Only metric requiring human-annotated ground truth labels
+    \item \textbf{Purpose:} Ensures completeness of retrieval
+    \item \textbf{Evaluation:} Checks if retrieved contexts contain information needed to answer correctly
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Faithfulness}
+  \begin{itemize}
+    \item \textbf{Definition:} Measures factual accuracy of generated answer
+    \item \textbf{Calculation:} Number of correct statements divided by total statements
+    \item \textbf{Inputs:} Uses question, contexts, and answer
+    \item \textbf{Purpose:} Prevents hallucinations and ensures factual consistency
+    \item \textbf{Score Interpretation:} Higher score indicates better alignment with provided context
+  \end{itemize}
+
+$${|\text{Number of claims that can be inferred from context}| \over |\text{Total number of claims in the answer}|}$$  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Faithfulness Example}
+  
+\begin{lstlisting}
+Question: Where and when was Einstein born?
+
+Context: Albert Einstein (born 14 March 1879) was a German-born theoretical physicist, widely held to be one of the greatest and most influential scientists of all time
+
+High faithfulness: Einstein was born in Germany on 14th March 1879.
+
+Low faithfulness: Einstein was born in Germany on 20th March 1879.
+\end{lstlisting}  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Answer Relevancy}
+  \begin{itemize}
+    \item \textbf{Definition:} Measures how relevant generated answer is to the question
+    \item \textbf{Inputs:} Computed using question and answer
+    \item \textbf{Score Range:} Values between 0 and 1
+    \item \textbf{Example:} "France is in western Europe" for "Where is France and what is its capital?" scores low
+    \item \textbf{Completeness Check:} Penalizes incomplete or redundant answers
+    \item \textbf{Method:} LLM generates questions from answer, measures cosine similarity
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Context Relevancy Example}
+  
+\begin{lstlisting}
+Question: What is the capital of France?
+
+High context relevancy: France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses, classical art museums including the Louvre and monuments like the Eiffel Tower.
+
+Low context relevancy: France, in Western Europe, encompasses medieval cities, alpine villages and Mediterranean beaches. Paris, its capital, is famed for its fashion houses... The country is also renowned for its wines and sophisticated cuisine. Lascaux's ancient cave drawings, Lyon's Roman theater and the vast Palace of Versailles attest to its rich history.
+\end{lstlisting}  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Faithfulness}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Faithfulness} = \frac{\text{Claims in response that are supported by the retrieved context}}{\text{Total claims made in the response}}
+    \]
+    \item \textbf{Intuition:} Does the model \textit{stick to the retrieved evidence}, or does it add facts of its own (hallucinate)?
+    \newline \textit{Example:} If the response makes 5 claims and 4 are verifiable from the retrieved chunks, Faithfulness $= 0.8$.
+    \item Score Range: $[0, 1]$; higher is better. A score below 0.7 typically signals hallucination.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Answer Relevancy}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Answer Relevancy} = \frac{1}{N}\sum_{i=1}^{N} \cos(\mathbf{q}_{\text{orig}},\, \mathbf{q}_i^{\text{gen}})
+    \]
+    where $\mathbf{q}_i^{\text{gen}}$ are questions regenerated from the model's answer.
+    \item \textbf{Intuition:} An LLM generates $N$ hypothetical questions from the response. If those questions closely resemble the original question (measured by cosine similarity of embeddings), the answer is relevant.
+    \newline \textit{Why reverse?} Because it is easier to check if an answer \textit{implies} the right question than to directly score relevance.
+    \item Score Range: $[0, 1]$; higher is better.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Context Recall}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Context Recall} = \frac{\text{Ground truth sentences that are attributable to the retrieved context}}{\text{Total sentences in the ground truth}}
+    \]
+    \item \textbf{Intuition:} Of all the facts we \textit{know} should be in the answer (ground truth), how many were actually \textit{present in the retrieved chunks}?
+    \newline \textit{Low recall} means the retriever is missing important documents --- the LLM cannot answer correctly because the evidence was never fetched.
+    \item Score Range: $[0, 1]$; higher is better. Requires a labelled ground truth.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Context Precision}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Precision@k} = \frac{\text{Relevant chunks in top-}k\text{ results}}{k}
+      \quad;\quad
+      \text{Context Precision} = \frac{\sum_{k=1}^{K} \text{Precision@k} \cdot \mathbf{1}[\text{chunk}_k \text{ relevant}]}{\text{Total relevant chunks in top-}K}
+    \]
+    \item \textbf{Intuition:} Are the top-ranked retrieved chunks actually useful? If the retriever returns 10 chunks but only 2 are relevant, precision is low. \textit{High precision means less noise is sent to the LLM.}
+    \item \textbf{Precision vs.\ Recall trade-off:} Retrieving more chunks improves recall but hurts precision. Tuning $k$ balances this.
+    \item Score Range: $[0, 1]$; higher is better.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Context Relevancy}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Context Relevancy} = \frac{\text{Sentences in retrieved context relevant to the query}}{\text{Total sentences in the retrieved context}}
+    \]
+    \item \textbf{Intuition:} How much of what was retrieved is actually \textit{useful}? A low score means the retriever is returning noisy, off-topic documents, which can confuse the LLM and cause incorrect answers.
+    \newline \textit{Think of it as:} Signal-to-noise ratio of the retrieved context.
+    \item Score Range: $[0, 1]$; higher is better.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Answer Semantic Similarity}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Answer Semantic Similarity} = \cos(\mathbf{e}_{\text{generated}},\, \mathbf{e}_{\text{ground truth}})
+    \]
+    where $\mathbf{e}$ is the embedding vector of the respective answer.
+    \item \textbf{Intuition:} Does the generated answer \textit{mean} the same thing as the ground truth, even if the wording differs? This is measured in semantic (embedding) space, not exact word matching.
+    \newline \textit{Example:} ``The capital of France is Paris'' and ``Paris is France's capital city'' should score high.
+    \item Score Range: $[0, 1]$; higher is better.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Ragas Metrics: Answer Correctness}
+\begin{itemize}
+    \item \textbf{Formula:}
+    \[
+      \text{Answer Correctness} = w_1 \cdot F_1(\text{facts}) + w_2 \cdot \text{Semantic Similarity}
+    \]
+    where $w_1 + w_2 = 1$ (default $w_1 = w_2 = 0.5$).
+    \item \textbf{Intuition:} Combines two checks --- (1) \textit{factual overlap} (did the model get the facts right?) and (2) \textit{semantic similarity} (is the overall meaning correct?). A high score means both the facts and the meaning match the ground truth.
+    \item \textbf{When to use:} The most comprehensive end-to-end quality measure; use it as the primary metric for production monitoring.
+    \item Score Range: $[0, 1]$; higher is better.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Implementation Example}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Basic Setup}
+
+  \begin{itemize}
+    \item Use langchain\_openai for LLM and embedding models
+    \item Can customize with any other LLM
+    \item Refer to langchain documentation for alternatives
+  \end{itemize}
+
+\begin{lstlisting}[language=Python]
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
+# Initialize LLM and embeddings (pip install langchain-openai ragas)
+llm = ChatOpenAI(model="gpt-4o")
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Load Documents}
+
+\begin{lstlisting}[language=Python,basicstyle=\tiny]
+sample_docs = [
+    "Albert Einstein proposed the theory of relativity...",
+    "Marie Curie was a physicist and chemist...",
+    "Isaac Newton formulated the laws of motion...",
+    "Charles Darwin introduced the theory of evolution...",
+    "Ada Lovelace is regarded as the first computer programmer..."
+]
+
+# Initialize RAG instance
+rag = RAG()
+rag.load_documents(sample_docs)
+
+# Query and retrieve
+query = "Who introduced the theory of relativity?"
+relevant_doc = rag.get_most_relevant_docs(query)
+answer = rag.generate_answer(query, relevant_doc)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Collect Evaluation Data}
+
+\begin{lstlisting}[language=Python,basicstyle=\tiny]
+sample_queries = [
+    "Who introduced the theory of relativity?",
+    "Who was the first computer programmer?",
+    "What did Isaac Newton contribute to science?",
+    ...
+]
+
+dataset = []
+for query, reference in zip(sample_queries, expected_responses):
+    relevant_docs = rag.get_most_relevant_docs(query)
+    response = rag.generate_answer(query, relevant_docs)
+    dataset.append({
+        "user_input": query,
+        "retrieved_contexts": relevant_docs,
+        "response": response,
+        "reference": reference
+    })
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Load Dataset and Evaluate}
+
+\begin{lstlisting}[language=Python]
+from ragas import EvaluationDataset, evaluate
+from ragas.llms import LangchainLLMWrapper
+from ragas.metrics import (LLMContextRecall, 
+                           Faithfulness, 
+                           FactualCorrectness)
+
+# Load dataset
+evaluation_dataset = EvaluationDataset.from_list(dataset)
+
+# Setup evaluator
+evaluator_llm = LangchainLLMWrapper(llm)
+
+# Evaluate
+result = evaluate(
+    dataset=evaluation_dataset,
+    metrics=[LLMContextRecall(), Faithfulness(), 
+             FactualCorrectness()],
+    llm=evaluator_llm
+)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Evaluation Results}
+
+  \begin{itemize}
+    \item \textbf{context\_recall (1.0):} Retrieved contexts contain relevant information
+    \item \textbf{faithfulness (0.857):} Most answers factually accurate
+    \item \textbf{factual\_correctness (0.728):} Good but room for improvement
+    \item Can experiment with different numbers of retrieved contexts
+    \item Iterate to reduce noise and improve accuracy
+  \end{itemize}
+  
+\begin{lstlisting}[language=Python]
+result
+# Output:
+{'context_recall': 1.0000, 
+ 'faithfulness': 0.8571, 
+ 'factual_correctness': 0.7280}
+\end{lstlisting}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Summary and Best Practices}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Summary}
+  \begin{itemize}
+    \item Building POC RAG is easy; production-ready performance is hard
+    \item RAG requires validation dataset and evaluation metrics like ML projects
+    \item Multiple components need separate and combined evaluation
+    \item Human-annotated data is hard, time-consuming, and expensive
+    \item RAGAS offers four key metrics: context\_relevancy, context\_recall, faithfulness, answer\_relevancy
+    \item LLM-based reference-free evaluation saves costs
+    \item Set up experimentation pipeline for continuous improvement
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Tuning Strategies}
+  \begin{itemize}
+    \item \textbf{Context Optimization:} Experiment with number of retrieved contexts based on precision scores
+    \item \textbf{Retrieval Quality:} Improve retriever if recall is low
+    \item \textbf{Generation Quality:} Focus on generator if faithfulness is low
+    \item \textbf{Relevancy Improvements:} Adjust prompts if answer relevancy is low
+    \item \textbf{Iterative Approach:} Monitor metrics over time and adjust
+    \item \textbf{A/B Testing:} Compare different configurations systematically
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Key Takeaways}
+  \begin{itemize}
+    \item RAGAS provides component-level evaluation for RAG systems
+    \item Reference-free evaluation reduces annotation costs
+    \item Four core metrics cover retrieval and generation quality
+    \item Practical implementation with Python libraries
+    \item Continuous monitoring and iteration essential for production
+    \item Balance between metrics indicates well-performing system
+    \item Active research field - expect evolving best practices
+  \end{itemize}
+\end{frame}

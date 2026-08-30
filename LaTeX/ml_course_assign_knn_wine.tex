@@ -1,0 +1,101 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large KNN --- Wine Variety Classification}
+
+{\tiny (Ref: UCI Wine Recognition Dataset via scikit-learn)}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Problem Info}
+\begin{itemize}
+\item Dataset: Wine (\texttt{sklearn.datasets.load\_wine}, built-in)
+\item 178 wine samples from three Italian cultivars; 13 chemical features (alcohol, ash, flavanoids, \ldots)
+\item Task: Classify wines into 3 varieties using KNN; compare with Naive Bayes
+\item Explore effect of varying K on accuracy; use cross-validation for robust evaluation
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Import Libraries}
+\begin{lstlisting}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_wine
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Load and Split Data}
+\begin{lstlisting}
+wine = load_wine()
+print("Feature names:", wine.feature_names)
+print("Classes      :", wine.target_names)
+print("Data shape   :", wine.data.shape)  # (178, 13)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    wine.data, wine.target,
+    test_size=0.25, random_state=42, stratify=wine.target)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test  = scaler.transform(X_test)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Accuracy vs K}
+\begin{lstlisting}
+k_values = range(1, 21)
+accuracies = []
+for k in k_values:
+    knn = KNeighborsClassifier(n_neighbors=k)
+    score = cross_val_score(knn, X_train, y_train,
+                            cv=5, scoring='accuracy').mean()
+    accuracies.append(score)
+
+best_k = k_values[np.argmax(accuracies)]
+print(f"Best K = {best_k}, CV Accuracy = {max(accuracies):.4f}")
+
+plt.plot(k_values, accuracies, marker='o')
+plt.xlabel("K"); plt.ylabel("CV Accuracy")
+plt.title("KNN: Accuracy vs K"); plt.grid(True); plt.show()
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{KNN vs Naive Bayes}
+\begin{lstlisting}
+knn = KNeighborsClassifier(n_neighbors=best_k)
+knn.fit(X_train, y_train)
+knn_pred = knn.predict(X_test)
+
+nb = GaussianNB()
+nb.fit(X_train, y_train)
+nb_pred = nb.predict(X_test)
+
+print("=== KNN ===")
+print(classification_report(y_test, knn_pred,
+                             target_names=wine.target_names))
+print("=== Naive Bayes ===")
+print(classification_report(y_test, nb_pred,
+                             target_names=wine.target_names))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Assignment Tasks}
+\begin{itemize}
+\item Run the notebook and report best K and test accuracy for KNN
+\item Compare precision, recall, F1 of KNN vs Naive Bayes for each wine class
+\item Try removing StandardScaler: how does accuracy change and why?
+\item Try distance-weighted KNN (\texttt{weights='distance'}): does it help?
+\item Which classifier would you recommend for this dataset? Justify with evidence
+\end{itemize}
+\end{frame}

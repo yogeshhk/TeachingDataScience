@@ -1,0 +1,59 @@
+{
+  "model": "claude-sonnet-4-6",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write(src/**)",
+      "Write(tests/**)",
+      "Edit(src/**)",
+      "Edit(tests/**)",
+      "Bash(pytest *)",
+      "Bash(python *)",
+      "Bash(ruff *)",
+      "Bash(git status)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(pip install *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Read(.env)",
+      "Read(.env.*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff format \"$CLAUDE_FILE_PATHS\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); [ \"$(echo $INPUT | jq -r '.stop_hook_active')\" = 'true' ] && exit 0; cd \"$CLAUDE_PROJECT_ROOT\" && pytest tests/ -q --tb=short || exit 2"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); CMD=$(echo $INPUT | jq -r '.tool_input.command'); echo \"$CMD\" | grep -qE 'rm -rf|DROP TABLE' && echo 'Blocked: destructive command' >&2 && exit 2 || exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

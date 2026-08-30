@@ -1,0 +1,110 @@
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Prompting 101}
+
+{\small Make everyone effective immediately}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{How LLMs ``Think'', Tokens and Context}
+\begin{itemize}
+\item LLMs process text as \textbf{tokens}, roughly 3/4 of a word on average
+\item The \textbf{context window} is how much text the model can ``see'' at once, 128K to 1M tokens in modern models
+\item Everything you want the model to know \textit{must be in the context}: history, instructions, documents
+\item The model is \textit{stateless} by default, it forgets everything between API calls
+\end{itemize}
+
+\textbf{Practical implication:}
+\begin{itemize}
+\item Put the most important instructions at the \textit{beginning} and \textit{end} of the prompt (recency \& primacy effects)
+\item Don't assume the model knows your codebase, provide relevant snippets
+\item Token costs money: $\approx$ \$0.003 per 1K input tokens (GPT-4o pricing guide)
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Prompt Patterns, Role Prompting}
+\textbf{Pattern:} Assign the model an expert role to activate relevant knowledge and style.
+
+\begin{block}{Basic Prompt}
+\texttt{Explain Kubernetes pod scheduling.}
+\end{block}
+
+\begin{block}{Role Prompt (Better)}
+\texttt{You are a senior Site Reliability Engineer with 10 years of Kubernetes experience, mentoring a junior developer. Explain pod scheduling concisely, using an analogy.}
+\end{block}
+
+\textbf{Why it works:} The role activates specific patterns from training, an expert's vocabulary, precision, and communication style.\\
+\textbf{Use in SDLC:} ``You are a security code reviewer following OWASP Top 10...''
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Prompt Patterns, Few-Shot Prompting}
+\textbf{Pattern:} Provide 2--3 input/output examples before your actual request.
+
+\begin{block}{Few-Shot for Commit Message Generation}
+\texttt{Input: Added null check in user auth handler}\\
+\texttt{Output: fix(auth): add null guard for missing user token}\\[0.4em]
+\texttt{Input: Updated Dockerfile to use slim base image}\\
+\texttt{Output: chore(docker): switch to python:3.11-slim base image}\\[0.4em]
+\texttt{Input: Fixed off-by-one in pagination logic}\\
+\texttt{Output:}
+\end{block}
+
+\textbf{Why it works:} Examples define the output format, style, and level of detail, far more precisely than any instruction.\\
+\textbf{Use in SDLC:} Few-shot for test case format, release note style, JIRA ticket format.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Prompt Patterns, Chain-of-Thought}
+\textbf{Pattern:} Ask the model to \textit{reason step-by-step} before giving the final answer.
+
+\begin{block}{Without CoT (bad for reasoning)}
+\texttt{Is this SQL query safe from injection? [query]. Answer yes or no.}
+\end{block}
+
+\begin{block}{With Chain-of-Thought (better)}
+\texttt{Review this SQL query for injection vulnerabilities. First, identify all user-controlled inputs. Second, check if they are parameterized. Third, check for dynamic string concatenation. Finally, give your verdict with justification.}
+\end{block}
+
+\textbf{Why it works:} Forces the model to generate intermediate reasoning, reducing errors on complex multi-step tasks. Think of it as asking someone to ``show their work.''
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Prompt Patterns, Structured Output}
+\textbf{Pattern:} Ask for output in a specific structured format (JSON, YAML, Markdown table).
+
+\begin{block}{Structured Output Prompt}
+\texttt{Analyze this stack trace and return ONLY valid JSON:}\\
+\texttt{\{"root\_cause": "...", "affected\_service": "...",}\\
+\texttt{"suggested\_fix": "...", "severity": "P1|P2|P3"\}}
+\end{block}
+
+\textbf{Why it works for engineering:}
+\begin{itemize}
+\item Downstream code can parse and act on structured output programmatically
+\item Reduces hallucinated free-text, enforces schema
+\end{itemize}
+
+\textbf{Advanced:} Use \textit{function calling / tool use} API feature to guarantee valid JSON schema from the model.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Prompting for Engineering Tasks, Examples}
+\begin{itemize}
+\item \textbf{Debugging:}
+  \texttt{``Here is a Python function and the failing test output. Identify the bug and provide a fix with explanation.''[code][output]}
+\item \textbf{Refactoring:}
+  \texttt{``Refactor the following function to reduce cyclomatic complexity, improve readability, and add docstrings. Preserve behavior exactly.''[code]}
+\item \textbf{Writing Specs:}
+  \texttt{``Given this user story, write a detailed technical specification including: API contract, data model changes, edge cases, and non-functional requirements.''}
+\item \textbf{RCA Analysis:}
+  \texttt{``Here are logs from the last 30 minutes before the outage. Use the 5-Whys framework to identify root cause and immediate mitigation.''[logs]}
+\item \textbf{Support Investigation:}
+  \texttt{``Customer reports X. Here are the relevant service logs. Identify the user-facing issue, technical cause, and ETA for fix.''[logs]}
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

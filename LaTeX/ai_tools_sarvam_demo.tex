@@ -1,0 +1,791 @@
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Sarvam AI: End-to-End Workshop Demo Script
+% Building a Multilingual Indian Language Application
+% A 40-minute hands-on session using Sarvam AI APIs
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% WORKSHOP OVERVIEW
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Workshop Overview}
+\textbf{What we will build:} A multilingual pipeline that accepts an audio recording in any Indian language, transcribes it, translates it to English, generates an AI response using the Sarvam LLM, translates the response back to the user's language, and speaks it aloud.
+
+\textbf{What we will learn:}
+  \begin{itemize}
+    \item Speech-to-Text with \textbf{Saaras v3} (5 output modes, 23 languages)
+    \item Text-to-Speech with \textbf{Bulbul v3} (30+ voices)
+    \item \textbf{Translation} (Mayura / Sarvam-Translate) and \textbf{Transliteration}
+    \item \textbf{Language Identification} and \textbf{Chat Completion}
+    \item \textbf{Document Intelligence} (free OCR)
+    \item \textbf{Batch processing} for call analytics
+    \item A real \textbf{voice agent} using LiveKit
+  \end{itemize}
+\textbf{Duration:} 40 minutes. \textbf{Cost:} Covered by Rs. 1,000 free signup credits.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Workshop Demo Stages}
+\begin{center}
+\begin{tabular}{|p{0.5cm}|p{2.8cm}|p{2.8cm}|}
+\hline
+\textbf{\#} & \textbf{Activity} & \textbf{API / Feature} \\
+\hline
+1 & Setup \& first call & SDK install, Auth, Translate \\
+2 & Speech to Text & Saaras v3, 5 modes \\
+3 & Text to Speech & Bulbul v3, voices \\
+4 & Full STT $\to$ LLM $\to$ TTS pipeline & Saaras + Sarvam-M + Bulbul \\
+5 & Translation modes \& register & Mayura, Sarvam-Translate \\
+6 & Transliteration & Script conversion \\
+7 & Language Identification & Detect language/script \\
+8 & Document Intelligence & Free OCR (PDF) \\
+9 & Batch call analytics & Batch STT + diarization + LLM \\
+10 & Voice agent (LiveKit) & Real-time voice bot \\
+\hline
+\end{tabular}
+\end{center}
+{\small Each stage is a self-contained code block. Run them in order or jump to any stage.}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 0: SETUP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Environment Setup}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Pre-requisites Checklist}
+Before starting, verify:
+  \begin{itemize}
+    \item Python $\geq$ 3.9 installed: \lstinline|python --version|
+    \item A Sarvam AI account and API key: \href{https://dashboard.sarvam.ai}{\texttt{dashboard.sarvam.ai}}
+    \item Free credits received on signup (\textbf{Rs. 1,000})
+    \item (For voice agent demo) A LiveKit Cloud free account: \href{https://cloud.livekit.io}{\texttt{cloud.livekit.io}}
+    \item A sample audio file in any Indian language (WAV/MP3, under 30s for REST API)
+    \item A sample PDF with Indian language text (for OCR demo)
+  \end{itemize}
+
+\textbf{Set environment variable:}
+\begin{lstlisting}
+export SARVAM_API_KEY="your_api_key_here"
+
+# Windows PowerShell:
+$env:SARVAM_API_KEY = "your_api_key_here"
+\end{lstlisting}
+
+\textbf{Install dependencies:}
+\begin{lstlisting}
+pip install -U sarvamai python-dotenv pydub
+# For voice agent demo:
+pip install "livekit-agents[sarvam,openai,silero]"
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{First API Call: Translation}
+Verify your setup with a simple translation call:
+
+\textbf{Check current credit balance:} Visit \href{https://dashboard.sarvam.ai/billing}{\texttt{dashboard.sarvam.ai/billing}}\\
+\textbf{API Status:} \href{https://status.sarvam.ai}{\texttt{status.sarvam.ai}}
+\begin{lstlisting}
+import os
+from sarvamai import SarvamAI
+
+client = SarvamAI(
+    api_subscription_key=os.environ["SARVAM_API_KEY"]
+)
+
+# Translate English to Hindi
+response = client.text.translate(
+    input="Welcome to the Sarvam AI workshop!",
+    source_language_code="en-IN",
+    target_language_code="hi-IN",
+    speaker_gender="Female"
+)
+print(response)
+# Expected: सर्वम एआई वर्कशॉप में आपका स्वागत है!
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 1: SPEECH TO TEXT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 2: Speech to Text}
+
+{\normalsize Saaras v3 --- 23 languages, 5 output modes}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Saaras v3: Basic Transcription}
+\textbf{Supported formats:} \texttt{wav, mp3, aac, ogg, flac, mp4/m4a, amr}\\
+\textbf{Max REST duration:} 30 seconds per request.
+\begin{lstlisting}
+from sarvamai import SarvamAI
+
+client = SarvamAI(api_subscription_key="YOUR_KEY")
+
+# Mode 1: transcribe (default) - returns text in spoken language
+with open("hindi_audio.wav", "rb") as audio_file:
+    response = client.speech_to_text.transcribe(
+        file=audio_file,
+        model="saaras:v3",
+        mode="transcribe",
+        language_code="hi-IN"   # or omit for auto-detect
+    )
+print("Transcript:", response.transcript)
+
+# Mode 2: translate - transcribe AND translate to English
+with open("hindi_audio.wav", "rb") as audio_file:
+    response = client.speech_to_text.transcribe(
+        file=audio_file,
+        model="saaras:v3",
+        mode="translate"    # returns English text
+    )
+print("English:", response.transcript)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Saaras v3: All 5 Output Modes}
+\textbf{When to use each mode:}
+\begin{center}
+\begin{tabular}{ll}
+\texttt{transcribe} & Call centre transcripts \\
+\texttt{translate} & Multilingual dashboards needing English output \\
+\texttt{verbatim} & Legal / medical records (no normalisation) \\
+\texttt{translit} & SMS, Roman-script input systems \\
+\texttt{codemix} & Social media, youth audience apps \\
+\end{tabular}
+\end{center}
+\begin{lstlisting}
+modes = ["transcribe", "translate", "verbatim",
+         "translit", "codemix"]
+
+for mode in modes:
+    with open("hindi_audio.wav", "rb") as audio_file:
+        response = client.speech_to_text.transcribe(
+            file=audio_file,
+            model="saaras:v3",
+            mode=mode
+        )
+    print(f"[{mode}] {response.transcript}")
+
+# Expected output for "Main office ja raha hoon":
+# [transcribe] मैं ऑफिस जा रहा हूँ
+# [translate]  I am going to the office
+# [verbatim]   मैं ऑफिस जा रहा हूँ (word-for-word)
+# [translit]   Main office ja raha hoon
+# [codemix]    Main office जा रहा हूँ
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Real-Time STT via WebSocket}
+For live voice applications (voice bots, live captioning), use the WebSocket API:
+
+\textbf{WebSocket constraint:} Only \texttt{wav} and raw PCM formats (\texttt{pcm\_s16le, pcm\_l16, pcm\_raw}) supported for streaming. Sample rate: 16kHz.
+\begin{lstlisting}
+import asyncio
+from sarvamai import AsyncSarvamAI
+
+async def stream_transcription():
+    client = AsyncSarvamAI(api_subscription_key="YOUR_KEY")
+
+    async with client.speech_to_text.stream(
+        model="saaras:v3",
+        mode="transcribe",
+        language_code="hi-IN"
+    ) as stream:
+        # Push audio chunks (16kHz, PCM 16-bit WAV)
+        with open("live_audio.wav", "rb") as f:
+            while chunk := f.read(4096):
+                await stream.send_audio(chunk)
+
+        await stream.end_stream()
+
+        # Receive transcripts as they arrive
+        async for event in stream:
+            print(event.transcript)
+
+asyncio.run(stream_transcription())
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 2: TEXT TO SPEECH
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 3: Text to Speech}
+
+{\normalsize Bulbul v3 --- 30+ voices, 11 languages}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Bulbul v3: Generate Speech}
+\begin{lstlisting}
+from sarvamai import SarvamAI
+
+client = SarvamAI(api_subscription_key="YOUR_KEY")
+
+# Generate Hindi speech with a professional male voice
+response = client.text_to_speech.convert(
+    target_language_code="hi-IN",
+    text="नमस्ते! आपका EMI भुगतान 15 जनवरी को देय है।",
+    model="bulbul:v3",
+    speaker="anand",         # professional Hindi male
+    speech_sample_rate=16000, # 8000 / 16000 / 24000
+    enable_preprocessing=True # handle abbreviations, numbers
+)
+
+# Save to WAV file
+with open("output_hindi.wav", "wb") as f:
+    f.write(bytes(response.audios[0]))
+print("Audio saved to output_hindi.wav")
+\end{lstlisting}
+
+\textbf{Try different speakers for the same text:}
+\begin{lstlisting}
+for speaker in ["anand", "rahul", "priya", "simran"]:
+    resp = client.text_to_speech.convert(
+        target_language_code="hi-IN",
+        text="नमस्ते, मैं आपकी कैसे मदद कर सकता हूँ?",
+        model="bulbul:v3", speaker=speaker)
+    with open(f"voice_{speaker}.wav", "wb") as f:
+        f.write(bytes(resp.audios[0]))
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 3: END-TO-END PIPELINE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 4: Full Pipeline}
+
+{\normalsize STT $\to$ LLM $\to$ TTS in any Indian language}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{End-to-End: Voice In, Voice Out}
+\begin{lstlisting}
+from sarvamai import SarvamAI
+import os
+
+client = SarvamAI(api_subscription_key=os.environ["SARVAM_API_KEY"])
+
+# Step 1: Transcribe user's speech (any Indian language)
+with open("user_query.wav", "rb") as f:
+    stt = client.speech_to_text.transcribe(
+        file=f, model="saaras:v3", mode="transcribe"
+    )
+user_text = stt.transcript
+detected_lang = stt.language_code   # auto-detected language
+print(f"[STT] ({detected_lang}): {user_text}")
+
+# Step 2: Get LLM response (sarvam-m is FREE)
+llm_resp = client.chat.completions(
+    messages=[
+        {"role": "system", "content":
+         f"You are a helpful assistant. Reply in {detected_lang}."},
+        {"role": "user", "content": user_text}
+    ],
+    model="sarvam-m"  # free model
+)
+reply_text = llm_resp.choices[0].message.content
+print(f"[LLM]: {reply_text}")
+
+# Step 3: Speak the response in the user's language
+tts = client.text_to_speech.convert(
+    target_language_code=detected_lang,
+    text=reply_text, model="bulbul:v3", speaker="priya"
+)
+with open("agent_response.wav", "wb") as f:
+    f.write(bytes(tts.audios[0]))
+print("Response audio saved!")
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 4: TRANSLATION AND TRANSLITERATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 5 \& 6: Translation and Transliteration}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Translation: Register Modes}
+\begin{lstlisting}
+text = "Your account has been blocked due to non-payment."
+
+for mode in ["formal", "colloquial", "modern-colloquial"]:
+    resp = client.text.translate(
+        input=text,
+        source_language_code="en-IN",
+        target_language_code="hi-IN",
+        mode=mode
+    )
+    print(f"[{mode}]: {resp.translated_text}")
+
+# formal:            "भुगतान न होने के कारण आपका खाता बंद कर दिया गया है।"
+# modern-colloquial: "Non-payment की वजह से आपका account block हो गया है।"
+# colloquial:        "पैसे नहीं भरे तो account band हो गया।"
+\end{lstlisting}
+
+\textbf{Bulk translation with Sarvam-Translate (all 23 languages):}
+\begin{lstlisting}
+# For languages beyond the 11 supported by Mayura,
+# use the sarvam-translate endpoint:
+response = client.text.translate(
+    input="मेरा नाम विनायक है।",
+    source_language_code="hi-IN",
+    target_language_code="sat-IN",  # Santali
+    model="sarvam-translate:v1"
+)
+print(response.translated_text)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Transliteration and Language Identification}
+\textbf{Transliteration} --- convert script, preserve pronunciation:
+\begin{lstlisting}
+# Devanagari -> Roman (romanisation)
+response = client.text.transliterate(
+    input="नमस्ते, मेरा नाम विनायक है।",
+    source_language_code="hi-IN",
+    target_language_code="en-IN",
+    spoken_form=True,
+    numerals_format="international"
+)
+print(response.transliterated_text)
+# Output: "namaste, mera naam vinayak hai."
+
+# Roman -> Devanagari (for users typing in Roman)
+response = client.text.transliterate(
+    input="Main office ja raha hoon",
+    source_language_code="en-IN",
+    target_language_code="hi-IN"
+)
+print(response.transliterated_text)
+# Output: "मैं ऑफिस जा रहा हूँ"
+\end{lstlisting}
+
+\textbf{Language Identification:}
+\begin{lstlisting}
+resp = client.text.identify_language(
+    input="नमस्कार, तुम्ही कसे आहात?"
+)
+print(resp.language_code)  # "mr-IN"  (Marathi)
+print(resp.script_code)    # "Deva"
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 5: DOCUMENT INTELLIGENCE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 8: Document Intelligence}
+
+{\normalsize Free OCR for Indian language PDFs}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document OCR: Extract Text from Indian PDFs}
+\textbf{Currently free} for all plans (max 10 pages per request):
+
+\textbf{Use this for:}
+  \begin{itemize}
+    \item Government forms and certificates in Hindi/Gujarati/Marathi
+    \item Bank statements, invoices in regional scripts
+    \item Land records, academic mark sheets
+    \item Rate limit: 10 req/min uniform across all plans
+  \end{itemize}
+\begin{lstlisting}
+import base64, httpx, os
+
+SARVAM_KEY = os.environ["SARVAM_API_KEY"]
+
+# Read and encode the PDF
+with open("hindi_document.pdf", "rb") as f:
+    pdf_b64 = base64.b64encode(f.read()).decode()
+
+response = httpx.post(
+    "https://api.sarvam.ai/v1/parse",
+    headers={"api-subscription-key": SARVAM_KEY},
+    json={"file": pdf_b64, "file_type": "pdf"}
+)
+
+data = response.json()
+print("Extracted text:\n", data["text"])
+# Structured page-by-page output:
+for i, page in enumerate(data.get("pages", []), 1):
+    print(f"\n--- Page {i} ---")
+    print(page["text"])
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Document OCR $\to$ Translate $\to$ TTS Pipeline}
+Combine Document Intelligence with Translation and TTS:
+\begin{lstlisting}
+import base64, httpx, os
+from sarvamai import SarvamAI
+
+client = SarvamAI(api_subscription_key=os.environ["SARVAM_API_KEY"])
+
+# Step 1: OCR the PDF
+with open("gujarati_document.pdf", "rb") as f:
+    pdf_b64 = base64.b64encode(f.read()).decode()
+
+ocr = httpx.post(
+    "https://api.sarvam.ai/v1/parse",
+    headers={"api-subscription-key": os.environ["SARVAM_API_KEY"]},
+    json={"file": pdf_b64, "file_type": "pdf"}
+).json()
+
+extracted_text = ocr["text"][:2000]  # first 2000 chars
+print("Extracted:", extracted_text[:200], "...")
+
+# Step 2: Translate to English
+translation = client.text.translate(
+    input=extracted_text,
+    source_language_code="gu-IN",
+    target_language_code="en-IN"
+)
+print("English:", translation.translated_text[:200])
+
+# Step 3: Read it aloud in Gujarati
+tts = client.text_to_speech.convert(
+    target_language_code="gu-IN",
+    text=extracted_text[:500],
+    model="bulbul:v3", speaker="priya"
+)
+with open("document_audio.wav", "wb") as f:
+    f.write(bytes(tts.audios[0]))
+print("Document audio saved.")
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 6: BATCH CALL ANALYTICS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 9: Batch Call Analytics}
+
+{\normalsize Transcribe, diarise, and analyse support calls}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Batch STT with Diarization}
+\begin{lstlisting}
+from sarvamai import SarvamAI
+from pathlib import Path
+
+client = SarvamAI(api_subscription_key="YOUR_KEY")
+
+# Create batch job: up to 20 files, up to 1 hour each
+job = client.speech_to_text_translate_job.create_job(
+    model="saaras:v3",
+    mode="translate",       # translate to English
+    with_diarization=True,  # speaker labels
+)
+
+# Upload audio files (call recordings)
+job.upload_files(
+    file_paths=["call1.mp3", "call2.mp3"],
+    timeout=300  # increase for large files
+)
+job.start()
+print("Job started:", job.job_id)
+
+job.wait_until_complete()
+
+if job.is_failed():
+    print("Job failed!")
+else:
+    # Download JSON transcription outputs
+    output_dir = Path("transcriptions")
+    output_dir.mkdir(exist_ok=True)
+    job.download_outputs(output_dir=str(output_dir))
+    print("Transcriptions saved to:", output_dir)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parse Diarized Output and Analyse with LLM}
+\textbf{Use cases:} BPO quality monitoring, banking call compliance, e-commerce support analytics.
+\begin{lstlisting}
+import json
+from pathlib import Path
+from sarvamai import SarvamAI
+
+client = SarvamAI(api_subscription_key="YOUR_KEY")
+
+# Parse the diarized JSON output
+for json_file in Path("transcriptions").glob("*.json"):
+    with open(json_file) as f:
+        data = json.load(f)
+
+    entries = data.get("diarized_transcript", {}).get("entries", [])
+    conversation = "\n".join(
+        f"{e['speaker_id']}: {e['transcript']}"
+        for e in entries
+    )
+    print(conversation[:300])
+
+    # Send to LLM for structured analysis (sarvam-m is free)
+    resp = client.chat.completions(
+        messages=[
+            {"role": "system", "content":
+             "You are a call analytics expert."},
+            {"role": "user", "content":
+             f"Analyse this call:\n{conversation}\n\n"
+             "Identify: 1) Which speaker is agent vs customer? "
+             "2) Was the issue resolved? 3) Customer sentiment?"}
+        ],
+        model="sarvam-m"  # free!
+    )
+    print("\nAnalysis:", resp.choices[0].message.content)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% STAGE 7: VOICE AGENT WITH LIVEKIT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Stage 10: Real-Time Voice Agent}
+
+{\normalsize LiveKit + Sarvam AI}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Build a Multilingual Voice Agent with LiveKit}
+\textbf{Install:} \lstinline|pip install "livekit-agents[sarvam,openai,silero]" python-dotenv|
+
+\textbf{Create \texttt{.env} file:}
+\begin{lstlisting}
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=APIxxxxxxxx
+LIVEKIT_API_SECRET=xxxxxxxxxxxx
+SARVAM_API_KEY=sk_xxxxxxxx
+OPENAI_API_KEY=sk-proj-xxxxxxxx  # for GPT-4o LLM
+\end{lstlisting}
+
+\textbf{Create \texttt{tutor\_agent.py}:}
+\begin{lstlisting}
+from dotenv import load_dotenv
+from livekit.agents import JobContext, WorkerOptions, cli
+from livekit.agents.voice import Agent, AgentSession
+from livekit.plugins import openai, sarvam
+
+load_dotenv()
+
+class TutorAgent(Agent):
+    def __init__(self):
+        super().__init__(
+            instructions="""You are a friendly tutor.
+            Explain concepts clearly in the student's language.
+            Support Hindi, Gujarati, Telugu, Bengali, Marathi.""",
+            stt=sarvam.STT(
+                language="unknown",    # auto-detect
+                model="saaras:v3",
+                mode="transcribe"
+            ),
+            llm=openai.LLM(model="gpt-4o"),
+            tts=sarvam.TTS(
+                target_language_code="hi-IN",
+                model="bulbul:v3",
+                speaker="anand"
+            ),
+        )
+    async def on_enter(self):
+        self.session.generate_reply()
+
+async def entrypoint(ctx: JobContext):
+    session = AgentSession()
+    await session.start(agent=TutorAgent(), room=ctx.room)
+
+if __name__ == "__main__":
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Run and Test the Voice Agent}
+\textbf{Other pre-built voice agent examples in the Sarvam Cookbook:}
+\begin{center}
+\begin{tabular}{|p{3cm}|p{3cm}|}
+\hline
+\textbf{Agent} & \textbf{Use Case} \\
+\hline
+Collection Agent & EMI payment reminders in 11 languages \\
+Government Scheme Agent & Explain PM schemes to rural users \\
+Tutor Agent & Multilingual educational assistant \\
+Loan Advisory Agent & Vernacular loan guidance chatbot \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Docs:} \href{https://docs.sarvam.ai/api-reference-docs/cookbook/example-voice-agents/collection-agent}{\small\texttt{docs.sarvam.ai/api-reference-docs/cookbook/example-voice-agents}}
+\begin{lstlisting}
+# Terminal 1: Start the agent worker
+python tutor_agent.py dev
+
+# Terminal 2: Test in console mode (type instead of speak)
+python tutor_agent.py console
+
+# Try multilingual inputs:
+# > "गणित में भिन्न क्या होता है?"      (Hindi)
+# > "भाग म्हणजे काय??"           (Marathi)
+# > "What is Pythagoras theorem?"     (English)
+\end{lstlisting}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SUMMARY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Workshop Summary}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What We Built}
+\textbf{In 40 minutes, using primarily free tier:}
+  \begin{itemize}
+    \item \texttt{translate\_demo.py}: English $\leftrightarrow$ 11 Indian languages with register control
+    \item \texttt{stt\_modes\_demo.py}: Audio transcription in 5 modes (transcribe/translate/verbatim/translit/codemix)
+    \item \texttt{tts\_voices\_demo.py}: Speech synthesis with 30+ voices in 11 languages
+    \item \texttt{pipeline.py}: Full voice pipeline --- speak in Hindi, get reply in Hindi
+    \item \texttt{transliterate\_demo.py}: Roman $\leftrightarrow$ Devanagari/Gujarati/Telugu etc.
+    \item \texttt{ocr\_pipeline.py}: Extract text from Indian language PDF $\to$ translate $\to$ speak
+    \item \texttt{call\_analytics.py}: Batch transcription, diarization, LLM analysis of calls
+    \item \texttt{tutor\_agent.py}: Live multilingual voice agent via LiveKit
+  \end{itemize}
+
+\textbf{What is \textit{completely free} to run:}
+  \begin{itemize}
+    \item \textbf{Sarvam-M chat completion} --- no cost, no usage limit beyond rate limits
+    \item \textbf{Document Intelligence OCR} --- currently free for all plans
+    \item Everything else runs on Rs. 1,000 free signup credits
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Sarvam AI API Cheat Sheet}
+\begin{center}
+\begin{tabular}{|p{2cm}|p{3.2cm}|p{2cm}|}
+\hline
+\textbf{Task} & \textbf{SDK Call} & \textbf{Notes} \\
+\hline
+STT transcribe & \texttt{speech\_to\_text.transcribe()} & mode=transcribe \\
+STT translate & \texttt{speech\_to\_text.transcribe()} & mode=translate \\
+STT codemix & \texttt{speech\_to\_text.transcribe()} & mode=codemix \\
+STT streaming & \texttt{speech\_to\_text.stream()} & WebSocket, WAV only \\
+Batch STT & \texttt{speech\_to\_text\_translate\_job} & Up to 1hr/file \\
+TTS generate & \texttt{text\_to\_speech.convert()} & 30+ voices \\
+TTS stream & \texttt{text\_to\_speech.stream()} & WebSocket \\
+Translate & \texttt{text.translate()} & 11-23 langs \\
+Transliterate & \texttt{text.transliterate()} & Script only \\
+Detect language & \texttt{text.identify\_language()} & lang + script \\
+Chat completion & \texttt{chat.completions()} & sarvam-m = free \\
+Document OCR & \texttt{POST /v1/parse} & currently free \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Auth header:} \texttt{api-subscription-key: YOUR\_KEY}\\
+\textbf{Base URL:} \texttt{https://api.sarvam.ai/v1/}\\
+\textbf{SDK:} \lstinline|pip install sarvamai|
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Key Limits and Tips}
+\textbf{Rate Limits (Starter / free plan):}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{API} & \textbf{Provisioned (Starter)} \\
+\hline
+STT REST & 60 req/min \\
+STT WebSocket & 20 concurrent \\
+Batch STT & 20 req/min \\
+TTS REST & 60 req/min (Bulbul v3: 30) \\
+Translation & 60 req/min \\
+Chat (sarvam-m) & 60 req/min \\
+Chat (30B/105B) & 40 req/min \\
+Document OCR & 10 req/min (all plans) \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Key tips:}
+  \begin{itemize}
+    \item STT REST max: \textbf{30 seconds} per request. Use Batch API for longer audio.
+    \item Transliteration API max: \textbf{1000 characters} per request. Split long texts.
+    \item Transliteration between two Indic scripts (e.g., Hindi $\to$ Bengali) is \textbf{not} supported.
+    \item WebSocket streaming STT only accepts \textbf{WAV/PCM} at \textbf{16kHz}.
+    \item For Batch API status polling, add a \textbf{5ms minimum delay} between polls.
+    \item Use \texttt{language\_code="unknown"} to auto-detect language in STT.
+    \item Document OCR: max \textbf{10 pages per request}.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Exercises for Self-Study}
+  \begin{itemize}
+    \item \textbf{Exercise 1:} Build a Python script that accepts a WAV file from the command line, auto-detects the language, transcribes it, and saves both the transcript and a translation to English.
+    \item \textbf{Exercise 2:} Create a multilingual FAQ bot: user asks a question in any Indian language (via text input), translate to English, answer with Sarvam-M LLM (free), translate answer back, and speak it with Bulbul v3.
+    \item \textbf{Exercise 3:} Process a Kannada PDF (e.g., a government circular). Extract text, translate each paragraph to English, and save both versions side by side.
+    \item \textbf{Exercise 4:} Build a simple call quality tool: upload 3 sample MP3 recordings, run Batch STT with diarization, and print a summary table (speaker talk-time, sentiment, issue type) using the free Sarvam-M LLM.
+    \item \textbf{Exercise 5:} Extend the LiveKit voice agent to a \textit{Government Scheme Agent} that explains one state govt. scheme in the language the user speaks.
+    \item \textbf{Exercise 6:} Experiment with \texttt{numerals\_format} and \texttt{spoken\_form} in transliteration. Generate TTS for ``Your account balance is Rs. 5,32,450'' in three different languages and compare.
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Resources}
+  \begin{itemize}
+    \item \textbf{Dashboard:} \href{https://dashboard.sarvam.ai}{\texttt{dashboard.sarvam.ai}} --- API keys, credits, usage analytics
+    \item \textbf{Docs:} \href{https://docs.sarvam.ai}{\texttt{docs.sarvam.ai}}
+    \item \textbf{API Reference:} \href{https://docs.sarvam.ai/api-reference-docs/introduction}{\texttt{docs.sarvam.ai/api-reference-docs/introduction}}
+    \item \textbf{Models:} \href{https://docs.sarvam.ai/api-reference-docs/getting-started/models}{\texttt{docs.sarvam.ai/.../models}}
+    \item \textbf{Pricing:} \href{https://docs.sarvam.ai/api-reference-docs/pricing}{\texttt{docs.sarvam.ai/.../pricing}}
+    \item \textbf{GitHub Cookbook:} \href{https://github.com/sarvamai/sarvam-ai-cookbook}{\texttt{github.com/sarvamai/sarvam-ai-cookbook}}
+    \item \textbf{Discord:} \href{https://discord.com/invite/5rAsykttcs}{\texttt{discord.gg/5rAsykttcs}} --- community support
+    \item \textbf{API Status:} \href{https://status.sarvam.ai}{\texttt{status.sarvam.ai}}
+    % \item \textbf{LiveKit Sarvam STT Plugin:} \href{https://docs.livekit.io/agents/models/stt/ plugins/sarvam/}{\texttt{docs.livekit.io/agents/models/stt/plugins/sarvam}}
+    \item \textbf{Pipecat Sarvam STT:} \href{https://docs.pipecat.ai/server/services/stt/sarvam}{\texttt{docs.pipecat.ai/server/services/stt/sarvam}}
+    \item \textbf{Contact:} \href{mailto:developer@sarvam.ai}{\texttt{developer@sarvam.ai}}
+  \end{itemize}
+\begin{center}
+\textit{Workshop complete. Build for a billion.}\\[0.5em]
+\textbf{Happy coding!}
+\end{center}
+\end{frame}

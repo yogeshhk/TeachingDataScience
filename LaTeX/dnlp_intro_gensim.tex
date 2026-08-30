@@ -1,0 +1,337 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
+{\Large Introduction to Gensim}
+
+{\tiny (Ref: https://radimrehurek.com/gensim/)}
+
+\end{center}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Gensim}
+
+\begin{itemize}
+\item Gensim is an open source Python library for natural language processing, with a focus on topic modeling.
+\item Developed and is maintained by the Czech natural language processing researcher Radim Rehurek and his company RaRe Technologies.
+\item Called as a Natural Language Processing package that does ‘Topic Modeling for Humans’. 
+\item It supports an implementation of the Word2Vec word embedding for learning new word vectors from text.
+
+\item It also provides tools for loading pre-trained word embeddings in a few formats and for making use and querying a loaded embedding.
+
+\item Installation: \lstinline|pip install --upgrade gensim| or \lstinline|conda install -c conda-forge gensim|
+\end{itemize}
+
+\tiny{Note:  Topic modeling is a technique to extract the underlying topics from large volumes of text. Gensim provides algorithms like LDA.}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Introduction}
+
+Workflows:
+\begin{itemize}
+\item Create and work with dictionary and corpus
+\item Load and work with text data from multiple text files in memory efficient way
+\item Create topic models with LDA and interpret the outputs
+\item Create TFIDF model, bigrams, trigrams, Word2Vec model, Doc2Vec model
+\item Compute similarity metrics
+\end{itemize}
+
+\tiny{(Ref: Gensim Tutorial – A Complete Beginners Guide - Machine Learning Plus)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+
+\begin{center}
+{\Large Sample Worflows}
+
+{\tiny (Ref: https://radimrehurek.com/gensim/)}
+
+\end{center}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Dictionary and Corpus}
+
+\begin{itemize}
+\item Gensim requires the words (aka tokens) be converted to unique ids
+\item Gensim lets you create a Dictionary by converting your text/sentences to a [list of words] and pass it to the corpora.Dictionary() object.
+\item The dictionary object is typically used to create a ‘bag of words’ Corpus. It is this Dictionary and the bag-of-words (Corpus) that are used as inputs to topic modeling and other models that Gensim specializes in.
+\end{itemize}
+
+\tiny{(Ref: Gensim Tutorial – A Complete Beginners Guide - Machine Learning Plus)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Dictionary and Corpus}
+
+\begin{lstlisting}
+import gensim
+from gensim import corpora
+from pprint import pprint
+documents = ["The Saudis are preparing a report that will acknowledge that", 
+             "Saudi journalist Jamal Khashoggi's death was the result of an", 
+             "interrogation that went wrong, one that was intended to lead", 
+             "to his abduction from Turkey, according to two sources."]
+
+documents_2 = ["One source says the report will likely conclude that", 
+                "the operation was carried out without clearance and", 
+                "transparency and that those involved will be held", 
+                "responsible. One of the sources acknowledged that the", 
+                "report is still being prepared and cautioned that", 
+                "things could change."]
+texts = [[text for text in doc.split()] for doc in documents]
+dictionary = corpora.Dictionary(texts)
+print(dictionary)
+#> Dictionary(33 unique tokens: ['Saudis', 'The', 'a', 'acknowledge', 'are']...)
+\end{lstlisting}
+
+The dictionary has 34 unique tokens (or words)
+
+\tiny{(Ref: Gensim Tutorial – A Complete Beginners Guide - Machine Learning Plus)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Dictionary and Corpus}
+
+Let’s see the unique ids for each of these tokens.
+
+\begin{lstlisting}
+print(dictionary.token2id)
+#> {'Saudis': 0, 'The': 1, 'a': 2, 'acknowledge': 3, 'are': 4, 
+#> 'preparing': 5, 'report': 6, 'that': 7, 'will': 8, 'Jamal': 9, 
+#> "Khashoggi's": 10, 'Saudi': 11, 'an': 12, 'death': 13, 
+#> 'journalist': 14, 'of': 15, 'result': 16, 'the': 17, 'was': 18, 
+#> 'intended': 19, 'interrogation': 20, 'lead': 21, 'one': 22, 
+#> 'to': 23, 'went': 24, 'wrong,': 25, 'Turkey,': 26, 'abduction': 27, 
+#> 'according': 28, 'from': 29, 'his': 30, 'sources.': 31, 'two': 32}
+\end{lstlisting}
+
+Gensim will use this dictionary to create a bag-of-words corpus where the words in the documents are replaced with its respective id provided by this dictionary.
+
+
+\tiny{(Ref: Gensim Tutorial – A Complete Beginners Guide - Machine Learning Plus)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Dictionary and Corpus}
+
+If you get new documents in the future, it is also possible to update an existing dictionary to include the new words.
+
+\begin{lstlisting}
+documents_2 = ["The intersection graph of paths in trees",
+               "Graph minors IV Widths of trees and well quasi ordering",
+               "Graph minors A survey"]
+
+texts_2 = [[text for text in doc.split()] for doc in documents_2]
+dictionary.add_documents(texts_2)
+print(dictionary)
+#> Dictionary(45 unique tokens: ['Human', 'abc', 'applications', 'computer', 'for']...)
+print(dictionary.token2id)
+#> {'Human': 0, 'abc': 1, 'applications': 2, 'computer': 3, 'for': 4, 'interface': 5, 
+#>  'lab': 6, 'machine': 7, 'A': 8, 'of': 9, 'opinion': 10, 'response': 11, 'survey': 12, 
+#>  'system': 13, 'time': 14, 'user': 15, 'EPS': 16, 'The': 17, 'management': 18, 
+#>  'System': 19, 'and': 20, 'engineering': 21, 'human': 22, 'testing': 23, 'Relation': 24, 
+#>  'error': 25, 'measurement': 26, 'perceived': 27, 'to': 28, 'binary': 29, 'generation': 30, 
+#>  'random': 31, 'trees': 32, 'unordered': 33, 'graph': 34, 'in': 35, 'intersection': 36, 
+#>  'paths': 37, 'Graph': 38, 'IV': 39, 'Widths': 40, 'minors': 41, 'ordering': 42, 
+#>  'quasi': 43, 'well': 44}
+\end{lstlisting}
+
+\tiny{(Ref: Gensim Tutorial – A Complete Beginners Guide - Machine Learning Plus)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Bag of words corpus}
+
+Corpus (a Bag of Words). That is, it is a corpus object that contains the word id and its frequency in each document. You can think of it as gensim’s equivalent of a Document-Term matrix.
+
+\begin{lstlisting}
+my_docs = ["Who let the dogs out?",
+           "Who? Who? Who? Who?"]
+
+# Tokenize the docs
+tokenized_list = [simple_preprocess(doc) for doc in my_docs]
+
+# Create the Corpus
+mydict = corpora.Dictionary()
+mycorpus = [mydict.doc2bow(doc, allow_update=True) for doc in tokenized_list]
+pprint(mycorpus)
+#> [[(0, 1), (1, 1), (2, 1), (3, 1), (4, 1)], [(4, 4)]]
+\end{lstlisting}
+
+How to interpret the above corpus?
+
+The (0, 1) in line 1 means, the word with id=0 appears once in the 1st document.
+Likewise, the (4, 4) in the second list item means the word with id 4 appears 4 times in the second document. And so on.
+
+\tiny{(Ref: Gensim Tutorial – A Complete Beginners Guide - Machine Learning Plus)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Bag of words corpus}
+
+Well, this is not human readable. To convert the id’s to words, you will need the dictionary to do the conversion.
+
+Let’s see how to get the original texts back.
+
+\begin{lstlisting}
+word_counts = [[(mydict[id], count) for id, count in line] for line in mycorpus]
+pprint(word_counts)
+#> [[('dogs', 1), ('let', 1), ('out', 1), ('the', 1), ('who', 1)], [('who', 4)]]
+\end{lstlisting}
+
+Notice, the order of the words gets lost. Just the word and it’s frequency information is retained.
+
+\tiny{(Ref: Gensim Tutorial – A Complete Beginners Guide - Machine Learning Plus)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{TFIDF matrix}
+
+Tf-Idf is computed by multiplying a local component like term frequency (TF) with a global component, that is, inverse document frequency (IDF) and optionally normalizing the result to unit length. (Btw, There are multiple variations of formulas for TF and IDF existing, so just be careful doing comparison of values across libraries.)
+
+\begin{lstlisting}
+from gensim import models
+import numpy as np
+documents = ["This is the first line",
+             "This is the second sentence",
+             "This third document"]
+
+mydict = corpora.Dictionary([simple_preprocess(line) for line in documents])
+corpus = [mydict.doc2bow(simple_preprocess(line)) for line in documents]
+
+# Show the Word Weights in Corpus
+for doc in corpus:
+    print([[mydict[id], freq] for id, freq in doc])
+
+# [['first', 1], ['is', 1], ['line', 1], ['the', 1], ['this', 1]]
+# [['is', 1], ['the', 1], ['this', 1], ['second', 1], ['sentence', 1]]
+# [['this', 1], ['document', 1], ['third', 1]]
+\end{lstlisting}
+
+\tiny{(Ref: Gensim Tutorial – A Complete Beginners Guide - Machine Learning Plus)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{TFIDF matrix}
+
+\begin{lstlisting}
+tfidf = models.TfidfModel(corpus, smartirs='ntc')
+
+# Show the TF-IDF weights
+for doc in tfidf[corpus]:
+    print([[mydict[id], np.around(freq, decimals=2)] for id, freq in doc])
+# [['first', 0.66], ['is', 0.24], ['line', 0.66], ['the', 0.24]]
+# [['is', 0.24], ['the', 0.24], ['second', 0.66], ['sentence', 0.66]]
+# [['document', 0.71], ['third', 0.71]]
+\end{lstlisting}
+
+Notice the difference in weights of the words between the original corpus and the tfidf weighted corpus.
+
+The words ‘is’ and ‘the’ occur in two documents and were weighted down. The word ‘this’ appearing in all three documents was removed altogether. In simple terms, words that occur more frequently across the documents get smaller weights.
+
+
+\tiny{(Ref: Gensim Tutorial – A Complete Beginners Guide - Machine Learning Plus)}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Other worflows}
+
+\begin{itemize}
+\item There are far many capabilities available in Gensim than just these
+\item It is more popular for Topic modeling by LDA and Word2Vec, Doc2Vecs
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{“topic modeling for humans''}
+
+Topic Modeling attempts to uncover the
+underlying semantic structure of by identifying
+recurring patterns of terms in a set of data
+(topics).
+
+
+\begin{itemize}
+\item does not parse sentences,
+\item does not care about word order, and
+\item does not "understand" grammar or syntax.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{“topic modeling for humans''}
+
+\begin{lstlisting}
+>>> lda_model.show_topics()
+['0.083*bridge + 0.034*dam + 0.034*river +
+0.027*canal + 0.026*construction + 0.014*ferry +
+0.013*bridges + 0.013*tunnel + 0.012*trail +
+0.012*reservoir',
+
+'0.044*fight + 0.029*bout + 0.029*via +
+0.028*martial + 0.025*boxing + 0.024*submission +
+0.021*loss + 0.021*mixed + 0.020*arts +
+0.020*fighting',
+
+'0.086*italian + 0.062*italy + 0.048*di +
+0.024*milan + 0.019*rome + 0.014*venice +
+0.013*giovanni + 0.012*della + 0.011*florence +
+0.011*francesco]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Similarity}
+\begin{itemize}
+\item Is
+\item ``A seven-year quest to collect samples from the
+solar system's formation ended in triumph in a
+dark and wet Utah desert this weekend.''
+\item similar in meaning to
+\item ``For a month, a huge storm with massive
+lightning has been raging on Jupiter under the
+watchful eye of an orbiting spacecraft.''
+\item more or less than it is similar to
+\item O``ne of Saturn's moons is spewing a giant plume
+of water vapour that is feeding the planet's
+rings, scientists say.''
+
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Similarity}
+
+Who cares about semantic similarity? 
+
+\begin{itemize}
+\item Query large collections of text
+\item Automatic metadata
+\item Recommendations
+\item Better human-computer interaction
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{More?}
+
+\begin{itemize}
+\item radimrehurek.com/gensim
+\item github.com/piskvorky/gensim
+\item groups.google.com/group/gensim
+\end{itemize}
+\end{frame}
