@@ -39,6 +39,7 @@ conda activate <env-name>
 |---|---|
 | [`fine-tuning/`](fine-tuning/) | Overview and examples of fine-tuning small language models (SLMs) |
 | `amd/` | AMD Academy workshop materials: AI agents, fine-tuning, LLM serving with vLLM |
+| [`LOCAL_LLM_PLAN.md`](LOCAL_LLM_PLAN.md) | Running small LLMs/SLMs locally on modest hardware (measured tok/s, model picks, LM Studio/Ollama setup); strongest use case is offline, reproducible classroom demos |
 
 ## Document Parsing
 
