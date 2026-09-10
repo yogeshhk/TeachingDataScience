@@ -1337,6 +1337,93 @@ two-column frame, don't wait to be told it looks wrong.**
 Both sessions' PDFs are in `Publications/Presentations/`; drivers re-retired to
 `LaTeX/_retired/mlcoep_session_drivers/` per the standing MLCoEP workflow.
 
+### Session 13 (`ml_svm.tex`) StatQuest intuition layer + `/upgrade-deck` pass (Sep 2026)
+Triggered by the user pasting the full StatQuest "Support Vector Machines, Clearly Explained"
+transcript plus 18 reference screenshots (captured to Desktop, now archived at
+`LaTeX/_retired/statquest_svm_reference_screenshots/`) and asking first to check whether that
+narrative already existed in the deck (it did not, at all: zero hits for "obese"/"mice"/"dosage"/
+"StatQuest" anywhere), then to add it. 56 -> 82 live frames across three passes:
+
+- **StatQuest intuition layer added** (22 new frames): a 1D mice-mass sequence (naive threshold ->
+  margin -> Maximal Margin Classifier -> outlier sensitivity -> explicit bias/variance framing,
+  new vocabulary this deck didn't have before -> soft margin -> cross-validation -> naming payoff)
+  and a 1D->2D drug-dosage sequence (overlapping classes no threshold can separate -> add
+  dosage$^2$ -> worked new-patient classification -> the 3-step SVM recipe -> polynomial-kernel
+  degree walkthrough -> RBF-as-weighted-nearest-neighbor -> bridge into the existing rigorous
+  kernel derivation), all in native TikZ, attributed to StatQuest. Verified the dosage$^2$
+  separator is a real straight line: chose two support-vector coordinates, solved the actual
+  chord equation, and checked every point's sign against it by hand before drawing, since a
+  convex curve (even one that looks monotonic over the visible range) is provably separable by
+  a straight chord, exactly what the reference screenshots show.
+- **7 explicit user review comments applied**: merged the opening definition + "two ideas" frames
+  into one with a real "why it matters" line (was previously just "conceptually simple, math is
+  tricky"); rewrote "SVM Inventors" (dropped a YouTube pointer and an out-of-context Isabelle
+  Guyon quote about 1960s Soviet institute politics, replaced with 3 dated, verifiable history
+  bullets: Vapnik/Chervonenkis 1963, Boser/Guyon/Vapnik 1992 kernel trick paper, Cortes/Vapnik
+  1995 soft margin); deleted the redundant "Support vector machines Example"/"Plotting the
+  Features" pair (superseded by the richer mice example); merged 2 back-to-back empty "SVM
+  Intuition" divider frames into 1; added a "The Data: A Few Sample Mice" tabular frame (11 rows,
+  5 not-obese/6 obese, matching the diagram's dot counts) before the first mass-number-line
+  frame; retitled the entire Georgia-Tech-sourced hyperplane-derivation block from "SVM
+  Intuition: ..." to "SVM Derivation: ..." (8 frames + a new divider), since it's a formulas-and-
+  proofs section, not an intuition one, now that "Intuition" means something specific
+  (StatQuest-style) earlier in the same deck.
+- **Full `/upgrade-deck` pass** (user explicitly asked for this "at the end", after the manual
+  comments): fixed a real technical-accuracy slip (a frame had called the generic point-to-
+  hyperplane distance $z$ "the margin" outright, when margin specifically means that distance
+  for the *closest* point, not any point); tightened several overly casual/awkward lines ("this
+  is the minimum-est, g(x) can get", "Wonderful trick!!!", "so nice and distinct separation");
+  filled a real content gap (`newptsvm` image frame had literally zero caption/itemize, just a
+  bare `\includegraphics`); dropped reorder-hostile `\#1`/`\#2` prefixes from the two Multiclass
+  frame titles and split their cramped semicolon-joined bullets into short items; standardized
+  "maximum-margin hyperplane" -> "maximal-margin" in the 3 places it drifted from the deck's own
+  StatQuest-introduced term; commented out (not deleted) the "Simple Example: A 1D Non-Separable
+  Case"/"Adding a Dimension" pair as a strictly weaker duplicate of the new dosage sequence, but
+  kept the Iris-dataset "Non-linear Dataset" pair (real 2D data, genuinely complementary, just
+  retitled off their duplicate-title collision); added a 2D mass-vs-height TikZ diagram (matching
+  a StatQuest reference screenshot) to the previously text-only "Naming It: The Support Vector
+  Classifier" frame, in the repo's two-column `adjustbox`+`minipage` convention; added 3 new
+  Quick-Check quiz pairs at section boundaries (SVM Intuition, SVM Derivation, Kernel Trick) and
+  relocated the deck's one pre-existing quiz pair from the very end to right after "The
+  Similarity Term", so quizzes now land at the end of their own section per the skill's own
+  guidance, instead of all bunched at the very end of the deck.
+- **Follow-up, same session**: the user asked specifically whether the kernel-trick section gave
+  a concrete $z=f(x,y)$ formulation for genuinely 2D input (the deck only had the abstract
+  $\phi(x)$ mapping-idea frame). Added two new frames: "A Concrete Formula: Circles in a Plane"
+  (a real 2D concentric-circles TikZ scatter, not linearly separable, with $z=x_1^2+x_2^2$ as the
+  lift) and "The Lift, Seen by Radius" (the same radius-vs-$z=r^2$ profile view as the dosage
+  example, explicitly named as the formula the RBF kernel is built around).
+- **New silent-vertical-overflow instances, same bug class documented elsewhere in this file for
+  Session 9's ROC frame and Session 14's two-column gotcha, hit 3 times in this one pass**: two
+  of the dosage$^2$/circles/radius TikZ diagrams were tall enough (7+ units at scale 1.0) to push
+  their own x-axis, its label, and a data point down past the visible frame and under the
+  footline, with **zero log warning** in either case; a third (the new 2D mass/height two-column
+  diagram) rendered fine in the wide Presentation column but overflowed by 56pt in the narrow
+  3-column CheatSheet, again silently. All three were caught only by rendering the actual page to
+  an image and reading it (the CheatSheet one specifically by checking `pdftotext` line-count
+  sanity, since the overflow there was into a `multicols` column, not a frame edge). Fixed by
+  adding `max totalheight=<value>` alongside `max width=<value>` to every affected
+  `\adjustbox{...}{\begin{tikzpicture}...}` wrap. **Generalizing the existing Session 9 lesson: a
+  new TikZ diagram this tall relative to its frame needs a height cap from the start, not just a
+  width cap** -- width-only `max width=\linewidth` protects against horizontal overflow but does
+  nothing for vertical overflow, and vertical overflow in this repo's Beamer template never
+  produces a compile warning.
+- **Correction to this file's own Aug 2026 framing**: the "per-session drivers... superseded by
+  the combined course driver" language elsewhere in this section describes where the `.tex` files
+  physically *live* (`_retired/mlcoep_session_drivers/`), not whether they're still used. The user
+  confirmed 2026-09-10 they remain the actual one-session-at-a-time verification workflow; the
+  combined `Main_Course_MLCoEP_*` driver is still the one never to compile without being asked.
+  See [[project_mlcoep_session_driver_workflow]] (assistant memory) for the copy-to-root /
+  compile / verify / copy-PDF-to-Publications / re-retire procedure this now follows.
+- Verified: both `Main_Seminar_MLCoEP_Session_13_SVM_{Presentation,CheatSheet}` recompile clean
+  (87 and 8 pages) via the copy-to-`LaTeX/`-root-then-re-retire procedure, PDFs copied to
+  `Publications/Presentations/`. The standalone `Main_Seminar_ML_SVM_NB_*` deck (which shares
+  `ml_svm.tex`) was used for interim verification earlier in this pass but is **not** the
+  standing verification driver going forward, per explicit instruction -- use Session 13's own
+  driver pair for any future `ml_svm.tex` edit.
+- **Not done, deliberately**: Session 14 (`ml_naivebayes.tex`) is explicitly next-up, planned for
+  a separate session, not part of this pass.
+
 ### MLCoEP Sessions 15-20 `/upgrade-deck` sweep (Aug 2026)
 Continuation of the Sessions 1-14 upgrade work above, covering the rest of the course:
 Session 15 KNN, 16 KMeans, 17 PCA, 18 Titanic capstone, 19 MLOps, 20 ME Applications. Each

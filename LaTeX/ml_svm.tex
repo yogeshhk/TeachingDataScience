@@ -8,67 +8,346 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Support Vector Machines (SVM)}
 \begin{itemize}
-\item Support vector machines are supervised machine learning algorithms that construct
-separating planes for classification.
-\item They are conceptually fairly simple, but the underlying mathematics for learning them from data can be tricky.
+\item A supervised learning algorithm for classification (and regression) that finds the boundary between classes with the widest possible margin, the largest buffer, to the nearest training points.
+\item Why it matters: a boundary chosen for maximum margin tends to generalize better to new, unseen data than one that just barely manages to separate the training set.
+\item SVMs combine two ideas:
+\begin{itemize}
+\item \textbf{Maximum margin classification}: among all possible separating boundaries, pick the one that stays as far as possible from every training point.
+\item The \textbf{kernel trick}: a way to draw a non-linear boundary by implicitly working in a higher-dimensional space, without ever computing that space explicitly.
+\end{itemize}
+\item The rest of this section builds up exactly how each of these two ideas works, starting with maximum margin classification.
 \end{itemize}
 \end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Support Vector Machines (SVM) Inventors}
 \begin{itemize}
-\item See video ``Vladimir Vapnik - 2012 Laureate of the Franklin Institute in Computer and Cognitive Science'' at Youtube.
-\item Vladimir Vapnik discusses how his early years in Moscow helped shaped the origins of statistical learning theories, including the ideas behind the SVM.
-\item His collaborator, Isabelle Guyon, also discusses the Kernel Trick, which generalized the SVMs for non-linear decision boundaries (hence making them more popular). In her own words:
+\item \textbf{1963}: Vladimir Vapnik and Alexey Chervonenkis introduce the original maximal margin classifier for linearly separable data, growing out of the statistical (VC) learning theory they developed at the Institute of Control Sciences, Moscow.
+\item \textbf{1992}: Bernhard Boser, Isabelle Guyon, and Vladimir Vapnik publish ``A Training Algorithm for Optimal Margin Classifiers'', introducing the \textbf{kernel trick} that lets the same idea handle non-linear boundaries.
+\item \textbf{1995}: Corinna Cortes and Vladimir Vapnik formalize the \textbf{soft margin}, allowing controlled misclassifications, turning SVMs into the practical, widely used algorithm known today.
 \end{itemize}
-\small{
-``The invention of SVMs happened when Bernhard decided to implement Vladimir’s algorithm in the three months we had left before we moved to Berkeley. After some initial success of the linear algorithm, Vladimir suggested introducing products of features. I proposed to rather use the kernel trick of the ‘potential function’ algorithm. Vladimir initially resisted the idea because the inventors of the ‘potential functions’ algorithm (Aizerman, Braverman, and Rozonoer) were from a competing team of his institute back in the 1960’s in Russia!'' - Isabelle Guyon
-}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Support vector machines Example}
-
-\begin{itemize}
-\item In SVM, we plot each data item as a point in n dimensional space (where n is number of features you have) with the value of each feature being the value of
-a particular coordinate.
-\item For example, if we only had two features like Height and Hair length of an individual.
-\item We'd first plot these two variables in two dimensional space where each point has two-coordinates.
-\end{itemize}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Plotting the Features}
-
-\begin{center}
-\includegraphics[width=0.8\linewidth]{hthair}
-\end{center}
-Now, we will find some line that splits the data between the two differently classified groups of
-data.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Support Vector Machines (SVM)}
-SVMs are the combination of two ideas
-	\begin{itemize}
-	\item Maximum margin classification: among all possible separating boundaries, pick the one that stays as far as possible from every training point.
-	\item The ``kernel trick'': a way to draw a non-linear boundary by implicitly working in a higher-dimensional space, without ever computing that space explicitly.
-	\end{itemize}
-The rest of this section builds up exactly how each of these two ideas works, starting with maximum margin classification.
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large SVM Intuition}
+{\Large SVM Intuition: A First Example}
 \end{center}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{SVM Intuition: Labeled Points}
+\begin{frame}[fragile]\frametitle{The Data: A Few Sample Mice}
+\begin{center}
+\begin{tabular}{c|c|c}
+\textbf{Mouse} & \textbf{Mass (g)} & \textbf{Obese?} \\ \hline
+1 & 18 & No \\
+2 & 20 & No \\
+3 & 21 & No \\
+4 & 22 & No \\
+5 & 24 & No \\
+6 & 32 & Yes \\
+7 & 34 & Yes \\
+8 & 35 & Yes \\
+9 & 36 & Yes \\
+10 & 38 & Yes \\
+11 & 40 & Yes \\
+\end{tabular}
+\end{center}
+\begin{itemize}
+\item Each row is one observation: a mass measurement and a Yes/No obesity label.
+\item Plotting just the mass values on a number line gives the picture on the next slide.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Measuring Mouse Mass}
+\begin{itemize}
+\item Suppose we measure the mass of a bunch of mice.
+\item Red dots: mice that are \textbf{not obese}. Green dots: mice that \textbf{are obese}.
+\item All the information lives on a single number line, mass, so this is a 1-dimensional example.
+\end{itemize}
+\begin{center}
+\adjustbox{max width=\linewidth}{
+\begin{tikzpicture}[scale=1.0]
+\draw[->] (-0.3,0) -- (9,0) node[right] {\small mass};
+\filldraw[red] (0.6,0) circle (3pt);
+\filldraw[red] (1.0,0) circle (3pt);
+\filldraw[red] (1.5,0) circle (3pt);
+\filldraw[red] (1.9,0) circle (3pt);
+\filldraw[red] (2.3,0) circle (3pt);
+\filldraw[green!50!black] (5.6,0) circle (3pt);
+\filldraw[green!50!black] (6.1,0) circle (3pt);
+\filldraw[green!50!black] (6.6,0) circle (3pt);
+\filldraw[green!50!black] (7.1,0) circle (3pt);
+\filldraw[green!50!black] (7.6,0) circle (3pt);
+\filldraw[green!50!black] (8.1,0) circle (3pt);
+\node[below,red] at (1.4,-0.5) {\small not obese};
+\node[below,green!50!black] at (6.8,-0.5) {\small obese};
+\end{tikzpicture}
+}
+\end{center}
+{\tiny (Ref: StatQuest with Josh Starmer - Support Vector Machines Clearly Explained)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{A Naive Threshold}
+\begin{itemize}
+\item Pick a threshold: a new mouse with less mass is classified not obese, more mass and it is classified obese.
+\item But what about a new observation here?
+\end{itemize}
+\begin{center}
+\adjustbox{max width=\linewidth}{
+\begin{tikzpicture}[scale=1.0]
+\draw[->] (-0.3,0) -- (9,0) node[right] {\small mass};
+\filldraw[red] (0.6,0) circle (3pt);
+\filldraw[red] (1.0,0) circle (3pt);
+\filldraw[red] (1.5,0) circle (3pt);
+\filldraw[red] (1.9,0) circle (3pt);
+\filldraw[red] (2.3,0) circle (3pt);
+\filldraw[green!50!black] (5.6,0) circle (3pt);
+\filldraw[green!50!black] (6.1,0) circle (3pt);
+\filldraw[green!50!black] (6.6,0) circle (3pt);
+\filldraw[green!50!black] (7.1,0) circle (3pt);
+\filldraw[green!50!black] (7.6,0) circle (3pt);
+\filldraw[green!50!black] (8.1,0) circle (3pt);
+\draw[dashed,blue,thick] (3.0,-0.6) -- (3.0,0.6);
+\node[above,blue] at (3.0,0.7) {\small threshold};
+\filldraw[black] (3.3,0) circle (3pt);
+\node[below] at (3.3,-0.5) {\tiny new point};
+\end{tikzpicture}
+}
+\end{center}
+\begin{itemize}
+\item Its mass is more than the threshold, so we classify it obese. But it sits much closer to the not-obese cluster than to the obese one.
+\item This threshold is pretty lame. Can we do better?
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{A Better Threshold: The Margin}
+\begin{itemize}
+\item Instead, use the two edge observations, the closest not-obese point and the closest obese point, and place the threshold at their midpoint.
+\item Now a new observation just left of the threshold is closer to the not-obese cluster than to the obese one, so classifying it not obese makes sense.
+\end{itemize}
+\begin{center}
+\adjustbox{max width=\linewidth}{
+\begin{tikzpicture}[scale=1.0]
+\draw[->] (-0.3,0) -- (9,0) node[right] {\small mass};
+\filldraw[red] (0.6,0) circle (3pt);
+\filldraw[red] (1.0,0) circle (3pt);
+\filldraw[red] (1.5,0) circle (3pt);
+\filldraw[red] (1.9,0) circle (3pt);
+\filldraw[red] (2.3,0) circle (3pt);
+\filldraw[green!50!black] (5.6,0) circle (3pt);
+\filldraw[green!50!black] (6.1,0) circle (3pt);
+\filldraw[green!50!black] (6.6,0) circle (3pt);
+\filldraw[green!50!black] (7.1,0) circle (3pt);
+\filldraw[green!50!black] (7.6,0) circle (3pt);
+\filldraw[green!50!black] (8.1,0) circle (3pt);
+\draw[dashed,blue,thick] (3.95,-0.6) -- (3.95,0.6);
+\node[above,blue] at (3.95,0.7) {\small threshold};
+\draw[<->,thick] (2.3,-1.0) -- (3.95,-1.0);
+\node[below] at (3.1,-1.2) {\tiny margin};
+\draw[<->,thick] (3.95,-1.0) -- (5.6,-1.0);
+\node[below] at (4.75,-1.2) {\tiny margin};
+\filldraw[black] (3.3,0) circle (3pt);
+\node[above] at (3.3,0.2) {\tiny new point};
+\end{tikzpicture}
+}
+\end{center}
+\textbf{Terminology alert:} the shortest distance between the observations and the threshold is called the \textbf{margin}. Placing the threshold halfway between the two edge points makes the margin on each side equal, and as large as possible.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{The Maximal Margin Classifier}
+\begin{itemize}
+\item Moving the threshold left shrinks the margin on the not-obese side; moving it right shrinks the margin on the obese side.
+\item The threshold that gives the largest possible margin is called the \textbf{Maximal Margin Classifier}.
+\item It looks good here, but what happens when the training data has an outlier?
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Maximal Margin Classifiers Hate Outliers}
+\begin{itemize}
+\item Suppose one not-obese mouse (red) happens to sit right next to the obese cluster.
+\end{itemize}
+\begin{center}
+\adjustbox{max width=\linewidth}{
+\begin{tikzpicture}[scale=1.0]
+\draw[->] (-0.3,0) -- (9,0) node[right] {\small mass};
+\filldraw[red] (0.6,0) circle (3pt);
+\filldraw[red] (1.0,0) circle (3pt);
+\filldraw[red] (1.5,0) circle (3pt);
+\filldraw[red] (1.9,0) circle (3pt);
+\filldraw[red] (2.3,0) circle (3pt);
+\filldraw[red] (5.3,0) circle (3pt);
+\node[below] at (5.3,-0.5) {\tiny outlier};
+\filldraw[green!50!black] (6.1,0) circle (3pt);
+\filldraw[green!50!black] (6.6,0) circle (3pt);
+\filldraw[green!50!black] (7.1,0) circle (3pt);
+\filldraw[green!50!black] (7.6,0) circle (3pt);
+\filldraw[green!50!black] (8.1,0) circle (3pt);
+\draw[dashed,blue,thick] (5.7,-0.6) -- (5.7,0.6);
+\node[above,blue] at (5.7,0.7) {\small threshold};
+\filldraw[green!50!black] (3.3,0) circle (3pt);
+\node[below] at (3.3,-0.5) {\tiny new point};
+\end{tikzpicture}
+}
+\end{center}
+\begin{itemize}
+\item The maximal margin classifier is now squeezed right up against the obese cluster, far from most of the not-obese points.
+\item A new point here would be classified not obese, even though it is much closer to most of the obese observations. Maximal margin classifiers are super sensitive to outliers.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Why This Happens: Bias and Variance}
+\begin{itemize}
+\item A maximal margin classifier is placed to fit the training data as exactly as possible: it has \textbf{low bias}.
+\item But that also means one different, or noisy, training sample can swing the threshold a long way, so it has \textbf{high variance}: it performs poorly on new data.
+\item This is the same bias-variance trade-off that shows up everywhere else in machine learning, and the fix is the same one: give up a little fit on the training data in exchange for stability.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Allowing Misclassifications: The Soft Margin}
+\begin{itemize}
+\item To make the threshold less sensitive to outliers, we allow some misclassifications on purpose.
+\end{itemize}
+\begin{center}
+\adjustbox{max width=\linewidth}{
+\begin{tikzpicture}[scale=1.0]
+\draw[->] (-0.3,0) -- (9,0) node[right] {\small mass};
+\filldraw[red] (0.6,0) circle (3pt);
+\filldraw[red] (1.0,0) circle (3pt);
+\filldraw[red] (1.5,0) circle (3pt);
+\filldraw[red] (1.9,0) circle (3pt);
+\filldraw[red] (2.3,0) circle (3pt);
+\filldraw[red] (5.3,0) circle (3pt);
+\node[below] at (5.3,-0.5) {\tiny outlier};
+\filldraw[green!50!black] (6.1,0) circle (3pt);
+\filldraw[green!50!black] (6.6,0) circle (3pt);
+\filldraw[green!50!black] (7.1,0) circle (3pt);
+\filldraw[green!50!black] (7.6,0) circle (3pt);
+\filldraw[green!50!black] (8.1,0) circle (3pt);
+\draw[dashed,blue,thick] (3.95,-0.6) -- (3.95,0.6);
+\node[above,blue] at (3.95,0.7) {\small threshold};
+\filldraw[green!50!black] (3.3,0) circle (3pt);
+\node[below] at (3.3,-0.5) {\tiny new point};
+\end{tikzpicture}
+}
+\end{center}
+\begin{itemize}
+\item With the threshold back near the middle, the outlier gets misclassified, but a new point here is now correctly classified obese, since it is closer to most of the obese observations.
+\item The distance between the observations and this kind of threshold is called a \textbf{soft margin}.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Bias and Variance: The Trade-off, Side by Side}
+\begin{center}
+\adjustbox{max width=\linewidth}{
+\begin{tabular}{l|c|c}
+ & \textbf{Maximal Margin Classifier} & \textbf{Soft Margin Classifier} \\ \hline
+Fits training data & Very tightly (0 mistakes) & Loosely (allows mistakes) \\
+Bias & Low & Higher \\
+Variance & High & Lower \\
+On new data & Performs poorly & Performs better \\
+\end{tabular}
+}
+\end{center}
+\begin{itemize}
+\item Choosing to allow misclassifications is a direct application of the bias-variance trade-off that shows up throughout machine learning.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{How Much Softness? Cross-Validation Decides}
+\begin{itemize}
+\item How many misclassifications should the soft margin allow? Too few and we are back to being sensitive to outliers; too many and the boundary stops meaning anything.
+\item The answer: try different amounts of softness and use \textbf{cross-validation} to pick the one that classifies new data best.
+\item This is exactly the parameter $C$ used later in this deck (see ``Constructing the Support Vector Classifier''): a bigger $C$ allows fewer violations, closer to a hard margin; a smaller $C$ allows more.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Naming It: The Support Vector Classifier}
+\adjustbox{valign=t}{
+\begin{minipage}{0.56\linewidth}
+\begin{itemize}
+\item A threshold chosen using a soft margin is called a \textbf{Soft Margin Classifier}, better known as a \textbf{Support Vector Classifier}.
+\item The name comes from the observations on the edge of, and inside, the soft margin: these are called \textbf{support vectors}.
+\item With two measurements per mouse (say, mass and height), the data becomes two-dimensional and the support vector classifier becomes a \textbf{line} instead of a point, exactly the hyperplane picture the rest of this section builds up formally.
+\end{itemize}
+\end{minipage}%
+}
+\hfill%
+\adjustbox{valign=t}{
+\begin{minipage}{0.4\linewidth}
+\begin{center}
+\adjustbox{max width=\linewidth}{
+\begin{tikzpicture}[scale=0.62]
+\draw[->] (0,0) -- (4.2,0) node[right] {\small mass};
+\draw[->] (0,0) -- (0,4.2) node[above] {\small height};
+\filldraw[red] (1,1) circle (2.5pt);
+\filldraw[red] (1.3,1.1) circle (2.5pt);
+\filldraw[red] (0.8,1.6) circle (2.5pt);
+\filldraw[red] (1.5,1.5) circle (2.5pt);
+\filldraw[green!50!black] (2.2,2.2) circle (2.5pt);
+\filldraw[green!50!black] (2.6,2.9) circle (2.5pt);
+\filldraw[green!50!black] (3,2.6) circle (2.5pt);
+\filldraw[green!50!black] (3.3,3) circle (2.5pt);
+\draw[thick,blue] (0.5,3.2) -- (3.2,0.5);
+\draw[dashed,blue!60] (0.2,2.8) -- (2.8,0.2);
+\draw[dashed,blue!60] (0.9,3.5) -- (3.5,0.9);
+\end{tikzpicture}
+}
+\end{center}
+\tiny{Same mice, now with mass and height: the support vector classifier is a line, with a soft margin on either side.}
+\end{minipage}
+}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: SVM Intuition}
+\begin{block}{Think About It}
+A dataset has one clear outlier. You must pick between a threshold with zero training
+mistakes (hugging the outlier) and one that deliberately misclassifies the outlier but sits
+comfortably in the middle of both clusters. Which one should you expect to perform better on
+new data, and why?
+\begin{enumerate}
+\item[A.] The zero-mistake threshold, since fewer training errors always means a better model.
+\item[B.] The threshold that misclassifies the outlier, since it has lower variance and will
+generalize better even though it has slightly higher bias.
+\item[C.] They perform identically, since both correctly classify the vast majority of points.
+\item[D.] It's impossible to know without seeing the test data first.
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: SVM Intuition}
+\begin{block}{Answer}
+\textbf{Correct: B.} The zero-mistake threshold is a maximal margin classifier: it fits this
+one training sample perfectly (low bias) but is so sensitive to the outlier that a slightly
+different sample would swing it a long way (high variance). Allowing the one misclassification
+trades a little bias for a lot less variance, which is the better deal on new data. Option A
+mistakes ``fewer training errors'' for ``better generalization'', exactly the trap this section
+is about.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large SVM Derivation}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{SVM Derivation: Labeled Points}
 
 \begin{center}
 \includegraphics[width=0.6\linewidth]{svm10}
@@ -76,14 +355,13 @@ The rest of this section builds up exactly how each of these two ideas works, st
 \tiny{(Ref: How Classification Algorithms Work? - Thales Sehn Korting)}
 \end{center}
 \begin{itemize}
-\item Suppose there are points characterized by $x_1,x_2$.
-\item So these are features
+\item Suppose there are points characterized by $x_1,x_2$: these are the features.
 \item Points are labeled with either of two classes: circles and squares.
 \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{SVM Intuition: Many Possible Boundaries}
+\begin{frame}[fragile] \frametitle{SVM Derivation: Many Possible Boundaries}
 
 \begin{center}
 \includegraphics[width=0.6\linewidth]{svm12}
@@ -214,7 +492,7 @@ The rest of this section builds up exactly how each of these two ideas works, st
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{SVM Intuition: The Hyperplane Equation}
+\begin{frame}[fragile] \frametitle{SVM Derivation: The Hyperplane Equation}
 
 \begin{center}
 \includegraphics[width=0.6\linewidth]{svm11}
@@ -228,7 +506,7 @@ The rest of this section builds up exactly how each of these two ideas works, st
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{SVM Intuition: Class Boundaries on g(x)}
+\begin{frame}[fragile] \frametitle{SVM Derivation: Class Boundaries on g(x)}
 
 \begin{center}
 \includegraphics[width=0.6\linewidth]{svm14}
@@ -242,7 +520,7 @@ The rest of this section builds up exactly how each of these two ideas works, st
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{SVM Intuition: Distance to the Hyperplane}
+\begin{frame}[fragile] \frametitle{SVM Derivation: Distance to the Hyperplane}
 
 \begin{center}
 \includegraphics[width=0.6\linewidth]{svm15}
@@ -250,13 +528,13 @@ The rest of this section builds up exactly how each of these two ideas works, st
 \tiny{(Ref: How Classification Algorithms Work? - Thales Sehn Korting)}
 \end{center}
 \begin{itemize}
-\item Distance of a point from a hyper-plane is $z$
-\item Given by a formula $z = \frac{|g(x)|}{||w||}$, is also called `margin'
+\item Distance of any point from the hyper-plane is $z$, given by $z = \frac{|g(x)|}{||w||}$
+\item The \textbf{margin} is this same distance measured for the \emph{closest} training point on each side, not any arbitrary point
 \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{SVM Intuition: Distance, Worked Example}
+\begin{frame}[fragile] \frametitle{SVM Derivation: Distance, Worked Example}
 \begin{block}{Worked Example}
 Say $\vec{w}=(1,1)$, $w_0=-2$, and a point $\vec{x}=(3,3)$. Then
 \[
@@ -273,7 +551,7 @@ z = \frac{|g(\vec{x})|}{\|\vec{w}\|} = \frac{|4|}{\sqrt{1^2+1^2}} = \frac{4}{\sq
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{SVM Intuition: The Full Margin Width}
+\begin{frame}[fragile] \frametitle{SVM Derivation: The Full Margin Width}
 
 \begin{center}
 \includegraphics[width=0.6\linewidth]{svm16}
@@ -281,7 +559,7 @@ z = \frac{|g(\vec{x})|}{\|\vec{w}\|} = \frac{|4|}{\sqrt{1^2+1^2}} = \frac{4}{\sq
 \tiny{(Ref: How Classification Algorithms Work? - Thales Sehn Korting)}
 \end{center}
 \begin{itemize}
-\item For any point, $g(\overrightarrow{x})$ is atleast ``1'', on either side (this is the minimum-est, g(x) can get, from the formula)
+\item For any point, $g(\overrightarrow{x})$ is at least $1$ in magnitude, on either side; that is the smallest value the formula allows
 \item So min distance on either side is $\frac{1}{||\overrightarrow{w}||}$
 \item Total margin from both sides is $\frac{2}{||\overrightarrow{w}||}$
 \item So, if we minimize $\overrightarrow{w}$, then margin will be maximum.
@@ -302,14 +580,14 @@ z = \frac{|g(\vec{x})|}{\|\vec{w}\|} = \frac{|4|}{\sqrt{1^2+1^2}} = \frac{4}{\sq
 % \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{SVM Intuition: Choosing the Best Boundary}
+\begin{frame}[fragile] \frametitle{SVM Derivation: Choosing the Best Boundary}
 
 \begin{center}
 \includegraphics[width=0.6\linewidth]{svm13}
 \end{center}
 \begin{itemize}
-\item The one with Maximum margin (largest $z$) is the best.
-\item $Z_2$ is better than $Z_1$, so nice and distinct separation.
+\item The boundary with the largest margin (largest $z$) is the best.
+\item $Z_2$ is better than $Z_1$: it gives a wider, more distinct separation between the classes.
 \end{itemize}
 \end{frame}
 
@@ -397,7 +675,7 @@ g(\bar{x}) &= \frac{2}{5}x_1 + \frac{4}{5}x_2 - \frac{11}{5}\\
 \text{Setting } g(\bar{x})=0 \text{ and scaling by } \frac{5}{2}: \quad g(\bar{x}) &= x_1 + 2x_2 - 5.5
 \end{align*}
 \begin{itemize}
-\item This is the maximum-margin hyperplane for our 3-point example, plotted natively on the next slide.
+\item This is the maximal-margin hyperplane for our 3-point example, plotted natively on the next slide.
 \end{itemize}
 \end{frame}
 
@@ -417,10 +695,36 @@ g(\bar{x}) &= \frac{2}{5}x_1 + \frac{4}{5}x_2 - \frac{11}{5}\\
 \end{tikzpicture}
 \end{center}
 \small{The boundary $g(\bar{x})=x_1+2x_2-5.5=0$ sits exactly equidistant from $(1,1)$ and
-$(2,3)$, the two support points that determined it, as required by the maximum-margin
+$(2,3)$, the two support points that determined it, as required by the maximal-margin
 construction.}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: SVM Derivation}
+\begin{block}{Think About It}
+In the 3-point worked example, the boundary was placed exactly equidistant from $(1,1)$ and
+$(2,3)$, while $(2,0)$ played no role in determining it. If $(2,0)$ were moved much further
+away, say to $(20,-30)$, what would happen to the boundary?
+\begin{enumerate}
+\item[A.] The boundary would shift noticeably, since moving any training point changes the
+optimal margin.
+\item[B.] The boundary would stay exactly the same, since $(2,0)$ was never a support point.
+\item[C.] The boundary would disappear, since a point that far away breaks the margin formula.
+\item[D.] The boundary would rotate to keep equal margins from all three points.
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: SVM Derivation}
+\begin{block}{Answer}
+\textbf{Correct: B.} The maximal-margin hyperplane is determined entirely by the closest
+points on each side, the support points, here $(1,1)$ and $(2,3)$. $(2,0)$ sits strictly
+inside the not-obese region with room to spare, so it never entered the equations that solved
+for $\bar{w}$ and $w_0$. Moving it further away changes nothing, exactly the ``most points
+don't matter'' idea this deck returns to formally in the optimization section next.
+\end{block}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
@@ -624,7 +928,7 @@ construction.}
 $}
 \end{center}
 \begin{itemize}
-\item The ``plus minus 1'' thing on the right side has changed to just ``plus 1'' because $y_i$ becomes minus if right hand side is minus, and both cancel out!!! Wonderful trick.
+\item The ``$\pm 1$'' on the right side collapses to a single ``$\geq 1$'' because $y_i$ itself flips sign for the negative class, cancelling out the sign of the right-hand side.
 \end{itemize}
 \end{frame}
 
@@ -733,6 +1037,26 @@ the answer at all.
 \end{block}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: SVM Optimization}
+\begin{block}{Think About It}
+If you added a new training point that lies far from the decision boundary, on the correct
+side of the margin, would the SVM's maximal-margin hyperplane change? What does your answer
+tell you about how much of the training set actually ``matters'' to an SVM?
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: SVM Optimization}
+\begin{block}{Answer}
+No: the hyperplane depends only on the support vectors (the points sitting on or violating
+the margin). A point that's already correctly classified with room to spare gets an alpha of
+0 in the dual solution, so adding or removing it changes nothing. This is why SVMs can
+generalize well from relatively few ``boundary case'' examples, most of the training data
+turns out to be redundant once the support vectors are known.
+\end{block}
+\end{frame}
+
 % Divider no longer needed (Aug 2026 upgrade-deck pass): the g/w0 vs w^Tx+b notation
 % switch is now explained inline by the "Finding w and w0 Systematically" bridge frame
 % above, so there's no more "flashback" jump for this to announce.
@@ -785,10 +1109,14 @@ the answer at all.
 % \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{New point added }
+\begin{frame}[fragile]\frametitle{New Point Added: The Hyperplane Shifts}
 \begin{center}
 \includegraphics[width=\linewidth,keepaspectratio]{newptsvm}
 \end{center}
+\begin{itemize}
+\item Left: a maximal margin classifier fits this 2-feature training set perfectly, 0 mistakes.
+\item Right: adding just one new point causes a dramatic shift in the boundary, the same \textbf{high variance} problem seen earlier with the mouse-mass outlier, now shown on real 2-dimensional data.
+\end{itemize}
 \end{frame}
 
 
@@ -855,74 +1183,298 @@ $}
 \end{frame}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Non-linear decision boundary?}
-What if a non-linear decision boundary is needed?
+% Commented (Sep 2026, user review): this generic motivating question is now redundant with
+% the StatQuest "No Single Threshold Works" frame right after this divider, which makes the same
+% point on the drug-dosage example. Kept here in case the generic nlsvm.png framing is wanted back.
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Non-linear decision boundary?}
+% What if a non-linear decision boundary is needed?
+% \begin{center}
+% \includegraphics[width=0.8\linewidth,keepaspectratio]{nlsvm}
+% \end{center}
+% Poor performance using this decision boundary.
+% Can we twist the boundary? Or
+% Can we twist the data?
+% \end{frame}
+
+% Commented (Sep 2026, user review): superseded by the concrete "Circles in a Plane" / "The Lift,
+% Seen by Radius" worked example added later in this file, which gives an explicit z=f(x,y)
+% formula this pair never did. Kept here in case the Iris-dataset framing is wanted back.
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Non-linear Dataset: A Real 2D Example}
+%
+% Non-linear data set are difficult to be separated using a linear hyperplane. SVM algorithm is related to finding the hyperplane which separates the data based on maximum margin.
+%
+% E.g. Iris dataset
+%
+% \begin{center}
+% \includegraphics[width=0.5\linewidth]{svm38}
+%
+% \end{center}
+%
+% The above data set is in 2-dimensions, and it is not linearly separable in a smooth manner.
+%
+% {\tiny (Ref: Machine Learning – SVM Kernel Trick Example - Ajitesh Kumar)}
+% \end{frame}
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Non-linear Dataset: Adding a Third Dimension}
+%
+% Can the data set be represented in the following form by adding another dimension? If it is possible, a hyperplane can be found which separates them clearly.
+%
+% \begin{center}
+% \includegraphics[width=0.5\linewidth]{svm39}
+%
+% \end{center}
+%
+% This is where the kernel method comes to the rescue. The idea is to apply a function that projects / transform the data in such a manner that the data becomes linearly separable. In case of SVM algorithm, data becomes linearly separable by applying maximum margin.
+%
+% {\tiny (Ref: Machine Learning – SVM Kernel Trick Example - Ajitesh Kumar)}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
 \begin{center}
-\includegraphics[width=0.8\linewidth,keepaspectratio]{nlsvm}
+{\Large From Support Vector Classifiers to Support Vector Machines}
 \end{center}
-Poor performance using this decision boundary.
-Can we twist the boundary? Or
-Can we twist the data?
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Non-linear Dataset}
-
-Non-linear data set are difficult to be separated using a linear hyperplane. SVM algorithm is related to finding the hyperplane which separates the data based on maximum margin.
-
-E.g. Iris dataset
-
+\begin{frame}[fragile] \frametitle{When Overlap Is Too Much: Drug Dosage}
+\begin{itemize}
+\item Now suppose we are looking at drug dosages. Red dots are patients who were \textbf{not cured}; green dots are patients who \textbf{were cured}.
+\item The drug only works when the dosage is just right: too little or too much and it fails.
+\end{itemize}
 \begin{center}
-\includegraphics[width=0.5\linewidth]{svm38}
-
+\adjustbox{max width=\linewidth}{
+\begin{tikzpicture}[scale=1.0]
+\draw[->] (-0.3,0) -- (9,0) node[right] {\small dosage};
+\filldraw[red] (0.6,0) circle (3pt);
+\filldraw[red] (1.0,0) circle (3pt);
+\filldraw[red] (1.4,0) circle (3pt);
+\filldraw[red] (1.8,0) circle (3pt);
+\filldraw[green!50!black] (3.6,0) circle (3pt);
+\filldraw[green!50!black] (4.0,0) circle (3pt);
+\filldraw[green!50!black] (4.4,0) circle (3pt);
+\filldraw[green!50!black] (4.8,0) circle (3pt);
+\filldraw[red] (7.0,0) circle (3pt);
+\filldraw[red] (7.4,0) circle (3pt);
+\filldraw[red] (7.8,0) circle (3pt);
+\filldraw[red] (8.2,0) circle (3pt);
+\end{tikzpicture}
+}
 \end{center}
-
-The above data set is in 2-dimensions, and it is not linearly separable in a smooth manner.
-
-{\tiny (Ref: Machine Learning – SVM Kernel Trick Example - Ajitesh Kumar)}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Non-linear Dataset}
-
-Can the data set be represented in the following form by adding another dimension? If it is possible, a hyperplane can be found which separates them clearly.
-
-\begin{center}
-\includegraphics[width=0.5\linewidth]{svm39}
-
-\end{center}
-
-This is where the kernel method comes to the rescue. The idea is to apply a function that projects / transform the data in such a manner that the data becomes linearly separable. In case of SVM algorithm, data becomes linearly separable by applying maximum margin.
-
-{\tiny (Ref: Machine Learning – SVM Kernel Trick Example - Ajitesh Kumar)}
+{\tiny (Ref: StatQuest with Josh Starmer - Support Vector Machines Clearly Explained)}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Simple Example: A 1D Non-Separable Case}
-
-1-D: not easy to separate and how adding another dimension makes it easy.
-
+\begin{frame}[fragile] \frametitle{No Single Threshold Works}
 \begin{center}
-\includegraphics[width=0.6\linewidth]{svm40}
-
+\adjustbox{max width=\linewidth}{
+\begin{tikzpicture}[scale=1.0]
+\draw[->] (-0.3,0) -- (9,0) node[right] {\small dosage};
+\filldraw[red] (0.6,0) circle (3pt);
+\filldraw[red] (1.0,0) circle (3pt);
+\filldraw[red] (1.4,0) circle (3pt);
+\filldraw[red] (1.8,0) circle (3pt);
+\filldraw[green!50!black] (3.6,0) circle (3pt);
+\filldraw[green!50!black] (4.0,0) circle (3pt);
+\filldraw[green!50!black] (4.4,0) circle (3pt);
+\filldraw[green!50!black] (4.8,0) circle (3pt);
+\filldraw[red] (7.0,0) circle (3pt);
+\filldraw[red] (7.4,0) circle (3pt);
+\filldraw[red] (7.8,0) circle (3pt);
+\filldraw[red] (8.2,0) circle (3pt);
+\draw[dashed,blue,thick] (2.7,-0.6) -- (2.7,0.6);
+\draw[dashed,blue,thick] (6.0,-0.6) -- (6.0,0.6);
+\end{tikzpicture}
+}
 \end{center}
-
-{\tiny (Ref: Machine Learning – SVM Kernel Trick Example - Ajitesh Kumar)}
+\begin{itemize}
+\item No matter where we place a single threshold, plenty of points end up on the wrong side.
+\item A support vector classifier is still just a threshold (or, in higher dimensions, a line or plane), so it cannot separate this data either. We need something more.
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{Simple Example: Adding a Dimension}
-
-Let’s apply the method of adding another dimension to the data by using the function $Y = X^2$ (X-squared). Thus, the data looks like the following after applying the kernel function ($Y = X^2$) and becomes linearly separable.
+\begin{frame}[fragile] \frametitle{The Trick: Add a Dimension}
+\begin{itemize}
+\item Add a $y$-axis using $y = \text{dosage}^2$. A patient with dosage $0.5$ now sits at $y=0.25$, and so on for every point.
+\item The data is now 2-dimensional, and a straight line (a support vector classifier) can separate the cured patients from the not-cured ones.
+\end{itemize}
 \begin{center}
-\includegraphics[width=0.6\linewidth]{svm41}
-
+\adjustbox{max width=0.55\linewidth, max totalheight=4.2cm}{
+\begin{tikzpicture}[scale=0.85]
+\draw[->] (-0.3,0) -- (9,0) node[right] {\small dosage};
+\draw[->] (0,-0.3) -- (0,8) node[above] {\small dosage$^2$};
+\filldraw[red] (0.8,0.08) circle (3pt);
+\filldraw[red] (1.2,0.17) circle (3pt);
+\filldraw[red] (1.6,0.31) circle (3pt);
+\filldraw[green!50!black] (3.6,1.56) circle (3pt);
+\filldraw[green!50!black] (4.0,1.92) circle (3pt);
+\filldraw[green!50!black] (4.4,2.32) circle (3pt);
+\filldraw[green!50!black] (4.8,2.77) circle (3pt);
+\filldraw[red] (7.0,5.88) circle (3pt);
+\filldraw[red] (7.4,6.57) circle (3pt);
+\filldraw[red] (7.8,7.30) circle (3pt);
+\draw[thick,blue] (1.3,0) -- (8.7,7.63);
+\end{tikzpicture}
+}
 \end{center}
-
-{\tiny (Ref: Machine Learning – SVM Kernel Trick Example - Ajitesh Kumar)}
+{\tiny (Ref: StatQuest with Josh Starmer - Support Vector Machines Clearly Explained)}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Classifying a New Patient}
+\begin{itemize}
+\item Take a new patient with dosage $1.0$. Squaring gives $y=1.0$, which lands above the line, so we classify this patient not cured: the dose was too low.
+\item Take another new patient with dosage $2.2$. Squaring gives $y \approx 0.6$, which lands below the line, so we classify this patient cured.
+\end{itemize}
+\begin{center}
+\adjustbox{max width=0.55\linewidth, max totalheight=3.6cm}{
+\begin{tikzpicture}[scale=0.85]
+\draw[->] (-0.3,0) -- (9,0) node[right] {\small dosage};
+\draw[->] (0,-0.3) -- (0,8) node[above] {\small dosage$^2$};
+\filldraw[red] (0.8,0.08) circle (3pt);
+\filldraw[red] (1.2,0.17) circle (3pt);
+\filldraw[red] (1.6,0.31) circle (3pt);
+\filldraw[green!50!black] (3.6,1.56) circle (3pt);
+\filldraw[green!50!black] (4.0,1.92) circle (3pt);
+\filldraw[green!50!black] (4.4,2.32) circle (3pt);
+\filldraw[green!50!black] (4.8,2.77) circle (3pt);
+\filldraw[red] (7.0,5.88) circle (3pt);
+\filldraw[red] (7.4,6.57) circle (3pt);
+\filldraw[red] (7.8,7.30) circle (3pt);
+\draw[thick,blue] (1.3,0) -- (8.7,7.63);
+\draw[thick,black] (1.0,0.12) circle (3.5pt);
+\node[above] at (1.0,0.7) {\tiny dosage 1.0};
+\draw[thick,black] (2.2,0.58) circle (3.5pt);
+\node[below] at (2.2,-0.5) {\tiny dosage 2.2};
+\end{tikzpicture}
+}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{The Core Idea Behind Support Vector Machines}
+\begin{enumerate}
+\item Start with data in a relatively low dimension (here, 1-dimensional dosage).
+\item Move the data into a higher dimension (here, 2-dimensional, by adding dosage$^2$).
+\item Find a support vector classifier that separates the higher-dimensional data into two groups.
+\end{enumerate}
+That is the whole idea. The only open question left: how do we decide what higher-dimensional transformation to use?
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Why Dosage Squared? Enter Kernel Functions}
+\begin{itemize}
+\item Why dosage$^2$ and not dosage$^3$, or some other transform? Choosing a transformation by hand does not scale.
+\item Support vector machines use \textbf{kernel functions} to systematically search higher dimensions for a good support vector classifier, without the analyst hand-picking a formula.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{The Polynomial Kernel: Increasing the Degree}
+\begin{itemize}
+\item The polynomial kernel has one parameter, $D$, the degree.
+\item $D=1$: relationships between observations are computed in the original 1 dimension (no transformation).
+\item $D=2$: adds a second dimension based on dosage$^2$, exactly the picture on the previous slides.
+\item $D=3$: adds a third dimension based on dosage$^3$, and so on for higher $D$.
+\item As $D$ increases, more dimensions become available to separate the classes; the right value of $D$ is chosen with cross-validation.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{The Radial Basis Function (RBF) Kernel}
+\begin{itemize}
+\item The RBF kernel finds a support vector classifier in an infinite number of dimensions, so its transformation cannot be drawn.
+\item Even so, on a new observation it behaves like a weighted nearest-neighbor model: the closest training points have the most influence on the classification, and far-away points have very little.
+\item This is why RBF is the most commonly used default kernel: it adapts locally without anyone needing to specify a transformation at all.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{The Kernel Trick, Revisited}
+\begin{itemize}
+\item Notice that in every example above, we never actually needed the transformed coordinates themselves, only which side of the boundary a point falls on.
+\item That is exactly the kernel trick: a kernel function computes the high-dimensional relationship between two points directly from their original coordinates, without ever performing the transformation.
+\item The next few slides derive this precisely, starting from the dual optimization problem.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{A Concrete Formula: Circles in a Plane}
+\begin{itemize}
+\item Take 2-dimensional data $(x_1,x_2)$ arranged as two concentric circles, an inner ring (one class) and an outer ring (the other class). No straight line in this plane separates them.
+\end{itemize}
+\begin{center}
+\adjustbox{max width=0.6\linewidth, max totalheight=3.6cm}{
+\begin{tikzpicture}[scale=0.9]
+\draw[->] (-3,0) -- (3,0) node[right] {\small $x_1$};
+\draw[->] (0,-3) -- (0,3) node[above] {\small $x_2$};
+\foreach \a in {0,60,120,180,240,300} { \filldraw[red] (\a:1) circle (2.5pt); }
+\foreach \a in {30,90,150,210,270,330} { \filldraw[green!50!black] (\a:2.5) circle (2.5pt); }
+\end{tikzpicture}
+}
+\end{center}
+\begin{itemize}
+\item Add a third coordinate, exactly as with dosage$^2$ earlier, but now as a function of \emph{both} $x_1$ and $x_2$: $z = x_1^2+x_2^2$, the squared distance from the origin.
+\item Inner-ring points (small radius) get a small $z$; outer-ring points (large radius) get a large $z$. A flat threshold on $z$ now separates the two classes, a \textbf{linear} separator (a plane) in the lifted $(x_1,x_2,z)$ space.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{The Lift, Seen by Radius}
+\begin{itemize}
+\item Plotting radius $r=\sqrt{x_1^2+x_2^2}$ against $z=r^2$ makes the separation obvious, the same picture as the dosage example, just with ``radius'' in place of ``dosage''.
+\end{itemize}
+\begin{center}
+\adjustbox{max width=0.55\linewidth, max totalheight=3.8cm}{
+\begin{tikzpicture}[scale=1.0]
+\draw[->] (-0.3,0) -- (4,0) node[right] {\small radius $r$};
+\draw[->] (0,-0.3) -- (0,7) node[above] {\small $z=r^2$};
+\filldraw[red] (1,1) circle (3pt);
+\filldraw[green!50!black] (2.5,6.25) circle (3pt);
+\draw[dashed,blue,thick] (-0.3,3) -- (4,3);
+\node[right] at (4,3) {\tiny $z=3$};
+\end{tikzpicture}
+}
+\end{center}
+\begin{itemize}
+\item Every inner-ring point lands at $(r,z)=(1,1)$; every outer-ring point lands at $(r,z)=(2.5,6.25)$. The horizontal line $z=3$ separates them cleanly, and it is exactly this kind of formula, distance-squared from the origin, that the Radial Basis Function kernel is built around.
+\end{itemize}
+\end{frame}
+
+% Cut as redundant (Sep 2026 upgrade-deck pass): this pair re-tells the exact same toy
+% 1D-to-2D-via-squaring story as the "When Overlap Is Too Much: Drug Dosage" through
+% "Classifying a New Patient" StatQuest sequence earlier in this file, but with a generic
+% unlabeled red/black scatter instead of the dosage/cure framing, no worked numeric
+% classification example, and no verified separating line. Kept here, commented, in case
+% the plain X/X^2 framing is wanted back for a different audience.
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Simple Example: A 1D Non-Separable Case}
+%
+% 1-D: not easy to separate and how adding another dimension makes it easy.
+%
+% \begin{center}
+% \includegraphics[width=0.6\linewidth]{svm40}
+%
+% \end{center}
+%
+% {\tiny (Ref: Machine Learning – SVM Kernel Trick Example - Ajitesh Kumar)}
+% \end{frame}
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile] \frametitle{Simple Example: Adding a Dimension}
+%
+% Let’s apply the method of adding another dimension to the data by using the function $Y = X^2$ (X-squared). Thus, the data looks like the following after applying the kernel function ($Y = X^2$) and becomes linearly separable.
+% \begin{center}
+% \includegraphics[width=0.6\linewidth]{svm41}
+%
+% \end{center}
+%
+% {\tiny (Ref: Machine Learning – SVM Kernel Trick Example - Ajitesh Kumar)}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{What are Kernel Methods?: The Mapping Idea}
@@ -940,7 +1492,6 @@ Let’s apply the method of adding another dimension to the data by using the fu
 
 {\tiny (Ref: Machine Learning – SVM Kernel Trick Example - Ajitesh Kumar)}
 \end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{The Kernel Trick: The Problem}
@@ -1009,6 +1560,46 @@ K(x_i,x_j) = \phi(x_i)\cdot\phi(x_j)
 {\tiny (Ref: Machine Learning – SVM Kernel Trick Example - Ajitesh Kumar)}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Support Vector Machines: In a Nutshell}
+\begin{itemize}
+\item When two categories have no obvious linear boundary that separates them cleanly, support vector machines:
+\begin{itemize}
+\item move the data into a relatively high-dimensional space, and
+\item find a support vector classifier there that can effectively classify the observations.
+\end{itemize}
+\item Whether the relationships in that higher-dimensional space are computed explicitly or via the kernel trick, the underlying idea is the same.
+\end{itemize}
+{\tiny (Ref: StatQuest with Josh Starmer - Support Vector Machines Clearly Explained)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Kernel Trick}
+\begin{block}{Think About It}
+The RBF kernel works in an infinite number of dimensions. Why doesn't this make SVMs with an
+RBF kernel impossibly slow or impossible to compute at all?
+\begin{enumerate}
+\item[A.] It doesn't really use infinite dimensions; ``infinite'' is just a marketing term for
+``very many''.
+\item[B.] The kernel trick never computes the transformed coordinates: it only ever computes
+the similarity $K(x_i,x_j)$ between pairs of points directly from their original coordinates.
+\item[C.] Modern computers are fast enough to handle infinite-dimensional vectors directly.
+\item[D.] It only works because the dosage example was one-dimensional to begin with.
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Kernel Trick}
+\begin{block}{Answer}
+\textbf{Correct: B.} Every formula in the dual problem only ever needs the dot product
+$x_i^Tx_j$ between pairs of points, never the coordinates $\phi(x_i)$ themselves. A kernel
+function computes that dot product's higher-dimensional equivalent directly from the original,
+low-dimensional coordinates, so the cost stays proportional to the number of points, not the
+number of (possibly infinite) dimensions. This is genuinely a computational trick, not a
+statement that the dimensions don't exist.
+\end{block}
+\end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \begin{frame}[fragile] \frametitle{Circle Transformations}
@@ -1126,34 +1717,27 @@ K(x_i,x_j) = \phi(x_i)\cdot\phi(x_j)
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{\#1 - Multiclass: One-Against-Rest}
+\begin{frame}[fragile]\frametitle{Multiclass: One-Against-Rest}
 \begin{itemize}
-\item Assume multi-class data-set with K target classes
-\item Decompose into K binary problems
-\item Idea: For each target class yi create a single binary problem, with classifier Ci:
-Class yi: positive ;
-All other classes: negative;
-\item Training:
-use all instances; each instance used in training each of the Ci classifiers;
-\item Testing:
-run testing instance through each classifier;
-record votes for each yi class (negative prediction is a vote for all other classes);
-class with most votes is the predicted class
-
+\item Assume a multi-class dataset with $K$ target classes.
+\item Decompose into $K$ binary problems: for each class $y_i$, train one classifier $C_i$ where class $y_i$ is positive and every other class is negative.
+\item \textbf{Training}: every instance is used to train each of the $K$ classifiers.
+\item \textbf{Testing}: run the test instance through all $K$ classifiers.
+\begin{itemize}
+\item Each classifier casts a vote (a negative prediction is a vote for ``all other classes'').
+\item The class with the most votes wins.
+\end{itemize}
 \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{\#2 - Multiclass: One-Against-One}
+\begin{frame}[fragile]\frametitle{Multiclass: One-Against-One}
 \begin{itemize}
-\item Assume multi-class data-set with K target classes
-\item Train K(K-1)/2 binary classifiers (many more than One-Against-Rest)
-\item Idea: Each classifier distinguishes between pair of classes (yi, yj); Classifier ignores records that don't belong to $y_i$ or $y_j$
-\item Training: use all instances; each instance only used in training ``relevant classifiers'' (K of them)
-\item Testing:
-run testing instance through each classifier;
-record votes for each $y_i$ class;
-class with most votes is the predicted class;
+\item Assume a multi-class dataset with $K$ target classes.
+\item Train $K(K-1)/2$ binary classifiers, many more than One-Against-Rest.
+\item Each classifier distinguishes just one pair of classes $(y_i,y_j)$, ignoring every record that belongs to neither.
+\item \textbf{Training}: each instance is only used to train the $K-1$ classifiers relevant to its own class.
+\item \textbf{Testing}: run the test instance through every classifier, record one vote per class, and the class with the most votes wins.
 \end{itemize}
 \end{frame}
 %
@@ -1319,35 +1903,10 @@ class with most votes is the predicted class;
 %\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Quick Check: Support Vector Machine}
-\begin{block}{Think About It}
-If you added a new training point that lies far from the decision boundary, on the correct
-side of the margin, would the SVM's maximum-margin hyperplane change? What does your answer
-tell you about how much of the training set actually ``matters'' to an SVM?
-\end{block}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Quick Check: Support Vector Machine}
-\begin{block}{Answer}
-No: the hyperplane depends only on the support vectors (the points sitting on or violating
-the margin). A point that's already correctly classified with room to spare gets an alpha of
-0 in the dual solution, so adding or removing it changes nothing. This is why SVMs can
-generalize well from relatively few ``boundary case'' examples, most of the training data
-turns out to be redundant once the support vectors are known.
-\end{block}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{SVM (Recap) }
+\begin{frame}[fragile]\frametitle{SVM (Recap)}
 \begin{itemize}
-\item Maximum Margin Classifier is natural way to perform classification if a separating hyper-plane exists.
-\item This generalization is called: support vector classifier
-\item In many cases, no separating hyper-plane will exist. So need  to loosen a bit.
-\item Maximal Margin Classifier: no training errors allowed
-\item Support Vector Classifier: tolerate training errors. Approach: Soft margin
-\item Will allow construction of linear decision boundary even when classes are not linearly separable. Kernel Tricks.
+\item The \textbf{Maximal Margin Classifier} is the natural way to classify data when a separating hyperplane exists: no training errors allowed.
+\item Real data is rarely that clean, so we loosen this into the \textbf{Support Vector Classifier}: tolerate some training errors via a soft margin.
+\item When even a soft linear boundary is not enough, the \textbf{kernel trick} lets us build a linear boundary in a higher-dimensional space, giving a non-linear boundary back in the original space. Together, these three ideas are what people mean by ``SVM''.
 \end{itemize}
-
 \end{frame}
