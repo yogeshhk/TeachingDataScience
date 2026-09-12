@@ -141,9 +141,24 @@ spotting the miss visually.
   Windows; would only break on a case-sensitive clone (Linux, CI). A `git mv` fix was attempted
   and abandoned. Revisit only if a case-sensitive checkout is ever actually needed.
 - `Main_Course_GenerativeAI_{Presentation,CheatSheet}` has never been successfully compiled end
-  to end (its `\input` chain resolves, but a full compile attempt was cancelled after 10+
-  minutes with a 35MB+ PDF still growing). Do not record it as compiling until someone actually
-  builds it to completion.
+  to end. Its `\input` chain resolves (0 unresolved targets), but it is genuinely enormous: the
+  NLP workshop alone (`workshop_naturallanguageprocessing_content`, 4 seminars, one of 3 full
+  workshops this course chains together) already produces 840+ pages without finishing in 100s
+  standalone. On top of that, a full-course compile attempt (2026-09-12) hit a real,
+  reproducible non-converging bug: pdflatex got stuck reporting the same `Overfull \hbox
+  ... detected at line 708` of `nlp_intro.tex` (the "Core NLP Tasks: Part-of-Speech Tagging"
+  frame) **1,872 times in a row**, with the overflow width growing by a steady ~4pt each
+  repetition, never converging (killed after the log hit 1M+ lines). That frame compiles cleanly
+  in isolation and even with the rest of its own workshop plus `\tableofcontents` added (no
+  overfull warning at all, let alone a runaway one) -- the trigger only appears once the *entire*
+  40-file course chain (3 workshops + ~30 extra topic files) is combined, so it's an interaction
+  with later content in the chain, not a bug in that frame itself. Root cause not fully isolated;
+  further bisection would mean testing progressively larger prefixes of `course_generativeai_
+  content.tex`'s `\input` list. Given the workshop-alone page count above, the more useful fix is
+  probably architectural: this course was likely never meant to compile as one monolithic
+  driver -- the 3 workshops it chains already have their own standalone `Main_Workshop_*`
+  drivers. Do not record this course as compiling until someone either finishes that bisection
+  or the course is restructured to not require a single combined PDF.
 - Repo-wide `\input`-resolution is otherwise clean: a static walk of every driver's `\input`
   chain reports 0 unresolved targets across all current drivers. Worth re-running
   (`latex-audit inputs`) after any bulk rename.
