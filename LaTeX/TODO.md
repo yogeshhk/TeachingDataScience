@@ -105,13 +105,28 @@ resolves, 0 blocked.
 - [x] Added to both `Main_Course_GenerativeAI_Presentation.tex` and `_CheatSheet.tex`, matching
       the precedent from `Main_Course_MLCoEP_*` (root `CLAUDE.md`) and QCNP's Full Workshop driver.
 
-## 11. Smoke-test every touched workshop/seminar individually -- IN PROGRESS (started 2026-09-12)
+## 11. Smoke-test every touched workshop/seminar individually -- INCONCLUSIVE (2026-09-12)
 
-- [ ] Recompiling `Main_Workshop_LLM_Presentation.tex`, `Main_Workshop_NLP_Presentation.tex`, and
-      `Main_Workshop_NLP_Deep_Presentation.tex` (all 3 touched by items 3-8) in the background,
-      300s timeout each. **Not yet confirmed finished/clean as of this checkpoint** -- check
-      `/tmp/wf_llm.log`, `/tmp/wf_nlp.log`, `/tmp/wf_dnlp.log` (or their exit codes) next session
-      if not already done, before trusting items 3-8's edits are compile-safe.
+- [ ] Ran `Main_Workshop_LLM_Presentation.tex`, `Main_Workshop_NLP_Presentation.tex`, and
+      `Main_Workshop_NLP_Deep_Presentation.tex` (all 3 touched by items 3-8) with a 300s timeout
+      each. **None finished in that window -- no PDF produced by any of the three.** Not
+      necessarily alarming on its own: the NLP workshop alone was already known to be 840+ pages
+      without finishing in 100s *before* any of today's edits (see `CLAUDE.md`), so a 300s timeout
+      may simply not be long enough for genuinely large decks.
+- [ ] **However, `Main_Workshop_NLP_Presentation.tex`'s log (`/tmp/wf_nlp.log`, 183k lines) showed
+      the same *kind* of growing `Overfull \hbox` pattern as the original course-level bug**
+      (widths climbing steadily, ~4pt per repeat, around "line 1157" of whatever file was open at
+      the time) -- NOT confirmed whether this is a fresh issue introduced by item 3's additions
+      (`nlp_libraries`/`nlp_clustering`/`nlp_classification_gensim_movie_sentiment`/
+      `nlp_twittersentiment_nltk`) or just the pre-existing scale problem manifesting differently.
+      **Next session: re-run with a much longer timeout (background, no rush) and actually check
+      whether that growth pattern is genuinely non-converging (a real bug, possibly in one of the
+      4 newly-added files) or whether it's a one-off that resolves.** If it's a real bug, bisect
+      those 4 files the same way `nlp_intro.tex` was bisected earlier (test each in isolation)
+      before trusting item 3's placement.
+- [ ] `Main_Workshop_LLM_Presentation.tex` and `Main_Workshop_NLP_Deep_Presentation.tex`'s logs did
+      not show this growing pattern in what was checked, but weren't watched as closely -- worth a
+      second look too, not just assumed clean.
 
 ## 12. Retry the full Course compile once, to test the root-cause fix
 
