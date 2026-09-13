@@ -105,5 +105,6 @@ Beyond the courses and workshops above, dozens of independent 1-hour seminars ex
 - **Applied ML**: [Explainable AI](LaTeX/Main_Seminar_ML_ExplainableAI_Presentation.tex), [Matrix Profile](LaTeX/Main_Seminar_ML_MatrixProfile_Presentation.tex), [SQL + RAG](LaTeX/Main_Seminar_LLM_SQL_RAG_Presentation.tex) (Reinforcement Learning: see the Reinforcement Learning workshop above)
 - **Career & meta**: [Career in Data Science](LaTeX/Main_Seminar_AI_Career_Full_Presentation.tex) ([Short version](LaTeX/Main_Seminar_AI_Career_Short_Presentation.tex)), [Gartner Hype Cycles](LaTeX/Main_Seminar_Tech_HypeCycles_Gartner_Presentation.tex), [LaTeX for Research](LaTeX/Main_Seminar_Tech_LaTeX_Research_Presentation.tex)
 - **Hands-on tool workshops**: [Claude Code](LaTeX/Main_Seminar_AI_HandsOn_ClaudeCode_Presentation.tex), [OpenCode](LaTeX/Main_Seminar_AI_HandsOn_OpenCode_Presentation.tex)
+- **Venue-specific talks**: [Generative AI (MMMCoE)](LaTeX/Main_Seminar_GenAI_MMMCoE_Presentation.tex)
 
 This list is a sample, not exhaustive: every `Main_Seminar_*_Presentation.tex` in `LaTeX/` is an independent, compilable session; browsing that naming pattern directly is the fastest way to find something not listed here.

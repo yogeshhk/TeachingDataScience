@@ -1,21 +1,18 @@
 # Security Policy
 
-## Supported Versions
+This is a teaching content repo (LaTeX slide decks and example code), not a software product,
+so there's no versioned release to patch. That said, security reports are still welcome for
+things like:
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+- An example script in `Code/` that encourages an insecure practice (a hardcoded secret,
+  an unsafe deserialization pattern, a vulnerable dependency pin).
+- A credential or personal data accidentally committed anywhere in the repo.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+## Reporting
 
-## Reporting a Vulnerability
+Please don't open a public issue for a live credential leak or an actively exploitable example.
+Instead, open an issue with as much detail as you're comfortable sharing, or reach out via the
+contact link in the [README](README.md), and it will be looked at and fixed as soon as possible.
 
-Use this section to tell people how to report a vulnerability.
-
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+For anything else (a typo, a stale reference, a broken code example with no security angle),
+see [`CONTRIBUTING.md`](CONTRIBUTING.md) instead.

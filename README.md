@@ -19,9 +19,9 @@ A few sample slides, actual output from the `.tex` sources in this repo, no edit
 
 <table>
 <tr>
-<td><img src="docs/screenshots/ml-ensemble.png" alt="Ensemble Methods seminar slide" width="280"></td>
-<td><img src="docs/screenshots/llm-embeddings.png" alt="LLM Intro seminar slide on tokenisation and embeddings" width="280"></td>
-<td><img src="docs/screenshots/python-basics.png" alt="Python Basics seminar slide" width="280"></td>
+<td><img src="LaTeX/images/screenshots/ml-ensemble.png" alt="Ensemble Methods seminar slide" width="280"></td>
+<td><img src="LaTeX/images/screenshots/llm-embeddings.png" alt="LLM Intro seminar slide on tokenisation and embeddings" width="280"></td>
+<td><img src="LaTeX/images/screenshots/python-basics.png" alt="Python Basics seminar slide" width="280"></td>
 </tr>
 </table>
 
