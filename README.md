@@ -39,19 +39,7 @@ Every seminar/workshop compiles to **both** Beamer slides and two-column printab
 
 ## Course Catalog
 
-| Course | Covers | Driver |
-|---|---|---|
-| Machine Learning | Python for ML → foundations → regression → trees/ensembles → KNN/SVM/Naive Bayes → clustering → dimensionality reduction → deployment | [`Main_Course_MachineLearning_Presentation.tex`](LaTeX/Main_Course_MachineLearning_Presentation.tex) |
-| Maths for ML | Basics → linear algebra → calculus → statistics; built for fresher/college-level students | [`Main_Course_MathsML_Presentation.tex`](LaTeX/Main_Course_MathsML_Presentation.tex) |
-| Python | Basic Python, then Advanced Python | [`Main_Course_Python_Presentation.tex`](LaTeX/Main_Course_Python_Presentation.tex) |
-| Deep Learning | Prerequisites → neural network foundations → TensorFlow & PyTorch → self-organizing maps, autoencoders | [`Main_Course_DeepLearning_Presentation.tex`](LaTeX/Main_Course_DeepLearning_Presentation.tex) |
-| Generative AI | NLP fundamentals → deep NLP (BERT, embeddings) → LLMs, ChatGPT, prompt engineering, autonomous agents, LangChain, LangGraph, LlamaIndex, advanced RAG | [`Main_Course_GenerativeAI_Presentation.tex`](LaTeX/Main_Course_GenerativeAI_Presentation.tex) |
-
-Each course is assembled from standalone **workshops**, which are assembled from standalone **seminars**, so you don't have to take the whole course to get value; jump straight into any one workshop or seminar that matches what you need.
-
-## Beyond these courses
-
-Many more standalone workshops and seminars exist outside the courses above, covering NLP (spaCy, Rasa chatbots, deep NLP), LLMs & GenAI (RAG, LangChain, LangGraph, agents, Docling), Graph ML (knowledge graphs, geometric deep learning, graph databases), Reinforcement Learning, Software Engineering practices, Data Analytics, and career/interview-prep seminars. See [`COURSES.md`](COURSES.md) for the full catalog.
+Five full courses (Machine Learning, Maths for ML, Python, Deep Learning, Generative AI), each assembled from standalone workshops and seminars you can also take independently, plus dozens more standalone workshops and seminars beyond them (NLP, LLMs & GenAI, Graph ML, Reinforcement Learning, Software Engineering, Data Analytics, career prep, and more). See [`COURSES.md`](COURSES.md) for the full catalog with links to every driver.
 
 ## Code Projects
 

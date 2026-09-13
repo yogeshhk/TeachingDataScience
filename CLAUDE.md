@@ -132,6 +132,19 @@ memory.** A manual pass following the same steps from recollection has silently 
 checklist items (e.g. the prose-dash sweep) with no error signal, only caught later by the user
 spotting the miss visually.
 
+### Orphan-file tooling (added 2026-09-13)
+`LaTeX/find_orphan_tex.py` finds `.tex` files that exist on disk but aren't reachable via
+`\input`/`\include` from any `Main_*.tex` driver chain: the reverse direction from the
+`latex-audit` skill's `inputs` mode (which flags broken targets, not unreferenced files).
+Excludes `images/*.tex` (standalone TikZ/PGF sources, never `\input` by a driver) and anything
+under `backup`/`_backup`/`_retired`. Run it after any bulk rename or content reorganization.
+
+A full repo-wide sweep on 2026-09-13 took the orphan count from 109 to 0: dead/superseded files
+moved into themed `_retired/` subfolders, drafted-but-disabled content activated where it fit,
+a few genuinely stale items retired on the maintainer's call, and one cluster
+(`llm_agents_mads.tex`) promoted into its own new seminar (`Main_Seminar_LLM_MADS_*`, see
+`COURSES.md`). Re-run the script periodically; there's no separate report file to consult now.
+
 ### Known issues
 - **Accepted, deprioritized: git-index/disk casing drift on the 8 `Main_Seminar_AI_For_*`
   seminar drivers** (WithML, Kids, BizLeaders, ProjectManagers, TechLeaders, Educators, All_Tech,
@@ -141,24 +154,16 @@ spotting the miss visually.
   Windows; would only break on a case-sensitive clone (Linux, CI). A `git mv` fix was attempted
   and abandoned. Revisit only if a case-sensitive checkout is ever actually needed.
 - `Main_Course_GenerativeAI_{Presentation,CheatSheet}` has never been successfully compiled end
-  to end. Its `\input` chain resolves (0 unresolved targets), but it is genuinely enormous: the
-  NLP workshop alone (`workshop_naturallanguageprocessing_content`, 4 seminars, one of 3 full
-  workshops this course chains together) already produces 840+ pages without finishing in 100s
-  standalone. On top of that, a full-course compile attempt (2026-09-12) hit a real,
-  reproducible non-converging bug: pdflatex got stuck reporting the same `Overfull \hbox
-  ... detected at line 708` of `nlp_intro.tex` (the "Core NLP Tasks: Part-of-Speech Tagging"
-  frame) **1,872 times in a row**, with the overflow width growing by a steady ~4pt each
-  repetition, never converging (killed after the log hit 1M+ lines). That frame compiles cleanly
-  in isolation and even with the rest of its own workshop plus `\tableofcontents` added (no
-  overfull warning at all, let alone a runaway one) -- the trigger only appears once the *entire*
-  40-file course chain (3 workshops + ~30 extra topic files) is combined, so it's an interaction
-  with later content in the chain, not a bug in that frame itself. Root cause not fully isolated;
-  further bisection would mean testing progressively larger prefixes of `course_generativeai_
-  content.tex`'s `\input` list. Given the workshop-alone page count above, the more useful fix is
-  probably architectural: this course was likely never meant to compile as one monolithic
-  driver -- the 3 workshops it chains already have their own standalone `Main_Workshop_*`
-  drivers. Do not record this course as compiling until someone either finishes that bisection
-  or the course is restructured to not require a single combined PDF.
+  to end. It's a general pdflatex/Beamer large-deck instability, not a bug in any specific frame
+  or file: a reproducible non-converging `Overfull \hbox` loop (width growing a few pt per
+  repetition, exploding into unbounded blank pages) has now shown up at two unrelated trigger
+  frames in two unrelated decks (`nlp_intro.tex` in the full course, `llm_production.tex` in
+  `Main_Workshop_LLM_Presentation.tex`), and both trigger frames compile perfectly cleanly on
+  their own. It isn't even consistently reproducible: the other two workshops that make up this
+  course now compile cleanly at 10-minute timeouts with no recurrence. **Standing rule: don't run
+  mega-deck compiles (multi-workshop or full-course) to chase this.** Any future work on it stays
+  at single-seminar/single-workshop scale and would need to look at pdflatex/Beamer's own memory
+  or box-accumulation behavior at scale, not at repo content.
 - Repo-wide `\input`-resolution is otherwise clean: a static walk of every driver's `\input`
   chain reports 0 unresolved targets across all current drivers. Worth re-running
   (`latex-audit inputs`) after any bulk rename.
