@@ -5,8 +5,14 @@ under `LaTeX/`, but is not reachable via `\input{}`/`\include{}` from any `Main_
 chain, transitively. Re-run the script any time to refresh these numbers; they will drift as
 content is added, moved, or wired in.
 
-**Snapshot: 109 orphans out of 1086 `.tex` files (10.0%)**, plus 15 files under `images/` that
-the script excludes as false positives (see below).
+**Original snapshot: 109 orphans out of 1086 `.tex` files (10.0%)**, plus 15 files under
+`images/` excluded as false positives (see below). **Updated 2026-09-13, fully worked through:**
+Bucket A (34 files), 14 of Bucket B's 17 files, and 7 of Bucket C's 58 files are now moved into
+`_retired/` (see `TODO.md` for exactly what moved where). Current count: **54 orphans
+remaining**, and none of them need further mechanical cleanup: 3 are flagged Bucket B items and
+5 are a flagged Bucket C cluster (both need a maintainer content decision, not cleanup), and the
+other 46 are Bucket C items that turned out to already be correctly homed (commented out,
+pending activation, in a live content file) rather than actually orphaned.
 
 ---
 
@@ -52,99 +58,115 @@ of these is actually still `\input` from somewhere my script doesn't check (it o
 
 ---
 
-## Bucket B: possible `_short` sibling drift, 17 files, needs per-pair checking, not a bulk move
+## Bucket B: possible `_short` sibling drift, 17 files: RESOLVED except 3 flagged items
 
-The repo has a real `X.tex`/`X_short.tex` sibling convention (see `CLAUDE.md`'s "Sibling-file
-sync rule") for genuine shorter-duration variants. Each of these ends in `_short` but its
-un-suffixed sibling either doesn't exist, or exists and no longer references the short
-version, so it can't be told apart from Bucket A by filename alone:
+Checked each against its sibling and any file referencing it (live or commented).
 
-```
-career_ai_roles_short.tex     ml_agri_short.tex
-dl_intro_short.tex            ml_concepts_short.tex
-dl_python_short.tex           ml_refs_short.tex
-dnlp_intro_short.tex          nlp_embedding_short.tex
-genai_intro_short.tex         nlp_refs_short.tex
-llm_fromzero_short.tex        python_syntax_short.tex
-rl_concepts_short.tex         rl_qlearning_short.tex
-rl_conclusion_short.tex
-rl_deepqlearning_short.tex
-rl_intro_short.tex
-```
+**14 moved to `_retired/`:**
+- `rl_concepts_short.tex`, `rl_conclusion_short.tex`, `rl_deepqlearning_short.tex`,
+  `rl_intro_short.tex`, `rl_qlearning_short.tex`: used only by the already-`_retired`
+  `ml_reinforcementlearning_ad_hoc_seminar/seminar_reinforcementlearning_content.tex`. Moved
+  into that same `_retired/` subfolder to keep the family self-contained.
+- `llm_fromzero_short.tex`: used only by three content files already living under
+  `_retired/ai_chatgpt/`. Moved there.
+- `dl_intro_short.tex`, `dnlp_intro_short.tex`, `genai_intro_short.tex`, `ml_refs_short.tex`,
+  `nlp_embedding_short.tex`, `nlp_refs_short.tex`, `python_syntax_short.tex`,
+  `ml_concepts_short.tex`: zero references anywhere, live or commented (their un-suffixed
+  siblings are live via a different, unrelated content file in every case). Moved into
+  `LaTeX/_retired/superseded_drafts/` alongside Bucket A.
 
-**Recommendation:** for each, check whether a `_Short` driver already exists and just needs this
-file wired back in, or whether it's genuinely abandoned (in which case it joins Bucket A).
-Not done in this pass; deliberately deferred rather than guessed at 17 times.
+**3 left in place, flagged for a maintainer decision** (each is a commented-out `\input` inside a
+currently-*live* content file, so this is a content call, not cleanup):
+- `career_ai_roles_short.tex`: commented out of the live `Main_Seminar_AI_Career_Short_*` deck
+  while the full `career_ai_roles.tex` is live in the Full version. Reads as a deliberate "keep
+  the short version shorter" choice already in effect, not drift.
+- `dl_python_short.tex` (commented in `seminar_deeplearning_content.tex`, "Python for DL
+  (short)"), `ml_agri_short.tex` (commented in `seminar_machinelearning_content.tex`, "ML for
+  agriculture"): neither has a non-`_short` sibling on disk at all, so unclear whether these are
+  unfinished drafts worth finishing or abandoned ideas worth retiring.
 
 ---
 
-## Bucket C: real, substantive content with no driver at all, 58 files
+## Bucket C: content with no driver, 58 files originally: mostly not actually a gap
 
-Grouped by theme. These are not junk: someone wrote real slides for these topics, but a visitor
-following the README/COURSES.md navigation cannot currently reach any of them.
+The original pass judged these purely by driver-chain reachability, which made them look like
+unclaimed content. A follow-up grep for each filename (including inside comments) across every
+`seminar_*_content.tex`/`workshop_*_content.tex`/`course_*_content.tex` file told a different,
+much more mundane story for most of them. Reclassified into four groups:
 
-**AI tools, 10 files.** A near-complete standalone curriculum on AI coding tools, currently
-invisible next to the existing Claude Code / OpenCode seminars in `COURSES.md`:
-`ai_tools_claudecode_bestprac.tex`, `ai_tools_claudecode_demo_advanced.tex`,
-`ai_tools_claudecode_demo_basic.tex`, `ai_tools_claudecode_intro.tex`,
-`ai_tools_claudecode_setup.tex`, `ai_tools_claudecowork.tex`, `ai_tools_notebooklm.tex`,
-`ai_tools_openwork.tex`, `ai_tools_sarvam_demo.tex`, `career_ai_tools.tex`
+### C1: already homed, just commented out pending activation (46 files): no action needed
 
-**Rasa chatbot example bots, 4 files.** The Rasa workshop's own catalog entry mentions "a full
-IPL-bot walkthrough"; these look like alternate/earlier bot examples not currently wired into
-that chain: `chatbot_rasa_chatbot_nlu_gstbot.tex`, `chatbot_rasa_chatbot_nlu_restaurant.tex`,
-`chatbot_rasa_chatbot_slots_bookingbot.tex`, `chatbot_rasa_installdemo.tex`
+Every one of these already has an explicit `% \input{...}` line, usually with a descriptive
+comment, inside a **currently-live** content file. This is the repo's normal working state for
+drafted-but-not-yet-enabled material, not an orphan problem:
 
-**Applied AI in sensitive domains, 4 files:** `ai_healthcare.tex`, `chatbot_healthcare.tex`,
-`dnlp_phishing.tex`, `dnlp_security.tex`
+- `ai_healthcare.tex` (in `seminar_ai_for_all_tech_content.tex`)
+- `chatbot_healthcare.tex`, `chatbot_rasa_chatbot_nlu_gstbot.tex`,
+  `chatbot_rasa_chatbot_nlu_restaurant.tex`, `chatbot_rasa_chatbot_slots_bookingbot.tex`,
+  `chatbot_rasa_installdemo.tex` (in `seminar_chatbot_content.tex` and/or
+  `workshop_chatbot_rasa_content.tex`)
+- `dl_intro_keras.tex`, `dl_classification_cnn_keras.tex`, `dl_rnn_keras.tex` (in
+  `seminar_deeplearning_content.tex`)
+- `data_evaluation.tex`, `data_visualization_churn.tex`, `ml_mech_refs.tex`,
+  `ml_agri_assignments.tex`, `ml_agri_refs.tex`, `mlme_title.tex`, `ds_course_intro.tex`,
+  `coep_course_logistics.tex` (all in `seminar_machinelearning_content.tex`)
+- `llm_finetuning_openai.tex`, `llm_finetuning_huggingface.tex` (in
+  `seminar_llm_finetuning_content.tex`)
+- `llm_transformers_openai.tex` (in `seminar_llm_transformers_content.tex`)
+- `maths_calculus_integration.tex` (in
+  `seminar_maths4ml_calculus_derivatives_optimization_content.tex`, marked "TBD")
+- `graph_rag_concepts.tex`, `graph_rag_impl_fastrag.tex`, `graph_rag_impl_neo4j.tex`,
+  `graph_rag_impl_langchain.tex`, `graph_rag_impl_llamaindex.tex` (in
+  `seminar_graph_rag_content.tex`)
+- `llm_promptengg_applications_marketing.tex`, `llm_promptengg_thermal.tex` (in
+  `seminar_llm_promptengg_content.tex` / `seminar_llm_genai_content.tex`)
+- `dnlp_phishing.tex`, `dnlp_security.tex` (in `workshop_deepnlp_content.tex`)
+- `ml_course_demo3_decisiontree_synthetic.tex`, `ml_course_assign3_decisiontree_synthetic.tex`,
+  `ml_course_assign5_randomforest_creditscore.tex` (in `course_machinelearning_content.tex`)
+- `ai_educators_technical_optional.tex` (in `seminar_ai_for_educators_content.tex`)
+- `llm_agents_mads.tex`, `llm_agents_impl_crewai.tex`, `llm_agents_impl_smolagents.tex`,
+  `llm_agents_impl_google.tex` (in `seminar_llm_agents_content.tex` /
+  `workshop_llm_agents_content.tex`)
+- `langchain_devcon2025_start.tex`, `langchain_devcon2025_end.tex` (in
+  `seminar_llm_langchain_content.tex` / `workshop_llm_langchain_content.tex`)
+- `llm_concepts.tex` (in the live `seminar_llm_intro_content.tex`)
+- `ai_tools_claudecode_intro.tex`, `ai_tools_claudecode_setup.tex`,
+  `ai_tools_claudecode_demo_basic.tex`, `ai_tools_claudecode_bestprac.tex`,
+  `ai_tools_claudecode_demo_advanced.tex` (in `seminar_ai_claudecode_content.tex`, itself live
+  via `Main_Seminar_AI_HandsOn_ClaudeCode_Presentation.tex`/`CheatSheet.tex`: initially miscounted
+  as part of the "AI tools" cluster below before checking where they're actually referenced)
 
-**Graph RAG implementation, 5 files.** `COURSES.md` lists a Graph RAG seminar but these
-implementation-specific files aren't in its chain: `graph_rag_concepts.tex`,
-`graph_rag_impl_fastrag.tex`, `graph_rag_impl_langchain.tex`, `graph_rag_impl_llamaindex.tex`,
-`graph_rag_impl_neo4j.tex`
+**No action taken.** Activating any of these is a content decision (is the draft finished, does
+it read well) for whoever owns that seminar, not a structural fix.
 
-**Knowledge graphs, 2 files:** `kg_llm.tex`, `kg_overview.tex`
+### C2: genuinely dead, zero reference anywhere, now moved (4 files)
 
-**Conference talk fragments, 2 files:** `langchain_devcon2025_start.tex`,
-`langchain_devcon2025_end.tex`
+`kg_llm.tex` and `kg_overview.tex` (superseded by the live, more granular `kg_llm_intro.tex`/
+`kg_llm_conclusions.tex`/`kg_llm_refs.tex` in `workshop_graph_kg_content.tex`), `ml_tensorflow.tex`,
+and `template_homework.tex` had no reference anywhere, live or commented. Moved into
+`LaTeX/_retired/superseded_drafts/` alongside Buckets A and B's zero-reference files.
 
-**LLM agents, alternate frameworks, 4 files:** `llm_agents_impl_crewai.tex`,
-`llm_agents_impl_google.tex`, `llm_agents_impl_smolagents.tex`, `llm_agents_mads.tex`
+### C3: retired-family leftovers, now moved (3 files)
 
-**LLM fine-tuning, alternate providers, 2 files:** `llm_finetuning_huggingface.tex`,
-`llm_finetuning_openai.tex`
+`about_me_seqseg.tex`, `tedx.tex`, and `ai_tools_sarvam_demo.tex` were each still actively (not
+commented) `\input` by content that already lives under `_retired/` (`_retired/llm_seqseg/`,
+`_retired/ai_chatgpt/`, `_retired/ai_sarvam/` respectively). Moved into those same folders to
+keep each family self-contained, matching the Bucket A/B precedent.
 
-**Misc LLM, 4 files:** `llm_transformers_openai.tex`, `llm_promptengg_applications_marketing.tex`,
-`llm_promptengg_thermal.tex`, `llm_concepts.tex`
+### C4: genuinely inconsistent, flagged for a real decision (5 files)
 
-**Deep learning, Keras variants, 3 files:** `dl_classification_cnn_keras.tex`,
-`dl_intro_keras.tex`, `dl_rnn_keras.tex`
+`seminar_artificialintelligence_tools_content.tex` is a `seminar_*_content.tex` aggregator with
+no driver at all, unlike every other seminar in the repo, and it is not simply "missing a
+driver": every line in it is commented out, and two of its eight references
+(`ai_tools_opencode_intro`, `ai_tools_opencode_demo`) point to files that are already live
+elsewhere (`Main_Seminar_AI_HandsOn_OpenCode_Presentation.tex`), so activating them here would
+duplicate content, echoing the exact duplicate-`\input` pattern `LaTeX/TODO.md` already
+documents and fixed once for the GenerativeAI course. A third reference,
+`\input{ai_tools_claudecode}` (no such file exists), is simply stale. The three files unique to
+this draft, `ai_tools_claudecowork.tex`, `ai_tools_notebooklm.tex`, `ai_tools_openwork.tex`, plus
+`career_ai_tools.tex`, are referenced only here.
 
-**Data/analytics, 2 files:** `data_evaluation.tex`, `data_visualization_churn.tex`
-
-**Maths, 1 file:** `maths_calculus_integration.tex`
-
-**ML for agriculture, applied bundle, 2 files:** `ml_agri_assignments.tex`, `ml_agri_refs.tex`
-(`ml_agri_short.tex` is in Bucket B)
-
-**MLCoEP-style assignments/demos, 3 files:** `ml_course_assign3_decisiontree_synthetic.tex`,
-`ml_course_assign5_randomforest_creditscore.tex`, `ml_course_demo3_decisiontree_synthetic.tex`
-
-**ML misc, 2 files:** `ml_mech_refs.tex`, `ml_tensorflow.tex`
-
-**Course/venue meta fragments, 6 files:** `coep_course_logistics.tex`, `ds_course_intro.tex`,
-`mlme_title.tex`, `about_me_seqseg.tex`, `ai_educators_technical_optional.tex`, `tedx.tex`
-
-**Structural gap, 1 file.** `seminar_artificialintelligence_tools_content.tex` is a
-`seminar_*_content.tex` aggregator file with no `Main_Seminar_*` driver pointing at it at all,
-unlike every other seminar in the repo. Given the "AI tools" cluster above, this may be the
-missing driver target for that whole cluster.
-
-**Unused template, 1 file:** `template_homework.tex`
-
-**Recommendation:** no bulk action here, this is a decision list, not a task list. Options per
-item are: wire it into an existing seminar/workshop `\input` chain, give it (and its cluster)
-its own new `Main_Seminar_*` driver, or move it to `_retired/` if it's genuinely abandoned. The
-AI tools cluster plus `seminar_artificialintelligence_tools_content.tex` looks like the
-highest-value single fix, since it's a nearly-complete mini-course sitting one driver file away
-from being catalog-visible.
+**Left untouched, needs the maintainer's call:** finish this as a real standalone "AI tools
+survey" seminar (dropping the two OpenCode duplicate lines and the stale ClaudeCode line first),
+fold its three unique files into other existing seminars instead, or retire the whole cluster.
+Not something to guess at.

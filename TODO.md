@@ -75,6 +75,50 @@ duplicated here.
       same count (109 orphans, 15 image-source false positives, out of 1086 `.tex` files) whether
       invoked with `.`, an absolute path, or no argument.
 
+- [x] Resolve Bucket B (17 possible `_short` sibling-drift files from `orphan_tex_report.md`).
+      Done 2026-09-13: checked each against its sibling and any referencing content file.
+      14 resolved and moved: 6 belonged entirely to an already-`_retired` seminar (5 RL `_short`
+      files used only by `_retired/ml_reinforcementlearning_ad_hoc_seminar/...`, plus
+      `llm_fromzero_short.tex` used only by `_retired/ai_chatgpt/...`) and were moved into those
+      same `_retired/` subfolders to keep each family self-contained; 8 had zero references
+      anywhere, live or commented (`dl_intro_short`, `dnlp_intro_short`, `genai_intro_short`,
+      `ml_refs_short`, `nlp_embedding_short`, `nlp_refs_short`, `python_syntax_short`,
+      `ml_concepts_short`), and were moved into `LaTeX/_retired/superseded_drafts/` alongside
+      Bucket A. Verified after: orphan count dropped 75 -> 61, 0 of 279 drivers blocked.
+      **3 left unresolved, flagged for your call** (all are commented-out `\input` lines sitting
+      inside currently-live content files, so moving them is a content decision, not cleanup):
+      - `career_ai_roles_short.tex`: commented out of the live `Main_Seminar_AI_Career_Short_*`
+        deck while the full `career_ai_roles.tex` is live in the Full version. Looks like a
+        deliberate "keep the short version shorter" choice, not drift.
+      - `dl_python_short.tex`, `ml_agri_short.tex`: each commented out of a currently-live course
+        content file (`seminar_deeplearning_content.tex`, `seminar_machinelearning_content.tex`)
+        with an inline note describing real intended content, but neither has a non-`_short`
+        sibling on disk at all, so it's unclear whether these are unfinished drafts worth
+        finishing or abandoned ideas worth retiring.
+- [x] Resolve Bucket C (58 real-content-gap files from `orphan_tex_report.md`).
+      Done 2026-09-13: a follow-up grep (checking every filename inside comments too, not just
+      live `\input`s) found the original "no driver at all" framing was mostly wrong. Reclassified:
+      **46 of 58 need no action at all** (already `% \input{...}`'d, with a descriptive comment,
+      inside a currently-live content file, e.g. the whole Graph RAG and Rasa-bot clusters: this
+      is just the repo's normal backlog of drafted-but-unactivated slides, not an orphan problem).
+      **7 were genuinely dead and got moved**: `kg_llm.tex`/`kg_overview.tex` (superseded by the
+      live, split-up `kg_llm_intro/_conclusions/_refs`), `ml_tensorflow.tex`, and
+      `template_homework.tex` (zero references anywhere) went to
+      `LaTeX/_retired/superseded_drafts/`; `about_me_seqseg.tex`, `tedx.tex`, and
+      `ai_tools_sarvam_demo.tex` (each still actively `\input` by content already living under
+      `_retired/`) went into that same `_retired/` subfolder as their consumer.
+      **5 left flagged, needs the maintainer's call**: `seminar_artificialintelligence_tools_content.tex`
+      turned out not to be "just missing a driver": every line in it is commented out, two of its
+      references (`ai_tools_opencode_intro`/`_demo`) would duplicate content already live
+      elsewhere (the exact pattern already documented and fixed once in `LaTeX/TODO.md` for the
+      GenerativeAI course), and one reference (`ai_tools_claudecode`) points to a file that
+      doesn't exist. Its 3 unique files (`ai_tools_claudecowork.tex`, `ai_tools_notebooklm.tex`,
+      `ai_tools_openwork.tex`) plus `career_ai_tools.tex` are referenced only by this draft.
+      Options are: finish it as a real seminar (dropping the duplicate/stale lines first), fold
+      the unique files elsewhere, or retire the cluster; not resolved here.
+      Verified after all moves: orphan count 61 -> 54, `latex-audit -Mode inputs` still 0 of 279
+      drivers blocked.
+
 ## Needs the user's go-ahead before running (no LaTeX compile without asking, per standing rule)
 
 - [ ] `LaTeX/TODO.md` item #11: re-run the smoke-test compiles for `Main_Workshop_LLM_Presentation.tex`,
