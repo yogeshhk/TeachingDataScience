@@ -40,5 +40,8 @@ number the Session 16 slides quote. The silhouette score for `k = 3` is 0.457 (b
 
 ## Provenance
 
-The file is byte-identical to `Code/ml/data/cars.csv` in this repository. The slides carry no attribution line for it
-and the original source was not recorded when it was added; treat the source as unverified until it is traced.
+The file is byte-identical to `Code/ml/data/cars.csv` in this repository. It is the SAS sample data set `SASHELP.CARS`
+(428 cars, 15 variables, plus an `Obs` counter column), exported with a semicolon separator and formatted prices. This was
+checked on 2026-09-19: the first rows match the copy published in the `sassoftware/sas-viya-programming` repository value for
+value (for example the Acura MDX: MSRP 36,945, invoice 33,337, engine 3.5, 265 hp, weight 4,451). The slides for Sessions 16
+and 17 now name the data set. Where SAS itself obtained the underlying car specifications was not checked.
