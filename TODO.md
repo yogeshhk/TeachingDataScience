@@ -2,4 +2,4 @@
 
 Link-only index into the active sub-project TODOs.
 
-- MLCoEP course (decks in `LaTeX/`, offline data and code in `Code/mlcoep/`): [Code/mlcoep/TODO.md](Code/mlcoep/TODO.md)
+No active TODOs. The MLCoEP course list was closed on 2026-09-19 and its file deleted.

@@ -88,6 +88,33 @@ Most teams start at level 0. Move up when releases become frequent or manual ste
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{MLOps for a Machine: Predictive Maintenance}
+\begin{center}
+\adjustbox{max width=\linewidth, max totalheight=3.4cm}{%
+\begin{tikzpicture}[every node/.style={font=\scriptsize}, box/.style={draw, rounded corners, minimum width=2.2cm, minimum height=0.9cm, align=center}]
+\node[box] (s) at (0,0) {Sensors\\on the machine};
+\node[box] (d) at (3.2,0) {Data check\\(ranges, gaps)};
+\node[box] (m) at (6.4,0) {Model service\\(failure risk)};
+\node[box] (a) at (9.6,0) {Alert to the\\maintenance team};
+\node[box] (f) at (12.8,0) {Outcome\\(fault found?)};
+\draw[->, thick] (s) -- (d);
+\draw[->, thick] (d) -- (m);
+\draw[->, thick] (m) -- (a);
+\draw[->, thick] (a) -- (f);
+\draw[->, thick, dashed] (f.south) -- ++(0,-0.9) -| (m.south);
+\node[font=\tiny] at (9.6,-1.15) {outcomes become new labels for retraining};
+\end{tikzpicture}%
+}
+\end{center}
+\begin{itemize}
+\item Data: check for stuck sensors and missing values before every prediction
+\item Split training and test data by machine, not by row
+\item Monitor: sensor drift after a repair or a new supplier, and the false-alarm rate
+\item Feedback: log each alert and whether a fault was found, then use it to retrain
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{How Data Is Curated}
 \begin{itemize}
 \item Collect: log inputs and outcomes from the running system, within privacy rules
@@ -137,20 +164,41 @@ Lineage: record which data version, code version and parameters produced each mo
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Safe Release Patterns}
-\begin{center}
-\small\renewcommand{\arraystretch}{1.35}
-\begin{tabular}{>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.68\linewidth}}
+\adjustbox{valign=t}{%
+\begin{minipage}{0.58\linewidth}
+\small\renewcommand{\arraystretch}{1.25}\setlength{\tabcolsep}{2pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.35\linewidth}>{\raggedright\arraybackslash}p{0.57\linewidth}}
 \hline
 \textbf{Pattern} & \textbf{How it works} \\
 \hline
 Shadow & the new model receives live traffic; its answers are logged, not served \\
 Canary & send a small share of traffic to the new model, watch the metrics, then widen \\
 A/B test & split users between old and new, compare a business metric \\
-Champion/challenger & the challenger must beat the current champion, with a significant margin, before promotion \\
+Champion/\allowbreak challenger & the challenger must beat the current champion, with a significant margin, before promotion \\
 Rollback & keep the previous model version ready to restore quickly \\
 \hline
 \end{tabular}
+\end{minipage}%
+}%
+\hfill%
+\adjustbox{valign=t}{%
+\begin{minipage}{0.38\linewidth}
+\begin{center}
+\adjustbox{max width=\linewidth, max totalheight=4.6cm}{%
+\begin{tikzpicture}[every node/.style={font=\scriptsize}]
+\node[draw, rounded corners] (u) at (0,3) {Requests};
+\node[draw, rounded corners, fill=gray!15] (r) at (0,1.5) {Router};
+\node[draw, rounded corners, align=center] (a) at (-1.3,-0.3) {Model v1\\(current)};
+\node[draw, rounded corners, fill=green!15, align=center] (b) at (1.5,-0.3) {Model v2\\(new)};
+\draw[->, thick] (u) -- (r);
+\draw[->, thick] (r) -- node[left, xshift=-1pt] {95\%} (a);
+\draw[->, thick] (r) -- node[right, xshift=1pt] {5\%} (b);
+\end{tikzpicture}%
+}
 \end{center}
+\tiny{Canary release: a small share of live traffic goes to the new model.}
+\end{minipage}%
+}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -193,14 +241,15 @@ Tools: Evidently, Arize, Prometheus and Grafana, and the monitoring services of 
 \hline
 Experiment tracking, model registry & MLflow, ClearML \\
 Pipelines, orchestration & Kubeflow Pipelines, Apache Airflow, Prefect, Metaflow, Dagster \\
-Data and feature versioning & DVC, lakeFS, Feast, Great Expectations \\
+Data versioning, features, validation & DVC, lakeFS, Feast, Great Expectations \\
 Model serving & KServe, BentoML, NVIDIA Triton, Ray Serve \\
 Monitoring & Evidently, Prometheus and Grafana \\
 \hline
 \end{tabular}
 \end{center}
 \begin{itemize}
-\item No license fee and full control, but you install, run and update them yourself, often on Kubernetes
+\item No license fee and full control, but you install, run and update them yourself
+\item Often they run on Kubernetes: software that starts containers on many machines and keeps them healthy
 \item Several are ``open core'': the code is free, and the company sells a hosted version
 \end{itemize}
 \end{frame}
@@ -220,7 +269,7 @@ Monitoring, observability & Arize, Fiddler, Datadog \\
 \end{tabular}
 \end{center}
 \begin{itemize}
-\item The cloud platforms bundle pipelines, a model registry, serving endpoints and monitoring in one place
+\item The cloud platforms bundle pipelines, a model registry, model services and monitoring in one place
 \item Faster start, support and compliance certificates, but you pay for use and depend on the vendor (lock-in)
 \end{itemize}
 The landscape changes quickly: check the current status of a tool before you choose it.
@@ -231,8 +280,6 @@ The landscape changes quickly: check the current status of a tool before you cho
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Choosing a Platform}
 \begin{itemize}
-\item Open source: full control and no license fee, but you run the infrastructure
-\item Commercial or managed: faster start and support, but a cost and some lock-in
 \item A common mix: open-source tools (for example MLflow) on top of a cloud provider's compute
 \item Questions to ask
 \begin{itemize}
@@ -246,22 +293,31 @@ The landscape changes quickly: check the current status of a tool before you cho
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Quick Check: Choosing Tools}
+\begin{frame}[fragile]\frametitle{Quick Check: Tools and Releases}
 \begin{block}{Think About It}
-A small team of mechanical engineers has one trained model, no cloud experience and a small budget. They want to keep track of their experiments and models. What is the best first step?
+1. A small team of mechanical engineers has one trained model, no cloud experience and a small budget. They want to track their experiments and models. What is the best first step?
 \begin{enumerate}
   \item[A.] Buy an end-to-end commercial platform, so that nothing is left to add later
-  \item[B.] Start with an open-source tracking tool and registry (for example MLflow) on the machines they already have, and add pipelines and monitoring later
-  \item[C.] Build their own pipeline system on Kubernetes before tracking anything
+  \item[B.] Start with an open-source tracking tool and registry (for example MLflow), and add pipelines and monitoring later
+  \item[C.] Build a pipeline system on Kubernetes before tracking anything
   \item[D.] Skip tracking until the model is in production
+\end{enumerate}
+2. A new model scores better than the current one on held-out data. What is the safest way to release it?
+\begin{enumerate}
+  \item[A.] Replace the old model for all users at once
+  \item[B.] Send a small share of live traffic to it, watch its metrics, then widen
+  \item[C.] Delete the old model, so that nobody uses it by mistake
+  \item[D.] Skip live checks, because the held-out score already proves it is better
 \end{enumerate}
 \end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Quick Check: Choosing Tools}
+\begin{frame}[fragile]\frametitle{Quick Check: Tools and Releases}
 \begin{block}{Answer}
-\textbf{Correct: B.} Start small: tracking and a registry first, then pipelines, then monitoring. An open-source tool costs no license and matches the team's size. A large platform (A) or a home-built Kubernetes system (C) adds cost and effort before the team needs it, and without tracking (D) they cannot reproduce or compare their models.
+\textbf{1. Correct: B.} Start small: tracking and a registry first, then pipelines, then monitoring. An open-source tool costs no license and matches the team's size. A large platform (A) or a home-built Kubernetes system (C) adds cost and effort before the team needs it, and without tracking (D) they cannot reproduce or compare their models.
+
+\textbf{2. Correct: B.} A held-out score is only an estimate: live data can differ. A canary release limits the harm if the new model is worse than expected. Replacing everything at once (A) and skipping live checks (D) remove that safety net, and deleting the old model (C) makes a rollback impossible.
 \end{block}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -325,25 +381,26 @@ A small team of mechanical engineers has one trained model, no cloud experience 
 % \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Quick Check: Production Practice}
-\begin{block}{Think About It}
-A drift alert fires on the input data of a deployed model, but labels for recent data have not arrived. What is the best first step?
-\begin{enumerate}
-  \item[A.] Retrain immediately and deploy automatically
-  \item[B.] Investigate: is it real change or a data-pipeline bug? If real, retrain on curated new data and release through a shadow or canary stage
-  \item[C.] Ignore alerts until accuracy visibly falls
-  \item[D.] Delete the old model to force the new one into use
-\end{enumerate}
+% Merged into 'Quick Check: Tools and Releases' (Sep 2026 deck review): one quiz per part. The point that a drift alert is a reason to investigate stays on the Retraining slide.
+% \begin{frame}[fragile]\frametitle{Quick Check: Production Practice}
+% \begin{block}{Think About It}
+% A drift alert fires on the input data of a deployed model, but labels for recent data have not arrived. What is the best first step?
+% \begin{enumerate}
+%   \item[A.] Retrain immediately and deploy automatically
+%   \item[B.] Investigate: is it real change or a data-pipeline bug? If real, retrain on curated new data and release through a shadow or canary stage
+%   \item[C.] Ignore alerts until accuracy visibly falls
+%   \item[D.] Delete the old model to force the new one into use
+% \end{enumerate}
 % Question 2 (a prompt edit that silently lowers answer quality; correct: version prompts and test on a golden set) is optional with the LLMOps block (Sep 2026 review).
-\end{block}
-\end{frame}
+% \end{block}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Quick Check: Production Practice}
-\begin{block}{Answer}
-\textbf{Correct: B.} A drift alert says the inputs changed, not that the model is wrong: it may be a broken sensor or pipeline. Investigate first, and if the change is real, retrain and release gradually (A skips the checks, C waits for damage, D removes the fallback).
-\end{block}
-\end{frame}
+% \begin{frame}[fragile]\frametitle{Quick Check: Production Practice}
+% \begin{block}{Answer}
+% \textbf{Correct: B.} A drift alert says the inputs changed, not that the model is wrong: it may be a broken sensor or pipeline. Investigate first, and if the change is real, retrain and release gradually (A skips the checks, C waits for damage, D removes the fallback).
+% \end{block}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Production Checklist}

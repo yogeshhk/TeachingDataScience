@@ -219,12 +219,13 @@ Section dividers:
   `ml_pca_cars_case_study` (S17; S17 now has 3 hands-on frames beyond the theory), `ml_mlops_workflow` and
   `ml_mlops_production` (S19). Offline data and runnable scripts for these sessions live in `Code/mlcoep/`
   (`datasets/` with a README per folder, `sessions/session<NN>_*/`; env in `Code/mlcoep/environment.yml`);
-  the open work list is `Code/mlcoep/TODO.md`.
+  the MLCoEP work list was closed on 2026-09-19 (no open items).
   Sep 2026 flow review of S16-S20 (all cuts are `%`-commented with an "Optional (Sep 2026 review)" marker, restore by
   uncommenting): S19 no longer `\input`s `ml_predictive_analytics` (its quiz moved into `ml_production`) and instead opens with
   `ml_mlops_netflix` (6 frames plus a quiz), adds `ml_mlops_lab` (3 frames) after the walkthrough, `ml_mlops_career` (9 frames)
-  at the end, open-source and commercial platform frames plus a quiz in `ml_mlops_production`, and has the LLMOps block
-  commented out (S19 is now about 60 pages); S20 no longer `\input`s the two `ml_agri_*` files;
+  at the end, open-source and commercial platform frames, a predictive-maintenance diagram frame and one merged quiz in
+  `ml_mlops_production`, and has the LLMOps block commented out (S19 is 61 pages after a `/upgrade-deck` pass; no deck in the
+  MLCoEP series uses `\subsection`, so the pass did not add any); S20 no longer `\input`s the two `ml_agri_*` files;
   `ml_pca` lost 5 Detour frames and the "In a Nutshell" pipeline (its `C, e, f, h, u` letters were never defined);
   `ml_kmeans` lost 3 taxonomy frames, the unused `init_centroids` frame and the Summary frame; `ml_titanic_sklearn`
   dropped the Embarked chain, 3 Kaggle frames and the unused test-set prediction frames, and its Age plots `titk14` and
