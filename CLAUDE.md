@@ -214,6 +214,20 @@ Section dividers:
   `LaTeX/_retired/mlcoep_session_drivers/` but remain the **active verification workflow**:
   copy the pair to `LaTeX/` root, compile, verify, copy the PDF to `Publications/Presentations/`,
   then re-retire -- see `project_mlcoep_session_driver_workflow` in assistant memory.
+  Session-specific topic files added Sep 2026 (each session's `seminar_mlcoep_session_<N>_content.tex`
+  `\input`s them, the generic `seminar_ml_*_content.tex` files do not): `ml_kmeans_cars_case_study` (S16),
+  `ml_pca_cars_case_study` (S17; S17 now has 3 hands-on frames beyond the theory), `ml_mlops_workflow` and
+  `ml_mlops_production` (S19). Offline data and runnable scripts for these sessions live in `Code/mlcoep/`
+  (`datasets/` with a README per folder, `sessions/session<NN>_*/`; env in `Code/mlcoep/environment.yml`);
+  the open work list is `Code/mlcoep/TODO.md`.
+  Sep 2026 flow review of S16-S20 (all cuts are `%`-commented with an "Optional (Sep 2026 review)" marker, restore by
+  uncommenting): S19 no longer `\input`s `ml_predictive_analytics` (its quiz moved into `ml_production`), and the LLMOps
+  block and platform frames in `ml_mlops_production` are commented out; S20 no longer `\input`s the two `ml_agri_*` files;
+  `ml_pca` lost 5 Detour frames and the "In a Nutshell" pipeline (its `C, e, f, h, u` letters were never defined);
+  `ml_kmeans` lost 3 taxonomy frames, the unused `init_centroids` frame and the Summary frame; `ml_titanic_sklearn`
+  dropped the Embarked chain, 3 Kaggle frames and the unused test-set prediction frames, and its Age plots `titk14` and
+  `titk15` were regenerated from `AgeFill` as `titk14_agefill.png` and `titk15_agefill.png`. `ml_pca`, `ml_kmeans` and
+  `ml_production` are shared with the generic seminar decks (DimReduction, Clustering, Deployment), so those lost the same frames.
   `course_mlcoep_content.tex` chains all 20 session files into one combined `Main_Course_MLCoEP_*`
   driver; **never compile that combined driver without asking first** (it's a 20+ minute,
   350+ page job, and its own correctness has never been verified).

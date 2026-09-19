@@ -123,10 +123,21 @@ compile locally with MikTeX's `texify`, or ask the instructor for the current PD
 
 ### Hands-On Code & Datasets
 
-- `Code/mlcoep/sessions/session08_feature_selection/`: runnable feature-selection pipeline
-  scripts (Session 8)
-- `Code/mlcoep/datasets/`: offline copies of the datasets used in Sessions 4, 7, and 8, so
-  those sessions run without internet access
+- `Code/mlcoep/sessions/`: runnable scripts that reproduce the code and the printed results in the slides
+  - Session 8: feature-selection pipeline
+  - Session 9: house price regression (`make_housing_data.py` creates the synthetic data)
+  - Session 10: the sigmoid plot
+  - Session 15: KNN from scratch, and the NBA similar-players case study
+  - Session 16: K-Means from scratch, and the cars case study
+  - Session 17: PCA worked example, and the cars case study
+  - Session 18: Titanic random forest
+  - Session 19: deploy-your-own-model walkthrough (train, serve with FastAPI, test, Docker, drift check)
+  - Session 20: the four demo and assignment scripts, plus dataset links for the take-home assignments
+  - Sessions 11 to 14 have no runnable code in their slides
+- `Code/mlcoep/datasets/`: offline copies of the datasets used in Sessions 4, 7, 8, 9, 15, 16, 17, 18 and 19, so
+  those sessions run without internet access. Each folder has a README with the files, usage and verification numbers.
+  Session 20 needs internet once for the California Housing download (see its README).
+- Set up the environment once with `conda env create -f Code/mlcoep/environment.yml`, then `conda activate mlcoep`
 
 ### Textbooks
 

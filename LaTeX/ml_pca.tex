@@ -458,9 +458,13 @@ original structure, exactly as the earlier ``blue Z is better'' example showed.
 \begin{itemize}
 \item Purpose: see how each pair of features varies together
 \item Highly correlated features carry redundant information
-\item The covariance matrix is a $p \times p$ symmetric matrix ($p$ = number of features)
+\item The covariance matrix is a $d \times d$ symmetric matrix ($d$ = number of features)
 \begin{itemize}
 \item Its entries are the covariances of all possible pairs of features
+\item $\operatorname{Cov}(x,y)$ is the average of $(x-\bar{x})(y-\bar{y})$
+\begin{itemize}
+\item Positive: $x$ and $y$ rise together; negative: one rises as the other falls; near 0: unrelated
+\end{itemize}
 \end{itemize}
 \item Example: for 3 features $x$, $y$, $z$ it is a $3 \times 3$ matrix:
 \[
@@ -480,10 +484,11 @@ original structure, exactly as the earlier ``blue Z is better'' example showed.
 \begin{itemize}
 \item Example: we have 2-dimensional vectors $v_1, v_2, \ldots, v_n$
 \item Apply a linear transformation $T$ (a $2 \times 2$ matrix) to them: we obtain new vectors $b_1, b_2,\ldots,b_n$
-\item The $b_i$ differ from the $v_i$ in length and direction (remember the homogeneous transformation matrix?)
+\item The $b_i$ differ from the $v_i$ in length and direction (a matrix can stretch, squash and rotate vectors)
 \item But some special vectors stay on the same line: $T$ only scales them (a negative scale factor reverses them)
 \item Those vectors are called eigenvectors; the scale factor is called the eigenvalue: $Tv_i=\lambda v_i$
 \item Thus, each eigenvector has a matching eigenvalue
+\item In PCA the matrix is the covariance matrix $C$ ($T$ and $A$ on later slides are the same idea under other names)
 \end{itemize}
 
 {\tiny (Ref: PCA: Eigenvectors and Eigenvalues - Valentina Alto)}
@@ -493,7 +498,7 @@ original structure, exactly as the earlier ``blue Z is better'' example showed.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Eigenvectors of the Covariance Matrix}
 \begin{itemize}
-\item Take the covariance matrix $C$ and collect its eigenvectors as the columns of a matrix $V$
+\item Take the covariance matrix $C$ (the $d \times d$ table of covariances from the previous step) and collect its eigenvectors as the columns of a matrix $V$
 \item Put the matching eigenvalues on the diagonal of a matrix $L$
 \item Together: $CV = VL$, that is, $C v_i = \lambda_i v_i$: $C$ only stretches each eigenvector
 \item $C$ is symmetric, so its eigenvalues are real and its eigenvectors can be chosen perpendicular
@@ -529,21 +534,22 @@ precisely what ``keeping the principal components'' means.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Eigenvalue and Eigenvector: Definition}
- \begin{itemize}
-\item Let $A$ be an $n \times n$ matrix.  A {\em non-zero} vector $\vec{x}\in \mathbb{R}^n$ is 
-called an \underline{eigenvector} of $A$ if there exists some scalar $\lambda \in \mathbb{R}$ so that 
-$A \vec{x}= \lambda \vec{x}$.  \\ 
-\item If $\vec{x}$ is an eigenvector of $A$,
-the corresponding value $\lambda$ is called an \underline{eigenvalue} of $A$, and we say that 
-$\lambda$ is an eigenvalue of $A$ with eigenvector $\vec{x}$.  
+% Optional (Sep 2026 review): formal definition duplicates 'What's an Eigenvalue/Eigenvector?'; restore for a maths-heavy audience.
+% \begin{frame}[fragile]\frametitle{Eigenvalue and Eigenvector: Definition}
+%  \begin{itemize}
+% \item Let $A$ be an $n \times n$ matrix.  A {\em non-zero} vector $\vec{x}\in \mathbb{R}^n$ is 
+% called an \underline{eigenvector} of $A$ if there exists some scalar $\lambda \in \mathbb{R}$ so that 
+% $A \vec{x}= \lambda \vec{x}$.  \\ 
+% \item If $\vec{x}$ is an eigenvector of $A$,
+% the corresponding value $\lambda$ is called an \underline{eigenvalue} of $A$, and we say that 
+% $\lambda$ is an eigenvalue of $A$ with eigenvector $\vec{x}$.  
 
-\item 
-While an eigenvector $\vec{x}$ must be non-zero (so that we are always 
-excluding the trivial case $A \vec{0}=\vec{0}$), it is possible for the value
-$\lambda$ to be zero. 
-\item  If $\lambda$ is an eigenvalue for $A$, the eigenvectors for $A$ corresponding to $\lambda$ along with $\vec{0}$ form a subspace of $\mathbb{R}^n$.
-\end{itemize}
+% \item 
+% While an eigenvector $\vec{x}$ must be non-zero (so that we are always 
+% excluding the trivial case $A \vec{0}=\vec{0}$), it is possible for the value
+% $\lambda$ to be zero. 
+% \item  If $\lambda$ is an eigenvalue for $A$, the eigenvectors for $A$ corresponding to $\lambda$ along with $\vec{0}$ form a subspace of $\mathbb{R}^n$.
+% \end{itemize}
 
 
 % \begin{definition}
@@ -577,11 +583,12 @@ $\lambda$ to be zero.
 %  \end{array} \right)$ is an eigenvector of this matrix, and $-4$ is the corresponding eigenvalue.
 % 
 %  \end{definition}
-\end{frame}
+% \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Deriving the Characteristic Equation}
+% Optional (Sep 2026 review): derivation of the characteristic equation; the Solving frame now states it in one line.
+% \begin{frame}[fragile]\frametitle{Deriving the Characteristic Equation}
 % \begin{definition}
  % Show that 7 is an eigenvalue for
  % \[
@@ -590,60 +597,62 @@ $\lambda$ to be zero.
 % \end{definition}
 
 
-\begin{definition}
-For any scalar $\lambda$,
-\begin{eqnarray*}
- A \vec{x} &=& \lambda \vec{x}   \\
- &\Leftrightarrow&  
-A \vec{x} -\lambda \vec{x} = \vec{0}  \\
- &\Leftrightarrow&  
- A \vec{x} -\lambda I \vec{x} = \vec{0}  \\
-  &\Leftrightarrow& 
-  \left( A - \lambda I \right) \vec{x} =\vec{0} \\
-   &\Leftrightarrow&  
-\vec{x} \in \operatorname{Nul}(A -\lambda I)
-\end{eqnarray*}
-\end{definition}
+% \begin{definition}
+% For any scalar $\lambda$,
+% \begin{eqnarray*}
+%  A \vec{x} &=& \lambda \vec{x}   \\
+%  &\Leftrightarrow&  
+% A \vec{x} -\lambda \vec{x} = \vec{0}  \\
+%  &\Leftrightarrow&  
+%  A \vec{x} -\lambda I \vec{x} = \vec{0}  \\
+%   &\Leftrightarrow& 
+%   \left( A - \lambda I \right) \vec{x} =\vec{0} \\
+%    &\Leftrightarrow&  
+% \vec{x} \in \operatorname{Nul}(A -\lambda I)
+% \end{eqnarray*}
+% \end{definition}
 
-The eigenvectors for $\lambda$ are the non-zero vectors in the null space of $A-\lambda I$: the vectors it sends to $\vec{0}$.
-\end{frame}
+% The eigenvectors for $\lambda$ are the non-zero vectors in the null space of $A-\lambda I$: the vectors it sends to $\vec{0}$.
+% \end{frame}
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Why At Most n Eigenvalues}
-\begin{theorem}
- A scalar $\lambda$ is an eigenvalue of an $n\times n$ matrix $A$ if and only if 
-$\lambda$ satisfies the \underline{characteristic equation} 
-\[
- \det(A -\lambda I) = 0.
-\]
-\end{theorem}
+% Optional (Sep 2026 review): proof that there are at most n eigenvalues; not needed to use PCA.
+% \begin{frame}[fragile]\frametitle{Why At Most n Eigenvalues}
+% \begin{theorem}
+%  A scalar $\lambda$ is an eigenvalue of an $n\times n$ matrix $A$ if and only if 
+% $\lambda$ satisfies the \underline{characteristic equation} 
+% \[
+%  \det(A -\lambda I) = 0.
+% \]
+% \end{theorem}
 
 
-\begin{theorem}
-$\det(A-\lambda I)$ is a polynomial in $\lambda$ of degree $n$.   \\
-Hence, an $n\times n$ matrix has at most $n$ eigenvalues.
-\end{theorem}
+% \begin{theorem}
+% $\det(A-\lambda I)$ is a polynomial in $\lambda$ of degree $n$.   \\
+% Hence, an $n\times n$ matrix has at most $n$ eigenvalues.
+% \end{theorem}
 
-\begin{block}{Intuition}
-Solving $\det(A-\lambda I) = 0$ is really asking: for which stretch factor $\lambda$ does $A$
-have a direction it only scales, never rotates? Since a degree-$n$ polynomial has at most $n$
-roots, an $n \times n$ matrix has at most $n$ such special directions: exactly the
-eigenvectors PCA sorts by eigenvalue to find its principal components.
-\end{block}
-\end{frame}
+% \begin{block}{Intuition}
+% Solving $\det(A-\lambda I) = 0$ is really asking: for which stretch factor $\lambda$ does $A$
+% have a direction it only scales, never rotates? Since a degree-$n$ polynomial has at most $n$
+% roots, an $n \times n$ matrix has at most $n$ such special directions: exactly the
+% eigenvectors PCA sorts by eigenvalue to find its principal components.
+% \end{block}
+% \end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large Example: Eigenvalues and Eigenvectors}
-\end{center}
-\end{frame}
+% Optional (Sep 2026 review): divider, the Detour now has one worked example.
+% \begin{frame}[fragile]\frametitle{}
+% \begin{center}
+% {\Large Example: Eigenvalues and Eigenvectors}
+% \end{center}
+% \end{frame}
 
 \begin{frame}[fragile]\frametitle{Verifying an Eigenvector}
-For the matrix
+Here $A$ is any square matrix; in PCA it is the covariance matrix $C$. For the matrix
 \[
 A = \begin{bmatrix} -6 & 3 \\ 4 & 5 \end{bmatrix},
 \]
@@ -670,7 +679,7 @@ They are equal, so $Av = \lambda v$ as promised.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Solving for the Eigenvalues}
-Start with $|A - \lambda I| = 0$:
+An eigenvector satisfies $(A - \lambda I)v = 0$ with $v \neq 0$, which is possible only when $|A - \lambda I| = 0$ (here $I$ is the identity matrix). Start with:
 \[
 \begin{vmatrix} -6-\lambda & 3 \\ 4 & 5-\lambda \end{vmatrix} = 0
 \]
@@ -734,15 +743,16 @@ What is the purpose of these?
 \end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Why `Eigen'?}
+% Optional (Sep 2026 review): etymology of eigen.
+% \begin{frame}[fragile]\frametitle{Why `Eigen'?}
 
-\begin{itemize}
-\item Eigen is a German word meaning ``own'' or ``typical'': ``das ist ihnen eigen'' is German for ``that is typical of them''
-\item Sometimes in English we use the word ``characteristic'', so an eigenvector can be called a ``characteristic vector''.
-\end{itemize}
+% \begin{itemize}
+% \item Eigen is a German word meaning ``own'' or ``typical'': ``das ist ihnen eigen'' is German for ``that is typical of them''
+% \item Sometimes in English we use the word ``characteristic'', so an eigenvector can be called a ``characteristic vector''.
+% \end{itemize}
 
-{\tiny (Ref: Eigenvector and Eigenvalue - Maths is fun)}
-\end{frame}
+% {\tiny (Ref: Eigenvector and Eigenvalue - Maths is fun)}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Quick Check: Eigenvectors in PCA}
@@ -765,7 +775,7 @@ eigenvalues represent?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Quick Check: Eigenvectors in PCA}
 \begin{block}{Answer}
-\textbf{Correct: B.} The covariance matrix is $p \times p$, always square, so it always has
+\textbf{Correct: B.} The covariance matrix is $d \times d$, always square, so it always has
 eigenvectors/eigenvalues to find. Each eigenvector is a direction in the original feature
 space; its matching eigenvalue says how much variance the data has along that direction.
 Sorting eigenvectors by their eigenvalues, largest first, is exactly how PCA ranks its
@@ -1153,7 +1163,7 @@ Original Data
 \begin{frame}[fragile] \frametitle{How Much Do We Keep?}
 \begin{itemize}
 \item Each eigenvalue is the variance along its component
-\item Explained variance ratio of component $i$: $\dfrac{\lambda_i}{\lambda_1 + \lambda_2 + \cdots + \lambda_p}$
+\item Explained variance ratio of component $i$: $\dfrac{\lambda_i}{\lambda_1 + \lambda_2 + \cdots + \lambda_d}$
 \begin{itemize}
 \item In words: the share of the total variance that component carries
 \end{itemize}
@@ -1179,100 +1189,139 @@ Original Data
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{The Transformed Data}
-The data transformed into the new PC1/PC2 coordinate system, using both eigenvectors as
-the new basis vectors.
+The 10 zero-mean points written in the new PC1/PC2 coordinates: each point is multiplied by both
+eigenvectors, which act as the new axes.
 \begin{center}
-\includegraphics[width=\linewidth,keepaspectratio]{pca16}
-\end{center}
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{In a Nutshell: The Full Pipeline}
-The whole PCA pipeline in seven steps, from raw correlated data to the final
-low-dimensional, uncorrelated result.
-\begin{center}
-\adjustbox{max width=\linewidth, max totalheight=6.6cm}{%
-\begin{tikzpicture}[x=0.6cm, y=0.6cm]
-\begin{scope}[shift={(0,0)}]
-\node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {1. correlated data};
-\draw[->] (0,0) -- (3.9,0) node[right] {\tiny $h$};
-\draw[->] (0,0) -- (0,3.0) node[above] {\tiny $u$};
-\foreach \px/\py in {0.50/0.72, 1.00/0.84, 1.50/1.56, 1.75/1.08, 2.25/1.74, 2.50/2.16, 3.00/2.04, 3.50/2.76} { \fill[green!50!black] (\px,\py) circle (0.07); }
-\end{scope}
-\begin{scope}[shift={(5,0)}]
-\node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {2. center the points};
-\begin{scope}[shift={(2,1.5)}]
-\draw[->] (-1.9,0) -- (1.9,0) node[right] {\tiny $h$};
-\draw[->] (0,-1.2) -- (0,1.3) node[above] {\tiny $u$};
-\foreach \px/\py in {-1.50/-0.74, -1.00/-0.64, -0.50/-0.04, -0.25/-0.44, 0.25/0.11, 0.50/0.46, 1.00/0.36, 1.50/0.96} { \fill[green!50!black] (\px,\py) circle (0.07); }
-\draw[->, thick, green!50!black] (0,0) -- (1.52,0.86) node[above right] {\tiny $e$};
-\draw[->, thick, red!70!black] (0,0) -- (-0.47,0.83) node[above right] {\tiny $f$};
-\end{scope}
-\end{scope}
-\begin{scope}[shift={(10,0)}]
-\node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {3. compute covariance matrix};
-\node[font=\tiny] at (2,1.7) {$\begin{bmatrix}3.56&1.97\\1.97&1.21\end{bmatrix}$};
-\node[font=\tiny] at (2,0.55) {$\operatorname{cov}(h,u)=\frac{1}{n}\sum_i h_i u_i$};
-\end{scope}
-\begin{scope}[shift={(15,0)}]
-\node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {4. eigenvectors + eigenvalues};
-\node[font=\tiny] at (2,2.2) {$Ce=\lambda_e e,\quad Cf=\lambda_f f$};
-\node[font=\tiny] at (2,1.4) {$\lambda_e=4.68,\ \ \lambda_f=0.10$};
-\node[font=\tiny\ttfamily] at (2,0.6) {eig(cov(data))};
-\end{scope}
-\begin{scope}[shift={(15,-5.0)}]
-\node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {5. pick $m<d$ eigenvectors with highest eigenvalues};
-\begin{scope}[shift={(2,1.5)}]
-\draw[->] (-1.9,0) -- (1.9,0) node[right] {\tiny $h$};
-\draw[->] (0,-1.2) -- (0,1.3) node[above] {\tiny $u$};
-\foreach \px/\py in {-1.50/-0.74, -1.00/-0.64, -0.50/-0.04, -0.25/-0.44, 0.25/0.11, 0.50/0.46, 1.00/0.36, 1.50/0.96} { \fill[green!50!black] (\px,\py) circle (0.07); }
-\draw[->, thick, green!50!black] (0,0) -- (1.52,0.86) node[above right] {\tiny $e$};
-\draw[->, dashed, gray] (0,0) -- (-0.47,0.83) node[above right] {\tiny $f$};
-\end{scope}
-\end{scope}
-\begin{scope}[shift={(10,-5.0)}]
-\node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {6. project data points to those eigenvectors};
-\begin{scope}[shift={(2,1.5)}]
-\draw[->] (-1.9,0) -- (1.9,0) node[right] {\tiny $h$};
-\draw[->] (0,-1.2) -- (0,1.3) node[above] {\tiny $u$};
-\foreach \px/\py in {-1.50/-0.74, -1.00/-0.64, -0.50/-0.04, -0.25/-0.44, 0.25/0.11, 0.50/0.46, 1.00/0.36, 1.50/0.96} { \fill[green!50!black] (\px,\py) circle (0.07); }
-\draw[->, thick, green!50!black] (0,0) -- (1.52,0.86) node[above right] {\tiny $e$};
-\draw[dashed, gray] (-1.50,-0.74) -- (-1.45,-0.83);
-\draw[dashed, gray] (-1.00,-0.64) -- (-1.03,-0.59);
-\draw[dashed, gray] (-0.50,-0.04) -- (-0.40,-0.23);
-\draw[dashed, gray] (-0.25,-0.44) -- (-0.38,-0.22);
-\draw[dashed, gray] (0.25,0.11) -- (0.23,0.13);
-\draw[dashed, gray] (0.50,0.46) -- (0.57,0.33);
-\draw[dashed, gray] (1.00,0.36) -- (0.91,0.52);
-\draw[dashed, gray] (1.50,0.96) -- (1.54,0.88);
-\foreach \px/\py in {-1.45/-0.83, -1.03/-0.59, -0.40/-0.23, -0.38/-0.22, 0.23/0.13, 0.57/0.33, 0.91/0.52, 1.54/0.88} { \fill[blue!70] (\px,\py) circle (0.07); }
-\node[font=\tiny] at (0.5,-1.15) {$x^{\top}e$};
-\end{scope}
-\end{scope}
-\begin{scope}[shift={(5,-5.0)}]
-\node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {7. uncorrelated low-d data};
-\begin{scope}[shift={(2,1.5)}]
-\draw[->, green!50!black] (-1.9,0) -- (1.9,0) node[right] {\tiny $e$};
-\foreach \px/\py in {-1.67/0, -1.19/0, -0.46/0, -0.44/0, 0.27/0, 0.66/0, 1.05/0, 1.78/0} { \fill[blue!70] (\px,\py) circle (0.07); }
-\node[font=\tiny] at (0,-0.8) {1 feature left};
-\end{scope}
-\end{scope}
-\draw[->, very thick, blue!40] (4.15,1.7) -- (4.85,1.7);
-\draw[->, very thick, blue!40] (9.15,1.7) -- (9.85,1.7);
-\draw[->, very thick, blue!40] (14.15,1.7) -- (14.85,1.7);
-\draw[->, very thick, blue!40] (17,-0.1) -- (17,-0.85);
-\draw[->, very thick, blue!40] (14.85,-3.3) -- (14.15,-3.3);
-\draw[->, very thick, blue!40] (9.85,-3.3) -- (9.15,-3.3);
+\adjustbox{max width=\linewidth, max totalheight=5.6cm}{%
+\begin{tikzpicture}[x=1cm, y=1cm]
+% table of the transformed data
+\node[anchor=north west, font=\small] at (-6.4,2.6) {%
+\begin{tabular}{rr}
+\hline
+PC1 & PC2 \\
+\hline
+$-0.83$ & $-0.18$ \\
+1.78 & 0.14 \\
+$-0.99$ & 0.38 \\
+$-0.27$ & 0.13 \\
+$-1.68$ & $-0.21$ \\
+$-0.91$ & 0.18 \\
+0.10 & $-0.35$ \\
+1.14 & 0.05 \\
+0.44 & 0.02 \\
+1.22 & $-0.16$ \\
+\hline
+\end{tabular}};
+% scatter plot
+\draw (-2.1,-2.1) rectangle (2.1,2.1);
+\draw[dashed] (-2.1,0) -- (2.1,0);
+\draw[dashed] (0,-2.1) -- (0,2.1);
+\foreach \t in {-2,-1,0,1,2} {
+  \draw (\t,-2.1) -- (\t,-2.0) node[below=2pt] {\tiny \t};
+  \draw (-2.1,\t) -- (-2.0,\t) node[left=2pt] {\tiny \t};
+}
+\foreach \px/\py in {-0.83/-0.18, 1.78/0.14, -0.99/0.38, -0.27/0.13, -1.68/-0.21, -0.91/0.18, 0.10/-0.35, 1.14/0.05, 0.44/0.02, 1.22/-0.16} {
+  \draw[thick] (\px-0.07,\py) -- (\px+0.07,\py);
+  \draw[thick] (\px,\py-0.07) -- (\px,\py+0.07);
+}
+\node[above, font=\small] at (0,2.15) {Data in PC1/PC2 coordinates};
+\node[below, font=\small] at (0,-2.6) {PC1};
+\node[rotate=90, font=\small] at (-2.75,0) {PC2};
 \end{tikzpicture}%
 }
 \end{center}
-{\tiny (Adapted from: Principal Component Analysis - Victor Lavrenko)}
+The spread along PC1 is large (variance 1.284) and along PC2 tiny (variance 0.049): these are the two
+eigenvalues from the previous slides.
 \end{frame}
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Commented out (Sep 2026, by choice): Steps 1-7 walk-through repeated the "PCA Example in Steps" worked-example slides; kept for reuse. The nutshell picture slide above stays.
+% Retired (Sep 2026 review): repeated the worked example's 7 steps on a second toy dataset with undefined letters (C, e, f, h, u). The worked example above teaches the same steps.
+% \begin{frame}[fragile] \frametitle{In a Nutshell: The Full Pipeline}
+% The whole PCA pipeline in seven steps, from raw correlated data to the final
+% low-dimensional, uncorrelated result.
+% \begin{center}
+% \adjustbox{max width=\linewidth, max totalheight=6.6cm}{%
+% \begin{tikzpicture}[x=0.6cm, y=0.6cm]
+% \begin{scope}[shift={(0,0)}]
+% \node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {1. correlated data};
+% \draw[->] (0,0) -- (3.9,0) node[right] {\tiny $h$};
+% \draw[->] (0,0) -- (0,3.0) node[above] {\tiny $u$};
+% \foreach \px/\py in {0.50/0.72, 1.00/0.84, 1.50/1.56, 1.75/1.08, 2.25/1.74, 2.50/2.16, 3.00/2.04, 3.50/2.76} { \fill[green!50!black] (\px,\py) circle (0.07); }
+% \end{scope}
+% \begin{scope}[shift={(5,0)}]
+% \node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {2. center the points};
+% \begin{scope}[shift={(2,1.5)}]
+% \draw[->] (-1.9,0) -- (1.9,0) node[right] {\tiny $h$};
+% \draw[->] (0,-1.2) -- (0,1.3) node[above] {\tiny $u$};
+% \foreach \px/\py in {-1.50/-0.74, -1.00/-0.64, -0.50/-0.04, -0.25/-0.44, 0.25/0.11, 0.50/0.46, 1.00/0.36, 1.50/0.96} { \fill[green!50!black] (\px,\py) circle (0.07); }
+% \draw[->, thick, green!50!black] (0,0) -- (1.52,0.86) node[above right] {\tiny $e$};
+% \draw[->, thick, red!70!black] (0,0) -- (-0.47,0.83) node[above right] {\tiny $f$};
+% \end{scope}
+% \end{scope}
+% \begin{scope}[shift={(10,0)}]
+% \node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {3. compute covariance matrix};
+% \node[font=\tiny] at (2,1.7) {$\begin{bmatrix}3.56&1.97\\1.97&1.21\end{bmatrix}$};
+% \node[font=\tiny] at (2,0.55) {$\operatorname{cov}(h,u)=\frac{1}{n}\sum_i h_i u_i$};
+% \end{scope}
+% \begin{scope}[shift={(15,0)}]
+% \node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {4. eigenvectors + eigenvalues};
+% \node[font=\tiny] at (2,2.2) {$Ce=\lambda_e e,\quad Cf=\lambda_f f$};
+% \node[font=\tiny] at (2,1.4) {$\lambda_e=4.68,\ \ \lambda_f=0.10$};
+% \node[font=\tiny\ttfamily] at (2,0.6) {eig(cov(data))};
+% \end{scope}
+% \begin{scope}[shift={(15,-5.0)}]
+% \node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {5. pick $m<d$ eigenvectors with highest eigenvalues};
+% \begin{scope}[shift={(2,1.5)}]
+% \draw[->] (-1.9,0) -- (1.9,0) node[right] {\tiny $h$};
+% \draw[->] (0,-1.2) -- (0,1.3) node[above] {\tiny $u$};
+% \foreach \px/\py in {-1.50/-0.74, -1.00/-0.64, -0.50/-0.04, -0.25/-0.44, 0.25/0.11, 0.50/0.46, 1.00/0.36, 1.50/0.96} { \fill[green!50!black] (\px,\py) circle (0.07); }
+% \draw[->, thick, green!50!black] (0,0) -- (1.52,0.86) node[above right] {\tiny $e$};
+% \draw[->, dashed, gray] (0,0) -- (-0.47,0.83) node[above right] {\tiny $f$};
+% \end{scope}
+% \end{scope}
+% \begin{scope}[shift={(10,-5.0)}]
+% \node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {6. project data points to those eigenvectors};
+% \begin{scope}[shift={(2,1.5)}]
+% \draw[->] (-1.9,0) -- (1.9,0) node[right] {\tiny $h$};
+% \draw[->] (0,-1.2) -- (0,1.3) node[above] {\tiny $u$};
+% \foreach \px/\py in {-1.50/-0.74, -1.00/-0.64, -0.50/-0.04, -0.25/-0.44, 0.25/0.11, 0.50/0.46, 1.00/0.36, 1.50/0.96} { \fill[green!50!black] (\px,\py) circle (0.07); }
+% \draw[->, thick, green!50!black] (0,0) -- (1.52,0.86) node[above right] {\tiny $e$};
+% \draw[dashed, gray] (-1.50,-0.74) -- (-1.45,-0.83);
+% \draw[dashed, gray] (-1.00,-0.64) -- (-1.03,-0.59);
+% \draw[dashed, gray] (-0.50,-0.04) -- (-0.40,-0.23);
+% \draw[dashed, gray] (-0.25,-0.44) -- (-0.38,-0.22);
+% \draw[dashed, gray] (0.25,0.11) -- (0.23,0.13);
+% \draw[dashed, gray] (0.50,0.46) -- (0.57,0.33);
+% \draw[dashed, gray] (1.00,0.36) -- (0.91,0.52);
+% \draw[dashed, gray] (1.50,0.96) -- (1.54,0.88);
+% \foreach \px/\py in {-1.45/-0.83, -1.03/-0.59, -0.40/-0.23, -0.38/-0.22, 0.23/0.13, 0.57/0.33, 0.91/0.52, 1.54/0.88} { \fill[blue!70] (\px,\py) circle (0.07); }
+% \node[font=\tiny] at (0.5,-1.15) {$x^{\top}e$};
+% \end{scope}
+% \end{scope}
+% \begin{scope}[shift={(5,-5.0)}]
+% \node[font=\tiny\bfseries, text width=2.4cm, align=center, anchor=south] at (2,3.35) {7. uncorrelated low-d data};
+% \begin{scope}[shift={(2,1.5)}]
+% \draw[->, green!50!black] (-1.9,0) -- (1.9,0) node[right] {\tiny $e$};
+% \foreach \px/\py in {-1.67/0, -1.19/0, -0.46/0, -0.44/0, 0.27/0, 0.66/0, 1.05/0, 1.78/0} { \fill[blue!70] (\px,\py) circle (0.07); }
+% \node[font=\tiny] at (0,-0.8) {1 feature left};
+% \end{scope}
+% \end{scope}
+% \draw[->, very thick, blue!40] (4.15,1.7) -- (4.85,1.7);
+% \draw[->, very thick, blue!40] (9.15,1.7) -- (9.85,1.7);
+% \draw[->, very thick, blue!40] (14.15,1.7) -- (14.85,1.7);
+% \draw[->, very thick, blue!40] (17,-0.1) -- (17,-0.85);
+% \draw[->, very thick, blue!40] (14.85,-3.3) -- (14.15,-3.3);
+% \draw[->, very thick, blue!40] (9.85,-3.3) -- (9.15,-3.3);
+% \end{tikzpicture}%
+% }
+% \end{center}
+% {\tiny (Adapted from: Principal Component Analysis - Victor Lavrenko)}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Commented out (Sep 2026, by choice): Steps 1-7 walk-through repeated the "PCA Example in Steps" worked-example slides; kept for reuse. The nutshell picture slide above was retired later the same month (see its marker).
 % \begin{frame}[fragile] \frametitle{PCA Pipeline, Step 1: Start with Correlated Data}
 % \adjustbox{valign=t}{%
 % \begin{minipage}{0.5\linewidth}
