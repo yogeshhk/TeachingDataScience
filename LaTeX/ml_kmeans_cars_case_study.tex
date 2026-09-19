@@ -1,0 +1,125 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Case Study: Grouping Cars}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cars: The Data}
+\begin{itemize}
+\item 428 cars: engine size, cylinders, horsepower, city MPG, weight, and more
+\item Goal: find natural vehicle groups; K-Means is given no labels
+\item Clean first: the Mazda RX-8 (rotary engine) has \texttt{'.'} for cylinders, so 2 cars are dropped
+\end{itemize}
+\begin{lstlisting}
+import pandas as pd
+
+cars = pd.read_csv('data/cars.csv', sep=';')
+cars['Cylinders'] = pd.to_numeric(cars['Cylinders'],
+                                  errors='coerce')  # '.' becomes NaN
+
+features = ['EngineSize', 'Cylinders', 'Horsepower',
+            'MPG_City', 'Weight']
+cars = cars.dropna(subset=features)     # 428 -> 426 cars
+X = cars[features]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cars: Cluster the Raw Features}
+\begin{itemize}
+\item Run K-Means with $k=3$ on the raw columns
+\item Weight is in the thousands; cylinders are single digits
+\item Weight's variance is about 577,000, against at most 5,200 for any other feature
+\item Result: the three groups are exactly the groups Weight alone gives
+\end{itemize}
+\begin{lstlisting}
+from sklearn.cluster import KMeans
+
+km = KMeans(n_clusters=3, n_init=10, random_state=0)
+km.fit(X)
+cars['cluster'] = km.labels_
+
+# In the Python shell (cluster averages):
+>>> cars.groupby('cluster')[features].mean().round(1).T
+cluster          0       1       2
+EngineSize     3.4     2.2     4.6
+Cylinders      6.1     4.3     7.5
+Horsepower   231.7   154.4   275.8
+MPG_City      18.7    25.3    15.0
+Weight      3635.4  2781.1  4874.4
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cars: Scale First}
+\begin{itemize}
+\item Standardize each feature (mean 0, spread 1): all count equally
+\item 107 of 426 cars (25\%) change group versus the raw features
+\item Now all five features shape the groups: small economy cars, mid-size 6-cylinder cars, large heavy 8-cylinder cars
+\end{itemize}
+\begin{lstlisting}
+from sklearn.preprocessing import StandardScaler
+
+Xs = StandardScaler().fit_transform(X)
+km = KMeans(n_clusters=3, n_init=10, random_state=0)
+km.fit(Xs)
+cars['cluster'] = km.labels_
+
+# In the Python shell (cluster averages):
+>>> cars.groupby('cluster')[features].mean().round(1).T
+cluster          0       1       2
+EngineSize     2.0     3.2     4.8
+Cylinders      4.0     5.9     8.1
+Horsepower   144.8   216.7   307.2
+MPG_City      25.7    18.7    15.7
+Weight      2828.1  3638.1  4445.5
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cars: Is k=3 Right?}
+\begin{itemize}
+\item Try $k=2$ to $6$ on the scaled data: inertia and silhouette score
+\item Inertia drops sharply up to $k=3$, then only gently: an elbow at $k=3$
+\item The silhouette score is highest at $k=3$ (0.457)
+\item Both are guides: an engineer may still choose $k=4$
+\end{itemize}
+\begin{lstlisting}
+from sklearn.metrics import silhouette_score
+
+for k in range(2, 7):
+    km = KMeans(n_clusters=k, n_init=10, random_state=0)
+    km.fit(Xs)
+    sil = silhouette_score(Xs, km.labels_)
+    print(k, round(km.inertia_, 1), round(sil, 3))
+
+# printed: k, inertia, silhouette
+# 2 1079.5 0.409
+# 3 653.6 0.457
+# 4 548.0 0.429
+# 5 468.3 0.412
+# 6 402.6 0.384
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Cars and Scaling}
+\begin{block}{Think About It}
+In the cars data, Weight is recorded in pounds (1,850 to 7,190). A colleague converts it to tonnes (dividing by about 2,200) and re-runs K-Means with $k=3$ on the raw, unscaled columns. What is most likely to happen?
+\begin{enumerate}
+  \item[A.] Nothing changes: K-Means does not depend on units
+  \item[B.] The groups change, because Weight now counts far less in the distance and the other features count more
+  \item[C.] Only the Weight column of the cluster centers changes; the groups stay the same
+  \item[D.] K-Means fails, because tonnes are not whole numbers
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Cars and Scaling}
+\begin{block}{Answer}
+\textbf{Correct: B.} Distances are computed in raw units, so a unit change silently changes the clustering; on the cars data the groups change markedly. Standardizing first removes the problem: after scaling, pounds and tonnes give identical groups. A and C overlook that the distances themselves change; D is not a real constraint.
+\end{block}
+\end{frame}

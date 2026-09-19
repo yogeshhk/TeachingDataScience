@@ -102,17 +102,27 @@ Below are the descriptions contained in that data dictionary
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Load the data}
+Lines starting with \texttt{>>>} are typed; everything below is what Python prints back.
 \begin{lstlisting}
-import pandas as pd
-
-df_test = pd.read_csv("titanic_test.csv")
-df_train = pd.read_csv("titanic_train.csv")
-
-print("Dimensions of train: {}".format(df_train.shape))
-print("Dimensions of test: {}".format(df_test.shape))
-
+>>> import pandas as pd
+>>> df_test = pd.read_csv("titanic_test.csv")
+>>> df_train = pd.read_csv("titanic_train.csv")
+>>> print("Dimensions of train: {}".format(df_train.shape))
 Dimensions of train: (891, 12)
+>>> print("Dimensions of test: {}".format(df_test.shape))
 Dimensions of test: (418, 11)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Setup: Imports and Plot Settings}
+The plotting frames below use these names:
+\begin{lstlisting}
+import numpy as np
+import matplotlib.pyplot as plt
+
+figsize_with_subplots = (10, 10)   # figure size for grids of plots
+bin_size = 10                      # width of an age bin, in years
 \end{lstlisting}
 \end{frame}
 
@@ -207,8 +217,9 @@ Embarked       889 non-null object
 \begin{frame}[fragile]\frametitle{Descriptive Statistics}
 Run \texttt{df\_train.describe()}:
 \begin{itemize}
-\item Age, Cabin, and Embarked are missing values.
-\item Cabin has too many missing values.
+\item The mean of Survived is 0.38: about 38\% of the passengers survived
+\item Age: 714 of 891 rows are present; mean 29.7, median 28
+\item Fare: mean 32.2 but median 14.45, so a few very high fares stretch the right tail
 \end{itemize}
 \begin{center}
 \includegraphics[width=\linewidth,keepaspectratio]{titk3}
@@ -225,7 +236,7 @@ Plot death and survival counts
 
 \begin{lstlisting}
 # Set up a grid of plots
-fig = plt.figure(figsize=fizsize_with_subplots) 
+fig = plt.figure(figsize=figsize_with_subplots) 
 fig_dims = (3, 2)
 
 plt.subplot2grid(fig_dims, (0, 0))
@@ -258,7 +269,7 @@ Plot Sex counts
 plt.subplot2grid(fig_dims, (1, 0))
 df_train['Sex'].value_counts().plot(kind='bar', 
                                     title='Gender Counts')
-                                    plt.xticks(rotation=0)
+plt.xticks(rotation=0)
 
 # Plot Embarked counts
 
@@ -295,10 +306,9 @@ pclass_xt
 \begin{frame}[fragile]\frametitle{Feature Engineering: Map Sex to Numbers}
 Generate a mapping of Sex from a string to a number representation:
 \begin{lstlisting}
-sexes = sorted(df_train['Sex'].unique())
-genders_mapping = dict(zip(sexes, range(0, len(sexes) + 1)))
-genders_mapping
-
+>>> sexes = sorted(df_train['Sex'].unique())
+>>> genders_mapping = dict(zip(sexes, range(len(sexes))))
+>>> genders_mapping
 {'female': 0, 'male': 1}
 \end{lstlisting}
 \end{frame}
@@ -327,7 +337,7 @@ Plot a normalized cross tab for Sex\_Val and Survived:
 \includegraphics[width=0.4\linewidth,keepaspectratio]{titk8}
 \end{center}
 
-The majority of females survived, but not males.
+The majority of females survived (74\%), but not males (19\%).
 
 
 \begin{lstlisting}
@@ -342,20 +352,19 @@ sex_val_xt_pct.plot(kind='bar', stacked=True, title='Survival Rate by Gender')
 \begin{frame}[fragile]\frametitle{Exploring the Data: Sex Counts by Class}
 Any insights by looking at both Sex and Pclass? Count males and females in each Pclass:
 \begin{lstlisting}
-passenger_classes = sorted(df_train['Pclass'].unique())
-
-for p_class in passenger_classes:
-    print('M: ', p_class, len(df_train[(df_train['Sex'] == 'male') &
-                             (df_train['Pclass'] == p_class)]))
-    print('F: ', p_class, len(df_train[(df_train['Sex'] == 'female') &
-                             (df_train['Pclass'] == p_class)]))
-
+>>> passenger_classes = sorted(df_train['Pclass'].unique())
+>>> for p_class in passenger_classes:
+...     print('M: ', p_class, len(df_train[(df_train['Sex'] == 'male') &
+...                              (df_train['Pclass'] == p_class)]))
+...     print('F: ', p_class, len(df_train[(df_train['Sex'] == 'female') &
+...                              (df_train['Pclass'] == p_class)]))
+...
 M:  1 122
 F:  1 94
 M:  2 108
 F:  2 76
 M:  3 347
-F:  3 144                             
+F:  3 144
 \end{lstlisting}
 \end{frame}
 
@@ -411,17 +420,24 @@ df_train[df_train['Embarked'].isnull()]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Cleaning the Data: Fill Missing Embarked}
+Since the vast majority of passengers embarked at 'S' (Southampton), we assign the 2 missing values in Embarked to 'S':
+\begin{lstlisting}
+>>> df_train['Embarked'] = df_train['Embarked'].fillna('S')
+>>> df_train['Embarked'].isnull().sum()
+0
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Cleaning the Data: Map Embarked to Numbers}
 Prepare to map Embarked from a string to a number representation:
 \begin{lstlisting}
-# Get the unique values of Embarked
-embarked_locs = sorted(df_train['Embarked'].unique())
-
-embarked_locs_mapping = dict(zip(embarked_locs, 
-                                 range(0, len(embarked_locs) + 1)))
-embarked_locs_mapping
-
-{nan: 0, 'C': 1, 'Q': 2, 'S': 3}
+>>> embarked_locs = sorted(df_train['Embarked'].unique())
+>>> embarked_locs_mapping = dict(zip(embarked_locs,
+...                                  range(1, len(embarked_locs) + 1)))
+>>> embarked_locs_mapping
+{'C': 1, 'Q': 2, 'S': 3}
 \end{lstlisting}
 \end{frame}
 
@@ -444,47 +460,48 @@ df_train.head()
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Cleaning the Data: Embarked Histogram}
-Plot the histogram for Embarked\_Val:
-
-\begin{center}
-\includegraphics[width=0.6\linewidth,keepaspectratio]{titk11}
-\end{center}
-
-\begin{lstlisting}
-df_train['Embarked_Val'].hist(bins=len(embarked_locs), range=(0, 3))
-plt.title('Port of Embarkation Histogram')
-plt.xlabel('Port of Embarkation')
-plt.ylabel('Count')
-plt.show()
-\end{lstlisting}
-
-
-\end{frame}
+% Superseded (Sep 2026): the old order mapped NaN to 0 (sorted() fails on NaN in Python 3) then replaced it; merged into the frames above.
+% \begin{frame}[fragile]\frametitle{Cleaning the Data: Fill Missing Embarked}
+% Since the vast majority of passengers embarked in 'S': 3, we assign the missing values in Embarked to 'S':
+% \begin{lstlisting}
+% if len(df_train[df_train['Embarked'].isnull()]) > 0:
+%     df_train.replace({'Embarked_Val' : 
+%                    { embarked_locs_mapping[nan] : embarked_locs_mapping['S'] 
+%                    }
+%                }, 
+%                inplace=True)
+% \end{lstlisting}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Cleaning the Data: Fill Missing Embarked}
-Since the vast majority of passengers embarked in 'S': 3, we assign the missing values in Embarked to 'S':
-\begin{lstlisting}
-if len(df_train[df_train['Embarked'].isnull()]) > 0:
-    df_train.replace({'Embarked_Val' : 
-                   { embarked_locs_mapping[nan] : embarked_locs_mapping['S'] 
-                   }
-               }, 
-               inplace=True)
-\end{lstlisting}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Cleaning the Data: Verify No Missing Values}
-Verify we do not have any more NaNs for Embarked\_Val:
-\begin{lstlisting}
-embarked_locs = sorted(df_train['Embarked_Val'].unique())
-embarked_locs
-
-array([1, 2, 3])
-\end{lstlisting}
-\end{frame}
+% Superseded: merged into "Fill Missing Embarked".
+% \begin{frame}[fragile]\frametitle{Cleaning the Data: Verify No Missing Values}
+% Verify we do not have any more NaNs for Embarked\_Val:
+% \begin{lstlisting}
+% embarked_locs = sorted(df_train['Embarked_Val'].unique())
+% embarked_locs
+% 
+% array([1, 2, 3])
+% \end{lstlisting}
+% \end{frame}
+% Old histogram frame (image titk11 showed the NaN bin as 0), superseded:
+% \begin{frame}[fragile]\frametitle{Cleaning the Data: Embarked Histogram}
+% Plot the histogram for Embarked\_Val:
+% 
+% \begin{center}
+% \includegraphics[width=0.6\linewidth,keepaspectratio]{titk11}
+% \end{center}
+% 
+% \begin{lstlisting}
+% df_train['Embarked_Val'].hist(bins=len(embarked_locs), range=(0, 3))
+% plt.title('Port of Embarkation Histogram')
+% plt.xlabel('Port of Embarkation')
+% plt.ylabel('Count')
+% plt.show()
+% \end{lstlisting}
+% 
+% 
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Exploring the Data: Survival by Embarkation Setup}
@@ -527,30 +544,27 @@ df_train[df_train['Age'].isnull()][['Sex', 'Pclass', 'Age']].head()
 \begin{frame}[fragile]\frametitle{Feature Engineering: Fill Missing Ages}
 Determine the Age typical for each passenger class by Sex\_Val. We'll use the median instead of the mean because the Age histogram seems to be right skewed.
 \begin{lstlisting}
-# To keep Age in tact, make a copy of it called AgeFill 
-# that we will use to fill in the missing ages:
-df_train['AgeFill'] = df_train['Age']
-
-df_train['AgeFill'] = df_train['AgeFill'] \
-                        .groupby([df_train['Sex_Val'], df_train['Pclass']]) \
-                        .apply(lambda x: x.fillna(x.median()))
+# Keep Age intact: AgeFill is a copy where each missing age is replaced
+# by the median age of that (Sex_Val, Pclass) group
+df_train['AgeFill'] = df_train.groupby(['Sex_Val', 'Pclass'])['Age'] \
+                              .transform(lambda x: x.fillna(x.median()))
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Feature Engineering: Age Histogram Setup}
-Plot a normalized cross tab for AgeFill and Survived:
+Plot a histogram of AgeFill, split by Survived:
 \begin{lstlisting}
 # Set up a grid of plots
-fig, axes = plt.subplots(2, 1, figsize=fizsize_with_subplots)
+fig, axes = plt.subplots(2, 1, figsize=figsize_with_subplots)
 
 # Histogram of AgeFill segmented by Survived
-df1 = df_train[df_train['Survived'] == 0]['Age']
-df2 = df_train[df_train['Survived'] == 1]['Age']
-max_age = max(df_train['AgeFill'])
-axes[0].hist([df1, df2], 
-             bins=max_age / bin_size, 
-             range=(1, max_age), 
+df1 = df_train[df_train['Survived'] == 0]['AgeFill']
+df2 = df_train[df_train['Survived'] == 1]['AgeFill']
+max_age = int(max(df_train['AgeFill']))
+axes[0].hist([df1, df2],
+             bins=max_age // bin_size,
+             range=(1, max_age),
              stacked=True)
 axes[0].legend(('Died', 'Survived'), loc='best')
 axes[0].set_title('Survivors by Age Groups Histogram')
@@ -568,7 +582,7 @@ axes[0].set_ylabel('Count')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Feature Engineering: Age vs Survival Scatter}
-Plot a normalized cross tab for AgeFill and Survived:
+Plot AgeFill against Survived:
 \begin{center}
 \includegraphics[width=0.4\linewidth,keepaspectratio]{titk15}
 \end{center}
@@ -618,13 +632,13 @@ plt.legend(('1st Class', '2nd Class', '3rd Class'), loc='best')
 Plots
 \begin{lstlisting}
 # Set up a grid of plots
-fig = plt.figure(figsize=fizsize_with_subplots)
+fig = plt.figure(figsize=figsize_with_subplots)
 fig_dims = (3, 1)
 
 # Plot the AgeFill histogram for Survivors
 plt.subplot2grid(fig_dims, (0, 0))
 survived_df = df_train[df_train['Survived'] == 1]
-survived_df['AgeFill'].hist(bins=max_age / bin_size, range=(1, max_age))
+survived_df['AgeFill'].hist(bins=max_age // bin_size, range=(1, max_age))
 \end{lstlisting}
 \end{frame}
 
@@ -643,7 +657,7 @@ Plots
 # Plot the AgeFill histogram for Females
 plt.subplot2grid(fig_dims, (1, 0))
 females_df = df_train[(df_train['Sex_Val'] == 0) & (df_train['Survived'] == 1)]
-females_df['AgeFill'].hist(bins=max_age / bin_size, range=(1, max_age))
+females_df['AgeFill'].hist(bins=max_age // bin_size, range=(1, max_age))
 \end{lstlisting}
 
 \end{frame}
@@ -672,7 +686,7 @@ Shows most first class passengers are within their 30's.
 # Plot the AgeFill histogram for first class passengers
 plt.subplot2grid(fig_dims, (2, 0))
 class1_df = df_train[(df_train['Pclass'] == 1) & (df_train['Survived'] == 1)]
-class1_df['AgeFill'].hist(bins=max_age / bin_size, range=(1, max_age))
+class1_df['AgeFill'].hist(bins=max_age // bin_size, range=(1, max_age))
 \end{lstlisting}
 
 \end{frame}
@@ -781,18 +795,18 @@ df_train = df_train.drop(['Age', 'SibSp', 'Parch', 'PassengerId', 'Embarked_Val'
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Final Data Prep: To NumPy Array}
-Convert the DataFrame to a numpy array:
+Convert the DataFrame to a numpy array (columns: Survived, Pclass, Fare, Sex\_Val, AgeFill, FamilySize):
 \begin{lstlisting}
-train_data = df_train.values
-train_data
-
-array([[  0.    ,   3.    ,   7.25  , ...,   1.    ,  22.    ,   1.    ],
-       [  1.    ,   1.    ,  71.2833, ...,   0.    ,  38.    ,   1.    ],
-       [  1.    ,   3.    ,   7.925 , ...,   1.    ,  26.    ,   0.    ],
-       ..., 
-       [  0.    ,   3.    ,  23.45  , ...,   1.    ,  21.5   ,   3.    ],
-       [  1.    ,   1.    ,  30.    , ...,   0.    ,  26.    ,   0.    ],
-       [  0.    ,   3.    ,   7.75  , ...,   0.    ,  32.    ,   0.    ]])
+>>> train_data = df_train.values
+>>> train_data
+array([[ 0.    ,  3.    ,  7.25  ,  1.    , 22.    ,  1.    ],
+       [ 1.    ,  1.    , 71.2833,  0.    , 38.    ,  1.    ],
+       [ 1.    ,  3.    ,  7.925 ,  0.    , 26.    ,  0.    ],
+       ...,
+       [ 0.    ,  3.    , 23.45  ,  0.    , 21.5   ,  3.    ],
+       [ 1.    ,  1.    , 30.    ,  1.    , 26.    ,  0.    ],
+       [ 0.    ,  3.    ,  7.75  ,  1.    , 32.    ,  0.    ]],
+      shape=(891, 6))
 \end{lstlisting}
 \end{frame}
 
@@ -805,11 +819,11 @@ array([[  0.    ,   3.    ,   7.25  , ...,   1.    ,  22.    ,   1.    ],
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Random Forest: Create the Model}
-Create the random forest object:
+Create the random forest object (\texttt{random\_state=0} makes the results repeatable):
 \begin{lstlisting}
 from sklearn.ensemble import RandomForestClassifier
 
-clf = RandomForestClassifier(n_estimators=100)
+clf = RandomForestClassifier(n_estimators=100, random_state=0)
 \end{lstlisting}
 \end{frame}
 
@@ -826,9 +840,10 @@ train_target = train_data[:, 0]
 # Fit the model to our training data
 clf = clf.fit(train_features, train_target)
 score = clf.score(train_features, train_target)
-"Mean accuracy of Random Forest: {0}".format(score)
 
-'Mean accuracy of Random Forest: 0.980920314254'
+# In the Python shell:
+>>> "Mean accuracy of Random Forest: {0}".format(score)
+'Mean accuracy of Random Forest: 0.9797979797979798'
 \end{lstlisting}
 \end{frame}
 
@@ -866,12 +881,29 @@ df_test.head()
 
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Random Forest: The clean\_data() Function}
+\texttt{clean\_data()} repeats every cleaning step, so the test set is treated exactly like the training set. The test set also has one missing Fare, filled here with the median.
+\begin{lstlisting}
+def clean_data(df, drop_passenger_id):
+    sexes = sorted(df['Sex'].unique())
+    df['Sex_Val'] = df['Sex'].map(dict(zip(sexes, range(len(sexes))))).astype(int)
+    df['AgeFill'] = df.groupby(['Sex_Val', 'Pclass'])['Age'] \
+                      .transform(lambda x: x.fillna(x.median()))
+    df['Fare'] = df['Fare'].fillna(df['Fare'].median())
+    df['FamilySize'] = df['SibSp'] + df['Parch']
+    df = df.drop(['Name', 'Sex', 'Ticket', 'Cabin', 'Embarked',
+                  'Age', 'SibSp', 'Parch'], axis=1)
+    if drop_passenger_id:
+        df = df.drop(['PassengerId'], axis=1)
+    return df
+\end{lstlisting}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Random Forest: Clean Test Data}
-Clean the test data the same way as the training data. \texttt{clean\_data()} is just a
-function that bundles up every step we did by hand above (map Sex/Embarked to numbers,
-fill missing Age, add FamilySize, drop unused columns):
+Clean the test data the same way as the training data:
 \begin{lstlisting}
 # Data wrangle the test set and convert it to a numpy array
 df_test = clean_data(df_test, drop_passenger_id=False)
@@ -886,40 +918,44 @@ test_y = clf.predict(test_x)
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large Kaggle Submission}
-\end{center}
-\end{frame}
+% Commented out (Sep 2026): the Kaggle submission section is not needed for this session.
+% \begin{frame}[fragile]\frametitle{}
+% \begin{center}
+% {\Large Kaggle Submission}
+% \end{center}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Random Forest: Prepare for Kaggle Submission}
-Create a DataFrame by combining the index from the test data with the output of predictions, then write the results to the output:
-\begin{lstlisting}
-df_test['Survived'] = test_y
-df_test[['PassengerId', 'Survived']] \
-    .to_csv('../data/titanic/results-rf.csv', index=False)
-\end{lstlisting}
-\end{frame}
+% Part of the commented-out Kaggle submission section.
+% \begin{frame}[fragile]\frametitle{Random Forest: Prepare for Kaggle Submission}
+% Create a DataFrame by combining the index from the test data with the output of predictions, then write the results to the output:
+% \begin{lstlisting}
+% df_test['Survived'] = test_y
+% df_test[['PassengerId', 'Survived']] \
+%     .to_csv('../data/titanic/results-rf.csv', index=False)
+% \end{lstlisting}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Evaluate Model Accuracy: Train/Test Split}
-Get an idea of accuracy before submitting to Kaggle.
+Get an idea of accuracy on data the model has not seen.
 We'll split our training data, 80\% will go to ``train'' and 20\% will go to ``test'':
 \begin{lstlisting}
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
 
-train_x, test_x, train_y, test_y = train_test_split(train_features, 
-                                                    train_target, 
-                                                    test_size=0.20, 
+train_x, test_x, train_y, test_y = train_test_split(train_features,
+                                                    train_target,
+                                                    test_size=0.20,
                                                     random_state=0)
-print (train_features.shape, train_target.shape)
-print (train_x.shape, train_y.shape)
-print (test_x.shape, test_y.shape)
-((891, 8), (891,))
-((712, 8), (712,))
-((179, 8), (179,))
+
+# In the Python shell:
+>>> print(train_features.shape, train_target.shape)
+(891, 5) (891,)
+>>> print(train_x.shape, train_y.shape)
+(712, 5) (712,)
+>>> print(test_x.shape, test_y.shape)
+(179, 5) (179,)
 \end{lstlisting}
 \end{frame}
 
@@ -931,9 +967,10 @@ clf = clf.fit(train_x, train_y)
 predict_y = clf.predict(test_x)
 
 from sklearn.metrics import accuracy_score
-print ("Accuracy = %.2f" % (accuracy_score(test_y, predict_y)))
 
-Accuracy = 0.83
+# In the Python shell:
+>>> print("Accuracy = %.2f" % accuracy_score(test_y, predict_y))
+Accuracy = 0.84
 \end{lstlisting}
 \end{frame}
 
@@ -941,13 +978,13 @@ Accuracy = 0.83
 \begin{frame}[fragile]\frametitle{Quick Check: Why Did Accuracy Drop?}
 \begin{block}{Think About It}
 The random forest scored 98\% accuracy when evaluated on the full training data, but only
-83\% on the held-out 20\% split. Why the big gap, and which number should you actually
+84\% on the held-out 20\% split. Why the big gap, and which number should you actually
 trust to predict how the model will do on Kaggle's real test set?
 \begin{enumerate}
-  \item[A.] The 83\% number is wrong; the model is really 98\% accurate, the split just got
+  \item[A.] The 84\% number is wrong; the model is really 98\% accurate, the split just got
   unlucky.
   \item[B.] The 98\% reflects memorization of data the model already saw during training; the
-  83\% reflects performance on unseen data, which is what actually matters.
+  84\% reflects performance on unseen data, which is what actually matters.
   \item[C.] Random forests are inherently unstable, so both numbers are meaningless.
   \item[D.] The gap is caused by the confusion matrix, not by the train/test split.
 \end{enumerate}
@@ -959,7 +996,7 @@ trust to predict how the model will do on Kaggle's real test set?
 \begin{block}{Answer}
 \textbf{Correct: B.} A random forest with 100 trees has plenty of capacity to fit quirks of
 the exact 891 training rows it saw, so scoring it on that same data mostly measures
-memorization, not learning. The 83\% figure, measured on the 179 rows held out of training,
+memorization, not learning. The 84\% figure, measured on the 179 rows held out of training,
 is the honest estimate of how the model performs on data it hasn't memorized: closer to what
 Kaggle's actual (unseen) test set will show.
 \end{block}
@@ -972,7 +1009,6 @@ View the Confusion Matrix:
 \begin{lstlisting}
 confusion_matrix = metrics.confusion_matrix(test_y, predict_y)
 
-
 print ("          Predicted")
 print ("         |  0  |  1  |")
 print ("         |-----|-----|")
@@ -982,6 +1018,15 @@ print ("Actual   |-----|-----|")
 print ("       1 | %3d | %3d |" % (confusion_matrix[1, 0],
                                    confusion_matrix[1, 1]))
 print ("         |-----|-----|")
+
+# printed:
+#           Predicted
+#          |  0  |  1  |
+#          |-----|-----|
+#        0 | 101 |   9 |
+# Actual   |-----|-----|
+#        1 |  20 |  49 |
+#          |-----|-----|
 \end{lstlisting}
 \end{frame}
 
@@ -990,22 +1035,24 @@ print ("         |-----|-----|")
 \begin{frame}[fragile]\frametitle{Evaluate Model Accuracy: Classification Report}
 Display the classification report:
 \begin{lstlisting}
-from sklearn.metrics import classification_report
-print(classification_report(test_y, 
-                            predict_y, 
-                            target_names=['Not Survived', 'Survived']))
-
+>>> from sklearn.metrics import classification_report
+>>> print(classification_report(test_y, predict_y,
+...                             target_names=['Not Survived', 'Survived']))
               precision    recall  f1-score   support
-Not Survived       0.84      0.89      0.86       110
-    Survived       0.81      0.72      0.76        69
- avg / total       0.83      0.83      0.82       179
+
+Not Survived       0.83      0.92      0.87       110
+    Survived       0.84      0.71      0.77        69
+
+    accuracy                           0.84       179
+   macro avg       0.84      0.81      0.82       179
+weighted avg       0.84      0.84      0.83       179
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Quick Check: Reading the Classification Report}
 \begin{block}{Think About It}
-Recall is 0.89 for ``Not Survived'' but only 0.72 for ``Survived'', even though both classes
+Recall is 0.92 for ``Not Survived'' but only 0.71 for ``Survived'', even though both classes
 get the same model. What's the most likely reason the model is worse at correctly finding
 survivors specifically?
 \begin{enumerate}
@@ -1029,6 +1076,50 @@ prone to guessing ``Not Survived'', which raises that class's recall while lower
 survivors' recall. This is the same class-imbalance idea worth watching for whenever one
 outcome is rarer than the other.
 \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Evaluate Model Accuracy: Cross-Validation}
+\begin{itemize}
+\item One 80/20 split gives one number, and it depends on which rows landed in the test set
+\item Cross-validation repeats the split: train on 4 parts, test on the 5th, and rotate 5 times
+\item Report the mean and the spread of the 5 scores
+\end{itemize}
+\begin{lstlisting}
+from sklearn.model_selection import cross_val_score
+
+clf = RandomForestClassifier(n_estimators=100, random_state=0)
+scores = cross_val_score(clf, train_features, train_target, cv=5)
+
+# In the Python shell:
+>>> print(scores.round(3))
+[0.777 0.803 0.854 0.803 0.848]
+>>> print("Accuracy: %.3f +/- %.3f" % (scores.mean(), scores.std()))
+Accuracy: 0.817 +/- 0.030
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Which Features Matter?}
+\begin{itemize}
+\item A fitted random forest reports how much each feature helped its splits
+\item Here Fare, Sex\_Val and AgeFill carry most of the weight; Pclass and FamilySize carry little
+\item Caution: these importances favor continuous features, so treat them as a rough guide
+\end{itemize}
+\begin{lstlisting}
+clf = clf.fit(train_features, train_target)
+names = ['Pclass', 'Fare', 'Sex_Val', 'AgeFill', 'FamilySize']
+
+# In the Python shell:
+>>> for name, value in zip(names, clf.feature_importances_):
+...     print("%-10s %.3f" % (name, value))
+...
+Pclass     0.083
+Fare       0.294
+Sex_Val    0.275
+AgeFill    0.267
+FamilySize 0.081
+\end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -8,14 +8,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{PCA Template Code}
+Standardize the features first: \texttt{normalize} would scale each row to unit length, not each feature.
 \begin{lstlisting}
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import normalize
+from sklearn.preprocessing import StandardScaler
+
+# data['X']: the attributes (features) of the data set
+X_scaled = StandardScaler().fit_transform(data['X'])
 
 pca = PCA(n_components=4)
-
-X = normalize(data['X'])
-X_projected = pca.fit_transform(X)
+X_projected = pca.fit_transform(X_scaled)
 \end{lstlisting}
 \end{frame}
 
@@ -73,8 +75,12 @@ X_projected = pca.fit_transform(X)
 \frametitle{Principal Component Analysis (Recap)}
 \begin{itemize}
 	\item Scikit-learn has methods to compute PCA and several variants. 
-	\item Classic PCA (sklearn.decomposition.PCA) is based on an eigenvalue decomposition of the data co-variance, so that for N points, the computational cost grows as
-	$\mathcal{O[N^3]}$. This means that for large data-sets like the current one, the fit can be very slow. 
+	\item Classic PCA (\texttt{sklearn.decomposition.PCA}) computes a full singular value decomposition (SVD) of the centered data
+	\begin{itemize}
+	\item The cost grows as
+	$\mathcal{O}(n_{\max}^2 \cdot n_{\min})$, where $n_{\max}$ and $n_{\min}$ are the larger and the smaller of the number of samples and the number of features
+	\item For large data sets like the current one, the fit can be slow
+	\end{itemize} 
 \end{itemize}
 \end{frame}
 
@@ -82,7 +88,10 @@ X_projected = pca.fit_transform(X)
 \begin{frame}[fragile]\frametitle{Alternate method}
 
 \begin{itemize}
-\item Fortunately, Scikit-learn has an alternative method that is much faster. 
+\item Fortunately, Scikit-learn has an alternative method that is much faster.
+\begin{itemize}
+\item Cost: $\mathcal{O}(n_{\max}^2 \cdot k)$ for $k$ components, instead of $\mathcal{O}(n_{\max}^2 \cdot n_{\min})$
+\end{itemize} 
 \item The speed comes at a price: it is based on random projections, so the results are not as robust as the normal method. 
 \item But for tasks such as ours where we are seeking only a few of a large number of eigen-vectors, it performs fairly well. 
 \item To keep our results consistent between runs, we'll explicitly set the random seed for the fit. 
@@ -189,58 +198,59 @@ ax.scatter(X[:, 0], X[:, 1])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{PCA: Stubs}
- After ensuring that the data is normalized, the output is simply the singular value decomposition of the co-variance matrix of the original data.
+After normalizing each feature, the output is simply the singular value decomposition of the covariance matrix of the data.
 \begin{lstlisting}
 def pca(X):
-    # normalize the features
-    X = (X - X.mean()) / X.std()
-    
+    # normalize each feature: subtract its mean, divide by its standard deviation
+    X = (X - X.mean(axis=0)) / X.std(axis=0)
+
     # compute the covariance matrix
-    X = np.matrix(X)
-    cov = (X.T * X) / X.shape[0]
-    
+    cov = (X.T @ X) / X.shape[0]
+
     # perform SVD
     U, S, V = np.linalg.svd(cov)
-    
+
     return U, S, V
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{PCA: Exercise}
+The first column of \texttt{U} is the first principal component: here the diagonal, with equal weight on both features. It keeps 86.8\% of the variance ($1.736 / (1.736 + 0.264)$).
 \begin{lstlisting}
-U, S, V = pca(X)    
-
-matrix([[-0.79241747, -0.60997914],
-         [-0.60997914,  0.79241747]]),
- array([ 1.43584536,  0.56415464]),
- matrix([[-0.79241747, -0.60997914],
-         [-0.60997914,  0.79241747]]))
+>>> U, S, V = pca(X)
+>>> print(U)
+[[-0.70710678 -0.70710678]
+ [-0.70710678  0.70710678]]
+>>> print(S)
+[1.73553038 0.26446962]
 \end{lstlisting}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{PCA: Exercise}
-Now that we have the principal components (matrix U), we can use these to project the original data into a lower-dimensional space. 
+Now that we have the principal components (matrix U), we can use these to project the normalized data into a lower-dimensional space.
 \begin{lstlisting}
 def project_data(X, U, k):
     U_reduced = U[:,:k]
     return np.dot(X, U_reduced)
 
-Z = project_data(X, U, 1)
+# the same per-feature normalization that pca() applied
+X_norm = (X - X.mean(axis=0)) / X.std(axis=0)
+Z = project_data(X_norm, U, 1)
 \end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{PCA: Exercise}
-We can also attempt to recover the original data by reversing the steps we took to project it.
+We can also attempt to recover the original data by reversing the steps we took to project it, including the normalization.
 \begin{lstlisting}
 def recover_data(Z, U, k):
     U_reduced = U[:,:k]
     return np.dot(Z, U_reduced.T)
-    
-X_recovered = recover_data(Z, U, 1)
+
+X_recovered = recover_data(Z, U, 1) * X.std(axis=0) + X.mean(axis=0)
 fig, ax = plt.subplots(figsize=(12,8))
 ax.scatter(X_recovered[:, 0], X_recovered[:, 1])
 \end{lstlisting}
@@ -249,7 +259,7 @@ ax.scatter(X_recovered[:, 0], X_recovered[:, 1])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{PCA: Exercise}
 \begin{center}
-\includegraphics[width=0.5\linewidth,keepaspectratio]{pca18}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{pca18_recovered}
 \end{center}
 \begin{itemize}
 \item Notice that the projection axis for the first principal component was basically a diagonal line through the data set.

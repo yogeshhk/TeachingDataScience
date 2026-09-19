@@ -1,0 +1,192 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Case Study: PCA on Car Specs}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Data}
+\begin{itemize}
+\item 8 numeric specs for 426 cars: engine size, cylinders, horsepower, city and highway MPG, weight, wheelbase, length
+\item Many features move together: Weight correlates 0.81 with engine size and $-0.79$ with highway MPG
+\item Clean first: 2 rotary-engine cars have a dot (\texttt{.}) for cylinders and are dropped
+\end{itemize}
+\begin{lstlisting}
+import pandas as pd
+
+cars = pd.read_csv('data/cars.csv', sep=';')
+features = ['EngineSize', 'Cylinders', 'Horsepower', 'MPG_City',
+            'MPG_Highway', 'Weight', 'Wheelbase', 'Length']
+cars[features] = cars[features].apply(pd.to_numeric, errors='coerce')
+cars = cars.dropna(subset=features)     # 428 -> 426 cars
+X = cars[features]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Raw Features}
+\begin{itemize}
+\item PC1 explains 99.4\% of the variance
+\item Its loading on Weight is 0.998; the other loadings are near 0
+\item Weight is in the thousands, so its variance swamps the rest: PCA found the units, not the structure
+\end{itemize}
+\begin{lstlisting}
+from sklearn.decomposition import PCA
+
+pca = PCA()
+pca.fit(X)
+
+# In the Python shell:
+>>> print(pca.explained_variance_ratio_[:3].round(3))
+[0.994 0.005 0.   ]
+>>> print(pca.components_[0].round(3))    # PC1 loadings, in feature order
+[ 0.001  0.002  0.06  -0.005 -0.006  0.998  0.008  0.013]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Standardized Features}
+\begin{itemize}
+\item Standardize first (centering and scaling), then run PCA
+\item PC1 explains 71.6\% of the variance, PC2 13.4\%
+\item 3 components keep 92.4\%, 4 keep 95.1\%: 8 features become 3 or 4 numbers per car
+\end{itemize}
+\begin{lstlisting}
+from sklearn.preprocessing import StandardScaler
+
+Xs = StandardScaler().fit_transform(X)
+pca = PCA()
+pca.fit(Xs)
+
+# In the Python shell:
+>>> print(pca.explained_variance_ratio_.round(3))
+[0.716 0.134 0.074 0.027 0.022 0.012 0.01  0.005]
+>>> print(pca.explained_variance_ratio_.cumsum().round(3))
+[0.716 0.849 0.924 0.951 0.973 0.985 0.995 1.   ]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reading the Components}
+\begin{itemize}
+\item Loadings are the weights of each original feature in a component
+\item PC1: engine size, cylinders, power and weight up, MPG down: overall size and power
+\item PC2: wheelbase and length up, horsepower down: roominess versus power
+\item The names are our reading; the overall sign of a component is arbitrary
+\end{itemize}
+\begin{lstlisting}
+>>> load = pd.DataFrame(pca.components_[:2].T, index=features,
+...                     columns=['PC1', 'PC2'])
+>>> print(load.round(2))
+              PC1   PC2
+EngineSize   0.39 -0.09
+Cylinders    0.37 -0.19
+Horsepower   0.33 -0.40
+MPG_City    -0.36  0.24
+MPG_Highway -0.36  0.24
+Weight       0.38  0.11
+Wheelbase    0.32  0.57
+Length       0.31  0.58
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{From Scratch with NumPy}
+\begin{itemize}
+\item The same steps as the by-hand example: covariance matrix, eigenvectors, sort by eigenvalue
+\item \texttt{eigh} is made for symmetric matrices, such as a covariance matrix
+\item The eigenvalues match scikit-learn's \texttt{explained\_variance\_}
+\end{itemize}
+\begin{lstlisting}
+import numpy as np
+
+C = np.cov(Xs.T)                     # 8 x 8 covariance matrix
+eigvals, eigvecs = np.linalg.eigh(C)
+order = np.argsort(eigvals)[::-1]    # largest eigenvalue first
+eigvals, eigvecs = eigvals[order], eigvecs[:, order]
+
+# In the Python shell:
+>>> print(eigvals.round(3))
+[5.738 1.073 0.597 0.218 0.177 0.092 0.082 0.042]
+>>> print(np.allclose(eigvals, pca.explained_variance_))
+True
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Same Result via SVD}
+\begin{itemize}
+\item SVD works on the data directly: no covariance matrix is built
+\item The rows of \texttt{Vt} are the principal components; $\sigma^2/(n-1)$ are the eigenvalues
+\item The results match the eigenvalue route, up to the sign of each component
+\end{itemize}
+\begin{lstlisting}
+U, s, Vt = np.linalg.svd(Xs, full_matrices=False)
+
+# In the Python shell:
+>>> print((s ** 2 / (len(Xs) - 1)).round(3))
+[5.738 1.073 0.597 0.218 0.177 0.092 0.082 0.042]
+>>> print(np.allclose(np.abs(Vt[0]), np.abs(pca.components_[0])))
+True
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Randomized PCA}
+\begin{itemize}
+\item Randomized PCA finds only the top $k$ components, using random projections
+\item Cost: $\mathcal{O}(n_{\max}^2 \cdot k)$ instead of $\mathcal{O}(n_{\max}^2 \cdot n_{\min})$ for the full SVD
+\item It is approximate, so set \texttt{random\_state}; use it when there are many samples or features and you need few components
+\end{itemize}
+\begin{lstlisting}
+pca_rand = PCA(n_components=3, svd_solver='randomized', random_state=0)
+pca_rand.fit(Xs)
+
+# In the Python shell:
+>>> print(pca_rand.explained_variance_ratio_.round(3))
+[0.716 0.134 0.074]
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Project and Reconstruct}
+\begin{itemize}
+\item Project onto the first 2 components: 8 features become 2 numbers per car
+\item Reconstruct: map the 2 numbers back to 8 features
+\item The reconstruction error (0.151) equals the variance we dropped ($1 - 0.849$)
+\end{itemize}
+\begin{lstlisting}
+W = eigvecs[:, :2]        # projection matrix: 8 x 2
+Z = Xs @ W                # 2 numbers per car
+Xr = Z @ W.T              # back to 8 features
+
+# In the Python shell:
+>>> print(Z.shape)
+(426, 2)
+>>> print(((Xs - Xr) ** 2).mean().round(3))
+0.151
+>>> print((1 - pca.explained_variance_ratio_[:2].sum()).round(3))
+0.151
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Reading Explained Variance}
+\begin{block}{Think About It}
+In the standardized cars data, PC1 explains 71.6\% of the variance. What does that mean?
+\begin{enumerate}
+  \item[A.] PC1 predicts a car's price with 71.6\% accuracy
+  \item[B.] Keeping only PC1 retains 71.6\% of the total variance; the other 28.4\% is lost
+  \item[C.] PC1 is the single most important of the original features
+  \item[D.] 71.6\% of the cars are described perfectly by PC1
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: Reading Explained Variance}
+\begin{block}{Answer}
+\textbf{Correct: B.} The explained variance ratio is the share of the total variance that a component carries. PC1 is a new axis, a mix of all eight features, not one of the original features (C). The ratio measures variance, not prediction accuracy (A) or the share of cars fitted (D).
+\end{block}
+\end{frame}
