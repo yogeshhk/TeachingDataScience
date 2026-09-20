@@ -1,7 +1,6 @@
 # CrewAI Examples
 
-Three standalone CrewAI demo scripts (job matching, research blogging, trip planning),
-moved here from `Code/agents/` to consolidate all CrewAI content in one place:
+Three standalone CrewAI demo scripts (job matching, research blogging, trip planning):
 
 ```bash
 conda env create -f environment.yml

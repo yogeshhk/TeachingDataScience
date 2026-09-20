@@ -53,7 +53,7 @@ conda activate <env-name>
 | Directory | Covers |
 |---|---|
 | [`pytorch/`](pytorch/) | PyTorch fundamentals: tensors, neural networks, training loops, image classification |
-| `curiosily_ai_bootcamp/` | AI Bootcamp notebooks (supersedes the earlier `dl_curiousily/`) |
+| `curiosily_ai_bootcamp/` | AI Bootcamp notebooks |
 
 ## Classical ML
 
