@@ -1,6 +1,6 @@
 ---
 name: latex-audit
-description: Runs deterministic checks against LaTeX teaching/book repos (TeachingQuantumTech, TeachingDataScience, Publications) instead of reasoning about them by reading files. "frames" counts live (uncommented) vs raw \begin{frame} occurrences in one file or a whole directory, since a raw grep count is known to overcount by including commented-out frames; "inputs" transitively walks \input{}/\include{} chains from one or more driver files and flags any target with no matching .tex on disk; "headings" walks the same chain and flags candidate frame titles with manually-assigned numbering (Exercise 1, Lab 2, Step 3...) that makes reordering painful, or that redundantly repeat a word from the deck's own \title{}; "spacing" checks every template_cheatsheet.tex for the compact bullet-list fix (enumitem + \setlist{nosep}). All modes skip backup/_backup/_retired folders. Use this whenever asked to judge a deck's real size, find "how many live frames" in a file, check whether a driver (or a whole repo) has broken/unresolved \input chains, review frame-title numbering/redundancy, or confirm the compact-list template fix is applied everywhere -- before doing any of that by hand with Read/Grep.
+description: Runs deterministic checks against LaTeX teaching/book repos (TeachingQuantumTech, TeachingDataScience, Publications) instead of reasoning about them by reading files. "frames" counts live (uncommented) vs raw \begin{frame} occurrences in one file or a whole directory, since a raw grep count is known to overcount by including commented-out frames; "inputs" transitively walks \input{}/\include{} chains from one or more driver files and flags any target with no matching .tex on disk; "headings" walks the same chain and flags candidate frame titles with manually-assigned numbering (Exercise 1, Lab 2, Step 3...) that makes reordering painful, that redundantly repeat a word from the deck's own \title{}, or that use a colon-subtitle ("First Part: Second Part") whose first part isn't a recognized category-label prefix (Exercise, Theory, Challenge, etc.); "selfcontained" flags live text that breaks a standalone slide (chapter/session numbers, "course", internal file names, later/next/above/below pointers); "spacing" checks every template_cheatsheet.tex for the compact bullet-list fix (enumitem + \setlist{nosep}). All modes skip backup/_backup/_retired folders. Use this whenever asked to judge a deck's real size, find "how many live frames" in a file, check whether a driver (or a whole repo) has broken/unresolved \input chains, review frame-title numbering/redundancy, or confirm the compact-list template fix is applied everywhere -- before doing any of that by hand with Read/Grep.
 ---
 
 # LaTeX Audit
@@ -8,7 +8,7 @@ description: Runs deterministic checks against LaTeX teaching/book repos (Teachi
 A single PowerShell script, `latex-audit.ps1` (same directory as this file), replaces manual
 routines that this user's repos have needed repeatedly. `frames`, `inputs`, and `spacing` are
 pure pattern-matching -- no judgment required, so don't spend reasoning tokens re-deriving them.
-`headings` is different: it surfaces **candidates** for two known issues, not verdicts -- see
+`headings` is different: it surfaces **candidates** for three known issues, not verdicts -- see
 its own section below before acting on its output.
 
 ## When to use this
@@ -23,9 +23,9 @@ its own section below before acting on its output.
   chain actually resolves before doing a deeper content review. `/upgrade-deck` runs `inputs`
   and `headings` on the target driver as part of its own Step 1 -- see that command file.
 - User asks you to check a deck (or the whole repo) for frame titles with painful manual
-  numbering, or titles that redundantly restate the deck's own subject -- run `headings` first
-  instead of re-deriving the pattern by reading every file, then apply judgment to what it
-  flags.
+  numbering, titles that redundantly restate the deck's own subject, or "Title: Subtitle"
+  headings that read oddly -- run `headings` first instead of re-deriving the pattern by
+  reading every file, then apply judgment to what it flags.
 - User asks whether the compact bullet-list template fix (no vertical gap between itemize/
   enumerate items, added 2026-08-25) has made it to every `template_cheatsheet.tex` copy across
   these repos -- run `spacing` instead of grepping each copy by hand.
@@ -50,11 +50,18 @@ powershell.exe -NoProfile -File "C:\Users\yoges\.claude\skills\latex-audit\latex
   as an independent driver, aggregating a `BLOCKED: ...` block per broken driver. This is the
   repo-wide sweep shape.
 - `-Mode headings -Path <driver.tex>`: extracts the driver's `\title{...}`, walks its full
-  `\input`/`\include` chain, and prints two candidate lists across every `\frametitle{...}` (and
-  short-form `\begin{frame}{...}`) it finds: possible reorder-hostile numbering, and possible
-  redundant subject naming (with which title word(s) triggered the match).
+  `\input`/`\include` chain, and prints three candidate lists across every `\frametitle{...}`
+  (and short-form `\begin{frame}{...}`) it finds: possible reorder-hostile numbering, possible
+  redundant subject naming (with which title word(s) triggered the match), and possible
+  colon-subtitle redundancy (a "First Part: Second Part" title whose first part isn't a
+  recognized category-label prefix).
 - `-Mode headings -Path <directory>`: same, run independently over every `Main_*.tex` driver
   found recursively.
+- `-Mode selfcontained -Path <driver.tex or directory>`: walks the driver's chain and lists live
+  (non-comment) text that breaks a standalone slide: `chapter`, `session N`, `course`, internal file
+  names, and forward/backward pointers (`later`, `earlier`, `previous`, `above`, `below`, `next`,
+  "covered here", "see \emph{Book}"). **Candidates only**: "next node" in a linked-list slide is fine.
+  Code listings are checked for chapter/session only. Run it before calling any QT-03 session done.
 - `-Mode spacing -Path <file>`: checks that one `template_cheatsheet.tex` has both `enumitem`
   loaded and a `\setlist{...}` containing `nosep`, uncommented.
 - `-Mode spacing -Path <directory>`: recurses for every file literally named
@@ -77,7 +84,7 @@ worth surfacing to the user rather than silently expanding this list.
   (e.g. `\input{images/tikz/array.tex}`) is used as-is, not double-suffixed. If something shows
   as blocked, don't assume it's a real bug -- open the referencing file and confirm before
   reporting it as broken, the same way you would with a Grep result.
-- `headings`: **both lists are candidates for human review, not findings to apply blind.**
+- `headings`: **all three lists are candidates for human review, not findings to apply blind.**
   Known legitimate exceptions the script cannot tell apart from real issues:
   - Canonical/externally-fixed sequences (QT02's "Postulate 1"-"Postulate 7", certification's
     "Section 1"-"Section 8" and "Task X.Y" exam-blueprint numbers) should usually stay numbered
@@ -92,6 +99,16 @@ worth surfacing to the user rather than silently expanding this list.
     after the last `:` or before the first ` for `) -- expect real false positives, and don't
     expand the stopword list reflexively just to silence one; confirm the frame is actually
     restating the deck's own subject before proposing a change.
+  - Colon-subtitle: the category-label prefix list (`exercise`, `theory`, `complexity`,
+    `implementation`, `challenge`, `routine`, `applied`, `solution`, `answer`,
+    `worked example`, `intuition`, `quick check`, `hint`, `note`, `diagram`, `closed-form
+    solution`, `closed form`) is fixed and
+    case-insensitive on the text *before* the colon; a comma-suffixed variant of a prefix
+    ("Implementation, Level 1", "Worked Example, Continued") still counts as excluded. Expect a
+    real hit whenever two frames on the same topic genuinely need a subtitle to stay
+    distinguishable in the Outline (e.g. "Inheritance: Extending a Class" / "Inheritance: The
+    Class Relationship") -- prefer renaming one of the pair over truncating both to an identical
+    short title.
 - `spacing`: `MISSING` means the compact-list fix (added to the shared `cheatsheets/`,
   `qcnp/workshops/`, `certification/`, `openedx/` templates plus the `Publications/`,
   `TeachingDataScience/`, and `ReadyRefLaTeX/` copies on 2026-08-25) hasn't reached that copy

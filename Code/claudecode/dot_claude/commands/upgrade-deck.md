@@ -23,7 +23,12 @@ Before reading anything by hand, run the `latex-audit` skill on the driver:
 ```
 -Mode inputs -Path <driver.tex>
 -Mode headings -Path <driver.tex>
+-Mode selfcontained -Path <driver.tex>
 ```
+
+`selfcontained` lists live text that breaks a standalone slide (chapter or session numbers, the word
+"course", internal file names, later/earlier/next/above/below pointers, named external book
+pointers). Also candidates, not verdicts. Fold the real ones into the findings.
 
 `inputs` confirms the full `\input`/`\include` chain actually resolves before you invest time
 reading it -- a `BLOCKED` result means fix that first (or flag it) rather than reviewing a deck

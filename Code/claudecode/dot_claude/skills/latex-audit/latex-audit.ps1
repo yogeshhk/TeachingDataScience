@@ -4,7 +4,7 @@
   re-derive them by reading and reasoning over every file each time.
 
 .DESCRIPTION
-  Four modes:
+  Five modes:
     frames   - count live (uncommented) vs raw \begin{frame} occurrences.
                "Raw" counts the substring anywhere (what a plain grep -c would find,
                including inside %-commented lines). "Live" excludes lines whose
@@ -15,28 +15,46 @@
                directory (these repos keep each family folder self-contained, so
                a topic file is always a sibling of the file that \inputs it).
     headings - starting from one or more driver files, walk the same \input/\include
-               chain and scan every \frametitle{...} in it for two candidate issues:
+               chain and scan every \frametitle{...} in it for three candidate issues:
                (a) manually-assigned numbering baked into the title text (Exercise 1,
-               Lab 2, Step 3, Phase 4, ...) that makes reordering frames painful, and
+               Lab 2, Step 3, Phase 4, ...) that makes reordering frames painful,
                (b) the frame title redundantly repeating a word from the driver's own
-               \title{...} that a reader already knows from the deck title. BOTH ARE
+               \title{...} that a reader already knows from the deck title, and
+               (c) a colon-subtitle title ("First Part: Second Part") where the first
+               part is not a recognized category-label prefix (Exercise, Theory,
+               Complexity, Implementation, Challenge, Routine, Applied, Solution,
+               Answer, Worked Example, Intuition, Quick Check, Hint, Note, Diagram) --
+               those prefixes are a deliberate, deck-wide convention for scanning the
+               Outline/cheat sheet at a glance, not the redundant-subtitle pattern this
+               check targets. A comma-suffixed variant of a prefix ("Implementation,
+               Level 1", "Worked Example, Continued") still counts as excluded. ALL THREE ARE
                CANDIDATE LISTS, NOT VERDICTS -- this is pattern-matching, not judgment.
                Real decks have legitimate exceptions (canonical sequences like
                "Postulate 1..7", official exam section numbers, a frame naming a
-               second framework by contrast) -- read the flagged frame before deciding
-               to change it, the same way you would with an `inputs` BLOCKED result.
+               second framework by contrast, or two frames on the same topic that
+               genuinely need a subtitle to stay distinct in the Outline) -- read the
+               flagged frame before deciding to change it, the same way you would with
+               an `inputs` BLOCKED result.
     spacing  - recursively finds every template_cheatsheet.tex file and reports
                whether it has the compact-list fix (enumitem loaded + \setlist{...}
                containing nosep, both uncommented). Flags any copy that's missing it,
                so the fix stays consistent across every family folder / repo that
                carries its own copy of this template.
 
+    selfcontained - walks a driver's \input chain and scans live (non-comment) text of
+               each content file for wording that breaks a standalone slide: "chapter",
+               "session N", "course", internal file names (README, TODO, .md, docs/),
+               and forward/backward pointers (later, earlier, previous, above, below,
+               next, "covered here", "see \emph{Book}"). Code listings are only checked
+               for chapter/session. CANDIDATES, NOT VERDICTS: "next node" in a linked
+               list is fine; read each hit before editing.
+
   All modes skip files under any directory literally named 'backup', '_backup',
   or '_retired' (case-insensitive) -- these repos' own convention for read-only
   archives / dead content that are not meant to be compiled or referenced.
 
 .PARAMETER Mode
-  'frames', 'inputs', 'headings', or 'spacing'.
+  'frames', 'inputs', 'headings', 'spacing', or 'selfcontained'.
 
 .PARAMETER Path
   A single .tex file, or a directory to scan.
@@ -57,7 +75,7 @@
 #>
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('frames', 'inputs', 'headings', 'spacing')]
+    [ValidateSet('frames', 'inputs', 'headings', 'spacing', 'selfcontained')]
     [string]$Mode,
 
     [Parameter(Mandatory = $true)]
@@ -144,6 +162,15 @@ $HeadingStopWords = @(
 
 $HeadingNumberPattern = '(?i)\b(Exercise|Lab Exercise|Step|Phase|Part|Module|Unit|Task|Chapter|Section|Round|Stage|Postulate)\s*\d+'
 
+# Category-label prefixes: a deliberate, deck-wide convention (lets a reader scan the
+# Outline/cheat sheet and spot at a glance which frames are exercises, theory, etc.),
+# not the redundant colon-subtitle pattern the colon-subtitle check targets.
+$ColonLabelPrefixes = @(
+    'exercise','theory','complexity','implementation','challenge','routine','applied',
+    'solution','answer','worked example','intuition','quick check','hint','note','diagram',
+    'closed-form solution','closed form'
+)
+
 function Get-DriverTitle([string]$driverFile) {
     foreach ($line in Get-Content -LiteralPath $driverFile) {
         if ($line.TrimStart() -match '^%') { continue }
@@ -214,6 +241,21 @@ function Invoke-HeadingsCheck([string]$driverFile) {
         }
     }
 
+    $colonSubtitled = @()
+    foreach ($t in $allTitles) {
+        # Strip \texttt{...}-style commands' braces roughly, same as Get-SubjectPhraseAndWords,
+        # so a colon inside e.g. \texttt{@dataclass} doesn't confuse the split.
+        $clean = [regex]::Replace($t.Text, '\\[a-zA-Z]+', ' ')
+        $clean = [regex]::Replace($clean, '[{}]', ' ')
+        if ($clean -notmatch ':') { continue }
+        $firstPart = ($clean -split ':', 2)[0].Trim().ToLower()
+        # A comma-suffixed variant of an excluded prefix (e.g. "Implementation, Level 1",
+        # "Worked Example, Continued") still counts as that prefix, not a redundant subtitle.
+        $firstPartPrefix = ($firstPart -split ',', 2)[0].Trim()
+        if ($ColonLabelPrefixes -contains $firstPart -or $ColonLabelPrefixes -contains $firstPartPrefix) { continue }
+        $colonSubtitled += $t
+    }
+
     "=== $driverFile ==="
     "  title: $titleText"
     if ($subject) { "  subject phrase: '$($subject.Phrase)'  |  candidate words: $($subject.Words -join ', ')" }
@@ -223,6 +265,9 @@ function Invoke-HeadingsCheck([string]$driverFile) {
     ""
     "  possible redundant subject naming ($($redundant.Count)):"
     foreach ($r in $redundant) { "    $($r.File):$($r.Line): $($r.Text)   [matched: $($r.Matched)]" }
+    ""
+    "  possible colon-subtitle redundancy ($($colonSubtitled.Count)):"
+    foreach ($c in $colonSubtitled) { "    $($c.File):$($c.Line): $($c.Text)" }
     ""
 }
 
@@ -240,6 +285,69 @@ function Test-CompactListFix([string]$file) {
         if ($line -match '\\setlist(\[[^\]]*\])?\{[^}]*nosep[^}]*\}') { $hasNosep = $true }
     }
     [PSCustomObject]@{ File = $file; HasPackage = $hasPackage; HasNosep = $hasNosep }
+}
+
+# ---------------------------------------------------------------------------
+# selfcontained mode
+# ---------------------------------------------------------------------------
+
+# Strong: internal structure words a standalone slide must never show.
+$SelfContainedStrong = @(
+    @{ Tag = 'chapter';  Pattern = '(?i)\bchapters?\b' },
+    @{ Tag = 'session';  Pattern = '(?i)\bsessions?\s*\d' },
+    @{ Tag = 'course';   Pattern = '(?i)\bcourse\b' },
+    @{ Tag = 'internal-file'; Pattern = '(?i)(README|\bTODO\b|docs[\\/]|\.(md|xlsx|csv)\b|\bTBD\b)' }
+)
+# Soft: forward/backward pointers and external pointers. Legitimate uses exist
+# (e.g. "next node" in a linked list), so these are candidates only.
+$SelfContainedSoft = @(
+    @{ Tag = 'pointer';  Pattern = '(?i)\b(later|earlier|previous|above|below|onward|from here|once that)\b' },
+    @{ Tag = 'next';     Pattern = '(?i)\bnext\b' },
+    @{ Tag = 'covered-here'; Pattern = '(?i)\bcovered\s+(here|above|below|next|later|earlier)\b' },
+    @{ Tag = 'see-external'; Pattern = '(?i)\bsee\s+\\(emph|textit|textbf)\{' }
+)
+
+function Get-SelfContainedHits([string]$file) {
+    $hits = @()
+    $lineNum = 0
+    $inCode = $false
+    foreach ($line in Get-Content -LiteralPath $file) {
+        $lineNum++
+        if ($line -match '\\begin\{(lstlisting|verbatim|minted)\}') { $inCode = $true }
+        $isCodeLine = $inCode
+        if ($line -match '\\end\{(lstlisting|verbatim|minted)\}') { $inCode = $false }
+        if ($line.TrimStart() -match '^%') { continue }
+        # Drop a trailing unescaped % comment.
+        $text = [regex]::Replace($line, '(?<!\\)%.*$', '')
+        if ([string]::IsNullOrWhiteSpace($text)) { continue }
+        # Code listings: only the strong chapter/session numbering patterns apply.
+        $rules = if ($isCodeLine) { $SelfContainedStrong | Where-Object { $_.Tag -in @('chapter','session') } }
+                 else { @($SelfContainedStrong) + @($SelfContainedSoft) }
+        foreach ($r in $rules) {
+            if ($text -match $r.Pattern) {
+                $hits += [PSCustomObject]@{ File = $file; Line = $lineNum; Tag = $r.Tag; Text = $text.Trim() }
+            }
+        }
+    }
+    return $hits
+}
+
+function Invoke-SelfContainedCheck([string]$driverFile) {
+    $chain = Resolve-InputChain $driverFile
+    $all = @()
+    foreach ($f in $chain.VisitedFiles) {
+        if (Test-IsExcluded $f) { continue }
+        # Driver files are wrappers (titles, templates); check content files only.
+        if ([System.IO.Path]::GetFileName($f) -like 'Main_*') { continue }
+        $all += Get-SelfContainedHits $f
+    }
+    "=== $driverFile ==="
+    foreach ($h in ($all | Sort-Object File, Line, Tag)) {
+        $t = if ($h.Text.Length -gt 110) { $h.Text.Substring(0, 110) + '...' } else { $h.Text }
+        "  {0}:{1}: [{2}] {3}" -f (Split-Path $h.File -Leaf), $h.Line, $h.Tag, $t
+    }
+    "  $($all.Count) candidate hit(s)."
+    ""
 }
 
 # ---------------------------------------------------------------------------
@@ -302,6 +410,21 @@ if ($Mode -eq 'headings') {
 
     foreach ($d in ($drivers | Sort-Object)) {
         Invoke-HeadingsCheck $d
+    }
+    exit 0
+}
+
+if ($Mode -eq 'selfcontained') {
+    $drivers = if (Test-Path -LiteralPath $Path -PathType Container) {
+        Get-ChildItem -LiteralPath $Path -Filter 'Main_*.tex' -Recurse -File |
+            Where-Object { -not (Test-IsExcluded $_.FullName) } |
+            Select-Object -ExpandProperty FullName
+    } else {
+        @((Resolve-Path -LiteralPath $Path).Path)
+    }
+
+    foreach ($d in ($drivers | Sort-Object)) {
+        Invoke-SelfContainedCheck $d
     }
     exit 0
 }
