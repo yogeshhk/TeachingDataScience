@@ -1,47 +1,68 @@
-# Shared Datasets (Sessions 16, 17, 19)
+# Shared Datasets
 
-**Purpose**: One dataset used by three sessions, kept in one place so the copies cannot drift apart.
-The cars case studies in `LaTeX/ml_kmeans_cars_case_study.tex` (Session 16), `LaTeX/ml_pca_cars_case_study.tex`
-(Session 17) and the deploy-your-own-model walkthrough in `LaTeX/ml_mlops_workflow.tex` (Session 19) all read it.
+**Purpose**: Datasets used by more than one session, kept in one place so the copies cannot drift apart.
 
 ## Files
 
-| File | Rows | Columns | Used for |
-|---|---|---|---|
-| `cars.csv` | 428 | 16 | K-Means on engine specs (Session 16), PCA on the same specs (Session 17), predicting city mileage `MPG_City` with a random forest (Session 19) |
+| File | Rows | Columns | Separator | Description |
+|---|---|---|---|---|
+| `cars.csv` | 428 | 16 | semicolon | Car specifications and prices (SAS sample data `SASHELP.CARS`) |
+| `Crop_recommendation.csv` | 2200 | 8 | comma | Soil and climate measurements labelled with the best-suited crop |
 
-Columns: `Obs`, `Make`, `Model`, `Type`, `Origin`, `DriveTrain`, `MSRP`, `Invoice`, `EngineSize`, `Cylinders`,
-`Horsepower`, `MPG_City`, `MPG_Highway`, `Weight`, `Wheelbase`, `Length`.
+## Data dictionary
 
-Two things to know before reading it:
+### `cars.csv`
 
-- The separator is a **semicolon**, not a comma.
-- `MSRP` and `Invoice` are text such as `$36,945`. Two rotary-engine cars have `.` in `Cylinders`, so the column
-  loads as text; the scripts convert it with `pd.to_numeric(..., errors='coerce')` and drop those 2 rows (428 to 426 cars).
+`Obs`, `Make`, `Model`, `Type`, `Origin`, `DriveTrain`, `MSRP`, `Invoice`, `EngineSize`, `Cylinders`, `Horsepower`,
+`MPG_City`, `MPG_Highway`, `Weight`, `Wheelbase`, `Length`.
 
-## Usage
+- `MSRP` and `Invoice` are text such as `$36,945`.
+- Two rotary-engine cars have `.` in `Cylinders`, so the column loads as text.
+
+### `Crop_recommendation.csv`
+
+| Column | Meaning |
+|---|---|
+| `N`, `P`, `K` | Soil nitrogen, phosphorus and potassium content |
+| `temperature` | Temperature in degrees Celsius |
+| `humidity` | Relative humidity in percent |
+| `ph` | Soil pH |
+| `rainfall` | Rainfall in mm |
+| `label` | Crop name (target, 22 classes, 100 rows each) |
+
+There are no missing values, and all features are numeric.
+
+## Reading the files
+
+Check the separator and the column types first; they differ between files.
 
 ```python
 import pandas as pd
 
 cars = pd.read_csv('cars.csv', sep=';')
-cars['Cylinders'] = pd.to_numeric(cars['Cylinders'], errors='coerce')
-cars = cars.dropna(subset=['EngineSize', 'Cylinders', 'Horsepower', 'MPG_City', 'Weight'])
+crops = pd.read_csv('Crop_recommendation.csv')
+
+for df in (cars, crops):
+    print(df.shape)
+    print(df.dtypes)
+    print(df.isna().sum())
 ```
 
-Runnable scripts: `sessions/session16_kmeans/kmeans_cars_case_study.py`, `sessions/session17_pca/pca_cars_case_study.py`,
-`sessions/session19_mlops/train_model.py`.
+Generic cleaning steps, as needed:
 
-## Verification
+- Convert text numbers with `pd.to_numeric(col, errors='coerce')`, then drop the rows that became `NaN`.
+- Strip `$` and `,` from price text before converting.
+- Standardize features (for example `StandardScaler`) before distance-based methods such as K-Means or PCA.
+- For a supervised task, split into train and test sets with `train_test_split`, using `stratify` for a class label.
 
-Verified against `pandas 2.2.3` / `scikit-learn 1.7.2`: after dropping the 2 rows, 426 cars remain. With `k=3`,
-standardizing first moves 107 of 426 cars (25%) to a different group than clustering the raw features, which is the
-number the Session 16 slides quote. The silhouette score for `k = 3` is 0.457 (best of `k = 2..6`).
+Paths in the scripts are relative to the file that reads them, so adjust them to where you run from.
 
 ## Provenance
 
-The file is byte-identical to `Code/ml/data/cars.csv` in this repository. It is the SAS sample data set `SASHELP.CARS`
-(428 cars, 15 variables, plus an `Obs` counter column), exported with a semicolon separator and formatted prices. The first
-rows match the copy published in the `sassoftware/sas-viya-programming` repository value for value (for example the
-Acura MDX: MSRP 36,945, invoice 33,337, engine 3.5, 265 hp, weight 4,451). Where SAS itself obtained the underlying car
-specifications is not known.
+- `cars.csv` is byte-identical to `Code/ml/data/cars.csv` in this repository. It is the SAS sample data set
+  `SASHELP.CARS` (428 cars, 15 variables, plus an `Obs` counter column), exported with a semicolon separator and
+  formatted prices. The first rows match the copy published in the `sassoftware/sas-viya-programming` repository.
+  Where SAS itself obtained the underlying car specifications is not known.
+- `Crop_recommendation.csv` is the "Crop Recommendation" data set (2200 rows, 22 crops), downloaded from Kaggle.
+  The exact Kaggle page and its license are not recorded here; confirm the license there before redistributing
+  it outside this repository.
