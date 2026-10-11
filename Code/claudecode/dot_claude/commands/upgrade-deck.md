@@ -91,6 +91,25 @@ At all times, stay strictly within the subject matter and audience level of the 
 Do not introduce new topics, tangential concepts, or scope expansions unless explicitly asked.
 When in doubt, flag the suggestion as **"optional / out of scope"** rather than including it.
 
+### Removal Policy: comment out, never delete
+
+Never delete a frame, figure, image, diagram, table, or block of text. Whenever any task
+(redundancy, off-theme, restructuring, consolidation, rewrite) removes something from the live
+deck, **comment it out** so it can be restored by deleting the `%` prefixes:
+
+- Put a one-line marker directly above the commented block:
+  `% [upgrade-deck: commented out <YYYY-MM-DD> | Task <n> | <short reason>]`
+- Prefix every line of the removed block with `%` (the whole frame, from `\begin{frame}` to
+  `\end{frame}`, including any `\includegraphics`, TikZ, or `\note{}` inside it).
+- Rewritten text keeps the original as a commented copy right above the new live version, with the
+  same marker.
+- **Image and diagram guard:** a frame containing `\includegraphics`, a TikZ picture, or a figure
+  file is never commented out on a redundancy or off-theme judgement alone. List it in the plan as
+  "needs your decision" and wait. Every `\includegraphics` file name live in the original must
+  still be referenced by a live frame after the run, or appear in the ledger with a reason.
+- Every commented-out item is recorded in the **Commented-Out Ledger** (see Output Structure).
+- Mirror the comment state in the `_short.tex` sibling (Step 4).
+
 ---
 
 ## 3. Review Tasks
@@ -203,7 +222,7 @@ exists). Unconditional otherwise -- no package guard.
 
 - Identify duplicate or substantially redundant slides.
 - Identify slides not aligned with the main theme.
-- **Action:** List redundant or off-theme slides with a one-line justification before removing them.
+- **Action:** List redundant or off-theme slides with a one-line justification, then **comment them out** per the Removal Policy (never delete) and add each to the Commented-Out Ledger.
 
 ### Task 3: Structure & Organization
 
@@ -442,7 +461,19 @@ Each section contains:
 - **Justification** -- why it matters
 - **Action taken** -- what was changed
 
-### 5. Updated `.tex` Files
+### 5. Commented-Out Ledger
+
+A table of everything removed from the live deck. Nothing was deleted; each row can be restored by
+removing the `%` prefixes at the stated location. If nothing was commented out, say so explicitly.
+
+| # | File | Frame title / slide no. | What was commented out | Reason | Task |
+|---|---|---|---|---|---|
+| 1 | `sections/intro.tex` | Overview (slide 3) | whole frame | duplicates slide 2 | Task 2 |
+
+Also state the live-frame count before and after (use `latex-audit` frames mode), so a silent loss
+shows up as a number that does not match the ledger.
+
+### 6. Updated `.tex` Files
 
 Full updated source files at the end, clearly labelled by filename.
 All modifications must match the existing deck's visual style and formatting.
@@ -462,6 +493,7 @@ Format:
 
 - **No guessing:** Never invent findings. Only act on what was confirmed by reading actual file content.
 - **Surgical changes only:** Modify only what is necessary. Do not overhaul slides wholesale.
+- **Comment out, never delete:** see the Removal Policy. Every removal is a commented block with a reason marker plus a row in the Commented-Out Ledger. Frames with images or diagrams need the user's decision first.
 - **Style preservation:** Match the existing Beamer style -- do not change themes, colors, or custom commands.
 - **Scope discipline:** Do not introduce features, slides, or topics outside what was in the reviewed content.
 - **Always cite slides** by both frame title and slide number in all feedback.
