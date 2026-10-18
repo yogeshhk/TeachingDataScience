@@ -27,6 +27,15 @@ Step-by-step progression from simple graphs to production agent patterns:
 | `jamesbriggs_01_gpt_4o_research_agent.ipynb` | GPT-4o powered research agent |
 | `agentcon_workflow_automation.py` | AgentCon workflow demo |
 
+### ReAct agent from scratch (Groq or Gemini)
+| File | Concept |
+|------|---------|
+| `gemini/react_agent.py` | ReAct loop (llm node, tool node, router) with a `--provider groq\|gemini` switch |
+| `gemini/test_react_agent.py` | Mocked tests, no network or API keys needed (`pytest gemini/`) |
+
+Keys come from `GROQ_API_KEY` / `GEMINI_API_KEY`; model names are constants at the top of `react_agent.py`.
+Backs the "ReAct Agent from Scratch with Gemini" section of the LangGraph seminar deck.
+
 ### Consolidated from Code/agents/ (learning notebooks + CrewAI-in-LangGraph hybrids)
 | File | Concept |
 |------|---------|

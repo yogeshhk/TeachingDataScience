@@ -1,0 +1,424 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Subgraphs and Multi-Agent Systems}
+\end{center}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Concept: Subgraphs and Modularity}
+      \begin{itemize}
+        \item \textbf{What}: Embed complete graphs as nodes within parent graphs
+        \item \textbf{Benefits}:
+        \begin{itemize}
+            \item Modular, reusable workflow components
+            \item Hierarchical organization of complex systems
+            \item Encapsulation and separation of concerns
+        \end{itemize}
+        \item \textbf{Example Hierarchy}:
+        \begin{itemize}
+            \item Parent: Customer service orchestrator
+            \item Subgraph 1: Email classification workflow
+            \item Subgraph 2: Ticket routing workflow
+            \item Subgraph 3: Response generation workflow
+        \end{itemize}
+        \item Each subgraph is self-contained with own state and logic
+        \item Parent graph coordinates between subgraphs
+        \item Enables building complex systems from simple components
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Architecture}
+A subgraph is a compiled graph that is used as a node in a larger graph.
+
+      \begin{itemize}
+        \item Break complex workflows into manageable components
+        \item Modular design enhances code reusability
+        \item Independent subgraphs improve maintainability
+        \item Easy testing and debugging of individual components
+        \item Scalable architecture for adding new features
+        \item Support composition and interaction between subgraphs
+        \item Enable hierarchical workflow organization
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Implementation: A Basic Subgraph}
+
+A subgraph is built exactly like any graph: a \texttt{StateGraph}, nodes, edges, then \texttt{compile()}.
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph, START, END
+
+class ContentState(TypedDict):
+    topic: str
+    draft: str
+    final_content: str
+
+def generate_content(state: ContentState):
+    return {"draft": llm.invoke(f"Write a short post on {state['topic']}").content}
+
+def review_content(state: ContentState):
+    return {"final_content": llm.invoke(f"Improve this post:\n{state['draft']}").content}
+
+content_builder = StateGraph(ContentState)
+content_builder.add_node("generate", generate_content)
+content_builder.add_node("review", review_content)
+content_builder.add_edge(START, "generate")
+content_builder.add_edge("generate", "review")
+content_builder.add_edge("review", END)
+
+content_graph = content_builder.compile()     # usable as a node
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Implementation: Own State Schema}
+
+Each subgraph declares its own state; nodes return updates and never mutate the incoming state.
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class AnalyticsState(TypedDict):
+    final_content: str
+    metrics: dict
+
+def process_analytics(state: AnalyticsState):
+    # Return the changed field only: a new metrics dict
+    return {"metrics": {"engagement": calculate_engagement(state["final_content"])}}
+
+analytics_builder = StateGraph(AnalyticsState)
+analytics_builder.add_node("analytics", process_analytics)
+analytics_builder.add_edge(START, "analytics")
+analytics_builder.add_edge("analytics", END)
+
+analytics_graph = analytics_builder.compile()
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Implementation: Using Subgraphs in the Main Graph}
+
+The parent shares state keys with its subgraphs (\texttt{final\_content} here), so compiled subgraphs plug in directly as nodes.
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class MarketingState(TypedDict):
+    topic: str
+    draft: str
+    final_content: str
+    metrics: dict
+
+main_builder = StateGraph(MarketingState)
+
+# Add the compiled subgraphs as nodes
+main_builder.add_node("content", content_graph)
+main_builder.add_node("analytics", analytics_graph)
+
+# Connect them like any other nodes
+main_builder.add_edge(START, "content")
+main_builder.add_edge("content", "analytics")
+main_builder.add_edge("analytics", END)
+
+marketing_app = main_builder.compile()
+result = marketing_app.invoke({"topic": "LangGraph"})
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Implementation: Data Passing Between Subgraphs}
+      \begin{itemize}
+        \item \textbf{Shared keys flow automatically}: whatever one subgraph writes to a shared key, the next one reads.
+        \item \textbf{Different schemas}: call the subgraph from a wrapper node and map fields in and out.
+        \item Keep the interface small: pass only the fields the next stage needs.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+def prepare_data(state: MarketingState):
+    # Reshape the output of one stage for the next stage
+    return {"metrics": {"content_type": "post",
+                        "length": len(state["final_content"])}}
+
+def call_analytics(state: MarketingState):
+    # Wrapper node: map parent fields to the child schema and back
+    out = analytics_graph.invoke({"final_content": state["final_content"],
+                                  "metrics": {}})
+    return {"metrics": out["metrics"]}
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Practical Case: Marketing Agent, Content Subgraph}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+class CampaignState(TypedDict):
+    audience: str
+    platform: str
+    goal: str
+    generated_content: str
+    final_content: str
+    analytics: dict
+    recommendations: str
+
+def generate_content(state: CampaignState):
+    prompt = (f"Target Audience: {state['audience']}\n"
+              f"Platform: {state['platform']}\n"
+              f"Campaign Goal: {state['goal']}\n"
+              "Write the campaign post.")
+    return {"generated_content": llm.invoke(prompt).content}
+
+def optimize_content(state: CampaignState):
+    # Adapt length, tone and hashtags to the platform
+    optimized = optimize_for_platform(state["generated_content"], state["platform"])
+    return {"final_content": optimized}
+
+content_b = StateGraph(CampaignState)
+content_b.add_node("generate", generate_content)
+content_b.add_node("optimize", optimize_content)
+content_b.add_edge(START, "generate")
+content_b.add_edge("generate", "optimize")
+content_b.add_edge("optimize", END)
+content_sub = content_b.compile()
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Practical Case: Marketing Agent, Analytics Subgraph}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+def analyze_performance(state: CampaignState):
+    m = calculate_metrics(state["final_content"])
+    return {"analytics": {"engagement_score": m["engagement"],
+                          "reach_prediction": m["reach"],
+                          "conversion_estimate": m["conversion"]}}
+
+def generate_recommendations(state: CampaignState):
+    recs = generate_improvements(state["analytics"], state["goal"])
+    return {"recommendations": recs}
+
+analytics_b = StateGraph(CampaignState)
+analytics_b.add_node("analyze", analyze_performance)
+analytics_b.add_node("recommend", generate_recommendations)
+analytics_b.add_edge(START, "analyze")
+analytics_b.add_edge("analyze", "recommend")
+analytics_b.add_edge("recommend", END)
+analytics_sub = analytics_b.compile()
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Practical Case: Marketing Agent, Main Workflow}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+def setup_campaign(state: CampaignState):
+    # Fill in defaults for anything the caller left out
+    return {"audience": state.get("audience") or "general",
+            "platform": state.get("platform") or "twitter",
+            "goal": state.get("goal") or "engagement"}
+
+main_b = StateGraph(CampaignState)
+main_b.add_node("setup", setup_campaign)
+main_b.add_node("content", content_sub)          # subgraph as node
+main_b.add_node("analytics", analytics_sub)      # subgraph as node
+
+main_b.add_edge(START, "setup")
+main_b.add_edge("setup", "content")
+main_b.add_edge("content", "analytics")
+main_b.add_edge("analytics", END)
+
+marketing_agent = main_b.compile()
+result = marketing_agent.invoke({"goal": "product launch"})
+print(result["recommendations"])
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraph Best Practices and Considerations}
+
+      \begin{itemize}
+        \item Design Principles for Subgraphs
+		      \begin{itemize}
+				\item Keep subgraph functionality singular
+				\item Ensure clear input and output interfaces
+				\item Properly handle state passing
+			  \end{itemize}
+
+        \item Performance Considerations
+		      \begin{itemize}
+				\item Avoid frequent large data transfers between subgraphs
+				\item Design state storage structures reasonably
+				\item Consider asynchronous processing needs
+			  \end{itemize}
+
+        \item Error Handling
+		      \begin{itemize}
+				\item Implement error handling within subgraphs
+				\item Provide clear error messages
+				\item Ensure state consistency
+			  \end{itemize}
+
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multi-Agent Systems: Problems and Solutions}
+      \begin{itemize}
+          \item Agent is a system using LLM to control application flow
+          \item Complex systems become harder to manage and scale over time
+          \item Problem: Agents have too many tools, make poor decisions
+          \item Problem: Context grows too complex for single agent tracking
+          \item Problem: Need for multiple specialization areas (planning, research, math)
+          \item Solution: Break application into smaller independent agents
+          \item Independent agents can be simple prompt+LLM or complex React agents
+          \item Primary benefit: Modularity makes development, testing, maintenance easier
+          \item Primary benefit: Specialization creates expert domain-focused agents
+          \item Primary benefit: Control explicit agent communication vs function calling
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multi-Agent Architecture Types}
+      \begin{itemize}
+          \item Single Agent: Basic LLM with tools attachment
+          \item Network: Four agents communicating with each other directly
+          \item Network: Agents solve task parts, hand control to next agent
+          \item Supervisor: One supervisor orchestrates team of specialized employees
+          \item Supervisor: Coding agent, research agent, validation agent examples
+          \item Supervisor: Agents don't communicate directly, only through supervisor
+          \item Supervisor as Tools: Same as supervisor but agents provided as LLM tools
+          \item Hierarchical: Extension of supervisor with multiple supervisor levels
+          \item Hierarchical: Similar to big company organizational structure
+          \item Custom: No clear definitions, conditional flow based on agent outputs
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Multi-Agent Architecture Types}
+
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{langgraph12}
+
+{\tiny (Ref: LangGraph Crash Course - Harish Neel)}
+
+\end{center}
+
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Supervisor Pattern in Code}
+      \begin{itemize}
+        \item The supervisor reads the shared state and picks the next worker, or finishes.
+        \item \texttt{Command(goto=...)} performs the hand-off; workers always report back to the supervisor.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing import Literal
+from pydantic import BaseModel
+from langgraph.graph import StateGraph, MessagesState, START, END
+from langgraph.types import Command
+
+class Route(BaseModel):
+    next: Literal["researcher", "coder", "FINISH"]
+
+def supervisor(state: MessagesState) -> Command[Literal["researcher", "coder", "__end__"]]:
+    decision = llm.with_structured_output(Route).invoke(state["messages"])
+    return Command(goto=END if decision.next == "FINISH" else decision.next)
+
+def make_worker(agent):
+    def worker(state: MessagesState) -> Command[Literal["supervisor"]]:
+        result = agent.invoke(state)                # an inner agent
+        return Command(update={"messages": result["messages"][-1:]},
+                       goto="supervisor")           # always report back
+    return worker
+
+builder = StateGraph(MessagesState)
+builder.add_node("supervisor", supervisor)
+builder.add_node("researcher", make_worker(research_agent))
+builder.add_node("coder", make_worker(code_agent))   # every goto target must exist
+builder.add_edge(START, "supervisor")
+graph = builder.compile()
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Subgraphs: Foundation for Multi-Agent Systems}
+      \begin{itemize}
+          \item Subgraphs build complex systems with multiple graph components
+          \item Common use case: Building multi-agent systems architecture
+          \item Key question: How parent graph and subgraph communicate
+          \item Key question: How to pass state between graphs during execution
+          \item Scenario 1: Parent and subgraph share same schema keys
+          \item Scenario 1: Add node with compiled subgraph directly
+          \item Scenario 2: Parent and subgraph have different schemas
+          \item Scenario 2: Add node function that invokes subgraph with transformation
+          \item Transformation useful when state schemas differ between graphs
+          \item Foundation enables building complex multi-agent architectures
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementing Subgraphs: Code Examples}
+      \begin{itemize}
+          \item Case 1: Shared schema - direct embedding approach
+          \item Case 2: Different schemas - intermediate transformation node required
+          \item Child graph: Simple LLM with Tavily search tool integration
+          \item Parent graph: Embeds child graph as specialized search agent
+          \item Shared schema: Compile subgraph, add as parent graph node
+          \item Different schema: Extract query, transform to messages format
+          \item Different schema: Invoke subgraph, extract response from result
+          \item State transformation: Convert between parent and child schemas
+          \item Example: Weather query routing through search agent subgraph
+          \item Pattern enables modular, scalable multi-agent system construction
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementing Subgraphs: Shared Schema}
+
+Parent and subgraph have shared state keys in their state schemas. In this case, you can include the subgraph as a node in the parent graph
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.graph import StateGraph, MessagesState, START
+
+# Subgraph
+
+def call_model(state: MessagesState):
+    response = model.invoke(state["messages"])
+    return {"messages": [response]}
+
+subgraph_builder = StateGraph(MessagesState)
+subgraph_builder.add_node("call_model", call_model)
+subgraph_builder.add_edge(START, "call_model")
+subgraph = subgraph_builder.compile()
+
+# Parent graph
+
+builder = StateGraph(MessagesState)
+builder.add_node("subgraph_node", subgraph)
+builder.add_edge(START, "subgraph_node")
+graph = builder.compile()
+
+graph.invoke({"messages": [{"role": "user", "content": "hi!"}]})
+      \end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Implementing Subgraphs: Different Schemas}
+
+Parent graph and subgraph have different schemas (no shared state keys). In this case, you have to call the subgraph from inside a node in the parent graph
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing_extensions import TypedDict, Annotated
+from langchain_core.messages import AnyMessage
+from langgraph.graph import StateGraph, MessagesState, START
+from langgraph.graph.message import add_messages
+
+class SubgraphMessagesState(TypedDict):
+    subgraph_messages: Annotated[list[AnyMessage], add_messages]
+
+# Subgraph
+
+def call_model(state: SubgraphMessagesState):
+    response = model.invoke(state["subgraph_messages"])
+    return {"subgraph_messages": [response]}
+
+subgraph_builder = StateGraph(SubgraphMessagesState)
+subgraph_builder.add_node("call_model_from_subgraph", call_model)
+subgraph_builder.add_edge(START, "call_model_from_subgraph")
+subgraph = subgraph_builder.compile()
+
+# Parent graph: a wrapper node maps the schemas
+
+def call_subgraph(state: MessagesState):
+    response = subgraph.invoke({"subgraph_messages": state["messages"]})
+    return {"messages": response["subgraph_messages"]}
+
+builder = StateGraph(MessagesState)
+builder.add_node("subgraph_node", call_subgraph)
+builder.add_edge(START, "subgraph_node")
+graph = builder.compile()
+
+graph.invoke({"messages": [{"role": "user", "content": "hi!"}]})
+      \end{lstlisting}
+\end{frame}

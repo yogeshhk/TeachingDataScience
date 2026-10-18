@@ -12,7 +12,7 @@ class EmailState(BaseModel):
     messages: List[Dict[str, str]] = []
   
 # 
-llm = ChatGroq(model="llama-3.1-8b-instant") 
+llm = ChatGroq(model="openai/gpt-oss-20b")
 
 def read_email(state: EmailState) -> EmailState:
     return state

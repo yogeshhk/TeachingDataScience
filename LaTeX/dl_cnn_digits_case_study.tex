@@ -1,0 +1,245 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Convolution by Hand}
+\begin{itemize}
+\item Slide the 3 x 3 filter over the 5 x 5 image; at each position multiply matching entries and add
+\item This filter responds where brightness jumps from left to right
+\item Top-left position: $0\cdot(-1) + 0\cdot 0 + 1\cdot 1 = 1$ in each of 3 rows, total 3
+\item Output size: $(N - F + 2P)/S + 1$ for image width $N$, filter width $F$, padding $P$, stride $S$
+\item Here $N=5$ and $F=3$: stride 1 gives 3 x 3, stride 2 gives 2 x 2, padding 1 keeps 5 x 5
+\end{itemize}
+\begin{center}
+\footnotesize
+$\begin{bmatrix}0&0&1&1&1\\0&0&1&1&1\\0&0&1&1&1\\0&0&1&1&1\\0&0&1&1&1\end{bmatrix}
+\ast
+\begin{bmatrix}-1&0&1\\-1&0&1\\-1&0&1\end{bmatrix}
+=
+\begin{bmatrix}3&3&0\\3&3&0\\3&3&0\end{bmatrix}$
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: CNN Concepts}
+\begin{block}{Think About It}
+1. A 28 x 28 image goes through one 3 x 3 filter, stride 1, no padding. What size is the feature map?
+\begin{enumerate}
+  \item[A.] 28 x 28
+  \item[B.] 26 x 26
+  \item[C.] 25 x 25
+  \item[D.] 9 x 9
+\end{enumerate}
+2. Why does a CNN need far fewer parameters than a fully connected network on the same image?
+\begin{enumerate}
+  \item[A.] It ignores most of the pixels.
+  \item[B.] The same small filter is reused at every position.
+  \item[C.] Pooling deletes pixels before training.
+  \item[D.] It trains with a smaller learning rate.
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: CNN Concepts}
+\begin{block}{Answer}
+\textbf{1. Correct: B.} $(28 - 3)/1 + 1 = 26$. A would need padding of 1, C forgets the $+1$, and D divides by the filter size.
+
+\textbf{2. Correct: B.} Weight sharing is the main saving. Every pixel is still seen by some window, so A is wrong; pooling shrinks later layers but does not create the saving, and the learning rate has no effect on the parameter count.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Case Study: Reading Handwritten Digits}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Data}
+\begin{itemize}
+\item MNIST: 60,000 training and 10,000 test images of handwritten digits, 28 x 28 pixels, grey levels scaled to 0 to 1
+\item The same task shows up in engineering work: reading meter and gauge displays, part serial numbers, batch codes stamped on components
+\item Ten classes, roughly balanced: from 5,421 images of the digit 5 to 6,742 of the digit 1
+\item PyTorch wants images as (N, channels, height, width)
+\end{itemize}
+\begin{lstlisting}
+from torchvision import datasets
+
+train = datasets.MNIST('data', train=True, download=True)
+xtr = train.data.float().div(255).unsqueeze(1)
+
+>>> tuple(xtr.shape)
+(60000, 1, 28, 28)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{A Small CNN}
+\begin{itemize}
+\item Two convolution layers, 8 and 16 filters of 3 x 3, each followed by ReLU and 2 x 2 max pooling
+\item One fully connected layer turns the 400 numbers left into 10 scores, one per digit
+\item The softmax sits inside the loss function, so the network outputs raw scores
+\end{itemize}
+\begin{lstlisting}
+class SmallCNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 8, kernel_size=3)
+        self.conv2 = nn.Conv2d(8, 16, kernel_size=3)
+        self.fc = nn.Linear(16 * 5 * 5, 10)
+
+    def forward(self, x):
+        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        return self.fc(x.flatten(1))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Shapes Through the Network}
+\begin{itemize}
+\item A 3 x 3 filter with no padding trims one pixel from each edge: 28 becomes 26
+\item Pooling halves the size and rounds down: 11 becomes 5
+\item 16 x 5 x 5 = 400 numbers are flattened for the fully connected layer
+\end{itemize}
+\begin{center}
+\small
+\begin{tabular}{lc}
+\hline
+Layer & Output (channels, height, width) \\
+\hline
+input & (1, 28, 28) \\
+conv1 + ReLU & (8, 26, 26) \\
+max pool 2 x 2 & (8, 13, 13) \\
+conv2 + ReLU & (16, 11, 11) \\
+max pool 2 x 2 & (16, 5, 5) \\
+flatten & 400 \\
+fully connected & 10 \\
+\hline
+\end{tabular}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Counting Parameters}
+\begin{itemize}
+\item A filter is reused at every position of the image, so convolution layers need very few weights
+\item Total: 5,258 parameters
+\item A fully connected net (784 inputs, 128 hidden units, 10 outputs) needs 101,770: about 19 times more
+\end{itemize}
+\begin{center}
+\small
+\begin{tabular}{llr}
+\hline
+Parameter & Shape & Count \\
+\hline
+conv1 weights & (8, 1, 3, 3) & 72 \\
+conv1 bias & (8) & 8 \\
+conv2 weights & (16, 8, 3, 3) & 1,152 \\
+conv2 bias & (16) & 16 \\
+fc weights & (10, 400) & 4,000 \\
+fc bias & (10) & 10 \\
+\hline
+total & & 5,258 \\
+\hline
+\end{tabular}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training}
+\begin{itemize}
+\item Cross-entropy loss, the Adam optimizer, batches of 128 images, 3 passes (epochs) over the 60,000 images
+\item Test accuracy is measured on the 10,000 images the network never trained on
+\item It runs on a laptop CPU, and the seed is fixed so the numbers repeat on the same setup
+\end{itemize}
+\begin{lstlisting}
+opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+for epoch in range(3):
+    for i in range(0, len(xtr), 128):
+        idx = perm[i:i + 128]
+        opt.zero_grad()
+        loss = F.cross_entropy(model(xtr[idx]), ytr[idx])
+        loss.backward()
+        opt.step()
+
+# Test accuracy after epochs 1, 2, 3:
+# 0.9518   0.9695   0.9770
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{CNN Against a Fully Connected Net}
+\begin{itemize}
+\item Same data, same optimizer, same 3 epochs
+\item The CNN is wrong on 230 of the 10,000 test images; the fully connected net on 374
+\item That is about 4 in 10 fewer mistakes, from a network with 19 times fewer parameters
+\item One run with one seed: the gap is a good illustration, not a benchmark
+\end{itemize}
+\begin{center}
+\small
+\begin{tabular}{lrr}
+\hline
+ & Parameters & Test accuracy \\
+\hline
+Fully connected (784-128-10) & 101,770 & 96.26\% \\
+Small CNN & 5,258 & 97.70\% \\
+\hline
+\end{tabular}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What the First Layer Learned}
+\begin{itemize}
+\item The 8 filters of the first layer after training, each a 3 x 3 grid of weights: red is negative, blue is positive
+\item Nobody drew them: they started random and training shaped them
+\item Some, such as f2 and f7, look like edge or line detectors: a strong row of one sign beside the opposite sign
+\item Others are harder to read
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.95\linewidth]{dlcoep_cnn_filters.png}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Where It Goes Wrong}
+\begin{itemize}
+\item Easiest digits: 1 (99.4\%) and 0 (99.2\%); hardest: 7 (96.1\%) and 9 (96.2\%)
+\item Most common confusions: 7 read as 2 (20 times), 4 as 9 (13), 9 as 3 (11), 2 as 8 (10)
+\item The first 8 test mistakes, each labelled true digit and predicted digit
+\item Some are hard even for a person, such as a 9 with an almost closed loop read as a 1
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.95\linewidth]{dlcoep_cnn_mistakes.png}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: The Case Study}
+\begin{block}{Think About It}
+On MNIST the small CNN reached 97.70\% and the fully connected net 96.26\%, each in one run with one seed. Which conclusion is justified?
+\begin{enumerate}
+  \item[A.] CNNs always beat fully connected nets by about 1.4 points.
+  \item[B.] In this run the CNN made fewer mistakes with far fewer parameters; a general claim needs more runs and more data.
+  \item[C.] The fully connected net is overfitting.
+  \item[D.] At 97.7\% the CNN is ready to read gauges in production.
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: The Case Study}
+\begin{block}{Answer}
+\textbf{Correct: B.} One run supports only this case. A over-generalizes from one run, C is not shown by anything we measured (only test accuracy), and D needs a test on your own photographs, with your own lighting and fonts.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Try It Yourself}
+\begin{itemize}
+\item Script: \texttt{Code/\allowbreak dlcoep/\allowbreak session01\_cnn/\allowbreak cnn\_digits\_case\_study.py}, in the \texttt{dlcoep} conda environment
+\item It downloads MNIST once (about 11 MB); with no network it falls back to scikit-learn's small 8 x 8 digits
+\item Change one thing and predict the effect first: 4 filters in the first layer, 1 epoch, or a 5 x 5 filter
+\item Which would you trust more on a real gauge: this 97.7\%, or a test on your own photographs?
+\end{itemize}
+\end{frame}

@@ -10,7 +10,7 @@
 \begin{frame}[fragile] \frametitle{Sequences}
 
 \begin{itemize}
-\item Need to predict when the ball would be in the next moment?
+\item Need to predict where the ball will be at the next moment?
 \item Scenario 1: no info of previous state is given. Answer: random state.
 \item Scenario 2: some info of previous state is given. Answer: possible to fit trajectory and predict.
 \item Another example: On mobile, while typing sms you get some predictive suggestions !!!
@@ -65,7 +65,7 @@
 
 \begin{itemize}
 \item By Elman in 1990.
-\item Proposed to have input layer, hidden ayer, context layer along with recurrent feedback.
+\item Proposed to have input layer, hidden layer, context layer along with recurrent feedback.
 \end{itemize}
 
 \begin{center}
@@ -119,7 +119,7 @@ Network takes weather vector in and outputs food vector
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Toy Example: Scenario I}
 \begin{itemize}
-\item This Neural Network is represented by a matrix (3x2)g
+\item This Neural Network is represented by a matrix (3x2)
 \item Individual weather vector when post multiplies this matrix, resultant 3x1 vector represents food
 \item For Sunny, you get Apple Pie
 \item For Rainy, you get Burger.
@@ -232,7 +232,9 @@ Weather Matrix
 \begin{itemize}
 \item Top results are all 1's. Same as Today, Sunny as 1 represents Sunny, 0 Rainy.
 \item Bottom result are all 0's. For Next day.
-\item Weather matrix tells, if he as to cook TODAY's food or TOMORROW's food. As the bottom results are all 1's, or YES's.
+% [upgrade-deck: commented out 2026-10-18 | Task 1 | contradicted the figure rnn14: for Sunny the bottom results are 0]
+% \item Weather matrix tells, if he as to cook TODAY's food or TOMORROW's food. As the bottom results are all 1's, or YES's.
+\item Weather matrix tells if he has to cook TODAY's food or TOMORROW's food. For Sunny the top results are 1 (same dish as today); for Rainy the bottom results are 1 (the next dish).
 \end{itemize}
 \begin{center}
 \includegraphics[width=0.8\linewidth,keepaspectratio]{rnn14}
@@ -631,12 +633,20 @@ Each cell
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNN with 2 hidden layers or units}
+% [upgrade-deck: rewritten 2026-10-18 | Task 1 | both equations were labelled h_t', and the second ignored the first layer; the figure rnn36 shows two stacked layers]
+% \begin{frame}[fragile] \frametitle{RNN with 2 hidden layers or units}
+% Each cell
+% \begin{itemize}
+% \item $h_t' = tanh(W_{hh}h_{t-1} + W_{xh}X_t + b_h)$
+% \item $h_t' = tanh(W_{hh}'h_{t-1}' + W_{xh}'X_t + b_h')$
+% \item $y_t = tanh(W_{hy}h_t' + b_y)$
+\begin{frame}[fragile] \frametitle{RNN with 2 hidden layers}
 Each cell
 \begin{itemize}
-\item $h_t' = tanh(W_{hh}h_{t-1} + W_{xh}X_t + b_h)$
-\item $h_t' = tanh(W_{hh}'h_{t-1}' + W_{xh}'X_t + b_h')$
+\item $h_t = tanh(W_{hh}h_{t-1} + W_{xh}X_t + b_h)$
+\item $h_t' = tanh(W_{hh}'h_{t-1}' + W_{xh}'h_t + b_h')$
 \item $y_t = tanh(W_{hy}h_t' + b_y)$
+\item The second layer reads the first layer's state $h_t$ in place of the raw input.
 \item Back-propagation will adjust all the weights for all unrolled time-steps.
 \end{itemize}
 
@@ -898,7 +908,7 @@ FIXED sequence length case: Say,
 \begin{itemize}
 \item Dataset has 10000 rows and 64 features/columns
 \item Need to generate classification model, binary, so labels are 0 or 1.
-\item How does RNN handle this matrix (i.e., (1000,64))? Does it input each column something like this figure?
+\item How does RNN handle this matrix (i.e., (10000,64))? Does it input each column something like this figure?
 \item Should SimpleRNN() units always be equal to the number of features?
 \end{itemize}
 
@@ -932,7 +942,6 @@ FIXED sequence length case: Say,
 \item In RNN, it is computationally very, very expensive to calculate the gradients of the loss function with respect to network parameters if you have to consider back-propagation through all states since the creation of your network, there is a neat little trick to speed up your computation: approximate your gradients with a subset of historical network states num\_steps.
 \end{itemize}
 
-*
 % \begin{center}
 % \includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
 % \end{center}
@@ -944,7 +953,9 @@ FIXED sequence length case: Say,
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{RNN Inputs Specification: Batch Size, Num Steps}
-Example: data size of 100; batch size of 5, for 30 network parameter updates during each epoch. 
+% [upgrade-deck: commented out 2026-10-18 | Task 1 | 100 examples in batches of 5 give 20 updates per epoch, not 30]
+% Example: data size of 100; batch size of 5, for 30 network parameter updates during each epoch.
+Example: data size of 100; batch size of 5, for 20 network parameter updates during each epoch.
 \begin{itemize}
 \item Propagates the first 5 training examples, updates its parameters based on the optimization method provided, then takes the next 5, until it made a full pass over the data. 
 \item num\_steps determines the amount of cells you unroll and hence the amount of data used in gradient computation. 
@@ -952,7 +963,6 @@ Example: data size of 100; batch size of 5, for 30 network parameter updates dur
 \end{itemize}
 So, NUM STEPS is the number of `features' you LOOK BACK (in case of text-words input) or consider while computing gradients and updating the weights.
 
-*
 % \begin{center}
 % \includegraphics[width=0.2\linewidth,keepaspectratio]{rnn32}
 % \end{center}
@@ -969,8 +979,8 @@ RNN Layer can have multiple hidden states, physically but internally to the cell
 \begin{itemize}
 \item Do we have to have RNN units, ie green, boxes, sames as number of columns or features, ie 64. %Green boxes are just time-step wise rolling, ie looping.
 \item No! units will be your output dim. Thats inside direction, its about number of internal state values, which are given as outputs as well as hidden states passed to the next time-step.
-\item This is '\ldots to MANY" architecture, for predicting next $n$ outputs.
-\item Units will be the shape of the RNN's internal states. 
+\item This is ``\ldots to MANY'' architecture, for predicting next $n$ outputs.
+\item Units will be the shape of the RNN's internal states.
 % \item So, if you declare units=2000 your output will be (1000,2000).)
 % \item Each weight matrix will be num features x num outputs.
 % \item Each output will get tuned, optimized as per its given output label.
@@ -996,7 +1006,7 @@ RNN Layer can have multiple hidden states, physically but internally to the cell
 % \item No! units will be your output dim. Thats inside direction, its about number of internal state values, which are given as outputs as well as hidden states passed to the next time-step.
 % \item This is '\ldots to MANY" architecture, for predicting next $n$ outputs.
 % \item Units will be the shape of the RNN's internal states. 
-\item So, if you declare units=2000 your output will be (1000,2000).)
+\item So, if you declare units=2000 your output will be (1000,2000).
 \item Each weight matrix will be num features x num outputs.
 \item Each output will get tuned, optimized as per its given output label.
 \item More units, is better to model the function. In case you want singular output you can still have more units and then later, add a dense layer to reduce the dimension to 1.
@@ -1055,8 +1065,9 @@ batch-3 &= 18 \ldots
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% [upgrade-deck: rewritten 2026-10-18 | Task 1 | binary cross-entropy needs a 0 to 1 output; the last line of the listing was: model.add(Dense(1, activation='relu'))]
 \begin{frame}[fragile] \frametitle{RNN Model}
-Code: 
+Code:
 \begin{lstlisting}
 X = X.reshape((X.shape[0], X.shape[1], 1)) # IT HAS TO BE 3D, so fake 1 dim added
 tr_X, ts_X, tr_y, ts_y = train_test_split(X, y, train_size=.8)
@@ -1064,7 +1075,7 @@ batch_size = 1000
 
 model = Sequential()
 model.add(SimpleRNN(64, activation='relu', batch_input_shape=(batch_size, X.shape[1], 1)))
-model.add(Dense(1, activation='relu'))
+model.add(Dense(1, activation='sigmoid'))
 
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
@@ -1431,11 +1442,17 @@ _________________________________________________________________
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{RNN vanishing gradients}
 \begin{itemize}
-\item Vanilla RNNs suffers at vanishing gradients problems.
-\item A modest recurrent neural network may have 200-to-400 input time steps, resulting conceptually in a very deep network.
-\item problem: The derivative the activation nonlinearities, sigmoid or tanh, is smaller
-than 1. So, after some timesteps, very minute gradient remains to make any weight changes. In further layers, weights do not change. So, NO TRAINING.
-\item Solution: the hidden transfer function should be a linear function. Relu (rectilinear activation function) looks and acts like a linear function, making it easier to train and less likely to saturate, but is, in fact, a nonlinear function. The ReLU derivative is a constant of either 0 or 1, so it isn’t as likely to suffer from vanishing gradients.
+% [upgrade-deck: rewritten 2026-10-18 | Task 1 | a linear hidden function is not a fix for vanishing gradients, and "further layers" should read earlier time steps; original bullets kept below]
+% \item Vanilla RNNs suffers at vanishing gradients problems.
+% \item A modest recurrent neural network may have 200-to-400 input time steps, resulting conceptually in a very deep network.
+% \item problem: The derivative the activation nonlinearities, sigmoid or tanh, is smaller
+% than 1. So, after some timesteps, very minute gradient remains to make any weight changes. In further layers, weights do not change. So, NO TRAINING.
+% \item Solution: the hidden transfer function should be a linear function. Relu (rectilinear activation function) looks and acts like a linear function, making it easier to train and less likely to saturate, but is, in fact, a nonlinear function. The ReLU derivative is a constant of either 0 or 1, so it isn’t as likely to suffer from vanishing gradients.
+\item Vanilla RNNs suffer from the vanishing gradient problem.
+\item A modest recurrent neural network may have 200 to 400 input time steps, resulting conceptually in a very deep network.
+\item Problem: back-propagation through time multiplies the gradient at every step by the derivative of the activation (at most 1 for tanh, at most 0.25 for sigmoid) and by the recurrent weights. If these factors are below 1, the product shrinks toward zero.
+\item So the early time steps get almost no gradient, their weights barely change, and long-range dependencies are not learned.
+\item Remedies: gated cells (LSTM, GRU) are the standard fix. ReLU helps because its derivative is 0 or 1, but it can make gradients explode; gradient clipping handles that.
 \end{itemize}
 
 \begin{center}

@@ -1,0 +1,591 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large State, Memory and Runtime Control}
+\end{center}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Is Each Node an Agent or Is the Graph an Agent?}
+      \begin{itemize}
+        \item \textbf{The Graph is the Agent} - not individual nodes
+        \item \textbf{Nodes are}: Individual processing units/functions
+        \begin{itemize}
+            \item Can be simple Python functions
+            \item Can be LLM calls
+            \item Can be tool invocations
+            \item Can be sub-agents themselves
+        \end{itemize}
+        \item \textbf{The Graph as Agent}:
+        \begin{itemize}
+            \item The complete workflow represents the agent's behavior
+            \item State flows through nodes, creating agent "memory"
+            \item Control flow (edges) represents agent's decision-making
+            \item Overall graph exhibits autonomous, goal-directed behavior
+        \end{itemize}
+        \item \textbf{Analogy}: Nodes are like neurons, the graph is the brain
+        \item Individual nodes are stateless functions; the graph maintains state
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What Can Nodes Do? - Part 1}
+      \begin{itemize}
+        \item \textbf{Nodes are Extremely Flexible} - any Python function
+        \item \textbf{1. Simple LLM Calls}:
+        \begin{itemize}
+            \item Generate text, classify, extract information
+            \item Example: \texttt{llm.invoke("Summarize this text")}
+        \end{itemize}
+        \item \textbf{2. RAG Operations}:
+        \begin{itemize}
+            \item Retrieve documents from vector database
+            \item Rerank results
+            \item Generate answers with retrieved context
+            \item Example: Vector search \(\rightarrow\) Context \(\rightarrow\) LLM generation
+        \end{itemize}
+        \item \textbf{3. API Calls}:
+        \begin{itemize}
+            \item External service calls (weather, database, CRM)
+            \item Example: Fetch customer data from Salesforce API
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What Can Nodes Do? - Part 2}
+      \begin{itemize}
+        \item \textbf{4. Tool-Calling Agents}:
+        \begin{itemize}
+            \item Node can itself be an agent with tools
+            \item Example: Research node that uses search, calculator, Wikipedia tools
+            \item Inner agent makes tool decisions, outer graph manages workflow
+        \end{itemize}
+        \item \textbf{5. Multi-Agent Nodes}:
+        \begin{itemize}
+            \item Node can coordinate multiple sub-agents
+            \item Example: "Code Review" node with architect, tester, security agents
+        \end{itemize}
+        \item \textbf{6. Any Computation}:
+        \begin{itemize}
+            \item Data processing, calculations, file operations
+            \item Validation, formatting, business logic
+        \end{itemize}
+        \item \textbf{Key Point}: Nodes are building blocks - combine them creatively
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Custom Node Types}
+
+Any callable is a node, so a class with \texttt{\_\_call\_\_} can carry its own configuration (model, prompt, tools).
+
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain_groq import ChatGroq
+from langgraph.graph import StateGraph, MessagesState, START
+
+class MyCustomNode:
+    def __init__(self, llm):
+        self.llm = llm
+
+    def __call__(self, state: MessagesState):
+        # Access the state, do the work, return only what changed
+        response = self.llm.invoke(state["messages"])
+        return {"messages": [response]}
+
+llm = ChatGroq(model="openai/gpt-oss-20b")
+graph_builder = StateGraph(MessagesState)
+graph_builder.add_node("custom_node", MyCustomNode(llm))
+graph_builder.add_edge(START, "custom_node")
+      \end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Advanced Conditional Edges}
+
+A routing function reads the state and returns the name of the next route; the path map turns routes into nodes.
+
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing import Annotated, Literal
+from langchain_core.messages import AnyMessage
+from langgraph.graph import END
+from langgraph.graph.message import add_messages
+from pydantic import BaseModel, Field
+
+class AgentState(BaseModel):
+    messages: Annotated[list[AnyMessage], add_messages] = Field(default_factory=list)
+    status: str = "RUNNING"
+    error_count: int = 0
+
+def route_by_status(state: AgentState) -> Literal["process", "retry", "error", "end"]:
+    if state.status == "SUCCESS":
+        return "end"
+    if state.status == "ERROR":
+        return "error" if state.error_count >= 3 else "retry"
+    return "process"
+
+workflow.add_conditional_edges(
+    "check_status", route_by_status,
+    {"process": "execute_tool", "retry": "retry_handler",
+     "error": "error_handler", "end": END})
+      \end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{State Updates: Overwrite vs Reducers}
+      \begin{itemize}
+        \item By default, a value returned by a node \textbf{overwrites} the field in the state.
+        \item That silently drops earlier data: returning \texttt{[4]} for a list holding \texttt{[1, 2, 3]} leaves \texttt{[4]}.
+        \item A \textbf{reducer function} declares how an update is combined with the current value.
+        \item Attach it with \texttt{Annotated[type, reducer]}; LangGraph then calls \texttt{reducer(current, update)}.
+        \item Built-ins: \texttt{add\_messages} for chat history, \texttt{operator.add} for lists and numbers.
+        \item Reducers also make \textbf{parallel} branches safe: each branch's update is merged, not lost.
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reducers: The Overwrite Problem}
+
+By default, the dictionary returned by a node overwrites the original data, which may lead to unexpected results.
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing_extensions import TypedDict
+
+class MyState(TypedDict):
+    messages: list                      # no reducer: overwrite
+
+def fn1(state: MyState):
+    return {"messages": [4]}
+
+# graph with a single node fn1
+r = graph.invoke({"messages": [1, 2, 3]})
+# Result: {"messages": [4]}   instead of [1, 2, 3, 4]
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reducers: The Fix}
+
+Either read and extend the old value by hand, or declare a reducer once on the field.
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Manual: fetch the old value and return old + new
+def fn1(state: MyState):
+    old = state.get("messages", [])
+    return {"messages": old + [4]}
+
+# Declarative: a reducer on the field (a custom one, or operator.add)
+from typing import Annotated
+
+def concat_lists(original: list, new: list) -> list:
+    return original + new
+
+class MyState(TypedDict):
+    messages: Annotated[list, concat_lists]
+
+def fn1(state: MyState):
+    return {"messages": [4]}            # only the new item
+
+r = graph.invoke({"messages": [1, 2, 3]})
+# Result: {"messages": [1, 2, 3, 4]}
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Checkpointing: Saving the State at Every Step}
+      \begin{itemize}
+        \item A \textbf{checkpointer} saves a snapshot of the state after each step, keyed by \texttt{thread\_id}.
+        \item \textbf{Persistence}: stop and resume long workflows across sessions.
+        \item \textbf{Resilience}: recover from failures without losing progress.
+        \item \textbf{Time travel}: inspect or replay any earlier step.
+        \item \textbf{Human-in-the-loop}: pause, wait, resume.
+        \item \textbf{Backends}: in-memory for development, SQLite for local files, Postgres or Redis for production.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import sqlite3
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver   # pip install langgraph-checkpoint-sqlite
+
+memory = MemorySaver()                                 # development only
+# memory = SqliteSaver(sqlite3.connect("agent_state.db", check_same_thread=False))
+
+app = graph_builder.compile(checkpointer=memory)
+config = {"configurable": {"thread_id": "user-123"}}
+app.invoke({"messages": [("human", "Hi!")]}, config)   # state saved automatically
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Interacting with Checkpoints}
+      \begin{itemize}
+        \item With a checkpointer you can inspect, modify and travel through any thread's history.
+        \item A thread is identified by \texttt{thread\_id}; each snapshot by its \texttt{checkpoint\_id}.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+config = {"configurable": {"thread_id": "user-123"}}
+
+# Latest state of the conversation
+snapshot = app.get_state(config)
+print(snapshot.values)        # the state fields
+print(snapshot.next)          # nodes still to run, () when finished
+
+# Every snapshot, newest first (an iterator: wrap it in list)
+history = list(app.get_state_history(config))
+print(f"History has {len(history)} steps.")
+
+# Write into the state directly, e.g. to inject a correction
+app.update_state(config, {"messages": [("user", "Actually, a different question.")]})
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Time Travel: Replay or Fork from a Checkpoint}
+      \begin{itemize}
+        \item Each snapshot carries a config with its \texttt{checkpoint\_id}.
+        \item Invoke with \texttt{None} and that config to replay from that point.
+        \item \texttt{update\_state} on an old snapshot forks a new branch; the original history is kept.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+history = list(app.get_state_history(config))
+
+# Pick the snapshot just before a given node ran
+before_send = next(s for s in history if s.next == ("send_email",))
+
+# Replay from there (nodes after that point run again)
+app.invoke(None, before_send.config)
+
+# Or fork: edit the old state, then continue on a new branch
+forked = app.update_state(before_send.config, {"draft": "A better draft"})
+app.invoke(None, forked)
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Message Management in LangGraph}
+      \begin{itemize}
+        \item Message history grows with every turn: cost, latency and context limits follow.
+        \item \texttt{RemoveMessage(id=...)}, returned from a node, deletes a message through the \texttt{add\_messages} reducer.
+        \item \texttt{trim\_messages} keeps the last N messages or tokens.
+        \item Summarise old turns into one message, then remove the originals.
+        \item Returning a shorter list does not work: the reducer appends, it does not replace.
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Message Deletion and Trimming}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langchain_core.messages import RemoveMessage, ToolMessage, trim_messages
+
+def drop_tool_messages(state):
+    # Delete processed tool outputs by id
+    return {"messages": [RemoveMessage(id=m.id)
+                         for m in state["messages"]
+                         if isinstance(m, ToolMessage)]}
+
+def keep_latest(state, max_messages=50):
+    # Remove everything except the last max_messages
+    old = state["messages"][:-max_messages]
+    return {"messages": [RemoveMessage(id=m.id) for m in old]}
+
+# Trim only what is sent to the model, keep full history in the state
+def call_model(state):
+    recent = trim_messages(state["messages"], max_tokens=20,
+                           token_counter=len, strategy="last")
+    return {"messages": [llm.invoke(recent)]}
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Error Handling Patterns}
+      \begin{itemize}
+        \item \textbf{Robust agents must handle unexpected failures}, like API errors or invalid LLM outputs.
+        \item \textbf{Pattern 1: Try/Except in Nodes}: wrap node logic and return an error message in the state.
+        \item \textbf{Pattern 2: Fallback Edges}: a router sends an 'ERROR' status to a recovery or reporting node.
+        \item \textbf{Pattern 3: Retry Policy}: \texttt{add\_node(..., retry\_policy=RetryPolicy(max\_attempts=3))} retries transient errors with backoff.
+        \item \textbf{State Tracking}: count errors in the state; after N retries route to a final failure node.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+def tool_node(state):
+    try:
+        result = call_external_api(state)
+        return {"result": result, "status": "SUCCESS"}
+    except Exception as e:
+        return {"error_message": str(e), "status": "ERROR"}
+
+def router(state):
+    return "error_handler_node" if state.get("status") == "ERROR" else "next_step_node"
+
+workflow.add_conditional_edges("tool_node", router)
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Testing LangGraph Applications}
+      \begin{itemize}
+        \item \textbf{Unit Testing Nodes}:
+        \begin{itemize}
+            \item Nodes are just Python functions. You can test them in isolation by creating a sample input state and asserting the output dictionary is correct.
+            \item This allows you to verify the logic of each step independently.
+        \end{itemize}
+        \item \textbf{Integration Testing the Graph}:
+        \begin{itemize}
+            \item Test the compiled graph (\texttt{app}) by invoking it with a representative input.
+            \item Assert that the final state is what you expect. This tests the interaction between nodes and the correctness of the routing logic.
+            \item Use \texttt{app.stream()} to check the state at intermediate steps.
+        \end{itemize}
+        \item \textbf{Mocking}: Use mocking libraries (like \texttt{unittest.mock}) to replace external dependencies like LLMs or APIs during tests. This makes tests faster, cheaper, and more predictable.
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parallel Execution: Fan-Out and Fan-In}
+      \begin{itemize}
+        \item \textbf{What}: nodes that start from the same node run in the same step, in parallel.
+        \item \textbf{Use cases}: concurrent API calls, several data sources, several variations of an answer.
+        \item \textbf{Needs a reducer}: parallel branches write the same key, so declare how updates merge.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+import operator
+from typing import Annotated
+from typing_extensions import TypedDict
+
+class SearchState(TypedDict):
+    query: str
+    results: Annotated[list[str], operator.add]   # merge parallel writes
+
+builder = StateGraph(SearchState)
+builder.add_node("search_web", search_web)        # each returns {"results": [...]}
+builder.add_node("search_db", search_db)
+builder.add_node("search_docs", search_docs)
+builder.add_node("aggregate", aggregate_results)
+
+for n in ("search_web", "search_db", "search_docs"):
+    builder.add_edge(START, n)                    # fan-out
+builder.add_edge(["search_web", "search_db", "search_docs"], "aggregate")  # fan-in
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parallel Node Execution: Rules of the Road}
+      \begin{itemize}
+        \item END ends one route, not the whole graph: the run finishes when no node is left to run.
+        \item Nodes in the same step run in parallel, and their completion order is not guaranteed.
+        \item A list in \texttt{add\_edge([a, b], "merge")} makes \texttt{merge} wait for all of them.
+        \item Never let parallel nodes depend on each other's output in the same step.
+        \item Keep merged fields order-independent, or sort them in the aggregate node.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+graph.add_edge(["left1", "right3"], "merge")   # join: waits for both branches
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Parallel Tool Execution Inside a Node}
+
+Concurrency can also live inside one node, for example several tools called with \texttt{asyncio}.
+
+      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+import asyncio
+
+async def parallel_tools_execution(state: AgentState) -> dict:
+    """Parallel execution of multiple tools"""
+    tools = identify_required_tools(state.current_input)
+
+    async def run_tool(tool):
+        return {tool.name: await tool.ainvoke(state.current_input)}
+
+    # Execute all tools in parallel, then merge the results
+    results = await asyncio.gather(*[run_tool(t) for t in tools])
+    tools_output = {}
+    for r in results:
+        tools_output.update(r)
+
+    return {"tools_output": tools_output, "status": "SUCCESS"}
+      \end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Dynamic Work: Map-Reduce with Send}
+      \begin{itemize}
+        \item The graph structure is fixed at compile time; what can vary is \textbf{how many} branches run.
+        \item A routing function returns a list of \texttt{Send(node, payload)}: one parallel run per item.
+        \item \textbf{Map}: split the work. \textbf{Process}: run the same node on each piece. \textbf{Reduce}: a reducer collects the results.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.types import Send
+
+class MRState(TypedDict):
+    docs: list[str]
+    summaries: Annotated[list[str], operator.add]   # reduce
+
+def fan_out(state: MRState):
+    return [Send("summarize", {"doc": d}) for d in state["docs"]]   # map
+
+def summarize(payload: dict):
+    return {"summaries": [llm.invoke(f"Summarise: {payload['doc']}").content]}
+
+g = StateGraph(MRState)
+g.add_node("summarize", summarize)
+g.add_conditional_edges(START, fan_out, ["summarize"])
+g.add_edge("summarize", END)
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Dynamic Routing: Command(update, goto)}
+      \begin{itemize}
+        \item A node can update the state \textbf{and} choose the next node in one return value.
+        \item Useful when the decision is made inside the node, such as hand-offs between agents.
+        \item Replaces most "modify the graph at runtime" ideas: the graph stays fixed, the path is dynamic.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from typing import Literal
+from langgraph.types import Command
+
+def router(state: RouteState) -> Command[Literal["big_task", "small_task"]]:
+    target = "big_task" if state["size"] > 5 else "small_task"
+    return Command(update={"path": ["router"]}, goto=target)
+
+builder.add_node("router", router)
+builder.add_edge(START, "router")
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Human-in-the-Loop: Implementation Patterns}
+      \begin{itemize}
+        \item \textbf{Pattern 1: Breakpoints}:
+        \begin{itemize}
+            \item Pause execution at specific nodes
+            \item Example: Stop before "send\_email" node
+        \end{itemize}
+        \item \textbf{Pattern 2: Approval Gates}:
+        \begin{itemize}
+            \item Node requests approval with \texttt{interrupt()}, waits for response
+            \item Conditional edge based on approval status
+        \end{itemize}
+        \item \textbf{Pattern 3: State Editing}:
+        \begin{itemize}
+            \item Pause, allow human to modify state
+            \item Resume with corrected state
+        \end{itemize}
+        \item \textbf{Pattern 4: Confidence Routing}:
+        \begin{itemize}
+            \item Low-confidence results go to a human, high-confidence ones continue
+            \item Useful for long-running agents
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Human-in-the-Loop: Breakpoint Code}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import StateGraph, START, END
+
+# Checkpointing is required for pausing and resuming
+memory = MemorySaver()
+workflow = StateGraph(EmailState)
+
+workflow.add_node("draft_email", draft_email_node)
+workflow.add_node("send_email", send_email_node)
+workflow.add_edge(START, "draft_email")
+workflow.add_edge("draft_email", "send_email")
+workflow.add_edge("send_email", END)
+
+# Compile with a breakpoint BEFORE the send_email node
+app = workflow.compile(
+    checkpointer=memory,
+    interrupt_before=["send_email"])      # pause here for human approval
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Human-in-the-Loop: Resume and Edit}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+config = {"configurable": {"thread_id": "1"}}
+app.invoke({"email_content": "Meeting request"}, config)
+
+# Execution is paused before send_email
+snapshot = app.get_state(config)
+print(snapshot.next)              # ('send_email',)
+print(snapshot.values["draft"])   # human reviews the draft
+
+# Approve as is: resume from where it stopped
+app.invoke(None, config)
+
+# ...or edit the state first, then resume
+app.update_state(config, {"draft": "Modified email content"})
+app.invoke(None, config)
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Human-in-the-Loop: Confidence Routing with interrupt()}
+      \begin{itemize}
+        \item Route low-confidence results to a human node; the graph itself waits, with no \texttt{input()} call.
+        \item \texttt{interrupt()} hands a payload to the caller; \texttt{Command(resume=...)} supplies the answer.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.types import interrupt, Command
+
+def check_confidence(state) -> str:
+    return "human_review" if state["confidence"] < 0.8 else "auto_process"
+
+def human_review(state):
+    answer = interrupt({"question": "Please confirm or correct",
+                        "draft": state["answer"]})
+    return {"answer": answer}                 # the human's value
+
+workflow.add_conditional_edges("process_query", check_confidence)
+
+# caller: first invoke pauses and returns the interrupt payload,
+# then resume with the human's decision
+app.invoke(Command(resume="Corrected answer"), config)
+\end{lstlisting}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practices and Considerations}
+      \begin{itemize}
+        \item Declare a reducer for every field that several nodes or branches write; the default overwrite loses data.
+        \item Design hierarchy and connections of nodes deliberately so the flow is the one you intended.
+        \item Use checkpointing, but watch storage overhead and snapshot size for large states.
+        \item Use typed state (Pydantic or \texttt{TypedDict} with \texttt{Annotated}) for validation and clarity.
+        \item In parallel branches, do not rely on execution order.
+        \item Reducers add convenience and some complexity: use them where they pay off.
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Streaming Response in LangGraph}
+      \begin{itemize}
+        \item Different from traditional LLM word-by-word output
+        \item Outputs node data state each time for granular control
+        \item Values mode returns complete graph state (total)
+        \item Updates mode returns state changes only (incremental)
+        \item Messages mode streams LLM tokens as they are produced
+        \item Compiled graph is essentially a Runnable component
+        \item Enhanced user experience through real-time feedback
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Streaming Modes Implementation}
+      \begin{itemize}
+        \item Values mode: Complete state after each node
+        \item Updates mode: Incremental changes as dictionary
+        \item Dictionary keys represent node names
+        \item Dictionary values contain state updates
+        \item Choose mode based on application requirements
+      \end{itemize}
+      \begin{lstlisting}[language=Python, basicstyle=\small]
+# Values mode: Returns complete state values
+inputs = {"messages": [("human", "What are the top 3 results of the 2024 Beijing Half Marathon?")]}
+
+for chunk in agent.stream(inputs, stream_mode="values"):
+    chunk["messages"][-1].pretty_print()
+
+# Updates mode: Returns state updates only
+for chunk in agent.stream(inputs, stream_mode="updates"):
+    print(chunk)
+      \end{lstlisting}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Streaming Example}
+
+      \begin{itemize}
+        \item Streaming provides transparency into agent execution
+        \item Critical for production applications with users waiting
+      \end{itemize}
+
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# Instead of invoke(), use stream()
+for chunk in app.stream(initial_state, config, stream_mode="updates"):
+    # chunk is {node_name: state_update} after each node
+    for node_name, update in chunk.items():
+        print(f"Node: {node_name}")
+        print(f"Update: {update}")
+
+# For token-by-token LLM streaming
+async for event in app.astream_events(initial_state, config):
+    if event["event"] == "on_chat_model_stream":
+        # Stream each token as LLM generates
+        print(event["data"]["chunk"].content, end="", flush=True)
+      \end{lstlisting}
+\end{frame}

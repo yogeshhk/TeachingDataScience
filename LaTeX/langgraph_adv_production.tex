@@ -1,0 +1,130 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Going to Production}
+\end{center}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practices}
+      \begin{itemize}
+        \item \textbf{State Design}: Keep simple and clear, use type hints, only necessary information
+        \item \textbf{Node Functions}: Single responsibility, handle exceptions, return only the changed fields
+        \item \textbf{Edge Design}: Clear conditional logic, avoid complex cycles, consider all paths
+        \item \textbf{Error Handling}: Add at critical nodes, provide fallback mechanisms, log errors
+        \item \textbf{Testing}: Test individual nodes, test routing logic, test complete workflows
+        \item \textbf{Observability}: Use tracing tools (Langfuse, LangSmith) for production monitoring
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Best Practices for Advanced Features}
+      \begin{itemize}
+        \item \textbf{Start Simple}: Add complexity only when needed
+        \item \textbf{Checkpointing}: Always use a durable checkpointer in production
+        \item \textbf{State Size}: Keep state minimal, only essential data
+        \item \textbf{Cycle Limits}: Set maximum iterations to prevent infinite loops (\texttt{recursion\_limit})
+        \item \textbf{Human Approval}: For high-stakes actions (financial, emails, deletions)
+        \item \textbf{Documentation}: Graph visualization helps team understanding
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Retries and a Production Checklist}
+      \begin{itemize}
+        \item Attach a \texttt{RetryPolicy} to a node that calls a flaky API; LangGraph retries with exponential backoff.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+from langgraph.types import RetryPolicy
+
+workflow.add_node(
+    "unreliable_api", unreliable_node,
+    retry_policy=RetryPolicy(max_attempts=3, backoff_factor=2))
+\end{lstlisting}
+      \begin{itemize}
+        \item \textbf{Checklist}: error handling, rate limits, tracing (LangSmith), Pydantic validation of tool inputs and outputs, per-node timeouts, strict state schema, unit tests per node.
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Key Features of LangGraph Studio}
+      \begin{itemize}
+        \item \textbf{Graph Visualization}: Your code is rendered as a graph, so you see nodes, edges and branches as they are defined.
+        \item \textbf{Real-time Debugging}: Step through your graph's execution, inspect the state at each node, and identify issues quickly.
+        \item \textbf{State Editing and Replay}: Edit the state at a checkpoint and re-run from that point.
+        \item \textbf{Integrated LangSmith Tracing}: Seamlessly view detailed traces of your agent's runs, including LLM calls and tool usage.
+        \item \textbf{Human-in-the-Loop}: Interrupts surface in the UI so you can review, approve or correct a step.
+        \item \textbf{Local to Cloud}: The same project runs locally against your code, and can be deployed as an API server.
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Comparison: LangGraph vs. Other Agent Frameworks}
+\tiny
+\begin{tabular}{|l|p{3.5cm}|p{3.5cm}|p{3.5cm}|}
+\hline
+\textbf{Feature} & \textbf{LangGraph} & \textbf{CrewAI} & \textbf{AutoGen} \\
+\hline
+\textbf{Core Idea} & A library for building stateful, multi-actor applications with graphs. & A framework for orchestrating role-playing autonomous AI agents. & A framework for simplified multi-agent conversation workflows. \\
+\hline
+\textbf{Control} & \textbf{High}. Explicit control flow via graph structure. You define every possible path. & \textbf{Medium}. High-level process definition (e.g., sequential, hierarchical). Less granular control. & \textbf{Medium-Low}. Control is primarily through agent prompts and conversation patterns. \\
+\hline
+\textbf{Architecture} & Cyclic Graphs. Nodes are functions, edges define flow. Very flexible. & Agent-Task-Crew. Agents are given specific roles and tools; a process orchestrates them. & Conversation-based. Agents are "speakers" in a group chat, managed by a group chat manager. \\
+\hline
+\textbf{Flexibility} & \textbf{Very High}. Can build any custom flow, including human-in-the-loop and dynamic routing. & \textbf{Medium}. Optimized for common collaboration patterns but less flexible for arbitrary cycles. & \textbf{Medium}. Good for conversational agents, but complex, non-linear workflows are harder to model. \\
+\hline
+\textbf{Best For} & Production systems requiring reliability, control, and observability. Complex, long-running workflows. & Rapidly prototyping hierarchical or sequential agent teams for tasks like research or content creation. & Research and simulation of agent interactions and conversational systems. \\
+\hline
+\end{tabular}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Production Deployment Considerations}
+      \begin{itemize}
+        \item \textbf{Checkpointer Choice}:
+        \begin{itemize}
+            \item \texttt{MemorySaver}: For development only.
+            \item \texttt{SqliteSaver}: Good for single-server, low-concurrency deployments.
+            \item \texttt{PostgresSaver} / \texttt{RedisSaver}: Essential for production. They support high concurrency and data resilience, allowing you to scale your application across multiple server instances.
+        \end{itemize}
+        \item \textbf{Scalability}:
+        \begin{itemize}
+            \item Use asynchronous node functions (\texttt{async def}) and invoke the graph with \texttt{ainvoke()} or \texttt{astream()} for better performance under load.
+            \item LangGraph's stateful nature allows you to run long-running tasks on background workers.
+        \end{itemize}
+        \item \textbf{Monitoring \& Observability}:
+        \begin{itemize}
+            \item \textbf{LangSmith is critical}. It provides detailed, visual traces of every graph execution, making it possible to debug complex agent behavior, track costs, and monitor performance in production.
+            \item Implement logging within your nodes to capture key business events.
+        \end{itemize}
+      \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Serving an Agent: FastAPI and Docker}
+      \begin{itemize}
+        \item Wrap the compiled graph in a small web service; the client sends a \texttt{thread\_id} so each user keeps their own memory.
+        \item Package it in a container for repeatable deployment.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# server.py
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+api = FastAPI()
+
+class ChatRequest(BaseModel):
+    message: str
+    thread_id: str = "default"
+
+@api.post("/chat")
+async def chat(req: ChatRequest):
+    config = {"configurable": {"thread_id": req.thread_id}}
+    result = await agent_app.ainvoke(
+        {"messages": [("user", req.message)]}, config=config)
+    return {"response": result["messages"][-1].content}
+\end{lstlisting}
+\begin{lstlisting}
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["uvicorn", "server:api", "--host", "0.0.0.0", "--port", "8000"]
+\end{lstlisting}
+
+{\tiny (Ref: Building AI Agents with LangGraph: A Practical Guide - DEV Community)}
+\end{frame}

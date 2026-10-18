@@ -1,0 +1,224 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Reading the Gates of an LSTM}
+\begin{itemize}
+\item The memory $c_t$ is a running tally; three gates control it
+\item Each gate is a number between 0 and 1 for every memory slot
+\item Forget gate $f_t$: how much of the old memory to keep
+\item Input gate $i_t$: how much of the new candidate $\tilde{c}_t$ to write
+\item Output gate $o_t$: how much of the memory to show as the output $h_t$
+\item $c_t = f_t c_{t-1} + i_t \tilde{c}_t$ keeps part of the old and adds part of the new
+\item A GRU does the same job with two gates and no separate memory
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: RNN Concepts}
+\begin{block}{Think About It}
+1. What does the hidden state of an RNN carry from one time step to the next?
+\begin{enumerate}
+  \item[A.] Only the previous input.
+  \item[B.] A running summary of the sequence seen so far.
+  \item[C.] The loss value.
+  \item[D.] The learning rate.
+\end{enumerate}
+2. The same weights are used at every time step. What happens to the number of parameters when the sequence gets longer?
+\begin{enumerate}
+  \item[A.] It grows with the length.
+  \item[B.] It stays the same.
+  \item[C.] It doubles at every step.
+  \item[D.] It shrinks.
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: RNN Concepts}
+\begin{block}{Answer}
+\textbf{1. Correct: B.} The new state mixes the current input with the previous state, so it summarizes everything seen so far. A would describe a network that only looks back one input.
+
+\textbf{2. Correct: B.} The same weights are reused at every step, so a longer sequence means more steps through the same weights, not more weights. This is why the model can handle sequences of any length.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{}
+\begin{center}
+{\Large Case Study: Forecasting a Sensor Signal}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Data}
+\begin{itemize}
+\item 3,650 daily minimum temperatures in degrees C, Melbourne, 1 January 1981 to 31 December 1990
+\item Not machine data, but it has the shape of sensor data: regular samples, a slow yearly swing, and day-to-day noise on top
+\item Values run from 0.0 to 26.3 with mean 11.18 and standard deviation 4.07
+\item 29 February of 1984 and 1988 is absent from the file; we treat the series as consecutive days
+\end{itemize}
+\begin{lstlisting}
+import pandas as pd
+
+df = pd.read_csv('daily-minimum-temperatures.csv')
+series = df['Temperature'].to_numpy('float32')
+
+>>> len(series), series.min(), series.max()
+(3650, 0.0, 26.3)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{From a Series to Windows}
+\begin{itemize}
+\item The task: given the last 7 days, predict tomorrow
+\item Slide a window of 7 days along the series; each window is one example, the day after it is the answer
+\item Split by time, never at random: the first 8 years (1981 to 1988) train, the last 2 (1989 and 1990) test
+\item Scale with the training period's mean (11.11) and standard deviation (4.06) only, or the test period leaks in
+\item The RNN input shape is (batch, steps, features)
+\end{itemize}
+\begin{lstlisting}
+def windows(a, k=7):
+    n = len(a) - k
+    x = np.stack([a[i:i + k] for i in range(n)])
+    return torch.tensor(x).unsqueeze(-1), torch.tensor(a[k:])
+
+>>> tuple(xtr.shape), tuple(xte.shape)
+((2913, 7, 1), (730, 7, 1))
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Baselines to Beat}
+\begin{itemize}
+\item A model is only worth its complexity if it beats the simple answers
+\item Error is measured on the 730 test days: mean absolute error (MAE) and root mean squared error (RMSE), in degrees C
+\item The linear fit is ordinary least squares on the 7 values and a constant
+\end{itemize}
+\begin{center}
+\small
+\begin{tabular}{lcc}
+\hline
+Method & MAE & RMSE \\
+\hline
+Same as yesterday & 1.95 & 2.48 \\
+Mean of the last 7 days & 2.04 & 2.60 \\
+Linear fit on the last 7 days & 1.76 & 2.24 \\
+\hline
+\end{tabular}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{A GRU and an LSTM}
+\begin{itemize}
+\item A recurrent layer with 16 hidden units reads the 7 days in order
+\item Only its output after the last day goes to a single-number linear head
+\item GRU: 929 parameters. LSTM: 1,233. Both are small, well under the CNN's 5,258 on digits
+\end{itemize}
+\begin{lstlisting}
+class Net(nn.Module):
+    def __init__(self, kind, hidden=16):
+        super().__init__()
+        cell = nn.GRU if kind == 'GRU' else nn.LSTM
+        self.rnn = cell(1, hidden, batch_first=True)
+        self.head = nn.Linear(hidden, 1)
+
+    def forward(self, x):          # x: (batch, 7, 1)
+        out, _ = self.rnn(x)       # (batch, 7, 16)
+        return self.head(out[:, -1]).squeeze(-1)
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Training}
+\begin{itemize}
+\item Mean squared error loss, Adam with learning rate 0.005, batches of 64, 30 passes over the training windows
+\item Most of the learning happens early; after about 5 to 10 epochs the test error stops improving
+\end{itemize}
+\begin{center}
+\small
+\begin{tabular}{lccccc}
+\hline
+Test MAE after epoch & 1 & 5 & 10 & 20 & 30 \\
+\hline
+GRU & 1.88 & 1.74 & 1.74 & 1.75 & 1.75 \\
+LSTM & 1.97 & 1.78 & 1.74 & 1.75 & 1.74 \\
+\hline
+\end{tabular}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The Result}
+\begin{itemize}
+\item The recurrent nets are about 11\% better than ``same as yesterday'' (MAE 1.74 against 1.95)
+\item They are no better than a straight-line fit on the same 7 days (1.74 and 1.75 against 1.76)
+\item Within 1 degree C of the truth: LSTM 36.0\% of test days, same as yesterday 33.8\%
+\item The largest single-day miss of the LSTM is 7.1 degrees C
+\end{itemize}
+\begin{center}
+\small
+\begin{tabular}{lcc}
+\hline
+Method & MAE & RMSE \\
+\hline
+Same as yesterday & 1.95 & 2.48 \\
+Mean of the last 7 days & 2.04 & 2.60 \\
+Linear fit on the last 7 days & 1.76 & 2.24 \\
+GRU & 1.75 & 2.22 \\
+LSTM & 1.74 & 2.21 \\
+\hline
+\end{tabular}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{The First 90 Test Days}
+\begin{itemize}
+\item ``Same as yesterday'' is the actual curve shifted one day to the right: it reaches every peak and dip a day late
+\item The LSTM is smoother and leans toward the recent average; it misses the tallest peaks, for example near day 60
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.95\linewidth]{dlcoep_rnn_forecast.png}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{What This Tells Us}
+\begin{itemize}
+\item Here a straight line on 7 days does as well as the RNN, so this small RNN finds little extra structure to use
+\item An RNN earns its keep when the input is long, varies in length, or has several signals at once
+\item This task has none of those
+\item Always run the simple baselines first; a fancy model that only ties them has not earned its complexity
+\item For a machine, is the next reading what you need, or a warning that the signal has changed?
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: The Case Study}
+\begin{block}{Think About It}
+The LSTM's test MAE was 1.74 degrees C. A linear fit on the same 7 days gave 1.76. What is the sensible conclusion?
+\begin{enumerate}
+  \item[A.] The LSTM is clearly better, so use it everywhere.
+  \item[B.] For this task the two are practically tied, so the simpler linear model is the better choice.
+  \item[C.] The linear fit must be overfitting.
+  \item[D.] The LSTM needs more epochs to win.
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Quick Check: The Case Study}
+\begin{block}{Answer}
+\textbf{Correct: B.} A gap of 0.02 degrees is far below the day-to-day swing of several degrees. The test error stopped improving after about 10 epochs (see the training table), so D does not help, and nothing we measured suggests C.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Try It Yourself}
+\begin{itemize}
+\item Script: \texttt{Code/\allowbreak dlcoep/\allowbreak session02\_rnn/\allowbreak rnn\_temperature\_case\_study.py}, in the \texttt{dlcoep} conda environment
+\item The data file is \texttt{Code/\allowbreak ml/\allowbreak data/\allowbreak daily-minimum-\allowbreak temperatures-in-me.csv}; no download is needed
+\item Change one thing and predict the effect first: a 3-day window, a 30-day window, or 4 hidden units
+\item Does a longer window help the RNN more than it helps the linear fit?
+\end{itemize}
+\end{frame}

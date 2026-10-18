@@ -6,7 +6,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langchain_core.prompts import ChatPromptTemplate
 
-llm = ChatGroq(model="llama-3.1-8b-instant") 
+llm = ChatGroq(model="openai/gpt-oss-20b")
 
 class State(TypedDict):
   application: str

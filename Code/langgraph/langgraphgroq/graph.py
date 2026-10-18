@@ -6,7 +6,7 @@ import os
 
 load_dotenv()
 
-model = ChatGroq(api_key=os.getenv("GROQ_API_KEY"), model="qwen/qwen3-32b", temperature=0)
+model = ChatGroq(api_key=os.getenv("GROQ_API_KEY"), model="openai/gpt-oss-20b", temperature=0)
 
 class LLMState(TypedDict):
     question: str
