@@ -249,20 +249,46 @@ Ai Message    : Final Answer: The weather in Berlin on 2026-10-27 will be
 \end{lstlisting}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Continuing the Conversation}
-      \begin{itemize}
-        \item The final state already holds the whole history, so a follow-up just appends a message.
-        \item The agent can re-use earlier results, call the tool again, or compare cities.
-        \item For memory that survives restarts, compile with a checkpointer and pass a \texttt{thread\_id}.
-      \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
-state["messages"].append(("user", "Would it be warmer in Munich?"))
-
-for state in graph.stream(state, stream_mode="values"):
-    state["messages"][-1].pretty_print()
-\end{lstlisting}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{State After Each Step, and the Decision}
+\begin{itemize}
+\item The same run, seen as state. Each node returns only what changed; the state grows by one message.
+\item The router is the decision node: it reads the last message and picks the next edge.
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{p{0.13\linewidth}p{0.42\linewidth}p{0.08\linewidth}p{0.28\linewidth}}
+\hline
+After node & Messages in the state & Steps & Router decision \\
+\hline
+START & question & 0 & go to llm \\
+llm & question, Action & 1 & tool requested: tools \\
+tools & question, Action, Observation & 1 & back to llm \\
+llm & question, Action, Observation, Final Answer & 2 & no tool: end \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item The loop stops for one of two reasons: no tool requested, or the step limit.
+\end{itemize}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% [Optional cut 2026-10-19 | LangGraph trim, move to the advanced part | restore by uncommenting this block]
+% \begin{frame}[fragile]\frametitle{Continuing the Conversation}
+%       \begin{itemize}
+%         \item The final state already holds the whole history, so a follow-up just appends a message.
+%         \item The agent can re-use earlier results, call the tool again, or compare cities.
+%         \item For memory that survives restarts, compile with a checkpointer and pass a \texttt{thread\_id}.
+%       \end{itemize}
+% \begin{lstlisting}[language=Python, basicstyle=\tiny]
+% state["messages"].append(("user", "Would it be warmer in Munich?"))
+% 
+% for state in graph.stream(state, stream_mode="values"):
+%     state["messages"][-1].pretty_print()
+% \end{lstlisting}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{One Config, Any Model}
@@ -285,77 +311,81 @@ graph = build_graph(get_llm())                  # the model comes from the confi
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Prebuilt ToolNode and tools\_condition}
-      \begin{itemize}
-        \item The hand-written \texttt{call\_tool} and \texttt{should\_continue} are so common that LangGraph ships them.
-        \item \texttt{ToolNode} runs the tool calls; \texttt{tools\_condition} routes to \texttt{tools} or END.
-      \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
-from langgraph.graph import START
-from langgraph.prebuilt import ToolNode, tools_condition
-
-workflow = StateGraph(AgentState)
-workflow.add_node("llm", call_model)
-workflow.add_node("tools", ToolNode(tools))
-workflow.add_edge(START, "llm")
-workflow.add_conditional_edges("llm", tools_condition)  # tools or END
-workflow.add_edge("tools", "llm")
-graph = workflow.compile()
-\end{lstlisting}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{One-Line Agent with create\_agent}
-      \begin{itemize}
-        \item \texttt{create\_agent} (LangChain 1.x, built on LangGraph) builds the whole loop; it replaces \texttt{create\_react\_agent}.
-        \item By hand you saw what it does: a model node, a tool node and a router over a shared state.
-      \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
-from langchain.agents import create_agent
-
-agent = create_agent(
-    model=get_llm(),
-    tools=[get_weather_forecast],
-    system_prompt="You are a concise weather assistant.",
-)
-result = agent.invoke(
-    {"messages": [("user", "Weather in Berlin on 2026-10-15?")]})
-print(result["messages"][-1].content)
-\end{lstlisting}
-\end{frame}
+% [Optional cut 2026-10-19 | LangGraph trim, move to the advanced part | restore by uncommenting this block]
+% \begin{frame}[fragile]\frametitle{Prebuilt ToolNode and tools\_condition}
+%       \begin{itemize}
+%         \item The hand-written \texttt{call\_tool} and \texttt{should\_continue} are so common that LangGraph ships them.
+%         \item \texttt{ToolNode} runs the tool calls; \texttt{tools\_condition} routes to \texttt{tools} or END.
+%       \end{itemize}
+% \begin{lstlisting}[language=Python, basicstyle=\tiny]
+% from langgraph.graph import START
+% from langgraph.prebuilt import ToolNode, tools_condition
+% 
+% workflow = StateGraph(AgentState)
+% workflow.add_node("llm", call_model)
+% workflow.add_node("tools", ToolNode(tools))
+% workflow.add_edge(START, "llm")
+% workflow.add_conditional_edges("llm", tools_condition)  # tools or END
+% workflow.add_edge("tools", "llm")
+% graph = workflow.compile()
+% \end{lstlisting}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Guardrails for Tools and Steps}
-      \begin{itemize}
-        \item \textbf{Tools never raise into the graph}: return an error string so the model can explain or retry.
-        \item \textbf{Step limit}: the counter in the state stops runaway Think, Act loops.
-        \item \textbf{Validated state}: a wrong type fails at the node boundary, not three steps later.
-      \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
-try:
-    coords = geocode(location)
-    ...
-except Exception as exc:               # network, rate limit, bad date
-    return json.dumps({"error": str(exc)})
-
-def should_continue(state: AgentState):
-    if state.number_of_steps >= MAX_STEPS:   # e.g. 6
-        return "end"
-    ...
-\end{lstlisting}
-\end{frame}
+% [Optional cut 2026-10-19 | LangGraph trim, move to the advanced part | restore by uncommenting this block]
+% \begin{frame}[fragile]\frametitle{One-Line Agent with create\_agent}
+%       \begin{itemize}
+%         \item \texttt{create\_agent} (LangChain 1.x, built on LangGraph) builds the whole loop; it replaces \texttt{create\_react\_agent}.
+%         \item By hand you saw what it does: a model node, a tool node and a router over a shared state.
+%       \end{itemize}
+% \begin{lstlisting}[language=Python, basicstyle=\tiny]
+% from langchain.agents import create_agent
+% 
+% agent = create_agent(
+%     model=get_llm(),
+%     tools=[get_weather_forecast],
+%     system_prompt="You are a concise weather assistant.",
+% )
+% result = agent.invoke(
+%     {"messages": [("user", "Weather in Berlin on 2026-10-15?")]})
+% print(result["messages"][-1].content)
+% \end{lstlisting}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Extending the ReAct Agent}
-      \begin{itemize}
-        \item \textbf{More tools}: search, calculator, database; the model picks which to call.
-        \item \textbf{Structured output node}: force the final answer into a Pydantic schema.
-        \item \textbf{Reflection node}: critique the draft answer before returning it.
-        \item \textbf{Memory}: add a checkpointer so threads resume across sessions.
-        \item \textbf{Human approval}: pause before risky tools with \texttt{interrupt}.
-        \item \textbf{Guardrails}: step limits, tool timeouts, retries on transient errors.
-      \end{itemize}
-\end{frame}
+% [Optional cut 2026-10-19 | LangGraph trim, move to the advanced part | restore by uncommenting this block]
+% \begin{frame}[fragile]\frametitle{Guardrails for Tools and Steps}
+%       \begin{itemize}
+%         \item \textbf{Tools never raise into the graph}: return an error string so the model can explain or retry.
+%         \item \textbf{Step limit}: the counter in the state stops runaway Think, Act loops.
+%         \item \textbf{Validated state}: a wrong type fails at the node boundary, not three steps later.
+%       \end{itemize}
+% \begin{lstlisting}[language=Python, basicstyle=\tiny]
+% try:
+%     coords = geocode(location)
+%     ...
+% except Exception as exc:               # network, rate limit, bad date
+%     return json.dumps({"error": str(exc)})
+% 
+% def should_continue(state: AgentState):
+%     if state.number_of_steps >= MAX_STEPS:   # e.g. 6
+%         return "end"
+%     ...
+% \end{lstlisting}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% [Optional cut 2026-10-19 | LangGraph trim, move to the advanced part | restore by uncommenting this block]
+% \begin{frame}[fragile]\frametitle{Extending the ReAct Agent}
+%       \begin{itemize}
+%         \item \textbf{More tools}: search, calculator, database; the model picks which to call.
+%         \item \textbf{Structured output node}: force the final answer into a Pydantic schema.
+%         \item \textbf{Reflection node}: critique the draft answer before returning it.
+%         \item \textbf{Memory}: add a checkpointer so threads resume across sessions.
+%         \item \textbf{Human approval}: pause before risky tools with \texttt{interrupt}.
+%         \item \textbf{Guardrails}: step limits, tool timeouts, retries on transient errors.
+%       \end{itemize}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Frugal AI: Same Graph, Smaller Model}
@@ -363,7 +393,7 @@ def should_continue(state: AgentState):
         \item The graph did not change when the model went from a cloud API to a file on your laptop. Only the model line did.
         \item What you gain: no per-token charge, no key, the data stays on the machine, and it works offline.
         \item What you check: does the small model call the tool, follow the format and stay in the step limit? Test it on your task before you trust it.
-        \item \textbf{Measured} (FrugalAI harness, LM Studio, Q4\_K\_M, 15 runs): \texttt{gemma-2-2b-it} decodes at a median of 11.9 tokens per second (range 11.4 to 12.8), with an engine memory peak of 3.2 to 3.4 GB. That is on a PC with a small GPU (2 GB), partly offloaded, not a frugal-tier device.
+        \item \textbf{Measured} (FrugalAI harness, LM Studio, Q4\_K\_M, 15 runs): \texttt{gemma-2-2b-it} decodes at a median of 10.9 tokens per second with the GPU off (12.2 with a small 2 GB GPU helping), with an engine memory peak of about 3.4 GB. That is a 10-core development PC, not a frugal-tier device.
         \item Observed: a system message was accepted and followed in LM Studio (one test); but the model ignored the tool schema (0 of 5).
         \item A fixed workflow with a small model is the frugal default; a free-roaming agent needs a stronger model.
       \end{itemize}
