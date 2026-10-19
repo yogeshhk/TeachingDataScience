@@ -103,6 +103,101 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Why Not Just a Dense Layer?}
+\begin{itemize}
+\item A dense (fully connected) layer is one matrix: $y = Wx + b$, with $W$ of size $n \times m$
+\item It maps $m$ inputs to $n$ outputs; for a binary classifier $n = 2$. It reduces dimension, but every output looks at every input in the same way
+\item To feed an image, flatten it: a $28 \times 28$ image becomes $784$ numbers in a row
+\item The pixel order is kept, but the layer never uses it: a pixel and the pixel just below it are treated like two pixels from opposite corners
+\item What is missing: \textbf{neighbourhood} (which pixels sit next to each other), \textbf{local summary} (what is in this small region) and \textbf{reuse} (the same feature wherever it appears)
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Test 1: Shuffle the Pixels}
+\begin{itemize}
+\item MNIST digits, 3 epochs, Adam, batch 128. Pick one fixed random shuffle of the 784 pixel positions and apply it to every training and test image
+\item The picture becomes unreadable to a human, but nothing is lost: every pixel is still there
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lcc}
+\hline
+Model & Normal images & Shuffled positions \\
+\hline
+Dense 784-128-10 & 96.53\% & 96.62\% \\
+Small CNN (8 and 16 filters of $3 \times 3$) & 97.70\% & 90.42\% \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item The dense net does not notice the shuffle: it never used neighbours. The CNN loses 7 points: it was using them
+\item One run each. The same dense net scored 96.26\% in the case-study run, so expect the last digit to move with the random start
+\end{itemize}
+{\tiny Script: Code/dlcoep/session01\_cnn/cnn\_filters\_by\_hand.py}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Test 2: Move the Feature}
+\begin{itemize}
+\item Task: is there a small plus-shaped blob in a $12 \times 12$ noisy image? Train only with the blob in the left half, then test with it on the left and on the right
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lrcc}
+\hline
+Model & Parameters & Test, left & Test, right \\
+\hline
+Dense 144-32-2 & 4,706 & 99.9\% & 49.9\% \\
+Conv $3 \times 3$, flatten, linear & 842 & 100.0\% & 50.0\% \\
+Conv $3 \times 3$, global max pool & 50 & 100.0\% & 100.0\% \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item 50\% is a coin flip. The weights on the right half never saw a blob, and weights tied to positions cannot carry over what was learned on the left
+\item A convolution alone is not enough: flatten plus a linear layer brings the position-specific weights back. One filter reused everywhere, followed by pooling over all positions, makes the answer independent of position
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Parameter Explosion}
+\begin{itemize}
+\item A colour photo of $256 \times 256 \times 3$ pixels is $196{,}608$ inputs
+\item One dense layer of $1{,}000$ units on it: $196{,}608 \times 1{,}000 + 1{,}000 = 196{,}609{,}000$ parameters, about 197 million, for a single layer
+\item One convolution layer with $32$ filters of $3 \times 3 \times 3$: $32 \times 27 + 32 = 896$ parameters, whatever the image size
+\item The two layers do different jobs, but the comparison shows the price of letting every unit look at every pixel: memory, training time and over-fitting
+\item A single $3 \times 3$ filter on a grey image has $9$ weights and $1$ bias, on a $28 \times 28$ image or a $2800 \times 2800$ image alike
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{What We Want: Three Ideas}
+\begin{itemize}
+\item \textbf{Local}: look at small windows, because pixels that are close together belong together
+\item \textbf{Shared}: use the same small filter at every position, so a feature learned once is found everywhere
+\item \textbf{Hierarchical}: stack layers, so edges combine into shapes and shapes into objects
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lcc}
+\hline
+ & Dense layer & Convolution layer \\
+\hline
+Uses neighbours & no & yes \\
+Same feature at a new position & relearn it & reuse it \\
+Parameters grow with image size & yes & no \\
+Output & one vector & feature maps (grids) \\
+\hline
+\end{tabular}}
+\end{center}
+These three ideas, put together, are the convolutional neural network.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{What is CNN?}
 
 \begin{itemize}
@@ -340,6 +435,114 @@ What have we done?:
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Filters by Numbers: One Window}
+\begin{itemize}
+\item A filter is a small grid of weights. At each position, multiply it with the pixels under it, entry by entry, and add everything up: one number per position
+\item The vertical-edge filter (Sobel $x$), laid over a window that is dark on the left and bright on the right:
+\end{itemize}
+\begin{center}
+$\begin{bmatrix}0&0&255\\0&0&255\\0&0&255\end{bmatrix}
+\odot
+\begin{bmatrix}-1&0&1\\-2&0&2\\-1&0&1\end{bmatrix}
+\;\Rightarrow\; 255 + 510 + 255 = 1020$
+\end{center}
+\begin{itemize}
+\item Row by row: $(-1)(0) + (0)(0) + (1)(255) = 255$, then $(-2)(0) + (0)(0) + (2)(255) = 510$, then $255$ again
+\item The middle row counts double: Sobel smooths a little along the edge while it measures the change across it
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Filters by Numbers: Four Windows}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lrr}
+\hline
+$3 \times 3$ window & Sobel $x$ & Sobel $y$ \\
+\hline
+all pixels 255 (flat) & 0 & 0 \\
+dark left, bright right & 1020 & 0 \\
+bright left, dark right & $-1020$ & 0 \\
+dark top, bright bottom & 0 & 1020 \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item A flat window gives 0: the negative left side cancels the positive right side exactly
+\item A sharp jump gives a large number. The sign tells the direction: dark to bright is positive, bright to dark is negative
+\item Sobel $x$ is blind to top-to-bottom change, and Sobel $y$ is blind to left-to-right change:
+\end{itemize}
+\begin{center}
+$S_x = \begin{bmatrix}-1&0&1\\-2&0&2\\-1&0&1\end{bmatrix}$
+\qquad
+$S_y = \begin{bmatrix}-1&-2&-1\\0&0&0\\1&2&1\end{bmatrix}$
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Filters by Numbers: Sliding Over a Grid}
+\begin{center}
+\scriptsize
+\setlength{\arraycolsep}{3pt}
+\adjustbox{max width=\linewidth}{%
+$\begin{bmatrix}0&0&0&9&9&9\\0&0&0&9&9&9\\0&0&0&9&9&9\\0&0&0&9&9&9\\0&0&0&9&9&9\\0&0&0&9&9&9\end{bmatrix}
+\ast\; S_x \;=\;
+\begin{bmatrix}0&36&36&0\\0&36&36&0\\0&36&36&0\\0&36&36&0\end{bmatrix}$}
+\end{center}
+\begin{itemize}
+\item A $6 \times 6$ image, dark on the left half and bright on the right. A $3 \times 3$ filter at stride 1 gives a $4 \times 4$ map: $(6 - 3)/1 + 1 = 4$
+\item Output columns, left to right: three dark columns give $0$; dark, dark, bright gives $4 \times 9 = 36$; dark, bright, bright gives $36$; all bright gives $-9 + 9 = 0$ per row
+\item Only the windows that straddle the edge respond. The map is a picture of where the vertical edge is
+\item Sobel $y$ gives all zeros here: there is no top-to-bottom change
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Filters by Numbers: Two Directions Together}
+\begin{center}
+\tiny
+\setlength{\arraycolsep}{2pt}
+image: $\begin{bmatrix}0&0&0&0&0&0\\0&9&9&9&0&0\\0&9&9&9&0&0\\0&9&9&9&0&0\\0&0&0&0&0&0\\0&0&0&0&0&0\end{bmatrix}$ (a $3 \times 3$ bright block)
+
+\vspace{4pt}
+\scriptsize
+$G_x = \begin{bmatrix}27&0&-27&-27\\36&0&-36&-36\\27&0&-27&-27\\9&0&-9&-9\end{bmatrix}$
+\quad
+$G_y = \begin{bmatrix}27&36&27&9\\0&0&0&0\\-27&-36&-27&-9\\-27&-36&-27&-9\end{bmatrix}$
+\quad
+$\sqrt{G_x^2 + G_y^2} \approx \begin{bmatrix}38&36&38&28\\36&0&36&36\\38&36&38&28\\28&36&28&13\end{bmatrix}$
+\end{center}
+\begin{itemize}
+\item $G_x$ is positive on the block's left edge (dark to bright) and negative on its right edge. $G_y$ is positive on the top edge and negative on the bottom edge
+\item Inside the block, in the middle of the map, both are $0$: flat again
+\item Combine the two with $\sqrt{G_x^2 + G_y^2}$: the top-left value is $\sqrt{27^2 + 27^2} \approx 38$. The outline of the block lights up in every direction
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{A Naming Note: Convolution or Correlation?}
+\begin{itemize}
+\item Strictly, a convolution flips the filter before sliding it. Deep learning libraries slide the filter without flipping (a cross-correlation) and still call the layer ``convolution''
+\item Checked by script: PyTorch's \texttt{conv2d} matches cross-correlation and does not match the flipped version. With Sobel $x$ on the step image of the previous slides, the flipped version gives the negative of the map ($-36$ instead of $36$)
+\item In a CNN the filter values are learned, so a flipped filter is just another set of weights: nothing is lost
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Edges on a Machined Plate}
+\begin{center}
+\adjustbox{max width=\linewidth, max totalheight=0.40\textheight}{\includegraphics{dlcoep_cnn_sobel}}
+\end{center}
+\begin{itemize}
+\item A synthetic $96 \times 96$ image: a plate with a dark rim, a drilled hole, a thin scratch and a lighting step on the right
+\item Sobel $x$ (blue and red) marks the vertical edges: the sides of the plate and the left and right of the hole. Sobel $y$ marks the horizontal ones: top, bottom and the hole's top and bottom
+\item Edge strength combines both: the rim, the hole, the scratch and, faintly, the lighting step
+\item Edges are not defects. A real inspection net must learn which edges matter, which is why the filters are learned
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Filter for Sharpen}
 Experimentation: Using GIMP to apply filters on an image of Taj Mahal
 
@@ -395,6 +598,40 @@ Imp to note that it does not shuffle the pixels, so, preserves the pattern.
 \tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
 \end{center}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Four Classic Kernels on One Patch}
+\begin{center}
+\scriptsize
+\setlength{\arraycolsep}{2pt}
+\adjustbox{max width=\linewidth}{%
+Sharpen $\begin{bmatrix}0&-1&0\\-1&5&-1\\0&-1&0\end{bmatrix}$
+\quad Blur $\frac{1}{9}\begin{bmatrix}1&1&1\\1&1&1\\1&1&1\end{bmatrix}$
+\quad Edge $\begin{bmatrix}-1&-1&-1\\-1&8&-1\\-1&-1&-1\end{bmatrix}$
+\quad Emboss $\begin{bmatrix}-2&-1&0\\-1&1&1\\0&1&2\end{bmatrix}$}
+\end{center}
+\begin{itemize}
+\item Patch A: every pixel 10 except a bright centre of 50. Patch B: flat, every pixel 10
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lccc}
+\hline
+Kernel & Sum of weights & Patch A & Patch B \\
+\hline
+Sharpen & 1 & 210 & 10 \\
+Blur & 1 & 14.44 & 10 \\
+Edge & 0 & 320 & 0 \\
+Emboss & 1 & 50 & 10 \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item Sharpen: $5 \times 50 - 4 \times 10 = 210$, the centre is boosted. Blur: the average, $(8 \times 10 + 50)/9 = 14.44$. Edge: $8 \times 50 - 8 \times 10 = 320$
+\item Weights that sum to 0 make flat areas vanish (Edge: $0$ on patch B). Weights that sum to 1 keep the overall brightness (the others: $10$ on patch B)
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -467,6 +704,22 @@ Imp to note that it does not shuffle the pixels, so, preserves the pattern.
 \item There are other types of pooling to ``reduce'', like average pooling.
 \end{itemize}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Max Pooling by Numbers}
+\begin{center}
+\small
+$\begin{bmatrix}1&9&2&0\\3&4&0&1\\0&2&7&5\\1&0&6&8\end{bmatrix}
+\xrightarrow{\;\max,\ 2 \times 2\;}
+\begin{bmatrix}9&2\\2&8\end{bmatrix}$
+\end{center}
+\begin{itemize}
+\item Each $2 \times 2$ block is replaced by its largest entry: $4 \times 4$ becomes $2 \times 2$. This is the spatial summary: ``a strong response somewhere in this block''
+\item Move the 9 one pixel to the left, still inside its block: the pooled output is identical
+\item Move it one pixel to the right, across the block edge: the 9 appears in the neighbouring output cell and the left cell drops to 4, giving $\begin{bmatrix}4&9\\2&8\end{bmatrix}$
+\item So pooling tolerates small shifts inside a block, not every shift. Shifting this whole image right by one pixel changes all four outputs: $\begin{bmatrix}3&9\\1&7\end{bmatrix}$
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -660,6 +913,69 @@ Loss is minimized by adjusting weights in NN as well as filter values.
 \end{itemize}
 
 \tiny{(Ref: How filters are made in a CNN? - Stack Overflow)}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{What the Network Learned: First-Layer Filters}
+\begin{center}
+\adjustbox{max width=\linewidth, max totalheight=0.22\textheight}{\includegraphics{dlcoep_cnn_filters}}
+\end{center}
+\begin{itemize}
+\item The eight $3 \times 3$ filters of the first layer of the small digit CNN after 3 epochs on MNIST. Red is positive, blue is negative
+\item Nobody chose them: they started random and were shaped by back-propagation, like every other weight
+\item Several have a band of one sign on one side and the opposite sign on the other, which is the pattern of the hand-made edge filters. Others are mixtures with no neat name
+\item Compare with Sobel: the hand-made filter is one design for one job, the learned filters are whatever helped to read the digits
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{From Edges to Objects}
+\begin{center}
+\small
+\begin{tabular}{p{0.16\linewidth}p{0.36\linewidth}p{0.36\linewidth}}
+\hline
+Layers & Filters respond to & Example on a machined part \\
+\hline
+Early & edges, lines, textures & the line of a scratch, the rim of a hole \\
+Middle & corners, curves, simple shapes & the arc of a drilled hole, a branching crack \\
+Deep & parts and whole objects & a defect type, a digit on a gauge \\
+\hline
+\end{tabular}
+\end{center}
+\begin{itemize}
+\item Each layer filters the maps of the layer before it, so a deeper filter sees a larger area of the original image
+\item Max pooling between layers is what lets the next filter see a wider neighbourhood with the same $3 \times 3$ size
+\item This is the usual way to describe a trained CNN. In practice the layers overlap and not every filter has such a neat meaning
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Quick Check: Why a CNN}
+\begin{block}{Think About It}
+1. A Sobel $x$ filter is laid over a window with 0 in the left column and 255 in the middle and right columns. Which output is correct?
+\begin{enumerate}
+  \item[A.] 0
+  \item[B.] 255
+  \item[C.] 1020
+  \item[D.] $-1020$
+\end{enumerate}
+2. A dense net is trained only on images with the feature on the left and tested with it on the right. Why does it fail?
+\begin{enumerate}
+  \item[A.] The right half has more noise.
+  \item[B.] Its weights are tied to pixel positions, and the right-hand weights never saw the feature.
+  \item[C.] Dense layers cannot be trained on images.
+  \item[D.] It has too few parameters.
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Quick Check: Why a CNN}
+\begin{block}{Answer}
+\textbf{1. Correct: C.} The middle column has weight 0, so only the left column (0) and the right column (255) count: $255 + 510 + 255 = 1020$, the same as the earlier window. A would need a flat window, B counts one row only, and D has the direction reversed (bright to dark).
+
+\textbf{2. Correct: B.} A dense layer has a separate weight for every pixel position. Dense layers train fine on images, and the net actually has plenty of parameters (A, C and D are not the reason). It fails because a feature learned at one position says nothing about another.
+\end{block}
 \end{frame}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

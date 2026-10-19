@@ -45,6 +45,86 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Why Not Just a Dense Layer for Sequences?}
+\begin{itemize}
+\item A dense layer takes a fixed number of inputs. A window of $T$ steps with $d$ readings each becomes one vector of $T \times d$ numbers, and $T$ is frozen into the network
+\item Every position has its own weights. What the network learns about step 3 says nothing about step 7
+\item Order is present only as ``which weight sees which slot''. There is no running context
+\item The other way out is to throw order away on purpose: add up or average the steps (a bag of words). Then any length fits, but ``dog bites man'' and ``man bites dog'' look the same
+\item What we want: \textbf{any length}, \textbf{order kept}, and \textbf{one set of weights reused} at every step
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Test 1: Order and Length}
+\begin{itemize}
+\item Task: symbols A and B each appear once among filler symbols. Label: does A come before B? Trained on sequences of length 6
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lrcc}
+\hline
+Model & Parameters & Test, length 6 & Test, length 10 \\
+\hline
+Bag of symbols (counts) + dense & 114 & 49.5\% & 49.9\% \\
+Dense on the 6 positions & 866 & 100.0\% & cannot run \\
+GRU, last state & 1,090 & 100.0\% & 50.1\% \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item The bag cannot tell the two orders apart: a coin flip. The dense net reads order but accepts only length 6
+\item The same GRU trained on lengths 6, 8, 10 and 12 scores 100.0\% on lengths 6, 10 and an unseen 14, and 83.1\% on an unseen 20. Running on any length is not enough: it has to be trained on a range of lengths
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Test 2: Move the Spike in Time}
+\begin{itemize}
+\item Task: is there a spike somewhere in a noisy sequence of 20 steps? Train with the spike only in steps 1 to 10, then test with it in steps 1 to 10 and in steps 11 to 20
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lrcc}
+\hline
+Model & Parameters & Spike in steps 1 to 10 & Spike in steps 11 to 20 \\
+\hline
+Dense 20-32-2 & 738 & 100.0\% & 50.2\% \\
+GRU, 8 units & 282 & 100.0\% & 97.1\% \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item The dense net's weights for steps 11 to 20 never saw a spike: a coin flip
+\item The GRU applies the same weights at every step, so a late spike is still recognised. The small drop (97.1\%) is because a late spike also arrives in a different memory state
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Parameters, and the Three Ideas}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{rrrrr}
+\hline
+Steps $T$ & Dense on $T \times 8$ inputs & RNN & GRU & LSTM \\
+\hline
+10 & 2,592 & 1,344 & 4,032 & 5,376 \\
+100 & 25,632 & 1,344 & 4,032 & 5,376 \\
+1000 & 256,032 & 1,344 & 4,032 & 5,376 \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item $8$ readings per step and $32$ hidden units. The dense layer grows with $T$ and accepts only one $T$; the recurrent layers do not grow
+\item RNN count: $d \times H + H \times H + 2H = 8 \times 32 + 32 \times 32 + 64 = 1{,}344$ (PyTorch keeps two bias vectors)
+\item So: any length, order kept in a hidden state, the same weights at every step. That is the recurrent network
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{So, Why RNN?}
 
 \begin{itemize}
@@ -550,6 +630,63 @@ RNN can be imagined to be a usual ANN, with additional nodes from next layer bac
 % \item It starts searching all over looking for the middle of the song, but it hasn't tried to look for it this way before, so it doesn't have a map to the location of the middle of the second verse.
 % \end{itemize}
 % \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{One Step by Hand}
+\begin{itemize}
+\item One hidden unit, so everything fits on a slide: $h_t = \tanh(w_x x_t + w_h h_{t-1})$ with $w_x = 1.0$, $w_h = 0.5$ and $h_0 = 0$
+\item Feed the sequence $x = (1, 0, 0)$
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{cccl}
+\hline
+Step & Input $x_t$ & Previous $h_{t-1}$ & New $h_t$ \\
+\hline
+1 & 1 & 0 & $\tanh(1 \cdot 1 + 0.5 \cdot 0) = 0.7616$ \\
+2 & 0 & 0.7616 & $\tanh(0 + 0.5 \cdot 0.7616) = 0.3634$ \\
+3 & 0 & 0.3634 & $\tanh(0 + 0.5 \cdot 0.3634) = 0.1797$ \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item The state carries the past forward: at step 3 there is no new input, yet $h_3$ is not 0
+\item The $1$ from step 1 is still there, but it has shrunk from $0.7616$ to $0.1797$
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Order Changes the Answer}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{ccc}
+\hline
+Sequence $(x_1, x_2, x_3)$ & Final state $h_3$ & Note \\
+\hline
+$(1, 0, 0)$ & 0.1797 & the 1 came first \\
+$(0, 0, 1)$ & 0.7616 & the 1 came last \\
+$(1, 1, 0)$ & 0.4141 & \\
+$(0, 1, 1)$ & 0.8811 & \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item Same inputs, different order, different final state. A bag (a sum) would give the same number for $(1,0,0)$ and $(0,0,1)$
+\item Recent inputs weigh more than old ones. This is useful for forecasting, and it is also the root of the fading problem later
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Same Weights at Every Step}
+\begin{itemize}
+\item With vectors, the same rule is $h_t = \tanh(W_x x_t + W_h h_{t-1} + b)$
+\item $W_x$, $W_h$ and $b$ are the same at step 1, step 2 and step 1000. Reading a longer sequence adds steps, not parameters
+\item Compare the CNN: one filter reused at every \emph{position} in space. The RNN reuses one set of weights at every \emph{step} in time
+\item Training works on the unrolled copy and adds up the gradients of every use of the shared weights (back-propagation through time)
+\end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
@@ -1461,6 +1598,30 @@ _________________________________________________________________
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Fading by Numbers}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{rc}
+\hline
+Steps $T$ & $|\partial h_T / \partial x_1|$, plain tanh RNN \\
+\hline
+5 & $2.11 \times 10^{-2}$ \\
+10 & $1.25 \times 10^{-3}$ \\
+20 & $6.09 \times 10^{-6}$ \\
+40 & $4.72 \times 10^{-11}$ \\
+80 & $3.31 \times 10^{-21}$ \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item How much the very first input still moves the last hidden state. Untrained layer, default start, 32 units, median of 20 random starts
+\item Each extra step multiplies by a factor below 1, so the effect shrinks exponentially: at 80 steps the first input is, for the network, gone
+\item Caution: with the same default start, a GRU and an LSTM also fade in this test (about $10^{-17}$ at 80 steps). Gates give the network a way to hold information after training, not a free pass at the start
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{How LSTM solves Vanishing Gradient}
 \begin{itemize}
 \item LSTM increases memory network, handles more information, longer memory.
@@ -1472,6 +1633,120 @@ _________________________________________________________________
 {\tiny (Ref: How LSTM networks solve the problem of vanishing gradients
 - Nir Arbel)}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{One Vector per Sequence: Three Readouts}
+\begin{itemize}
+\item For a sentiment label or a fault class we need one vector for the whole sequence, then a classifier on top. Three common ways to get it:
+\item \textbf{Last state} $h_T$: simple, but the whole sequence is squeezed through one vector. Order is not lost, but old information has faded (recency bias)
+\item \textbf{Pooling over time}: keep every $h_t$ and take the mean or the maximum of each feature over all steps. An early, strong signal survives
+\item \textbf{Attention}: keep every $h_t$ and let the model learn how much each step counts for this decision
+\item A fourth, orthogonal fix is to read the sequence in both directions (next slides)
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Early Evidence: Which Readout Works?}
+\begin{itemize}
+\item Task: sequences of 60 steps of noise; the label is whether a $+3$ marker sits in steps 1 to 3. Chance is 50\%. One run each
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lrc}
+\hline
+Model & Parameters & Test accuracy \\
+\hline
+Plain RNN, last state & 338 & 85.3\% \\
+Plain RNN, mean over time & 338 & 90.4\% \\
+Plain RNN, max over time & 338 & 99.2\% \\
+Plain RNN, bidirectional & 674 & 99.1\% \\
+GRU, max over time & 946 & 99.3\% \\
+GRU, bidirectional & 1,890 & 99.2\% \\
+GRU, last state (100 epochs) & 946 & 52.2\% \\
+LSTM, last state (100 epochs) & 1,250 & 50.9\% \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item Max pooling brings the early marker straight to the classifier. Bidirectional works because the backward pass ends at step 1, where the marker is fresh
+\item The last-state GRU and LSTM did not learn this task in our training budget, while the plain RNN did partly. We do not claim a ranking of cell types from one synthetic run
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Bidirectional RNN}
+\begin{center}
+\adjustbox{max width=0.7\linewidth, max totalheight=0.40\textheight}{\includegraphics{rnnbi}}
+\end{center}
+\begin{itemize}
+\item Two recurrent layers: one reads left to right, one right to left. At each step their states are joined, so every step has context from both sides
+\item The cost is twice the parameters (338 became 674 in the test before) and the whole sequence must be available
+\item Fine for classifying a finished recording or sentence. Not possible for real-time forecasting, where the future has not happened yet
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Attention: A Weighted Look Back}
+\begin{itemize}
+\item Keep all hidden states $h_1, \dots, h_T$. Score each against a query $q$, turn scores into weights with softmax, and mix: $s_i = q \cdot h_i$, \quad $\alpha = \mathrm{softmax}(s)$, \quad $c = \sum_i \alpha_i h_i$
+\item Example: $h_1 = (1,0)$, $h_2 = (0,1)$, $h_3 = (1,1)$ and $q = (1,0)$
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lccc}
+\hline
+ & $h_1$ & $h_2$ & $h_3$ \\
+\hline
+score $q \cdot h_i$ & 1 & 0 & 1 \\
+weight $\alpha_i$ & 0.4223 & 0.1554 & 0.4223 \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item Context $c = 0.4223\,(1,0) + 0.1554\,(0,1) + 0.4223\,(1,1) = (0.8446,\ 0.5777)$. A plain average would give $(0.6667,\ 0.6667)$: attention leans toward the states that match the query
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Attention: The Road to Transformers}
+\begin{itemize}
+\item Attention was first added on top of RNNs to ease the one-vector bottleneck: the decision can look back at every step, not only the last one
+\item A Transformer keeps attention and drops the recurrence. It adds position information so that order is not lost, and it reads all steps at once, which suits parallel hardware
+\item That is a pointer, not part of this session: the point here is why the bottleneck mattered
+\item Recurrent nets have not disappeared. Small, cheap models that process a stream one step at a time are still a good fit when memory and compute are tight
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Quick Check: Sequences}
+\begin{block}{Think About It}
+1. A sensor gives 8 readings per step, and a layer has 32 hidden units. The window grows from 100 to 1000 steps. What happens to the parameter count?
+\begin{enumerate}
+  \item[A.] Both a dense layer on the window and a recurrent layer grow about ten times.
+  \item[B.] The dense layer grows about ten times; the recurrent layer stays the same.
+  \item[C.] The recurrent layer grows about ten times; the dense layer stays the same.
+  \item[D.] Both stay the same.
+\end{enumerate}
+2. In the early-marker task, which readout lifted a plain RNN from 85\% to about 99\%?
+\begin{enumerate}
+  \item[A.] Last state only.
+  \item[B.] Max over time (or reading in both directions).
+  \item[C.] More hidden units with the same last-state readout.
+  \item[D.] Shuffling the steps.
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Quick Check: Sequences}
+\begin{block}{Answer}
+\textbf{1. Correct: B.} The dense layer on the window has $T \times 8 \times 32$ weights plus biases: 25,632 at 100 steps and 256,032 at 1000. The recurrent layer reuses the same weights at every step: 1,344 for a plain RNN in both cases.
+
+\textbf{2. Correct: B.} Max over time keeps the early marker's strong response, and a backward pass ends exactly at the early steps. We did not test C, and D destroys the order the label depends on.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
