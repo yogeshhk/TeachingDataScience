@@ -76,7 +76,7 @@
 
 Any callable is a node, so a class with \texttt{\_\_call\_\_} can carry its own configuration (model, prompt, tools).
 
-      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+      \begin{lstlisting}[language=Python]
 from langchain_groq import ChatGroq
 from langgraph.graph import StateGraph, MessagesState, START
 
@@ -100,7 +100,8 @@ graph_builder.add_edge(START, "custom_node")
 
 A routing function reads the state and returns the name of the next route; the path map turns routes into nodes.
 
-      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \scriptsize | overflow at the default size]
+      \begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
 from typing import Annotated, Literal
 from langchain_core.messages import AnyMessage
 from langgraph.graph import END
@@ -141,7 +142,7 @@ workflow.add_conditional_edges(
 
 By default, the dictionary returned by a node overwrites the original data, which may lead to unexpected results.
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 from typing_extensions import TypedDict
 
 class MyState(TypedDict):
@@ -160,7 +161,7 @@ r = graph.invoke({"messages": [1, 2, 3]})
 
 Either read and extend the old value by hand, or declare a reducer once on the field.
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 # Manual: fetch the old value and return old + new
 def fn1(state: MyState):
     old = state.get("messages", [])
@@ -192,7 +193,8 @@ r = graph.invoke({"messages": [1, 2, 3]})
         \item \textbf{Human-in-the-loop}: pause, wait, resume.
         \item \textbf{Backends}: in-memory for development, SQLite for local files, Postgres or Redis for production.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \scriptsize | overflow at the default size]
+\begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
 import sqlite3
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver   # pip install langgraph-checkpoint-sqlite
@@ -211,7 +213,7 @@ app.invoke({"messages": [("human", "Hi!")]}, config)   # state saved automatical
         \item With a checkpointer you can inspect, modify and travel through any thread's history.
         \item A thread is identified by \texttt{thread\_id}; each snapshot by its \texttt{checkpoint\_id}.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 config = {"configurable": {"thread_id": "user-123"}}
 
 # Latest state of the conversation
@@ -234,7 +236,7 @@ app.update_state(config, {"messages": [("user", "Actually, a different question.
         \item Invoke with \texttt{None} and that config to replay from that point.
         \item \texttt{update\_state} on an old snapshot forks a new branch; the original history is kept.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 history = list(app.get_state_history(config))
 
 # Pick the snapshot just before a given node ran
@@ -261,7 +263,7 @@ app.invoke(None, forked)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Message Deletion and Trimming}
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 from langchain_core.messages import RemoveMessage, ToolMessage, trim_messages
 
 def drop_tool_messages(state):
@@ -291,17 +293,17 @@ def call_model(state):
         \item \textbf{Pattern 3: Retry Policy}: \texttt{add\_node(..., retry\_policy=RetryPolicy(max\_attempts=3))} retries transient errors with backoff.
         \item \textbf{State Tracking}: count errors in the state; after N retries route to a final failure node.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \tiny | overflow at the default size]
+% [code-font: blank lines removed from the listing to fit the frame]
+\begin{lstlisting}[language=Python, basicstyle=\tiny\ttfamily]
 def tool_node(state):
     try:
         result = call_external_api(state)
         return {"result": result, "status": "SUCCESS"}
     except Exception as e:
         return {"error_message": str(e), "status": "ERROR"}
-
 def router(state):
     return "error_handler_node" if state.get("status") == "ERROR" else "next_step_node"
-
 workflow.add_conditional_edges("tool_node", router)
 \end{lstlisting}
 \end{frame}
@@ -329,7 +331,8 @@ workflow.add_conditional_edges("tool_node", router)
         \item \textbf{Use cases}: concurrent API calls, several data sources, several variations of an answer.
         \item \textbf{Needs a reducer}: parallel branches write the same key, so declare how updates merge.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \scriptsize | overflow at the default size]
+\begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
 import operator
 from typing import Annotated
 from typing_extensions import TypedDict
@@ -358,7 +361,7 @@ builder.add_edge(["search_web", "search_db", "search_docs"], "aggregate")  # fan
         \item Never let parallel nodes depend on each other's output in the same step.
         \item Keep merged fields order-independent, or sort them in the aggregate node.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 graph.add_edge(["left1", "right3"], "merge")   # join: waits for both branches
 \end{lstlisting}
 \end{frame}
@@ -367,7 +370,7 @@ graph.add_edge(["left1", "right3"], "merge")   # join: waits for both branches
 
 Concurrency can also live inside one node, for example several tools called with \texttt{asyncio}.
 
-      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+      \begin{lstlisting}[language=Python]
 import asyncio
 
 async def parallel_tools_execution(state: AgentState) -> dict:
@@ -393,7 +396,8 @@ async def parallel_tools_execution(state: AgentState) -> dict:
         \item A routing function returns a list of \texttt{Send(node, payload)}: one parallel run per item.
         \item \textbf{Map}: split the work. \textbf{Process}: run the same node on each piece. \textbf{Reduce}: a reducer collects the results.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \scriptsize | overflow at the default size]
+\begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
 from langgraph.types import Send
 
 class MRState(TypedDict):
@@ -419,7 +423,7 @@ g.add_edge("summarize", END)
         \item Useful when the decision is made inside the node, such as hand-offs between agents.
         \item Replaces most "modify the graph at runtime" ideas: the graph stays fixed, the path is dynamic.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 from typing import Literal
 from langgraph.types import Command
 
@@ -458,7 +462,7 @@ builder.add_edge(START, "router")
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Human-in-the-Loop: Breakpoint Code}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START, END
 
@@ -480,7 +484,7 @@ app = workflow.compile(
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Human-in-the-Loop: Resume and Edit}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 config = {"configurable": {"thread_id": "1"}}
 app.invoke({"email_content": "Meeting request"}, config)
 
@@ -503,7 +507,7 @@ app.invoke(None, config)
         \item Route low-confidence results to a human node; the graph itself waits, with no \texttt{input()} call.
         \item \texttt{interrupt()} hands a payload to the caller; \texttt{Command(resume=...)} supplies the answer.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 from langgraph.types import interrupt, Command
 
 def check_confidence(state) -> str:
@@ -553,7 +557,7 @@ app.invoke(Command(resume="Corrected answer"), config)
         \item Dictionary values contain state updates
         \item Choose mode based on application requirements
       \end{itemize}
-      \begin{lstlisting}[language=Python, basicstyle=\small]
+      \begin{lstlisting}[language=Python]
 # Values mode: Returns complete state values
 inputs = {"messages": [("human", "What are the top 3 results of the 2024 Beijing Half Marathon?")]}
 
@@ -574,7 +578,7 @@ for chunk in agent.stream(inputs, stream_mode="updates"):
         \item Critical for production applications with users waiting
       \end{itemize}
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 # Instead of invoke(), use stream()
 for chunk in app.stream(initial_state, config, stream_mode="updates"):
     # chunk is {node_name: state_update} after each node

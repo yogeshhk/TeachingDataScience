@@ -8,11 +8,10 @@ The model comes from ../llm_config.py, the one place to change it. Default: a sm
     python react_agent.py --provider groq   --question "Is Munich warmer than Berlin tomorrow?"
     python react_agent.py --model qwen/qwen3-1.7b --question "Weather in Berlin tomorrow?"
 
-Other back ends need keys in the environment (never put keys in code): GROQ_API_KEY, GEMINI_API_KEY.
-The cycle limit is MAX_STEPS below. The folder is still called gemini because the seminar deck first
-showed this loop with Gemini.
+Other back ends need keys in the environment (never put keys in code), for example GROQ_API_KEY.
+The cycle limit is MAX_STEPS below.
 
-Ref: "ReAct agent from scratch with Gemini and LangGraph", Gemini API docs.
+Ref: LangGraph documentation (docs.langchain.com).
 """
 import argparse
 import json
@@ -108,18 +107,18 @@ TOOLS = [get_weather_forecast]
 
 
 # ---------------------------------------------------------------- graph
-def build_graph(model, tools=None, max_steps=None):
+def build_graph(llm, tools=None, max_steps=None):
     """Compile the ReAct graph for any chat model that supports bind_tools."""
     tools = tools or TOOLS
     max_steps = max_steps or MAX_STEPS
-    model_with_tools = model.bind_tools(tools)
+    llm_with_tools = llm.bind_tools(tools)
     tools_by_name = {t.name: t for t in tools}
 
-    def call_model(state: AgentState):
-        response = model_with_tools.invoke(state.messages)
+    def call_llm(state: AgentState):
+        response = llm_with_tools.invoke(state.messages)
         return {"messages": [response], "number_of_steps": state.number_of_steps + 1}
 
-    def call_tool(state: AgentState):
+    def call_tools(state: AgentState):
         outputs = []
         for tool_call in state.messages[-1].tool_calls:
             result = tools_by_name[tool_call["name"]].invoke(tool_call["args"])
@@ -140,8 +139,8 @@ def build_graph(model, tools=None, max_steps=None):
         return "continue"
 
     workflow = StateGraph(AgentState)
-    workflow.add_node("llm", call_model)
-    workflow.add_node("tools", call_tool)
+    workflow.add_node("llm", call_llm)
+    workflow.add_node("tools", call_tools)
     workflow.add_edge(START, "llm")
     workflow.add_conditional_edges(
         "llm", should_continue, {"continue": "tools", "end": END}

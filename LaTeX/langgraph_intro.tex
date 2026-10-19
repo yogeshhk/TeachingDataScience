@@ -93,7 +93,9 @@
 
 
       \begin{itemize}
-        \item LangGraph extends LangChain, the popular LLM application library.
+        % [upgrade-deck: commented out 2026-10-19 | Task 1 | LangGraph is a separate library, not an extension]
+        % \item LangGraph extends LangChain, the popular LLM application library.
+        \item LangGraph is an open-source library, from the makers of LangChain, for building stateful LLM workflows and agents.
 		\item It builds AI applications with multiple steps, decisions and memory across steps.
 		\item Think of it as a flowchart for your AI to follow.
       \end{itemize}
@@ -115,6 +117,29 @@
         \item \textbf{Use Cases}: Multi-step reasoning, workflow automation, complex decision trees, collaborative agents
         \item \textbf{Result}: Reliable autonomous systems that combine flexibility with predictability
       \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{LangGraph and Other Agent Frameworks}
+\begin{center}
+\footnotesize
+\adjustbox{max width=\linewidth}{%
+% [upgrade-deck: replaced 2026-10-19 | Task 1e | first column too narrow in the 3-column CheatSheet; original widths 0.15, 0.45, 0.3]
+\begin{tabular}{p{0.19\linewidth}p{0.4\linewidth}p{0.29\linewidth}}
+\hline
+\textbf{Framework} & \textbf{Core idea} & \textbf{Fits best} \\
+\hline
+LangGraph & You draw a graph of nodes, edges and shared state; the runtime adds durable execution, human-in-the-loop and memory & Controlled, long-running workflows and agents \\
+CrewAI & Teams of role-playing agents (crews); Flows add structured, event-driven control & Quick multi-agent prototypes with clear roles \\
+AutoGen & Agents that solve tasks by conversing; repository archived and community-managed, Microsoft points new users to Microsoft Agent Framework & Existing projects; new work: see Agent Framework \\
+\hline
+\end{tabular}}
+\end{center}
+      \begin{itemize}
+        \item \textbf{LangGraph's difference}: the flow is explicit in code, the state is inspectable, a run can pause, resume and replay, and the model is swappable.
+        \item \textbf{Rule of thumb}: ask who decides the next step, and what must survive a crash or wait for a person.
+        \item Vendor SDKs (OpenAI Agents SDK, Google ADK) are also worth comparing on the same questions.
+      \end{itemize}
+{\tiny Sources: LangGraph and CrewAI documentation, AutoGen repository notice (checked October 2026).}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Agents in LangChain vs LangGraph}
@@ -210,10 +235,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\frametitle{The Building Blocks}
 \begin{itemize}
-\item Model: Large Language Model that supports Function Calling
-\item Tools: Actions taken by app - API calls, database operations, etc.
-\item State: Information carried throughout the workflow (e.g., Message State)
-\item Node: Executable logic container - a LangChain runnable or Tool invoker
+% [upgrade-deck: commented out 2026-10-19 | Task 1 | a node is any Python function; state is a declared schema; model line reworded]
+% \item Model: Large Language Model that supports Function Calling
+% \item Tools: Actions taken by app - API calls, database operations, etc.
+% \item State: Information carried throughout the workflow (e.g., Message State)
+% \item Node: Executable logic container - a LangChain runnable or Tool invoker
+\item LLM: the language model; with tool calling it can ask for tools to run
+\item Tools: actions taken by the app, such as API calls and database operations
+\item State: the shared data that flows through the workflow, declared as a schema
+\item Node: any Python function: reads the state, returns an update; may hold an LLM call, an API call, plain code or an agent
 \item Edge: Control flow of information - conditional or normal
 \item Workflow: The graph with nodes and edges that can be invoked or streamed
 \end{itemize}
@@ -229,10 +259,14 @@
 
       \begin{itemize}
         \item \textbf{Nodes (N):} Individual processing steps as Python functions that transform state
-        \item Each node encapsulates one sub-task: LLM calls, calculations, tool invocations
+        % [upgrade-deck: commented out 2026-10-19 | Task 1 | node contents broadened]
+        % \item Each node encapsulates one sub-task: LLM calls, calculations, tool invocations
+        \item Each node encapsulates one sub-task: an LLM call, an API call, a calculation, even a whole agent
         \item \textbf{Edges (E):} Directed connections determining execution flow between nodes
         \item Edges can be linear or conditional routes based on current state
-        \item \textbf{State (S):} The shared context object, a Pydantic model, that flows through every node
+        % [upgrade-deck: commented out 2026-10-19 | Task 1 | state is a declared schema, Pydantic is one option]
+        % \item \textbf{State (S):} The shared context object, a Pydantic model, that flows through every node
+        \item \textbf{State (S):} The shared context object that flows through every node, declared as a schema (Pydantic, \texttt{TypedDict} or dataclass)
         % \item State enables context and memory across workflow
         % \item StateGraph ties everything together with designated START and END nodes
         % \item Handles interactive, conditional loops that static chains struggle with
@@ -254,7 +288,9 @@
 \begin{minipage}{0.56\linewidth}
       \begin{itemize}
         \item The \textbf{state} is one context object that flows through every node.
-        \item It is a \textbf{Pydantic} class: a Python data model with typed, validated fields.
+        % [upgrade-deck: commented out 2026-10-19 | Task 1 | state is a declared schema, Pydantic is one option]
+        % \item It is a \textbf{Pydantic} class: a Python data model with typed, validated fields.
+        \item A declared schema: here a \textbf{Pydantic} class (\texttt{TypedDict} also works).
         \item A node receives the state and returns only the fields it changed.
         \item LangGraph merges the update, then passes the state on.
         \item Edges read the same object to pick the next node.
@@ -377,7 +413,10 @@ def my_node(state: AgentState) -> dict:
   \item Useful for iterative reasoning or bounded task execution.
 \end{itemize}
 
-\begin{lstlisting}[language=Python]
+% [upgrade-deck: replaced 2026-10-19 | Task 1 | node names aligned with the demo; original call was
+%  graph.add_conditional_edges("agent_node", should_continue, {"continue": "action_node", "end": END})]
+% [code-font: forced \scriptsize | overflow at the default size]
+\begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
 from langgraph.graph import END
 
 def should_continue(state):
@@ -385,11 +424,12 @@ def should_continue(state):
         return "continue"
     return "end"
 
+# graph is a StateGraph; "llm" and "tools" are node names
 graph.add_conditional_edges(
-    "agent_node",
+    "llm",
     should_continue,
     {
-        "continue": "action_node",
+        "continue": "tools",
         "end": END
     }
 )
@@ -404,7 +444,7 @@ graph.add_conditional_edges(
         \item \texttt{add\_messages} appends new messages and merges by message ID, so re-sending a message with the same ID updates it.
         \item Subclass it to add your own fields next to \texttt{messages}.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 from langgraph.graph import MessagesState
 
 class AgentState(MessagesState):
@@ -429,7 +469,8 @@ class AgentState(MessagesState):
 \begin{block}{Intuition}
 \small Overwrite replaces the page; a reducer adds a new line to it.
 \end{block}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \tiny | overflow at the default size]
+\begin{lstlisting}[language=Python, basicstyle=\tiny\ttfamily]
 from typing import Annotated
 import operator
 from langchain_core.messages import AIMessage, AnyMessage
@@ -512,7 +553,7 @@ python -c "import langgraph, importlib.metadata as m; print(m.version('langgraph
         \item It is a Pydantic \texttt{BaseModel}: typed fields with defaults.
         \item \texttt{add\_messages} appends to \texttt{messages} instead of overwriting it.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 from typing import Annotated
 from langchain_core.messages import AIMessage, AnyMessage
 from langgraph.graph.message import add_messages
@@ -528,7 +569,7 @@ class EmailState(BaseModel):
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Node Functions: Read and Classify}
-      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+      \begin{lstlisting}[language=Python]
 from llm_config import get_llm   # the one place to change the model
 
 llm = get_llm()                  # default: a small local model, no key
@@ -552,7 +593,7 @@ def classify_email(state: EmailState) -> dict:
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Node Functions: Handle Spam and Draft}
-      \begin{lstlisting}[language=Python, basicstyle=\tiny]
+      \begin{lstlisting}[language=Python]
 def handle_spam(state: EmailState) -> dict:
     # Return ONLY the new message to be added to the state
     return {
@@ -575,7 +616,8 @@ def draft_response(state: EmailState) -> dict:
         \item \texttt{StateGraph(EmailState)} declares the context object the whole graph shares.
         \item The routing function reads the state; the \textbf{path map} turns its output into a node name.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \scriptsize | overflow at the default size]
+\begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
 from langgraph.graph import StateGraph, START, END
 
 workflow = StateGraph(EmailState)
@@ -747,7 +789,7 @@ Code: https://github.com/rajib76/multi\_agent/01\_how\_to\_langgraph\_example\_0
       \end{itemize}
 {\tiny (Ref: Building AI Agents with LangGraph: A Practical Guide - DEV Community)}
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 from langgraph.types import interrupt, Command
 from langchain_core.messages import AIMessage
 
@@ -798,7 +840,7 @@ app.invoke(Command(resume={"approved": True}), config=config)
 %         \item \textbf{Long-term (cross-session)}: a durable backend (SQLite, Postgres) survives restarts and can be shared across threads.
 %         \item Same \texttt{thread\_id} means the agent remembers; a new one starts fresh.
 %       \end{itemize}
-% \begin{lstlisting}[language=Python, basicstyle=\tiny]
+% \begin{lstlisting}[language=Python]
 % from langgraph.checkpoint.memory import MemorySaver
 % app = workflow.compile(checkpointer=MemorySaver())
 % 

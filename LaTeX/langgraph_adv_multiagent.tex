@@ -45,7 +45,8 @@ A subgraph is a compiled graph that is used as a node in a larger graph.
 
 A subgraph is built exactly like any graph: a \texttt{StateGraph}, nodes, edges, then \texttt{compile()}.
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \scriptsize | overflow at the default size]
+\begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 
@@ -75,7 +76,7 @@ content_graph = content_builder.compile()     # usable as a node
 
 Each subgraph declares its own state; nodes return updates and never mutate the incoming state.
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 class AnalyticsState(TypedDict):
     final_content: str
     metrics: dict
@@ -97,7 +98,7 @@ analytics_graph = analytics_builder.compile()
 
 The parent shares state keys with its subgraphs (\texttt{final\_content} here), so compiled subgraphs plug in directly as nodes.
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 class MarketingState(TypedDict):
     topic: str
     draft: str
@@ -126,7 +127,7 @@ result = marketing_app.invoke({"topic": "LangGraph"})
         \item \textbf{Different schemas}: call the subgraph from a wrapper node and map fields in and out.
         \item Keep the interface small: pass only the fields the next stage needs.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 def prepare_data(state: MarketingState):
     # Reshape the output of one stage for the next stage
     return {"metrics": {"content_type": "post",
@@ -142,7 +143,8 @@ def call_analytics(state: MarketingState):
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Practical Case: Marketing Agent, Content Subgraph}
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \scriptsize | overflow at the default size]
+\begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
 class CampaignState(TypedDict):
     audience: str
     platform: str
@@ -176,7 +178,7 @@ content_sub = content_b.compile()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Practical Case: Marketing Agent, Analytics Subgraph}
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 def analyze_performance(state: CampaignState):
     m = calculate_metrics(state["final_content"])
     return {"analytics": {"engagement_score": m["engagement"],
@@ -199,7 +201,7 @@ analytics_sub = analytics_b.compile()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Practical Case: Marketing Agent, Main Workflow}
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+\begin{lstlisting}[language=Python]
 def setup_campaign(state: CampaignState):
     # Fill in defaults for anything the caller left out
     return {"audience": state.get("audience") or "general",
@@ -296,26 +298,24 @@ print(result["recommendations"])
         \item The supervisor reads the shared state and picks the next worker, or finishes.
         \item \texttt{Command(goto=...)} performs the hand-off; workers always report back to the supervisor.
       \end{itemize}
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \tiny | overflow at the default size]
+% [code-font: blank lines removed from the listing to fit the frame]
+\begin{lstlisting}[language=Python, basicstyle=\tiny\ttfamily]
 from typing import Literal
 from pydantic import BaseModel
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.types import Command
-
 class Route(BaseModel):
     next: Literal["researcher", "coder", "FINISH"]
-
 def supervisor(state: MessagesState) -> Command[Literal["researcher", "coder", "__end__"]]:
     decision = llm.with_structured_output(Route).invoke(state["messages"])
     return Command(goto=END if decision.next == "FINISH" else decision.next)
-
 def make_worker(agent):
     def worker(state: MessagesState) -> Command[Literal["supervisor"]]:
         result = agent.invoke(state)                # an inner agent
         return Command(update={"messages": result["messages"][-1:]},
                        goto="supervisor")           # always report back
     return worker
-
 builder = StateGraph(MessagesState)
 builder.add_node("supervisor", supervisor)
 builder.add_node("researcher", make_worker(research_agent))
@@ -359,7 +359,8 @@ graph = builder.compile()
 
 Parent and subgraph have shared state keys in their state schemas. In this case, you can include the subgraph as a node in the parent graph
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \scriptsize | overflow at the default size]
+\begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
 from langgraph.graph import StateGraph, MessagesState, START
 
 # Subgraph
@@ -388,37 +389,31 @@ graph.invoke({"messages": [{"role": "user", "content": "hi!"}]})
 
 Parent graph and subgraph have different schemas (no shared state keys). In this case, you have to call the subgraph from inside a node in the parent graph
 
-\begin{lstlisting}[language=Python, basicstyle=\tiny]
+% [code-font: forced \tiny | overflow at the default size]
+% [code-font: blank lines removed from the listing to fit the frame]
+\begin{lstlisting}[language=Python, basicstyle=\tiny\ttfamily]
 from typing_extensions import TypedDict, Annotated
 from langchain_core.messages import AnyMessage
 from langgraph.graph import StateGraph, MessagesState, START
 from langgraph.graph.message import add_messages
-
 class SubgraphMessagesState(TypedDict):
     subgraph_messages: Annotated[list[AnyMessage], add_messages]
-
 # Subgraph
-
 def call_model(state: SubgraphMessagesState):
     response = model.invoke(state["subgraph_messages"])
     return {"subgraph_messages": [response]}
-
 subgraph_builder = StateGraph(SubgraphMessagesState)
 subgraph_builder.add_node("call_model_from_subgraph", call_model)
 subgraph_builder.add_edge(START, "call_model_from_subgraph")
 subgraph = subgraph_builder.compile()
-
 # Parent graph: a wrapper node maps the schemas
-
 def call_subgraph(state: MessagesState):
     response = subgraph.invoke({"subgraph_messages": state["messages"]})
     return {"messages": response["subgraph_messages"]}
-
 builder = StateGraph(MessagesState)
 builder.add_node("subgraph_node", call_subgraph)
 builder.add_edge(START, "subgraph_node")
 graph = builder.compile()
-
 graph.invoke({"messages": [{"role": "user", "content": "hi!"}]})
       \end{lstlisting}
 \end{frame}
