@@ -1,9 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{}
 \begin{center}
-{\Large ReAct Agent from Scratch with Gemini}
+{\Large ReAct Agent from Scratch with a Small Local Model}
 
-{\tiny (Ref: ReAct agent from scratch with Gemini and LangGraph - Gemini API docs)}
+{\tiny (Ref: ReAct agent from scratch with Gemini and LangGraph - Gemini API docs; here run on a small model through LM Studio)}
 \end{center}
 \end{frame}
 
@@ -26,7 +26,7 @@
 \begin{minipage}{0.56\linewidth}
       \begin{itemize}
         \item \textbf{State}: the Pydantic context object (messages and a step counter) that flows through every node.
-        \item \textbf{Node} \texttt{llm}: calls the Gemini model, which answers or asks for a tool.
+        \item \textbf{Node} \texttt{llm}: calls the chat model, which answers or asks for a tool.
         \item \textbf{Node} \texttt{tools}: runs the requested tool calls and returns \texttt{ToolMessage}s.
         \item \textbf{Conditional edge}: tool calls present \(\rightarrow\) \texttt{tools}, otherwise \(\rightarrow\) END.
         \item \textbf{Normal edge}: \texttt{tools} \(\rightarrow\) \texttt{llm}, closing the loop.
@@ -58,14 +58,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Setup}
       \begin{itemize}
-        \item Get a key from Google AI Studio and keep it in an environment variable, never in code.
+        \item Default model: a small one on your own computer, so no API key and no per-token charge.
+        \item In LM Studio, download \texttt{gemma-2-2b-it} (the Q4\_K\_M file, about 1.7 GB) and start the local server (Developer tab).
+        \item One file, \texttt{llm\_config.py}, holds the model name for every example.
       \end{itemize}
 \begin{lstlisting}[language=Python, basicstyle=\tiny]
-pip install langgraph langchain-google-genai geopy requests
+pip install langgraph langchain-openai geopy requests
 
-# Windows (PowerShell):  $env:GEMINI_API_KEY = "..."
-import os
-api_key = os.getenv("GEMINI_API_KEY")
+python llm_config.py      # prints the model ids the server offers
+# put that id in MODEL_NAME, or:  LLM_MODEL=<id>   (PowerShell: $env:LLM_MODEL = "<id>")
+# cloud back ends only: GROQ_API_KEY or GEMINI_API_KEY in the environment, never in code
 \end{lstlisting}
 \end{frame}
 
@@ -118,28 +120,22 @@ tools = [get_weather_forecast]
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Initialise Gemini and Bind the Tool}
+\begin{frame}[fragile]\frametitle{Choose the Model and Bind the Tool}
       \begin{itemize}
+        \item \texttt{get\_llm()} reads the one shared config, so no example hard-codes a model name.
         \item \texttt{bind\_tools} sends the tool schema (name, description, argument types) with every request.
-        \item The model replies with \texttt{tool\_calls} instead of text when it wants a tool.
-        \item The model name is a constant at the top of the file; the API key stays in the environment.
+        \item A model that supports tools replies with \texttt{tool\_calls} instead of text. A small model may answer in plain text instead: always test this step first.
       \end{itemize}
 \begin{lstlisting}[language=Python, basicstyle=\tiny]
-from langchain_google_genai import ChatGoogleGenerativeAI
+from llm_config import get_llm      # MODEL_NAME lives in llm_config.py
 
-GEMINI_MODEL = "gemini-3.8-flash"   # change here if the name changes
-
-llm = ChatGoogleGenerativeAI(
-    model=GEMINI_MODEL,
-    temperature=1.0,
-    max_retries=2,
-    google_api_key=api_key,
-)
+llm = get_llm()                     # default: small model in LM Studio
 model = llm.bind_tools(tools)
 
 res = model.invoke("What is the weather in Berlin on 2026-10-15?")
 print(res.tool_calls)
 # [{'name': 'get_weather_forecast', 'args': {...}, 'id': '...'}]
+# empty list: the model answered in text, so it did not use the tool
 \end{lstlisting}
 \end{frame}
 
@@ -266,27 +262,22 @@ for state in graph.stream(state, stream_mode="values"):
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Switching the Model Provider}
+\begin{frame}[fragile]\frametitle{One Config, Any Model}
       \begin{itemize}
         \item Only the model line is provider-specific; state, nodes and edges stay the same.
-        \item While developing, test on a fast open-weight model, then flip to Gemini.
+        \item Change \texttt{MODEL\_NAME} in \texttt{llm\_config.py}, or set an environment variable, and every example follows.
       \end{itemize}
 \begin{lstlisting}[language=Python, basicstyle=\tiny]
-GROQ_MODEL = "openai/gpt-oss-20b"   # open-weight model on Groq
-GEMINI_MODEL = "gemini-3.8-flash"
+# llm_config.py (shortened)
+PROVIDER   = os.getenv("LLM_PROVIDER", "lmstudio")   # lmstudio | ollama | groq | gemini
+MODEL_NAME = os.getenv("LLM_MODEL") or DEFAULT_MODELS[PROVIDER]
+#   lmstudio -> "gemma-2-2b-it"   (small, local, free)
+#   groq     -> "openai/gpt-oss-20b"   (needs GROQ_API_KEY)
 
-def get_llm(provider):
-    if provider == "groq":
-        from langchain_groq import ChatGroq
-        return ChatGroq(model=GROQ_MODEL, temperature=0)
-    if provider == "gemini":
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        return ChatGoogleGenerativeAI(
-            model=GEMINI_MODEL,
-            google_api_key=os.getenv("GEMINI_API_KEY"))
-    raise ValueError(provider)
+def get_llm(provider=None, temperature=None, model=None): ...
 
-graph = build_graph(get_llm("groq"))   # flip to "gemini"
+graph = build_graph(get_llm())                  # the model comes from the config
+# LLM_PROVIDER=groq python react_agent.py       # same graph, another back end
 \end{lstlisting}
 \end{frame}
 
@@ -320,7 +311,7 @@ graph = workflow.compile()
 from langchain.agents import create_agent
 
 agent = create_agent(
-    model=get_llm("gemini"),
+    model=get_llm(),
     tools=[get_weather_forecast],
     system_prompt="You are a concise weather assistant.",
 )
@@ -363,13 +354,34 @@ def should_continue(state: AgentState):
       \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Frugal AI: Same Graph, Smaller Model}
+      \begin{itemize}
+        \item The graph did not change when the model went from a cloud API to a file on your laptop. Only the model line did.
+        \item What you gain: no per-token charge, no key, the data stays on the machine, and it works offline.
+        \item What you check: does the small model call the tool, follow the format and stay in the step limit? Test it on your task before you trust it.
+        \item Known limits of this particular model: \texttt{gemma-2-2b-it} has no system role in LM Studio's Gemma preset, so system text is folded into the first user message (\texttt{fold\_system\_prompt} in the config), and neither model card mentions tool calling.
+        \item A fixed workflow with a small model is the frugal default; a free-roaming agent needs a stronger model.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Where to Go Next: FrugalAI}
+      \begin{itemize}
+        \item \textbf{FrugalAI repository}: measured benchmarks and recipes for small models on old laptops and Raspberry Pi, with a small harness to measure your own device (tokens per second, memory).
+        \item \textbf{Awesome list}: a curated list of frugal AI efforts by platform (old laptop, Raspberry Pi, phone, microcontroller, browser). Entries must be free to use, use a downloadable model, charge no per-token fee, and say what they were run on.
+        \item \textbf{Contribute}: run something frugal? Add it to the list, or add one measurement from your own device.
+        \item Students and educators are welcome to join.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Takeaways}
       \begin{itemize}
         \item \textbf{State is the context object}: one Pydantic model flows through every node.
         \item \textbf{Nodes are plain functions}: read the state, return only what changed.
         \item \textbf{Edges decide}: one conditional edge turns a chain into a Think, Act, Observe loop.
-        \item \textbf{The model is swappable}: Gemini or an open-weight model on Groq, same graph.
+        \item \textbf{The model is swappable}: a small local model, Groq or Gemini, same graph, one config.
         \item \textbf{Build it once, then use the prebuilt}: \texttt{ToolNode} or \texttt{create\_agent}.
       \end{itemize}
 \end{frame}

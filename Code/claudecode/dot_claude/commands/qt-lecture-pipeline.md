@@ -33,23 +33,21 @@ Whenever this command (or anything else) adds or edits a deck stub of the course
 course Booklet (`make_booklet.bat` in `LaTeX/fdps/QT-0N/`) and copying the PDF to
 `C:\Users\yoges\Desktop\`, overwriting the old file. List the Desktop file and confirm its size and
 timestamp before reporting. Compile the Booklet only, never the whole-course Presentation deck. This holds
-at every stage below, including the fixes from the Opus pass and from the author's review.
+at every stage below, including the fixes from the author's review.
 
-## Model split and review order
+## Review order
 
-Most steps run on Sonnet. One step is the Opus step and it matters most: the factual-correctness pass on
-the decks. The order is fixed:
+Every step runs on Sonnet. The order is fixed:
 
 - Author and compile the stubs (Sonnet).
-- Opus factual pass on the decks, before the author reads anything.
 - The author reads the Booklet (and the decks) by hand and writes comments.
-- Every correction, from Opus or from the author, goes into the deck stubs only.
+- Every correction goes into the deck stubs only.
 - `/upgrade-deck` (Sonnet).
 - Only then regenerate the derived copies (Sonnet): recompile the cheat sheets, lecture decks and Booklet
   (they `\input` the same stubs, so they follow the stubs automatically), then sync the LMS pages and the
   textbook sections.
 
-Do not stage the LMS or draft the textbook before the deck has passed the Opus pass and the author's
+Do not stage the LMS or draft the textbook before the deck has passed the author's
 review. Any claim fixed later would then be fixed in four places. When a stub changes after the textbook
 or the LMS exists, re-sync them: run `/qt-draft-textbook` for the book, update the LMS page, and report
 the LMS and PDF changes separately.
@@ -174,33 +172,12 @@ Booklet as a smoke test of one seminar.
 - Check cheat sheets separately: no `media9` or `multimedia`, wide tables resized, nothing cut off.
 - Re-derive every number in every diagram and worked example, as described above.
 
-## Opus factual pass on the decks
-
-After the compile checks and before the author reads the decks, tell the user that the seminar is ready for
-the Opus pass, and ask them to run it in an Opus session (for example `/model opus`, then ask for a factual
-review of this seminar's stubs). Do not skip it, and do not run it on Sonnet. If the user asks you to launch
-it yourself, start a subagent with `model: opus` and paste into its prompt the rules of this command that
-it needs, because a subagent does not read `CLAUDE.md`. The pass is read-only on everything except the
-stubs, and it works like this:
-
-- Check every claim, number, formula, circuit, code output, date, name and reference in each stub of the
-  seminar against a source: the Notes file, a fetched page, a paper identified through the arXiv API, or a
-  run. Re-derive every worked example.
-- Check scope against the content plan row and the AICTE syllabus, depth against the course, and
-  consistency against the overlap map and the stubs of other courses.
-- List the findings with the stub, frame and the evidence for each, ranked by severity, and mark what is
-  confirmed and what is only plausible.
-- Fix the confirmed errors in the stubs, with the author's confirmation for any change of meaning or scope.
-  Recompile and re-check what changed. Leave an unverifiable claim flagged, not stated.
-- Report which derived artifacts will need a re-sync, which is every artifact after this point.
-
 ## Stop for the author's manual review
 
-When the Opus pass is done, tell the user which PDFs are compiled and where, and ask them to review the
+When the stubs are compiled, tell the user which PDFs are compiled and where, and ask them to review the
 Booklet by hand (and the decks). The Booklet is the best view for a read-through. Wait for their comments.
 Apply every comment as a real fix in the deck stub, never in a derived copy, recompile the drivers and
-re-check. Repeat until the author is satisfied. A change of substance after the Opus pass may deserve a
-second, small Opus check; say so to the user. Then, and only then, continue.
+re-check. Repeat until the author is satisfied. Then, and only then, continue.
 
 Do not run `/upgrade-deck` before this point.
 
@@ -215,7 +192,7 @@ Address what it flags, recompile and re-verify.
 ## Stage the LMS pages
 
 The LMS follows the QT-03 way: thin pages, with the teaching content staying in the deck. Do this only
-after the Opus factual pass and the author's manual review are both done.
+after the author's manual review is done.
 
 - Copy each approved lecture Presentation PDF (not the cheat sheet) into `LMS/QT-0N/static/`.
 - Fill in `LMS/QT-0N/qt0N_X_Y_Z__content.html` for each lecture: an `<h2>` with the lecture title only,
@@ -243,7 +220,7 @@ rules. The summary:
 - Compile the interior driver and verify it as above. The book never carries a claim that the deck does
   not.
 
-Do this only for the lectures whose stubs have passed the Opus factual pass and the author's review.
+Do this only for the lectures whose stubs have passed the author's review.
 
 ## Manual steps for the user: list them, never run them
 

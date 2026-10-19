@@ -492,11 +492,15 @@ Node A returns \texttt{\{"notes": ["a"]\}}, then Node B returns \texttt{\{"notes
 \begin{frame}[fragile]\frametitle{Installation}
 % [upgrade-deck: commented out 2026-10-14 | Task 1 | LangGraph 1.0 needs Python 3.10+, and the tutorial also needs langchain-groq and a key]
 % LangGraph requires Python 3.8 or later.
-LangGraph 1.0 requires Python 3.10 or later. The tutorial calls a Groq-hosted model, so set your Groq key as an environment variable first.
+% [config: 2026-10-19 | the examples now take the model from llm_config.py; default is a small local model, so no key. The Groq-only setup is kept as the cloud option below.]
+LangGraph 1.0 requires Python 3.10 or later. The examples get their model from one config file (\texttt{llm\_config.py}). The default is a small model running in LM Studio on your own computer: no key, no per-token charge. For a cloud model, install its package and set its key as an environment variable.
 
       \begin{lstlisting}[language=bash]
-pip install -U langgraph langchain-groq
-export GROQ_API_KEY="..."        # PowerShell: $env:GROQ_API_KEY = "..."
+pip install -U langgraph langchain-openai     # local model (LM Studio)
+python llm_config.py                          # shows the model ids the server offers
+
+# cloud option:  pip install -U langchain-groq
+# export GROQ_API_KEY="..."   (PowerShell: $env:GROQ_API_KEY = "...")  and  LLM_PROVIDER=groq
 
 python -c "import langgraph, importlib.metadata as m; print(m.version('langgraph'))"
       \end{lstlisting}
@@ -525,10 +529,9 @@ class EmailState(BaseModel):
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Node Functions: Read and Classify}
       \begin{lstlisting}[language=Python, basicstyle=\tiny]
-import os
-from langchain_groq import ChatGroq
+from llm_config import get_llm   # the one place to change the model
 
-llm = ChatGroq(model="openai/gpt-oss-20b")
+llm = get_llm()                  # default: a small local model, no key
 
 # This node doesn't modify the state, so it can just return an empty dictionary
 def read_email(state: EmailState) -> dict:

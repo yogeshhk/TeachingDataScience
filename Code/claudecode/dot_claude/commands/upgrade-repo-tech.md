@@ -55,6 +55,7 @@ Run each of the following checks across all relevant files. Do NOT fix anything 
 ### 2a. Technical Accuracy
 - [ ] Is the logic in each file correct and conceptually sound?
 - [ ] Are there bugs, off-by-one errors, incorrect assumptions, or wrong API usage?
+- [ ] Fact-check every factual claim, number, version, date and reference in docs and code comments against a source or a run. Leave an unverifiable claim flagged, not stated. No special model is needed.
 - [ ] Are there any files with significant technical issues worth flagging?
 
 ### 2b. Redundancy

@@ -27,14 +27,20 @@ Step-by-step progression from simple graphs to production agent patterns:
 | `jamesbriggs_01_gpt_4o_research_agent.ipynb` | GPT-4o powered research agent |
 | `agentcon_workflow_automation.py` | AgentCon workflow demo |
 
-### ReAct agent from scratch (Groq or Gemini)
+### One place to choose the model, and a ReAct agent from scratch
 | File | Concept |
 |------|---------|
-| `gemini/react_agent.py` | ReAct loop (llm node, tool node, router) with a `--provider groq\|gemini` switch |
+| `llm_config.py` | The single place to choose the chat model for the seminar examples (`MODEL_NAME`, or the `LLM_MODEL` environment variable). Default: a small local model in LM Studio, no key and no per-token charge. Run `python llm_config.py` to see the model ids your server offers |
+| `test_llm_config.py` | Offline tests for the config (`pytest test_llm_config.py`) |
+| `gemini/react_agent.py` | ReAct loop (llm node, tool node, router); the model comes from `llm_config.py`, with `--provider` and `--model` switches |
 | `gemini/test_react_agent.py` | Mocked tests, no network or API keys needed (`pytest gemini/`) |
 
-Keys come from `GROQ_API_KEY` / `GEMINI_API_KEY`; model names are constants at the top of `react_agent.py`.
-Backs the "ReAct Agent from Scratch with Gemini" section of the LangGraph seminar deck.
+Default setup: download `gemma-2-2b-it` (Q4_K_M, about 1.7 GB) in LM Studio, start its local server, run
+`python llm_config.py` and set `MODEL_NAME` to the id it prints. Providers: `lmstudio` (default), `ollama`,
+`groq`, `gemini`; the last two need `GROQ_API_KEY` / `GEMINI_API_KEY` in the environment. Using the config:
+`keerti_youtube_introduction.py`, `agentcon_workflow_automation.py` and `gemini/react_agent.py`. The
+codebasics notebooks and the `langgraphgroq/` project keep their own models. The `gemini/` folder name is
+historical: the seminar deck first showed this loop with Gemini.
 
 ### Consolidated from Code/agents/ (learning notebooks + CrewAI-in-LangGraph hybrids)
 | File | Concept |

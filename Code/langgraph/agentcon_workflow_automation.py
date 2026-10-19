@@ -1,7 +1,7 @@
 from typing import List, Dict
 from pydantic import BaseModel
 import os
-from langchain_groq import ChatGroq
+from llm_config import get_llm   # the one place to change the model (default: a small local model)
 from langgraph.graph import StateGraph, START, END
 
 class EmailState(BaseModel):
@@ -11,8 +11,8 @@ class EmailState(BaseModel):
     draft_response: str = ""
     messages: List[Dict[str, str]] = []
   
-# 
-llm = ChatGroq(model="openai/gpt-oss-20b")
+#
+llm = get_llm()
 
 def read_email(state: EmailState) -> EmailState:
     return state

@@ -1,6 +1,6 @@
 ---
 name: coep-session-pipeline
-description: Runs the repeatable pipeline for one session of the MLCoEP course (AI-ML for Mechanical Engineers, 20 one-hour sessions at CoEP) in the TeachingDataScience repo. Grounds in the repo rules, plans sourcing and waits for approval, authors or revises the session's topic files with verified numbers and mechanical-engineering examples, compiles through the per-session drivers using the copy, compile, verify, re-retire procedure, asks for an Opus factual pass, waits for the author's own review, runs /upgrade-deck, and delivers the PDFs to the agreed folders. Use when the user asks to "develop MLCoEP session N", "revise the CoEP session on X", "build out the next CoEP session", or calls /coep-session-pipeline. COEP-specific: only for the TeachingDataScience repo. Not for the quantum courses (use /qt-lecture-pipeline).
+description: Runs the repeatable pipeline for one session of the MLCoEP course (AI-ML for Mechanical Engineers, 20 one-hour sessions at CoEP) in the TeachingDataScience repo. Grounds in the repo rules, plans sourcing and waits for approval, authors or revises the session's topic files with verified numbers and mechanical-engineering examples, compiles through the per-session drivers using the copy, compile, verify, re-retire procedure, waits for the author's own review, runs /upgrade-deck, and delivers the PDFs to the agreed folders. Use when the user asks to "develop MLCoEP session N", "revise the CoEP session on X", "build out the next CoEP session", or calls /coep-session-pipeline. COEP-specific: only for the TeachingDataScience repo. Not for the quantum courses (use /qt-lecture-pipeline).
 ---
 
 # COEP Session Pipeline (MLCoEP, TeachingDataScience)
@@ -116,23 +116,12 @@ Compile one session at a time with its own drivers. Do **not** compile the combi
 - When the checks are done, move the two drivers back into `_retired/mlcoep_session_drivers/` and delete
   all build litter (`.aux .log .nav .out .snm .toc .vrb`) and any PDF left beside the sources in `LaTeX/`.
 
-## Opus factual pass
-
-Before the author reads the session, ask the user to run the factual-correctness pass in an Opus session
-(`/model opus`), or, if the user asks you to, start a subagent with `model: opus` and paste into its prompt
-the rules of this command that it needs, since a subagent does not read `CLAUDE.md`. The pass is read-only
-except for the topic files. It checks every claim, formula, number, library behaviour, dataset statement and
-mechanical-engineering fact against a source or a run, re-derives each worked example, lists findings by
-severity with evidence, and fixes the confirmed errors in the topic files (asking the author before a
-change of meaning or scope). Recompile and re-verify what changed. This is the step that matters most;
-everything else runs on Sonnet.
-
 ## The author's review
 
 Tell the user which PDFs are ready and where. Wait for their own read-through. Apply every comment as a
 real fix in the topic file, mirror it to the `_short` sibling, recompile with the procedure above and
-re-check. Repeat until the author is satisfied. A change of substance after the Opus pass may deserve a
-second, small Opus check.
+re-check. Repeat until the author is satisfied. A separate model-based factual review is not part of this
+pipeline; the user asks for one by design when they want it.
 
 ## Run `/upgrade-deck`
 

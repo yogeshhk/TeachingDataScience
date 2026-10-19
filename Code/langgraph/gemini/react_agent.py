@@ -1,34 +1,37 @@
-"""ReAct agent from scratch with LangGraph (provider switch: Groq or Gemini).
+"""ReAct agent from scratch with LangGraph, on a small local model by default.
 
 Pattern: LLM node -> (tool calls?) -> tool node -> LLM node ... -> final answer.
-Same graph, two back ends. Pick one with --provider or the LLM_PROVIDER env var:
+The model comes from ../llm_config.py, the one place to change it. Default: a small model in LM Studio
+(for example gemma-2-2b-it), so no API key and no per-token charge:
 
-    python react_agent.py --provider groq   --question "Weather in Pune on 2026-10-20?"
-    python react_agent.py --provider gemini --question "Is Munich warmer than Berlin tomorrow?"
+    python react_agent.py --question "Weather in Pune on 2026-10-20?"
+    python react_agent.py --provider groq   --question "Is Munich warmer than Berlin tomorrow?"
+    python react_agent.py --model qwen/qwen3-1.7b --question "Weather in Berlin tomorrow?"
 
-API keys are read from the environment (never put keys in code):
-    GROQ_API_KEY, GEMINI_API_KEY
-
-Models and the cycle limit are the constants below; edit them here.
+Other back ends need keys in the environment (never put keys in code): GROQ_API_KEY, GEMINI_API_KEY.
+The cycle limit is MAX_STEPS below. The folder is still called gemini because the seminar deck first
+showed this loop with Gemini.
 
 Ref: "ReAct agent from scratch with Gemini and LangGraph", Gemini API docs.
 """
 import argparse
 import json
-import os
+import sys
 from datetime import date
+from pathlib import Path
 from typing import Annotated
 
 import requests
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # find llm_config.py in the folder above
+from llm_config import PROVIDER, PROVIDERS, get_llm  # noqa: E402
 from langchain_core.messages import AnyMessage, ToolMessage
 from langchain_core.tools import tool
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 
-GROQ_MODEL = "openai/gpt-oss-20b"   # open-weight model served by Groq
-GEMINI_MODEL = "gemini-3.8-flash"   # name taken from the Gemini API docs
-MAX_STEPS = 6                       # cycle limit: stop endless tool loops
+MAX_STEPS = 6   # cycle limit: stop endless tool loops
 
 
 # ---------------------------------------------------------------- state
@@ -104,30 +107,6 @@ def get_weather_forecast(location: str, date: str) -> str:
 TOOLS = [get_weather_forecast]
 
 
-# ---------------------------------------------------------------- model
-def get_llm(provider):
-    """Build the chat model for the chosen provider (imports are lazy)."""
-    provider = provider.lower()
-    if provider == "groq":
-        from langchain_groq import ChatGroq
-
-        return ChatGroq(
-            model=GROQ_MODEL,
-            temperature=0,
-            max_retries=2,
-        )
-    if provider == "gemini":
-        from langchain_google_genai import ChatGoogleGenerativeAI
-
-        return ChatGoogleGenerativeAI(
-            model=GEMINI_MODEL,
-            temperature=1.0,
-            max_retries=2,
-            google_api_key=os.getenv("GEMINI_API_KEY"),
-        )
-    raise ValueError(f"Unknown provider: {provider!r} (use 'groq' or 'gemini')")
-
-
 # ---------------------------------------------------------------- graph
 def build_graph(model, tools=None, max_steps=None):
     """Compile the ReAct graph for any chat model that supports bind_tools."""
@@ -172,8 +151,8 @@ def build_graph(model, tools=None, max_steps=None):
 
 
 # ---------------------------------------------------------------- run
-def run(question, provider):
-    graph = build_graph(get_llm(provider))
+def run(question, provider=None, model=None):
+    graph = build_graph(get_llm(provider, model=model))
     state = {"messages": [("user", question)], "number_of_steps": 0}
     last = None
     for state in graph.stream(state, stream_mode="values"):
@@ -184,11 +163,8 @@ def run(question, provider):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument(
-        "--provider",
-        default=os.getenv("LLM_PROVIDER", "groq"),
-        choices=["groq", "gemini"],
-    )
+    parser.add_argument("--provider", default=PROVIDER, choices=list(PROVIDERS))
+    parser.add_argument("--model", default=None, help="model id; default comes from llm_config.py")
     parser.add_argument(
         "--question",
         default=f"What is the weather in Berlin on {date.today().isoformat()}?",
@@ -200,7 +176,7 @@ def main():
         load_dotenv()
     except ImportError:
         pass
-    run(args.question, args.provider)
+    run(args.question, args.provider, args.model)
 
 
 if __name__ == "__main__":

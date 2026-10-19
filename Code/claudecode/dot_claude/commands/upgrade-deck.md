@@ -119,6 +119,7 @@ Work through each task in order. Do NOT skip tasks or merge them.
 ### Task 1: Technical Accuracy
 
 - Review each slide for correctness and conceptual clarity.
+- **Fact-check, not only review:** check every claim, number, formula, name, date and reference against a source (a fetched page, a paper, the notes) or a run, and re-derive each worked example. Leave an unverifiable claim flagged, not stated. No special model is needed for this.
 - Flag slides with significant technical issues, citing both the **frame title** and the **slide number** (inferred from `.tex` order if no PDF is available).
 - **Action:** Provide corrected `.tex` content for each flagged slide.
 

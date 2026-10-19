@@ -1,12 +1,12 @@
 # https://www.youtube.com/watch?v=wvNgKx2e_LA
 
 import os
-from langchain_groq.chat_models import ChatGroq
+from llm_config import get_llm   # the one place to change the model (default: a small local model)
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langchain_core.prompts import ChatPromptTemplate
 
-llm = ChatGroq(model="openai/gpt-oss-20b")
+llm = get_llm()
 
 class State(TypedDict):
   application: str

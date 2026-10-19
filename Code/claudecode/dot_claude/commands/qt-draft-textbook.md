@@ -34,14 +34,12 @@ whole-course Presentation deck.
 
 ## When to run this command
 
-Draft a chapter only after its stubs have passed the Opus factual pass and the author's manual review of
-the Booklet. Before that point a fix would have to be made in four places. If the user asks for a draft
+Draft a chapter only after the author's manual review of the Booklet is done. Before that point a fix would have to be made in four places. If the user asks for a draft
 earlier, say so, and mark the sections in your report as "drafted before review: expect a re-sync".
 
-After a deck change, run this command again on the affected chapter. Corrections from the Opus pass or from
-the author arrive as stub changes; the drift script lists the sections that went stale. Re-sync those
-sections as an updater, set the new `synced` date, and report them. The Opus pass is the most important
-correctness step. This command is a Sonnet step and adds no new facts of its own.
+After a deck change, run this command again on the affected chapter. Corrections from the author arrive as
+stub changes; the drift script lists the sections that went stale. Re-sync those sections as an updater,
+set the new `synced` date, and report them. This command adds no new facts of its own.
 
 ## Ground yourself first, every time
 
@@ -174,7 +172,7 @@ Report, in this order:
   not into silent fixes.
 - Unverified items from the Notes file that you left flagged or left out.
 - The figures created, the page count, and the drift script result.
-- What is still open: sections not drafted, exercises without answers, the Opus review.
+- What is still open: sections not drafted, exercises without answers.
 
 Update `LaTeX/textbooks/TODO.md` only for an item that is still open and actionable. Write no history there.
 
