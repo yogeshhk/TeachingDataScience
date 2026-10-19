@@ -34,6 +34,15 @@ Step-by-step progression from simple graphs to production agent patterns:
 | `test_llm_config.py` | Offline tests for the config (`pytest test_llm_config.py`) |
 | `gemini/react_agent.py` | ReAct loop (llm node, tool node, router); the model comes from `llm_config.py`, with `--provider` and `--model` switches |
 | `gemini/test_react_agent.py` | Mocked tests, no network or API keys needed (`pytest gemini/`) |
+| `gemini/text_react_agent.py` | ReAct with a plain-text protocol (`Action:` / `Action Input:` / `Observation:` / `Final Answer:`), no `bind_tools`, for small models that ignore tool schemas. An Action beats a Final Answer in the same reply; tool errors come back as Observation text; step limit |
+| `gemini/workflow_compare.py` | A fixed workflow, not an agent: fetch city A, fetch city B, compare in code, phrase with the model. The sentence is checked for the computed numbers, with a template fallback |
+| `gemini/test_text_react_agent.py`, `gemini/test_workflow_compare.py` | Mocked tests for the two files above |
+
+Measured with `gemma-2-2b-it` (Q4_K_M, LM Studio, temperature 0, real Open-Meteo data, 5 runs each):
+`bind_tools` called the tool in 0 of 5 tries; the text ReAct agent was right on a single-city question in
+5 of 5 but wrong on a two-city comparison in 0 of 5; the workflow gave a sentence with the right numbers in
+5 of 5 (the verdict comes from code). Lesson: with a small model, let code decide and let the model write
+the sentence. Run: `python gemini/text_react_agent.py --question "..."` and `python gemini/workflow_compare.py`.
 
 Default setup: download `gemma-2-2b-it` (Q4_K_M, about 1.7 GB) in LM Studio, start its local server, run
 `python llm_config.py` and set `MODEL_NAME` to the id it prints. Providers: `lmstudio` (default), `ollama`,

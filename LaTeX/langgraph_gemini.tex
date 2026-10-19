@@ -124,7 +124,9 @@ tools = [get_weather_forecast]
       \begin{itemize}
         \item \texttt{get\_llm()} reads the one shared config, so no example hard-codes a model name.
         \item \texttt{bind\_tools} sends the tool schema (name, description, argument types) with every request.
-        \item A model that supports tools replies with \texttt{tool\_calls} instead of text. A small model may answer in plain text instead: always test this step first.
+        \item A model that supports tools replies with \texttt{tool\_calls} instead of text. Always test this step first.
+        \item \textbf{Measured}: with \texttt{gemma-2-2b-it} the tool was called in 0 of 5 tries; it answered in plain text ("I can't provide you with a specific weather forecast"). Its model card does not promise tool calling.
+        \item So this graph, as written, does not work with this model. Two fixes follow: text ReAct, or a fixed workflow.
       \end{itemize}
 \begin{lstlisting}[language=Python, basicstyle=\tiny]
 from llm_config import get_llm      # MODEL_NAME lives in llm_config.py
@@ -135,7 +137,7 @@ model = llm.bind_tools(tools)
 res = model.invoke("What is the weather in Berlin on 2026-10-15?")
 print(res.tool_calls)
 # [{'name': 'get_weather_forecast', 'args': {...}, 'id': '...'}]
-# empty list: the model answered in text, so it did not use the tool
+# gemma-2-2b-it: []   (0 of 5 tries): it answered in text instead
 \end{lstlisting}
 \end{frame}
 
@@ -229,20 +231,21 @@ for state in graph.stream(inputs, stream_mode="values"):
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{A Real ReAct Trace}
       \begin{itemize}
-        \item Each streamed state adds one message to the context object; read it top to bottom.
+        \item A real run of the text ReAct agent with \texttt{gemma-2-2b-it}, live Open-Meteo data. Each streamed state adds one message; read it top to bottom.
         \item Two LLM calls and one tool call: \texttt{number\_of\_steps} ends at 2.
       \end{itemize}
 \begin{lstlisting}[basicstyle=\tiny\ttfamily]
-Human Message : What is the weather in Berlin on 2026-10-15?
+Human Message : What is the weather in Berlin on 2026-10-27?
 
-Ai Message    : Tool Calls: get_weather_forecast
-                  location: Berlin   date: 2026-10-15
+Ai Message    : Action: get_weather_forecast
+                Action Input: {"location": "Berlin", "date": "2026-10-27"}
 
-Tool Message  : {"location": "Berlin", "date": "2026-10-15",
-                 "min_c": 7.3, "max_c": 16.1, "mean_c": 11.4}
+Human Message : Observation: {"location": "Berlin", "date": "2026-10-27",
+                "min_c": 12.9, "max_c": 18.6, "mean_c": 15.7}
 
-Ai Message    : Forecast for Berlin on 15 Oct 2026: minimum 7.3 C,
-                maximum 16.1 C, mean 11.4 C. A mild day.
+Ai Message    : Final Answer: The weather in Berlin on 2026-10-27 will be
+                around 15.7 degrees Celsius with a minimum of 12.9 and a
+                maximum of 18.6 degrees Celsius.
 \end{lstlisting}
 \end{frame}
 
@@ -360,9 +363,75 @@ def should_continue(state: AgentState):
         \item The graph did not change when the model went from a cloud API to a file on your laptop. Only the model line did.
         \item What you gain: no per-token charge, no key, the data stays on the machine, and it works offline.
         \item What you check: does the small model call the tool, follow the format and stay in the step limit? Test it on your task before you trust it.
-        \item Known limits of this particular model: \texttt{gemma-2-2b-it} has no system role in LM Studio's Gemma preset, so system text is folded into the first user message (\texttt{fold\_system\_prompt} in the config), and neither model card mentions tool calling.
+        \item \textbf{Measured} (FrugalAI harness, LM Studio, Q4\_K\_M, 15 runs): \texttt{gemma-2-2b-it} decodes at a median of 11.9 tokens per second (range 11.4 to 12.8), with an engine memory peak of 3.2 to 3.4 GB. That is on a PC with a small GPU (2 GB), partly offloaded, not a frugal-tier device.
+        \item Observed: a system message was accepted and followed in LM Studio (one test); but the model ignored the tool schema (0 of 5).
         \item A fixed workflow with a small model is the frugal default; a free-roaming agent needs a stronger model.
       \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{A Small Model and Tools: What Happened}
+      \begin{itemize}
+        \item Real runs: live Open-Meteo data, temperature 0, 5 runs each. Successes out of 5:
+      \end{itemize}
+\begin{center}
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lcc}
+\textbf{Method} & \textbf{One city} & \textbf{Two cities} \\
+\hline
+gemma-2-2b-it, \texttt{bind\_tools} agent & 0 (no tool call) & 0 (no tool call) \\
+gemma-2-2b-it, text ReAct agent & 5 & 0 (said Munich) \\
+gemma-2-2b-it, fixed workflow, code compares & - & 5 \\
+qwen3-1.7b, \texttt{bind\_tools} agent & 5 & 5 \\
+\end{tabular}}
+\end{center}
+      \begin{itemize}
+        \item Two cities (Berlin 15.7 C, Munich 12.3 C): the text agent made both calls, then answered "Munich will be warmer".
+        \item Asked to compare two given numbers, gemma was wrong in 5 of 5 tries. When code compared and gemma wrote the sentence, the verdict was right 5 of 5, but it dropped the number until the prompt gave one example.
+        \item qwen3-1.7b (with \texttt{/no\_think}) called the tool and compared correctly; a different small model can behave very differently.
+      \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Text ReAct: Tools Without Tool Calling}
+      \begin{itemize}
+        \item No \texttt{bind\_tools}: a prompt teaches \texttt{Action:}, \texttt{Action Input:} and \texttt{Final Answer:}; the graph parses the text.
+        \item Rules a 2B model needs: an Action beats a Final Answer in the same reply; cut the reply at \texttt{Observation:}; errors come back as Observation text; a step limit.
+        \item It works for one tool call, and it still failed the two-city question. Parsing fixes format, not judgment.
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# text_react_agent.py (shortened)
+def parse_reply(text):
+    text = re.split(r"\n\s*Observation\s*:", text, maxsplit=1)[0]
+    act = _ACTION.search(text)
+    if act:                       # an Action wins over a Final Answer
+        return "action", act.group(1), raw_input(text, act)
+    fin = _FINAL.search(text)
+    return ("final", fin.group(1).strip(), "") if fin else ("none", text, "")
+
+# call_tool: bad JSON or unknown tool -> an "Observation: {error ...}" message
+# should_continue: pending Action and number_of_steps < max_steps -> "tools"
+\end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{Code Decides, the Model Talks}
+      \begin{itemize}
+        \item A fixed workflow: fetch A, fetch B, compare in code, phrase with the model. No loop, no tool calling.
+        \item Code does what must be right: fetch, compare, route, validate. The model does language.
+        \item The answer is checked for the computed numbers; if they are missing, a template sentence is used.
+        \item Live result: "Berlin is 3.4 C warmer than Munich, with a mean of 15.7 C compared to 12.3 C." (5 of 5 identical).
+      \end{itemize}
+\begin{lstlisting}[language=Python, basicstyle=\tiny]
+# START -> fetch_a -> fetch_b -> compare -> phrase -> END
+def phrase(state):
+    reply = model.invoke(PHRASE_PROMPT.format(facts=state["facts"],
+                                              diff=state["diff_c"]))
+    text = reply.content.strip()
+    if answer_ok(text, state):         # names the warmer city and the "3.4"
+        return {"answer": text, "used_fallback": False}
+    return {"answer": state["facts"], "used_fallback": True}
+\end{lstlisting}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -383,6 +452,7 @@ def should_continue(state: AgentState):
         \item \textbf{Edges decide}: one conditional edge turns a chain into a Think, Act, Observe loop.
         \item \textbf{The model is swappable}: a small local model, Groq or Gemini, same graph, one config.
         \item \textbf{Build it once, then use the prebuilt}: \texttt{ToolNode} or \texttt{create\_agent}.
+        \item \textbf{Frugal default}: a small model plus a fixed workflow; code decides, the model talks.
       \end{itemize}
 \end{frame}
 
