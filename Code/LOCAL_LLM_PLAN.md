@@ -303,6 +303,20 @@ See section 5. Revisit only on very different hardware.
 
 ---
 
+## 9. In-process Qwen3 as a Groq alternative (LangChain findings)
+
+`ChatLlamaCpp` (langchain_community, in-process) with a local `Qwen3-1.7B-Q4_K_M.gguf` is a
+drop-in for `ChatGroq` in plain multi-turn chat: see `Code/langchain/langchain_v1_models.py` and
+`Code/omni-rag/agent.py`.
+
+- Needs `llama-cpp-python>=0.3.34`, and `/no_think` appended to the prompt.
+- `bind_tools()` with `tool_choice="auto"` does not work reliably at this size; a forced
+  `tool_choice` does. `Code/langchain/langchain_v1_createagent.py` stays on `ChatGroq` for this
+  reason.
+- Opt-in, not a default.
+
+---
+
 ## Sources
 
 - [NVIDIA Nemotron 3.5 Lightning — NVIDIA Technical Blog](https://developer.nvidia.com/blog/nvidia-nemotron-3-5-lightning-delivers-fast-accurate-specialized-task-execution-for-long-running-agents/)

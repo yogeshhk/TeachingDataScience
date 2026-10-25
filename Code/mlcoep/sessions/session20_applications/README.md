@@ -54,9 +54,4 @@ Agriculture
 | Precision agriculture (K-Means) | Search for a precision agriculture dataset | https://www.kaggle.com/datasets?search=precision+agriculture |
 | Weather forecasting (LSTM) | NOAA Climate Data Online | https://www.ncdc.noaa.gov/cdo-web/ |
 
-Extra packages for the starter code on the slides, not part of `environment.yml`: `statsmodels` (the ARIMA energy assignment),
-`deap` (the genetic algorithm assignment) and `keras` with `tensorflow` (the neural network, CNN and LSTM assignments). The
-Keras snippets were run on Keras 3.7 and build without errors; the genetic algorithm snippet is an outline, not runnable as shown.
-
-The Kaggle links are search pages and need a free Kaggle login to download. Kaggle blocks scripted access, so these links were
-copied from the slides and not opened by a script; open them in a browser before class.
+Extra packages for the slide starter code, not in `environment.yml`: `statsmodels`, `deap` (its genetic algorithm snippet is an outline), and `keras` with `tensorflow`. The Kaggle links need a free login and were copied from the slides, so open them in a browser before class.

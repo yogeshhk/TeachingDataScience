@@ -14,7 +14,7 @@ Source: UCI Machine Learning Repository, "Steel Plates Faults" dataset
 
 ## Columns
 
-No header row — supply column names explicitly:
+No header row, so supply column names explicitly:
 
 ```python
 feature_names = [
@@ -30,7 +30,7 @@ fault_names = ['Pastry', 'Z_Scratch', 'K_Scatch', 'Stains', 'Dirtiness', 'Bumps'
 ```
 
 The 7 fault-type columns are mutually exclusive binary indicators (each row sums to exactly 1
-across them) — i.e. this is really a 7-class problem stored as one-hot columns. The deck uses
+across them), so this is really a 7-class problem stored as one-hot columns. The deck uses
 `K_Scatch` as a binary target (391 positive / 1550 negative, ~20% positive rate) rather than the
 full 7-class problem, to keep the same binary-classification narrative used earlier in the session.
 
@@ -46,13 +46,6 @@ df['target'] = df['K_Scatch']
 
 ## Verification
 
-Verified against `pandas`/`scikit-learn` in the `genai` conda env: 1941 rows, 0 missing values,
-7 fault columns confirmed mutually exclusive. Full pipeline re-run end to end (load, split, scale,
-baseline, filter selection, wrapper greedy-forward selection, final evaluation) reproduces every
-number on the slides exactly, including the 5-fold CV accuracies (all 27 features: 0.975, filter
-top-10: 0.949, wrapper greedy-6: 0.963) and the final confusion matrix `[[384, 4], [16, 82]]`.
-
-Note: `Bumps` was tried first as the binary target and rejected — greedy forward selection
-degenerated to always predicting the majority class (every step plateaued at exactly the 79.3%
-majority-class baseline, confusion matrix `[[385, 0], [101, 0]]`). `K_Scatch` gives a real,
-cleanly-separable classification problem instead, which is why it's the target used here.
+Check that the file loads to 1941 rows with no missing values, and that the pipeline's 5-fold CV
+accuracies and final confusion matrix match the slides. Use `K_Scatch` as the target: `Bumps` makes
+greedy forward selection collapse to the majority class.

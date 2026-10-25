@@ -7,16 +7,19 @@ Python scripts and notebooks covering Graph Neural Networks using PyTorch Geomet
 | Directory | Description |
 |-----------|-------------|
 | `pyg/` | PyTorch Geometric tutorials: GCN, GAT, GraphSAGE, message passing |
-| `odsc2021-sujitpal/` | ODSC 2021 workshop by Sujit Pal — link prediction and node classification |
+| `odsc2021-sujitpal/` | ODSC 2021 workshop by Sujit Pal: link prediction and node classification |
 | `gnn-project-deepfindr/` | End-to-end GNN project from the Deepfindr series |
 | `molecule-deepfindr/` | Molecular property prediction on graph-structured chemical data |
 
 ## Setup
 
+`pyg/` has no `environment.yml`; its `README.md` describes the `genai` conda environment and the
+PyG install steps (PyG needs torch and CUDA versions that match; see pyg.org/install).
+`molecule-deepfindr/` has its own `environment.yml`:
+
 ```bash
-conda env create -f pyg/environment.yml
-conda activate pyg
-# PyG also requires matching torch + CUDA versions — see pyg.org/install
+conda env create -f molecule-deepfindr/environment.yml
+conda activate genai
 ```
 
 ## Key Concepts

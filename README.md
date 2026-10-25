@@ -43,19 +43,7 @@ Five full courses (Machine Learning, Maths for ML, Python, Deep Learning, Genera
 
 ## Code Projects
 
-`Code/` has runnable Python/notebook projects, organized by area:
-
-| Category | Examples |
-|---|---|
-| GenAI / Agents | `langchain/`, `langgraph/`, `llamaindex/`, `crewai/`, `agents/`, `agno/`, `google-adk/` |
-| RAG Applications | `chatbot-faqs/`, `chatbot-multimodal/`, `omni-rag/`, `parsing/`, `graphrag/` |
-| LLM Fine-tuning | `fine-tuning/` |
-| Document Parsing | `docling/`, `opendataloader/` |
-| Deep Learning | `pytorch/` |
-| Classical ML | `ml/`, `math/`, `python/` |
-| NLP | `nlp/`, `dnlp/`, `spacy/` |
-| GNN | `gnn/` |
-| Indic Language | `mahamarathi/`, `sarvam/`, `orgpedia/` |
+`Code/` has runnable Python/notebook projects: GenAI and agents, RAG applications, fine-tuning, document parsing, deep learning, classical ML, NLP, GNN, Indic-language work, and the MLCoEP and DLCoEP course code. [`Code/README.md`](Code/README.md) lists every directory by area.
 
 Each project has its own `environment.yml` (conda) and, for most, a `test_*.py` suite runnable with `pytest`.
 
@@ -80,8 +68,6 @@ Requirements: a LaTeX distribution (MikTeX or TeX Live); install packages as pro
 
 - **`LaTeX/`**: `.tex` sources and images. Naming: `subject_maintopic_subtopic.tex` (e.g. `maths_linearalgebra_matrices.tex`). Driver files: `Main_[Seminar|Workshop|Course]_<Subject>_[Presentation|CheatSheet].tex`. Content hierarchy: **Course** (40hr) → **Workshop** (4-16hr) → **Seminar** (1hr) → raw topic files.
 - **`Code/`**: runnable Python/notebook files with necessary images and data, named to match their corresponding `.tex` file where applicable.
-- A `References/` directory (papers, code, slides used as source material) exists locally but isn't uploaded, since most of it belongs to others' repos rather than original work.
-
 ## How to Contribute
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md): corrections, new topics, code examples, and citation fixes are all welcome.

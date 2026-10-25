@@ -51,9 +51,7 @@ Attempt every step. If time is short, finish steps 1 to 8 first and do the K-fol
 
 1. Save your notebook as `<your Name-MIS number>_AIML_BTECH_Final.ipynb`, for example `YogeshKulkarni-112345678_AIML_BTECH_Final.ipynb`.
 2. Run **Kernel, Restart and Run All** once before saving, so every output is visible and the notebook runs without errors.
-3. Email the `.ipynb` file to the instructor and to the second examiner before the time ends:
-   - Instructors: `yhk.mech and cc ssp.mech`
-   - Subject line: `AIML_BTECH_Final_ClassTest-Oct2026`
+3. Email the `.ipynb` file to the instructor and to the second examiner before the time ends.
 
 A notebook that errors out part-way is assessed only up to the cell that fails.
 
@@ -85,4 +83,4 @@ Things that can look odd but are not your mistake:
   A kernel started outside an activated environment can fail with `DLL load failed while importing _multiarray_umath`.
 - In some environments, the first `import pandas` prints a `DLL load failed ... _multiarray_umath` message. It comes
   from the optional `numexpr` package and pandas continues without it. If it bothers you, run
-  `conda install -U numexpr` (or `pip install -U numexpr`).
+  `conda update numexpr`.

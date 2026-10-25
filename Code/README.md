@@ -53,6 +53,7 @@ conda activate <env-name>
 | Directory | Covers |
 |---|---|
 | [`pytorch/`](pytorch/) | PyTorch fundamentals: tensors, neural networks, training loops, image classification |
+| [`dlcoep/`](dlcoep/) | DLCoEP (deep learning for mechanical engineers, CoEP): CNN and RNN case-study scripts |
 | `curiosily_ai_bootcamp/` | AI Bootcamp notebooks |
 
 ## Classical ML
@@ -62,6 +63,7 @@ conda activate <env-name>
 | [`ml/`](ml/) | ~160 notebooks covering classical ML algorithms and data analysis patterns |
 | `math/` | Statistics and math tutorial notebooks (Bayes' theorem, hypothesis testing, distributions) |
 | `pandas/` | Pandas tutorial notebooks |
+| [`mlcoep/`](mlcoep/) | MLCoEP (AI-ML for mechanical engineers, CoEP): offline datasets and per-session scripts (`datasets/`, `sessions/`) |
 | `python/` | Individual Python script examples (data structures, algorithms, Big-O, graphics) |
 | [`interview/`](interview/) | Coding-interview practice: LeetCode/PyTorch/DSA exercises |
 
@@ -98,7 +100,6 @@ conda activate <env-name>
 | `chromeext/` | Chrome extension project (LifeTimer) |
 | `claudecode/` | Claude Code workshop materials, example configs, and community resources |
 | `opencode/` | OpenCode CLI demo project |
-| `reports/` | Dated repo/codebase upgrade reports |
 
 ---
 

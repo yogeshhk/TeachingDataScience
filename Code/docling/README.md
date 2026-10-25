@@ -1,174 +1,50 @@
-# 📚 Book QA System - Streamlit UI
+# Docling: Book QA and Parsing Examples
 
-A Streamlit-based web application for asking questions about PDF books using Docling for document processing and LangChain for question-answering.
+A Streamlit app for asking questions about a PDF book (Docling for parsing, LangChain and FAISS for
+retrieval, a local LLM server for answers), plus a set of small Docling example scripts and notebooks.
 
-## Features
+## Files
 
-- **PDF Upload**: Easy file upload through the sidebar
-- **Document Processing**: Uses Docling for advanced PDF processing with OCR and table structure recognition
-- **Vector Search**: FAISS-based vector search for relevant document chunks
-- **Interactive Chat**: Chat interface for asking questions about your book
-- **Source Documents**: View the source chunks used to answer each question
-- **Document Preview**: See the raw Docling markdown output in the right panel
-- **Persistent Storage**: Vector stores are saved and reused for faster subsequent loads
+| File | Purpose |
+|---|---|
+| `streamlit_app.py` | Streamlit UI: upload a PDF, chat, view source chunks and the Docling markdown |
+| `docling_book_loader.py` | `DoclingBookLoader` and `BookQASystem` classes (parsing, chunking, FAISS index, QA chain) |
+| `setup_script.py` | Installs the dependencies into the active environment |
+| `AI-Engineer-Skool_booktutor.py` | A separate book-tutor script |
+| `docling_examples_*.py` | Small examples: simple and custom conversion, tables and table export, scanned PDFs, LangChain, LlamaIndex RAG |
+| `docling.ipynb`, `mayurji_docling-*.ipynb`, `sudarshan_koirala_docling.ipynb` | Tutorial notebooks |
+| `docling-demo-project-bextuychiev/` | A third-party demo project with its own `README.md` and `requirements.txt` |
+| `data/` | Sample PDFs (including `scanned.pdf` and `table.pdf`) |
+| `scratch/` | Exported table CSV and HTML output from the examples |
 
-## Setup Instructions
+## Run
 
-### 1. Install Dependencies
-
-**Method A: Using Setup Script (Recommended)**
-```bash
-python setup.py
-```
-
-**Method B: Manual Installation**
-```bash
-# First, install specific versions to avoid conflicts
-pip install numpy==1.24.3 pandas==2.1.4 bottleneck==1.3.7
-
-# Then install remaining dependencies
-pip install -r requirements.txt
-```
-
-**Method C: Alternative Requirements File**
-```bash
-pip install -r requirements_alternative.txt
-```
-
-### 2. Set up Local LLM (Required)
-
-This application uses a local LLM server. You need to set up a local model server at `http://localhost:1234/v1`.
-
-**Option A: Using LM Studio**
-1. Download and install [LM Studio](https://lmstudio.ai/)
-2. Load your preferred model
-3. Start the local server on port 1234
-
-**Option B: Using Ollama**
-1. Install [Ollama](https://ollama.ai/)
-2. Pull a model: `ollama pull llama2`
-3. Start the server: `ollama serve`
-4. Update the API endpoint in `doclingbookloader.py` if needed
-
-### 3. Run the Application
+There is no `environment.yml` here. Create a conda environment, install the dependencies, and start the app:
 
 ```bash
+conda create -n bookqa python=3.10
+conda activate bookqa
+python setup_script.py
 streamlit run streamlit_app.py
 ```
 
-## Usage
-
-1. **Upload PDF**: Use the sidebar to upload a PDF book
-2. **Processing**: Wait for the document to be processed by Docling
-3. **Ask Questions**: Use the chat interface to ask questions about your book
-4. **View Sources**: Expand the "Source Documents" section to see relevant chunks
-5. **Preview Content**: Check the right panel to see the extracted markdown content
-
-## File Structure
-
-```
-├── streamlit_app.py          # Main Streamlit application
-├── doclingbookloader.py      # Document loader and QA system classes
-├── requirements.txt          # Python dependencies
-└── README.md                # This file
-```
+The app expects a local OpenAI-compatible LLM server at `http://localhost:1234/v1` (LM Studio, or any
+server on that port; see `Code/LOCAL_LLM_PLAN.md`). Start it before asking questions.
 
 ## Configuration
 
-### Docling Pipeline Options
+Set in `docling_book_loader.py`:
 
-The application uses the following Docling configuration:
-- **OCR**: Enabled for text extraction from images
-- **Table Structure**: Enabled with cell matching
-- **Accelerator**: Auto-detection with 8 threads
-- **Chunk Size**: 1000 characters with 200 character overlap
+- Docling pipeline: OCR on, table structure on, automatic accelerator with 8 threads
+- Chunking: 1000 characters with 200 overlap (`RecursiveCharacterTextSplitter`)
+- Retrieval: FAISS, MMR search, 5 chunks per query; the vector store is saved and reused on later loads
+- LLM: `ChatOpenAI` with model `local-model`, base URL `http://localhost:1234/v1`, temperature 0
 
-### LLM Configuration
+To use another provider, change the `ChatOpenAI` initialisation in `BookQASystem`.
 
-Current settings in `doclingbookloader.py`:
-- **Model**: `local-model`
-- **API Base**: `http://localhost:1234/v1`
-- **Temperature**: 0 (deterministic responses)
-- **Search Type**: MMR (Maximum Marginal Relevance)
-- **Retrieved Chunks**: 5 per query
+## Tips
 
-## Troubleshooting
-
-### Common Issues
-
-1. **"AttributeError: ARRAY_API not found" (Bottleneck Error)**:
-   ```bash
-   # Solution 1: Use the setup script
-   python setup.py
-   
-   # Solution 2: Manual fix
-   pip uninstall bottleneck pandas numpy -y
-   pip install numpy==1.24.3 pandas==2.1.4 bottleneck==1.3.7
-   pip install -r requirements.txt
-   
-   # Solution 3: Alternative approach
-   pip install -r requirements_alternative.txt
-   ```
-
-2. **"Connection Error"**: Ensure your local LLM server is running
-3. **"FAISS Import Error"**: Install with `pip install faiss-cpu`
-4. **"Tokenizer Warnings"**: These are normal and don't affect functionality
-5. **"Memory Issues"**: Try reducing chunk size or using smaller models
-
-### Environment Issues
-
-If you're having persistent dependency conflicts:
-
-```bash
-# Create a fresh conda environment
-conda create -n bookqa python=3.10
-conda activate bookqa
-
-# Then run the setup
-python setup.py
-```
-
-### Performance Tips
-
-- **First Load**: Initial processing takes time but creates a reusable index
-- **Subsequent Loads**: Vector stores are cached for faster startup
-- **Large Files**: Consider splitting very large PDFs for better performance
-
-## Customization
-
-### Change LLM Provider
-
-To use a different LLM provider, modify the `ChatOpenAI` initialization in `doclingbookloader.py`:
-
-```python
-# For OpenAI
-llm = ChatOpenAI(
-    model="gpt-3.5-turbo",
-    openai_api_key="your-api-key",
-    temperature=0,
-)
-
-# For Anthropic
-from langchain_anthropic import ChatAnthropic
-llm = ChatAnthropic(
-    model="claude-3-sonnet-20240229",
-    anthropic_api_key="your-api-key",
-    temperature=0,
-)
-```
-
-### Adjust Chunk Settings
-
-Modify the text splitter parameters in `doclingbookloader.py`:
-
-```python
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1500,        # Increase for more context
-    chunk_overlap=300,      # Increase for better continuity
-    separators=["\n\n", "\n", " ", ""]
-)
-```
-
-## License
-
-This project is open source and available under the MIT License.
+- If the Bottleneck "ARRAY_API not found" error appears, rerun `python setup_script.py` in a fresh
+  conda environment.
+- A connection error means the local LLM server is not running.
+- The first load of a book is slow; later loads reuse the saved index.

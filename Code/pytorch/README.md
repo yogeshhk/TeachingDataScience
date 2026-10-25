@@ -1,8 +1,11 @@
 # PyTorch Examples
 
-Scripts and notebooks covering PyTorch fundamentals: tensors, neural networks, training loops, and image classification.
+Notebooks covering PyTorch fundamentals: tensors, neural networks, training loops, and image classification.
+Each part has an Exercises notebook and a Solution notebook (Part 6 has a single notebook).
 
 ## Setup
+
+There is no `environment.yml` here. Create a conda environment and install PyTorch and torchvision:
 
 ```bash
 conda create -n pytorch python=3.10
@@ -14,17 +17,13 @@ conda install pytorch torchvision -c pytorch
 
 | File | Description |
 |------|-------------|
-| `dl_pytorch_tensors.ipynb` | Tensor operations and autograd basics |
-| `dl_pytorch_neural_network.ipynb` | Building a simple feedforward network |
-| `dl_pytorch_training.ipynb` | Training loop with loss, optimizer, and validation |
-| `dl_pytorch_fashionmnist_*.ipynb` | Fashion-MNIST classification series |
+| `dl_pytorch_Part 1 - Tensors in PyTorch (Exercises / Solution).ipynb` | Tensor operations and autograd basics |
+| `dl_pytorch_Part 2 - Neural Networks in PyTorch (Exercises / Solution).ipynb` | Building a feedforward network |
+| `dl_pytorch_Part 3 - Training Neural Networks (Exercises / Solution).ipynb` | Training loop with loss and optimizer |
+| `dl_pytorch_Part 4 - Fashion-MNIST (Exercises / Solution).ipynb` | Fashion-MNIST classification |
+| `dl_pytorch_Part 5 - Inference and Validation (Exercises / Solution).ipynb` | Inference and validation |
+| `dl_pytorch_Part 6 - Saving and Loading Models.ipynb` | Model persistence |
+| `dl_pytorch_Part 7 - Loading Image Data (Exercises / Solution).ipynb` | Loading image data |
+| `dl_pytorch_Part 8 - Transfer Learning (Exercises / Solution).ipynb` | Transfer learning |
 | `dl_pytorch_fc_model.py` | Reusable fully-connected model class |
-| `dl_pytorch_helper.py` | Utility functions (plot, load, save) |
-
-## Learning Path
-
-1. Tensors → autograd
-2. `nn.Module` and layer definitions
-3. Training loop (forward, loss, backward, optimizer step)
-4. Inference and model persistence (`torch.save` / `torch.load`)
-5. Full classification pipeline on Fashion-MNIST
+| `dl_pytorch_helper.py` | Helper functions |

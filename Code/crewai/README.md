@@ -8,5 +8,5 @@ conda activate crewai-scripts
 python crew_job_matching_open_source.py
 ```
 
-`researcher/` is a separate, more complete CrewAI project with its own `pyproject.toml` +
-`uv.lock` (modern uv workflow) — see its own README for setup.
+`researcher/` is a separate, more complete CrewAI project with its own `pyproject.toml`; see its own
+README for setup.

@@ -1,4 +1,6 @@
-# mychatbot — Claude Code Project Intelligence
+> Template for a workshop exercise: this folder holds no code. The project described below is built live during the workshop.
+
+# mychatbot: Claude Code Project Intelligence
 
 ## Project Overview
 A chatbot with two interfaces: CLI and Streamlit, powered by LangChain + Groq LLM.

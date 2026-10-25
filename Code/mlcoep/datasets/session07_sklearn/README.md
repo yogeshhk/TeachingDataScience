@@ -30,13 +30,8 @@ dataframe = pandas.read_csv('housing.data', sep='\s+', names=names)
 
 ## Verification
 
-Verified against `pandas 2.2.3` / `scikit-learn 1.7.2`: running the deck's code against these local
-files reproduces every printed result on the slides exactly, including
-`Accuracy: 0.772 (0.050)` and `R^2: 0.718 (0.099)`.
-
-Note that the `R^2` figure depends on `shuffle=True` in the `KFold` split. The housing data is
-stored in sorted order, so unshuffled folds are unrepresentative and the score drops to
-`0.203 (0.595)`, with one fold going negative. This is called out on the slide.
+Run the deck's code on these local files and compare with the printed slide results; the housing
+`R^2` needs `shuffle=True` in `KFold` because the file is stored in sorted order.
 
 ## Provenance
 

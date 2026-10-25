@@ -1,13 +1,7 @@
 # Authoring and development notes (TeachingDataScience)
 
 Detailed conventions for the LaTeX decks and the `Code/` projects. `CLAUDE.md` at the repo root holds the
-short rules and points here; read this file when authoring, compiling or testing.
-
-## Repository Purpose
-
-- **LaTeX**: Beamer slides and two-column cheatsheets for Data Science courses (Python, ML, DL,
-  NLP, GenAI, RAG, etc.)
-- **Code**: Python scripts and notebooks demonstrating the concepts in the slides
+short hard rules and points here; every how-to lives only in this file.
 
 ## Style Conventions
 
@@ -24,19 +18,31 @@ catching em-dashes, suspect that first.
 
 ## LaTeX Build System
 
-Compile from the `LaTeX/` directory with MikTeX's `texify`:
+Compile from the `LaTeX/` directory with MikTeX's `texify`, one driver at a time:
 ```bat
 cd LaTeX
 texify -cp Main_Seminar_AI_HandsOn_ClaudeCode_Presentation.tex
-for /r %i in (Main_Seminar_*Educators*.tex) do texify -cp %i
-make_all.bat
 ```
+
+### Compile policy
+- **Per-session MLCoEP drivers** (the sessions 16-20 workflow below): compile without asking.
+- **Anything else: ask first.** Never run `make_all.bat` or the combined `Main_Course_MLCoEP_*` driver,
+  and do not run any other mega-deck compile (multi-workshop or full-course). Work at single-seminar or
+  single-workshop scale.
+- `Main_Course_GenerativeAI_*` has never compiled end to end. It is a pdflatex/Beamer large-deck
+  instability (a non-converging `Overfull \hbox` loop), not a bug in any frame; do not compile it to
+  chase the problem.
 
 ### Compiled output policy
 This repo is public. **Compiled decks (`Main_*.pdf`) and build litter (`.aux .log .nav .out .snm
-.toc .vrb`) are never committed** (gitignored at `LaTeX/.gitignore`). Copy final PDFs to
-`Publications/Presentations/` after compiling locally. `LaTeX/images/*.pdf` are source assets and
-are unaffected.
+.toc .vrb`) are never committed** (gitignored at `LaTeX/.gitignore`). `LaTeX/images/*.pdf` are source
+assets and are unaffected.
+
+**MLCoEP sessions 16-20** (the rule is the same as in `D:\Yogesh\GitHub\CLAUDE.md`): after a
+significant change, compile both outputs. The Presentation goes to `Desktop\MLCoEP_Presentations` and
+to `Publications/Presentations`; the CheatSheet goes to `Desktop\MLCoEP_Presentations` only. Leave no
+PDFs beside the sources in `LaTeX/`. When a session is done, remove it from the Desktop folder only.
+Other decks are copied to `Publications/Presentations/` after a local compile.
 
 ## LaTeX Architecture
 
@@ -104,17 +110,8 @@ Manual passes have silently skipped items such as the prose-dash sweep.
 ### Orphan-file tooling
 `LaTeX/find_orphan_tex.py` finds `.tex` files not reachable via `\input`/`\include` from any
 `Main_*.tex` driver (the reverse of the `latex-audit` skill's `inputs` mode). It excludes
-`images/*.tex` and `backup`/`_backup`/`_retired`. Run it after any bulk rename or reorganization.
-
-### Known issues
-- **Casing drift on the `Main_Seminar_AI_For_*` drivers.** Disk names use `AI_For_...`; git's index
-  uses `AI_for_...` for at least Educators. Harmless on Windows; would break a case-sensitive
-  clone. Deprioritized.
-- **`Main_Course_GenerativeAI_*` has never compiled end to end.** It is a pdflatex/Beamer
-  large-deck instability (non-converging `Overfull \hbox` loop), not a bug in any frame. **Do not
-  run mega-deck compiles (multi-workshop or full-course) to chase it.** Work at single-seminar or
-  single-workshop scale.
-- Re-run `latex-audit inputs` after any bulk rename to check `\input` resolution.
+`images/*.tex` and `backup`/`_backup`/`_retired`. Run it after any bulk rename or reorganization,
+and re-run `latex-audit inputs` to check `\input` resolution.
 
 ### Frame boilerplate
 ```latex
@@ -125,19 +122,10 @@ Manual passes have silently skipped items such as the prose-dash sweep.
 \end{itemize}
 \end{frame}
 ```
-Section divider:
-```latex
-\begin{frame}[fragile]\frametitle{}
-\begin{center}
-{\Large Section Heading}
-\end{center}
-\end{frame}
-```
+A section divider is a frame with an empty `\frametitle{}` and `{\Large Section Heading}` centred.
 
-### Adding a new topic
-1. Create `LaTeX/<domain>_<topic>.tex` with Beamer frames
-2. `\input{<domain>_<topic>}` inside the relevant `seminar_*_content.tex`
-3. Put images in `LaTeX/images/`
+To add a topic: create `LaTeX/<domain>_<topic>.tex`, `\input{<domain>_<topic>}` it inside the relevant
+`seminar_*_content.tex`, and put images in `LaTeX/images/`.
 
 ## Course structure (reference)
 
@@ -154,50 +142,34 @@ Section divider:
   `seminar_mlcoep_session_<N>_content.tex` with its own driver pair
   `Main_Seminar_MLCoEP_Session_<N>_<ShortName>_{Presentation,CheatSheet}.tex`. Drivers live in
   `LaTeX/_retired/mlcoep_session_drivers/` and remain the active verification workflow: copy the
-  pair to `LaTeX/` root, compile, verify, copy the PDF to `Publications/Presentations/`, then
-  re-retire. Optional cuts are `%`-commented with an "Optional" marker; restore by uncommenting.
+  pair to `LaTeX/` root, compile, verify, copy the PDFs as the compiled output policy above says,
+  then re-retire. Optional cuts are `%`-commented with an "Optional" marker; restore by uncommenting.
   Offline data and scripts are in `Code/mlcoep/`. `ml_pca`, `ml_kmeans` and `ml_production` are
   shared with the generic seminar decks, so edits there affect both.
-  `course_mlcoep_content.tex` chains all sessions into one combined driver; **never compile it
-  without asking first** (20+ minutes, 350+ pages, never verified).
+  `course_mlcoep_content.tex` chains all sessions into one combined driver (20+ minutes, 350+ pages,
+  never verified); never compile it.
+- **DLCoEP** (deep learning for mechanical engineers, CoEP): the CNN and RNN sessions use `dl_cnn.tex`,
+  `dl_rnn.tex` and the case-study decks `dl_cnn_digits_case_study.tex` and
+  `dl_rnn_temperature_case_study.tex`; code is in `Code/dlcoep/`.
 - `_overview.tex` topic files (`dnlp_intro_overview`, `data_intro_overview`, `dl_intro_overview`,
   `nlp_embedding_overview`) each have a minimal standalone `_Overview` seminar driver.
 
-### Local LLM (Qwen3) as a Groq alternative
-`ChatLlamaCpp` (langchain_community, in-process) with a local `Qwen3-1.7B-Q4_K_M.gguf` is a
-drop-in for `ChatGroq` in plain multi-turn chat: see `Code/langchain/langchain_v1_models.py` and
-`Code/omni-rag/agent.py`. Needs `llama-cpp-python>=0.3.34` and `/no_think` appended to the prompt.
-`bind_tools()` with `tool_choice="auto"` does not work reliably at this size; a forced
-`tool_choice` does. `Code/langchain/langchain_v1_createagent.py` stays on `ChatGroq` for this
-reason. Opt-in, not a default.
+### Local LLM (Qwen3)
+In-process Qwen3 can replace Groq for plain chat but not for tool calling; the detail is in
+`Code/LOCAL_LLM_PLAN.md` (section 9).
 
 ## Code Directory
 
-Each `Code/` subdirectory is one library or topic. There is no single build or test command; run
-scripts per subdirectory.
+Each `Code/` subdirectory is one library or topic; the map of directories is in
+[`Code/README.md`](Code/README.md). There is no single build or test command; run scripts per
+subdirectory.
 
 ### Environment setup (conda)
 ```bash
 conda env create -f Code/<subdir>/environment.yml
 conda activate <env-name>
 ```
-Do not create `venv/` or `.venv/`.
-
-### Subdirectory map
-
-| Category | Directories |
-|----------|-------------|
-| GenAI / Agents | `langchain/`, `langgraph/`, `llamaindex/`, `crewai/`, `agents/`, `agno/`, `google-adk/` |
-| RAG Applications | `chatbot-faqs/`, `chatbot-multimodal/`, `omni-rag/`, `parsing/`, `graphrag/` |
-| LLM Fine-tuning | `fine-tuning/` |
-| Document Parsing | `docling/`, `opendataloader/` |
-| Deep Learning | `pytorch/` |
-| Classical ML | `ml/`, `math/`, `python/` |
-| NLP | `nlp/`, `dnlp/`, `spacy/` |
-| GNN | `gnn/pyg/`, `gnn/gnn-project-deepfindr/`, `gnn/molecule-deepfindr/`, `gnn/odsc2021-sujitpal/` |
-| Indic Language | `mahamarathi/`, `sarvam/`, `orgpedia/` |
-| Research Refs | `txt2cad/`, `txt2sql/` (docs only) |
-| Other | `amd/` (AMD Academy materials), `chromeext/` (Chrome extension) |
+Python uses conda only. Do not create `venv/` or `.venv/`.
 
 `Code/.gitignore` covers `__pycache__/`, `.ipynb_checkpoints/`, `.env`, `*.pyc`, model weights
 (`*.bin`, `*.pt`, `*.safetensors`), `node_modules/`, `.pytest_cache/`, `.ruff_cache/`,
@@ -205,36 +177,26 @@ Do not create `venv/` or `.venv/`.
 
 ### Sub-projects with their own config
 - `Code/claudecode/MyWorkshop/` and `Code/claudecode/CadCamWorkshop/`: own `CLAUDE.md`
-- `Code/langgraph/open_deep_research-langcahin-ai/`: own `CLAUDE.md` and `README.md`
-- `Code/crewai/researcher/`: `pyproject.toml` + `uv.lock` (uv workflow)
+- `Code/crewai/researcher/`: `pyproject.toml` (run with `crewai run`; see its README)
 
 ### Security note
 `Code/google-adk/my_agent/.env` is gitignored but holds a real `GOOGLE_API_KEY` on disk; rotate it
-in Google Cloud Console.
+in Google Cloud Console (tracked in `TODO.md`).
 
 ## Test Suite
 
-Python-script directories have a `test_*.py` runnable with `pytest` in the `genai` conda env.
+Each directory with Python scripts keeps its `test_*.py` next to the code (for example
+`Code/chatbot-faqs/test_chatbot_faqs.py`, `Code/langgraph/test_llm_config.py` and the tests under
+`Code/langgraph/react_demo/` and `Code/langgraph/workflow_demo/`). Run them with `pytest` in the
+`genai` conda env:
 ```bash
 conda activate genai
 cd Code/<subdir>
 python -m pytest test_*.py -v
 ```
-All suites, from repo root:
-```bash
-conda run -n genai python -m pytest \
-  Code/graphrag/test_graphrag.py \
-  Code/parsing/test_parsing.py \
-  Code/agno/test_agno.py \
-  Code/google-adk/test_tools.py \
-  Code/chatbot-faqs/test_chatbot_faqs.py \
-  Code/chatbot-multimodal/test_models.py \
-  Code/omni-rag/test_omnirag.py \
-  -v
-```
-
-Suites cover `chatbot-faqs/`, `chatbot-multimodal/`, `omni-rag/`, `parsing/`, `graphrag/`,
-`google-adk/` and `agno/`.
+The suites for `graphrag/`, `parsing/`, `agno/`, `google-adk/`, `chatbot-faqs/`, `chatbot-multimodal/`
+and `omni-rag/` can also be run from the repo root with one `conda run -n genai python -m pytest`
+command listing their test files.
 
 ### Test design notes
 - No real API calls: LLM and embedding clients are mocked with `unittest.mock`.
@@ -242,20 +204,6 @@ Suites cover `chatbot-faqs/`, `chatbot-multimodal/`, `omni-rag/`, `parsing/`, `g
 - The `google-adk` tests mock the `adk` package (not installed everywhere).
 - The omni-rag `TestOmniIngestorStructure` tests skip if a `datasets` circular import occurs in a
   combined session; they pass in isolation.
-
-### Environment notes
-- `ragas 0.4.3` upgraded `openai` from 1.x to 2.x; verify `langchain-openai` compatibility if
-  issues arise.
-- A broken system-Python `faiss` install exists at
-  `C:\Users\yoges\AppData\Roaming\Python\Python310\site-packages\faiss\` and conflicts if imported
-  outside the conda env.
 - `opendataloader-pdf` wraps a Java JAR: **Java 11+ must be on PATH** before any tutorial runs
   (`conda install -n genai -c conda-forge openjdk=11`). Tutorial 09 (OCR) also needs the hybrid
   backend: `opendataloader-pdf-hybrid --port 5002 --force-ocr`.
-
-## Memory
-Do not store, write, or update memory files in the global `~/.claude/projects/` directory unless
-the user explicitly allows it in the current conversation.
-
-## Git
-Do not run any git commands. The user manages all git operations externally.

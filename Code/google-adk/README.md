@@ -5,9 +5,13 @@ Minimal agent scripts using [Google's ADK](https://google.github.io/adk-docs/) (
 ## Prerequisites
 
 ```bash
-pip install google-adk yfinance
-export GOOGLE_API_KEY=your_gemini_api_key
+conda env create -f environment.yml
+conda activate google-adk
+set GOOGLE_API_KEY=your_gemini_api_key
 ```
+
+The stock-price scripts also import `yfinance`, which is not in `environment.yml`; install it into the
+environment before running them.
 
 ## Files
 
@@ -30,11 +34,7 @@ python multi_agent.py
 
 ## Key Concepts
 
-- `Agent(model, tools, instructions)` — the fundamental building block
-- `GeminiModel(model_name="gemini-2.0-flash-exp")` — model selector
-- `MultiAgentOrchestrator` — routes tasks to specialised sub-agents
+- `Agent(model, tools, instructions)`: the fundamental building block
+- `GeminiModel(model_name="gemini-2.0-flash-exp")`: model selector
+- `MultiAgentOrchestrator`: routes tasks to specialised sub-agents
 - `agent.run()` for single response; `agent.run_stream()` for token streaming
-
-## Security Note
-
-`my_agent/.env` contains a real `GOOGLE_API_KEY` on disk — rotate it at [Google Cloud Console](https://console.cloud.google.com/) if the repo is ever shared.

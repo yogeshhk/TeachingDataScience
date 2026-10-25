@@ -1,6 +1,6 @@
 # stlinspector
 
-STEP/STL geometry inspector and validator -- a PoC built end-to-end in a
+STEP/STL geometry inspector and validator: a PoC built end-to-end in a
 Claude Code workshop (see `LaTeX/ai_tools_claudecode_demo_cadcam.tex` in
 the parent repo for the full walkthrough).
 
@@ -15,10 +15,9 @@ conda env create -f environment.yml
 conda activate stlinspector
 ```
 
-No packaging (no `pyproject.toml`, no editable install, no console
-script, no package folder) is used here -- `src/` holds plain scripts.
-Running them directly puts `src/` on `sys.path` automatically; only
-`tests/conftest.py` needs an explicit `sys.path` shim.
+There is no `pyproject.toml` and no editable install: `src/` holds plain scripts
+(`app.py`, `cli.py`, `config.py`, `core.py`). Running them directly puts `src/` on
+`sys.path` automatically; only `tests/conftest.py` needs an explicit `sys.path` shim.
 
 ## CLI
 ```bash

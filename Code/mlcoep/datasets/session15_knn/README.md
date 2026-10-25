@@ -28,9 +28,7 @@ Runnable scripts: `sessions/session15_knn/nba_similar_players.py` (the case stud
 
 ## Verification
 
-Verified against `pandas 2.2.3` / `scikit-learn 1.7.2`: the file loads as 481 rows by 31 columns. On raw statistics the
-closest player to LeBron James is Carmelo Anthony, and so it is after normalizing. With a fixed seed the 481 rows split
-into 321 train and 159 test rows, and the KNN regression of points has a mean squared error of about 8,402.
+Check that the file loads as 481 rows by 31 columns, and that `nba_similar_players.py` reproduces the case-study output on the slides.
 
 ## Provenance
 

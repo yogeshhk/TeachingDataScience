@@ -18,6 +18,6 @@
 Give students this file before class so they can run the deck's `pd.read_csv('machine_logs.csv')`
 examples themselves, no typing required. Place it in the same folder as their notebook/script.
 
-The numbers were reverse-engineered to exactly match every output already shown in the slide deck
-(shape, `value_counts`, groupby averages, vibration flags, morning/evening split), so running the
-deck's code against this file reproduces every printed result verbatim.
+## Verification
+
+Run the deck's code on this file and compare with the printed slide results (shape, `value_counts`, groupby averages).

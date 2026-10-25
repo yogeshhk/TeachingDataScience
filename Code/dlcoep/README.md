@@ -22,35 +22,14 @@ python session02_rnn/rnn_temperature_case_study.py
 
 Each script prints the numbers quoted on the slides and writes its figures to `out/` (not
 committed). The figures used by the slides are copied to `LaTeX/images/` as `dlcoep_*.png`.
-
-## What the numbers are
-
-Seeds are fixed and training runs on the CPU, so a rerun on the same setup repeats the numbers.
-The slides were produced with Python 3.11 and PyTorch 2.7.1; other versions can differ in the
-last digit.
-
-Session 1, MNIST, 3 epochs, Adam, batch 128:
-
-| Model | Parameters | Test accuracy |
-|---|---|---|
-| Fully connected 784-128-10 | 101,770 | 96.26% |
-| Small CNN (8 and 16 filters of 3 x 3) | 5,258 | 97.70% |
-
-Session 2, one-step-ahead forecast on the 730 test days (1989 and 1990):
-
-| Method | MAE (deg C) | RMSE (deg C) |
-|---|---|---|
-| Same as yesterday | 1.95 | 2.48 |
-| Mean of the last 7 days | 2.04 | 2.60 |
-| Linear fit on the last 7 days | 1.76 | 2.24 |
-| GRU, 16 units | 1.75 | 2.22 |
-| LSTM, 16 units | 1.74 | 2.21 |
-
-The recurrent nets beat "same as yesterday" and tie the linear fit. The slides say so; the case
-study is about comparing against simple baselines, not about a win for the RNN.
+Seeds are fixed and training runs on the CPU, so a rerun on the same setup repeats the numbers
+(the slides were produced with Python 3.11 and PyTorch 2.7.1; other versions can differ in the
+last digit).
 
 ## Notes
 
+- The case studies compare against simple baselines; the point is the comparison, not a win for
+  the network.
 - The temperature series is not machine data. It stands in for a regularly sampled sensor signal.
   Swap in a vibration or temperature log from a machine by changing `DATA` and the column name.
 - The file skips 29 February of 1984 and 1988; the scripts treat the series as consecutive days.

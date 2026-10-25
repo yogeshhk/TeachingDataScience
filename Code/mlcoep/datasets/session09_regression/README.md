@@ -26,10 +26,7 @@ Then run `sessions/session09_linear_regression/house_price_regression.py`.
 
 ## Verification
 
-Verified against `pandas 2.2.3` / `scikit-learn 1.7.2`: 500 rows, no missing values, neighborhood counts 130 / 239 / 131,
-mean price per square foot 103 / 201 / 402. A plain linear model on the three columns gives `R^2 = 0.859`. It rises to
-`0.951` after adding a `sqft * neighborhood` interaction term, because the price per square foot is different in each
-neighborhood, which a single `sqft` coefficient cannot express.
+Check 500 rows with no missing values, and that `R^2` rises when a `sqft * neighborhood` interaction term is added to the plain linear model.
 
 ## Provenance
 

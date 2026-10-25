@@ -23,9 +23,7 @@ Runnable script: `sessions/session16_kmeans/kmeans_from_scratch.py`, which follo
 
 ## Verification
 
-Verified against `scipy` and `numpy` in the `genai` conda environment: `X` has shape (300, 2). Running the from-scratch loop
-for 10 rounds with a fixed seed ends at the centroids about (1.95, 5.03), (3.04, 1.02) and (6.03, 3.00), with 98, 102 and
-100 points in the three clusters.
+Check that `X` has shape (300, 2) and that `kmeans_from_scratch.py` ends with three centroids and clusters of about 100 points each.
 
 ## Provenance
 
