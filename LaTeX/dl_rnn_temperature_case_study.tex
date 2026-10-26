@@ -1,15 +1,16 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]\frametitle{Reading the Gates of an LSTM}
-\begin{itemize}
-\item The memory $c_t$ is a running tally; three gates control it
-\item Each gate is a number between 0 and 1 for every memory slot
-\item Forget gate $f_t$: how much of the old memory to keep
-\item Input gate $i_t$: how much of the new candidate $\tilde{c}_t$ to write
-\item Output gate $o_t$: how much of the memory to show as the output $h_t$
-\item $c_t = f_t c_{t-1} + i_t \tilde{c}_t$ keeps part of the old and adds part of the new
-\item A GRU does the same job with two gates and no separate memory
-\end{itemize}
-\end{frame}
+% [upgrade-deck: commented out 2026-10-26 | Task 3 | moved to dl_rnn.tex, right after the LSTM cell frame it explains]
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}[fragile]\frametitle{Reading the Gates of an LSTM}
+% \begin{itemize}
+% \item The memory $c_t$ is a running tally; three gates control it
+% \item Each gate is a number between 0 and 1 for every memory slot
+% \item Forget gate $f_t$: how much of the old memory to keep
+% \item Input gate $i_t$: how much of the new candidate $\tilde{c}_t$ to write
+% \item Output gate $o_t$: how much of the memory to show as the output $h_t$
+% \item $c_t = f_t c_{t-1} + i_t \tilde{c}_t$ keeps part of the old and adds part of the new
+% \item A GRU does the same job with two gates and no separate memory
+% \end{itemize}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Quick Check: RNN Concepts}
@@ -55,15 +56,43 @@
 \item Values run from 0.0 to 26.3 with mean 11.18 and standard deviation 4.07
 \item 29 February of 1984 and 1988 is absent from the file; we treat the series as consecutive days
 \end{itemize}
+% [upgrade-deck: rewritten 2026-10-26 | Task 1c | typed lines now carry >>> and the convention is stated; original below]
+% import pandas as pd
+%
+% df = pd.read_csv('daily-minimum-temperatures.csv')
+% series = df['Temperature'].to_numpy('float32')
+%
+% >>> len(series), series.min(), series.max()
+% (3650, 0.0, 26.3)
 \begin{lstlisting}
-import pandas as pd
-
-df = pd.read_csv('daily-minimum-temperatures.csv')
-series = df['Temperature'].to_numpy('float32')
-
+# Lines that start with >>> are typed in; the other line is the output
+>>> import pandas as pd
+>>> df = pd.read_csv('daily-minimum-temperatures.csv')
+>>> series = df['Temperature'].to_numpy('float32')
 >>> len(series), series.min(), series.max()
 (3650, 0.0, 26.3)
 \end{lstlisting}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]\frametitle{A Window Slides Along the Series}
+\begin{itemize}
+\item Each example is 7 days in a row; the day after them is the answer
+\item Move the window one day to the right to get the next example
+\end{itemize}
+\begin{center}
+\adjustbox{max width=\linewidth}{%
+\begin{tikzpicture}[>=latex, every node/.style={font=\small}]
+\foreach \i in {1,...,10} \node[draw, minimum size=7mm] (d\i) at (0.9*\i,0) {$\i$};
+\node[draw, fill=lightnyupurple!40, minimum size=7mm] at (d8) {$8$};
+\node[draw, fill=lightnyupurple!40, minimum size=7mm] at (d9) {$9$};
+\node[font=\scriptsize, gray, anchor=east] at ([xshift=-2mm]d1.west) {day};
+\draw[thick, blue, |-|] ([yshift=4mm]d1.north west) -- ([yshift=4mm]d7.north east) node[midway, above, font=\scriptsize] {window 1: days 1 to 7};
+\node[font=\scriptsize, align=center, anchor=south] at ([yshift=4mm]d8.north) {answer:\\day 8};
+\draw[thick, blue, |-|] ([yshift=-4mm]d2.south west) -- ([yshift=-4mm]d8.south east) node[midway, below, font=\scriptsize] {window 2: days 2 to 8};
+\node[font=\scriptsize, align=center, anchor=north] at ([yshift=-4mm]d9.south) {answer:\\day 9};
+\end{tikzpicture}}
+\end{center}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -112,7 +141,9 @@ Linear fit on the last 7 days & 1.76 & 2.24 \\
 \begin{itemize}
 \item A recurrent layer with 16 hidden units reads the 7 days in order
 \item Only its output after the last day goes to a single-number linear head
-\item GRU: 929 parameters. LSTM: 1,233. Both are small, well under the CNN's 5,258 on digits
+% [upgrade-deck: rewritten 2026-10-26 | Task 1 | the CNN count belongs to another session; the slide must stand alone; original below]
+% \item GRU: 929 parameters. LSTM: 1,233. Both are small, well under the CNN's 5,258 on digits
+\item GRU: 929 parameters. LSTM: 1,233. Both are small: about a thousand parameters each
 \end{itemize}
 \begin{lstlisting}
 class Net(nn.Module):
@@ -136,6 +167,7 @@ class Net(nn.Module):
 \end{itemize}
 \begin{center}
 \small
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{lccccc}
 \hline
 Test MAE after epoch & 1 & 5 & 10 & 20 & 30 \\
@@ -143,7 +175,7 @@ Test MAE after epoch & 1 & 5 & 10 & 20 & 30 \\
 GRU & 1.88 & 1.74 & 1.74 & 1.75 & 1.75 \\
 LSTM & 1.97 & 1.78 & 1.74 & 1.75 & 1.74 \\
 \hline
-\end{tabular}
+\end{tabular}}
 \end{center}
 \end{frame}
 

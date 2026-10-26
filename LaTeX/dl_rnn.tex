@@ -33,6 +33,19 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Sequences in Mechanical Engineering}
+\begin{itemize}
+\item A vibration or acceleration signal from a machine, sampled over time
+\item A temperature or pressure reading from a process sensor
+\item The load or strain history of a part
+\item Motor current or tool wear over successive cycles
+\item In each case the order of the readings carries the information
+\item Question for you: which sequence do you meet in your own work?
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Recap: NN types: ANN, CNN, RNN}
 
 \begin{itemize}
@@ -51,10 +64,26 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Why Not Just a Dense Layer for Sequences?}
 \begin{itemize}
-\item A dense layer takes a fixed number of inputs. A window of $T$ steps with $d$ readings each becomes one vector of $T \times d$ numbers, and $T$ is frozen into the network
-\item Every position has its own weights. What the network learns about step 3 says nothing about step 7
-\item Order is present only as ``which weight sees which slot''. There is no running context
-\item The other way out is to throw order away on purpose: add up or average the steps (a bag of words). Then any length fits, but ``dog bites man'' and ``man bites dog'' look the same
+% [upgrade-deck: rewritten 2026-10-26 | Task 5c | long bullets split into a lead plus sub-points; every fact kept; original below]
+% \item A dense layer takes a fixed number of inputs. A window of $T$ steps with $d$ readings each becomes one vector of $T \times d$ numbers, and $T$ is frozen into the network
+% \item Every position has its own weights. What the network learns about step 3 says nothing about step 7
+% \item Order is present only as ``which weight sees which slot''. There is no running context
+% \item The other way out is to throw order away on purpose: add up or average the steps (a bag of words). Then any length fits, but ``dog bites man'' and ``man bites dog'' look the same
+% \item What we want: \textbf{any length}, \textbf{order kept}, and \textbf{one set of weights reused} at every step
+\item \textbf{Fixed length:} a dense layer takes a fixed number of inputs
+  \begin{itemize}
+  \item A window of $T$ steps with $d$ readings each becomes one vector of $T \times d$ numbers
+  \item $T$ is frozen into the network
+  \end{itemize}
+\item \textbf{No sharing:} every position has its own weights
+  \begin{itemize}
+  \item What the network learns about step 3 says nothing about step 7
+  \end{itemize}
+\item \textbf{No running context:} order is present only as ``which weight sees which slot''
+\item \textbf{Bag of words:} throw order away on purpose, by adding up or averaging the steps
+  \begin{itemize}
+  \item Any length fits, but ``dog bites man'' and ``man bites dog'' look the same
+  \end{itemize}
 \item What we want: \textbf{any length}, \textbf{order kept}, and \textbf{one set of weights reused} at every step
 \end{itemize}
 \end{frame}
@@ -376,14 +405,14 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{What is RNN?}
-A Neural network with a memory-state is added to the neurons. 
+\begin{frame}[fragile] \frametitle{What is RNN? The Idea}
+A Neural network with a hidden state (its memory) is added to the neurons. 
 \begin{itemize}
 \item When data is sequential
 \item ANN: model produces the output by multiplying the input with the weight and the activation function
 \item RNN: output is sent back to itself and this, along with the new input is used to calculate the new output.
 % \item Next depends on previous + extra input
-\item The network is called 'recurrent' because it performs the same operation in each timestep.
+\item The network is called 'recurrent' because it performs the same operation at each step.
 \item Example: Stock Predictions, Language Model (next word prediction), etc.
 \end{itemize}
 
@@ -395,8 +424,8 @@ A Neural network with a memory-state is added to the neurons.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{What is RNN?}
-When:
+\begin{frame}[fragile] \frametitle{When to Use an RNN}
+Use it when:
 \begin{itemize}
 \item Order is important
 \item Variable length
@@ -410,7 +439,7 @@ When:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Usage of an RNN Layer}
 \begin{itemize}
-\item \textbf{Intent:} condense and summarise a whole sequence into a single vector (the latent space)
+\item \textbf{Intent:} condense and summarise a whole sequence into a single vector (a compact summary, called the latent space)
 \item Input data points (X) one at a time; the layer keeps a running summary of what it has seen.
 % \item X is of size [ batch size, number of steps, number of dimensions]
 % \item batch size: window of inputs data points, at once
@@ -458,7 +487,7 @@ Unrolling the loop gives the picture below (it counts the first step as 0).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{What is RNN?}
+\begin{frame}[fragile] \frametitle{RNN Types: Sequences In and Out}
 
 RNN allow us to operate over sequences of vectors. Many types
 \begin{center}
@@ -469,7 +498,7 @@ Each rectangle is a vector and arrows represent functions (e.g. matrix multiply)
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{What is RNN?}
+\begin{frame}[fragile] \frametitle{RNN as an ANN with a Loop}
 
 \begin{center}
 \includegraphics[width=0.8\linewidth,keepaspectratio]{rnn28}
@@ -681,9 +710,20 @@ $(0, 1, 1)$ & 0.8811 & \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Same Weights at Every Step}
 \begin{itemize}
+% [upgrade-deck: rewritten 2026-10-26 | Task 5c | long bullets split into a lead plus sub-points; every fact kept; original below]
+% \item With vectors, the same rule is $h_t = \tanh(W_{xh} x_t + W_{hh} h_{t-1} + b_h)$
+% \item New here: $b_h$ is the \textbf{bias}, a vector of constants added before the $\tanh$, as in a dense layer. The one-unit example had none ($b_h = 0$). $W_{xh}$ and $W_{hh}$ are the weights $w_x$ and $w_h$ as matrices
+% \item $W_{xh}$, $W_{hh}$ and $b_h$ are the same at step 1, step 2 and step 1000. Reading a longer sequence adds steps, not parameters
 \item With vectors, the same rule is $h_t = \tanh(W_{xh} x_t + W_{hh} h_{t-1} + b_h)$
-\item New here: $b_h$ is the \textbf{bias}, a vector of constants added before the $\tanh$, as in a dense layer. The one-unit example had none ($b_h = 0$). $W_{xh}$ and $W_{hh}$ are the weights $w_x$ and $w_h$ as matrices
-\item $W_{xh}$, $W_{hh}$ and $b_h$ are the same at step 1, step 2 and step 1000. Reading a longer sequence adds steps, not parameters
+\item New here: $b_h$ is the \textbf{bias}, a vector of constants added before the $\tanh$, as in a dense layer
+  \begin{itemize}
+  \item The one-unit example had none ($b_h = 0$)
+  \item $W_{xh}$ and $W_{hh}$ are the weights $w_x$ and $w_h$ as matrices
+  \end{itemize}
+\item $W_{xh}$, $W_{hh}$ and $b_h$ are the same at step 1, step 2 and step 1000
+  \begin{itemize}
+  \item Reading a longer sequence adds steps, not parameters
+  \end{itemize}
 \item Compare the CNN: one filter reused at every \emph{position} in space. The RNN reuses one set of weights at every \emph{step} in time
 \item Training works on the unrolled copy and adds up the gradients of every use of the shared weights (back-propagation through time)
 \end{itemize}
@@ -707,7 +747,7 @@ $(0, 1, 1)$ & 0.8811 & \\
 % \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{What is Neural Memory?}
+\begin{frame}[fragile] \frametitle{Neural Memory: The Plain Network}
 
 \begin{itemize}
 \item Neural networks have hidden layers. Normally, the state of your hidden layer is based ONLY on your input data. 
@@ -721,9 +761,9 @@ $input \rightarrow hidden  \rightarrow  output$
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{What is Neural Memory?}
+\begin{frame}[fragile] \frametitle{Neural Memory: Adding the Previous State}
 \begin{itemize}
-\item Memory means that the hidden layer is a combination of your input data at the current time-step and the hidden layer of the previous timestep.
+\item Memory means that the hidden layer is a combination of your input data at the current step and the hidden layer of the previous step.
 $ (input + prev\_hidden) \rightarrow hidden \rightarrow output$
 \item Why the hidden layer? Well, we could technically do this. 
 $(input + prev\_input) \rightarrow hidden \rightarrow output$
@@ -750,12 +790,15 @@ $(input + prev\_input) \rightarrow hidden \rightarrow output$
 % \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{What is Neural Memory?}
+\begin{frame}[fragile] \frametitle{Neural Memory: The Cell Equations}
 Each cell
 \begin{itemize}
-\item $h_t = tanh(W_{hh}h_{t-1} + W_{xh}X_t + b_h)$
-\item $y_t = tanh(W_{hy}h_t + b_y)$
-\item Back-propagation will adjust all the weights for all unrolled time-steps.
+% [upgrade-deck: rewritten 2026-10-26 | Task 1 | tanh set as a function and X_t written x_t, as on the other frames; original below]
+% \item $h_t = tanh(W_{hh}h_{t-1} + W_{xh}X_t + b_h)$
+% \item $y_t = tanh(W_{hy}h_t + b_y)$
+\item $h_t = \tanh(W_{hh}h_{t-1} + W_{xh}x_t + b_h)$
+\item $y_t = \tanh(W_{hy}h_t + b_y)$
+\item Back-propagation will adjust all the weights for all unrolled steps.
 \end{itemize}
 
 
@@ -783,11 +826,15 @@ Each cell
 \begin{column}{0.56\textwidth}
 Each cell
 \begin{itemize}
-\item $h_t = tanh(W_{hh}h_{t-1} + W_{xh}X_t + b_h)$
-\item $h_t' = tanh(W_{hh}'h_{t-1}' + W_{xh}'h_t + b_h')$
-\item $y_t = tanh(W_{hy}h_t' + b_y)$
+% [upgrade-deck: rewritten 2026-10-26 | Task 1 | tanh set as a function and X_t written x_t, as on the other frames; original below]
+% \item $h_t = tanh(W_{hh}h_{t-1} + W_{xh}X_t + b_h)$
+% \item $h_t' = tanh(W_{hh}'h_{t-1}' + W_{xh}'h_t + b_h')$
+% \item $y_t = tanh(W_{hy}h_t' + b_y)$
+\item $h_t = \tanh(W_{hh}h_{t-1} + W_{xh}x_t + b_h)$
+\item $h_t' = \tanh(W_{hh}'h_{t-1}' + W_{xh}'h_t + b_h')$
+\item $y_t = \tanh(W_{hy}h_t' + b_y)$
 \item The second layer reads the first layer's state $h_t$ in place of the raw input.
-\item Back-propagation will adjust all the weights for all unrolled time-steps.
+\item Back-propagation will adjust all the weights for all unrolled steps.
 \end{itemize}
 \end{column}
 \begin{column}{0.4\textwidth}
@@ -847,6 +894,20 @@ h_t =& o_t \tanh(c_t)
 \end{center}
 \end{column}
 \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% [Moved 2026-10-26 | Task 3 | from the start of dl_rnn_temperature_case_study.tex; it explains the LSTM cell above]
+\begin{frame}[fragile]\frametitle{Reading the Gates of an LSTM}
+\begin{itemize}
+\item The memory $c_t$ is a running tally; three gates control it
+\item Each gate is a number between 0 and 1 for every memory slot
+\item Forget gate $f_t$: how much of the old memory to keep
+\item Input gate $i_t$: how much of the new candidate $\tilde{c}_t$ to write
+\item Output gate $o_t$: how much of the memory to show as the output $h_t$
+\item $c_t = f_t c_{t-1} + i_t \tilde{c}_t$ keeps part of the old and adds part of the new
+\item A GRU does the same job with two gates and no separate memory
+\end{itemize}
 \end{frame}
 
 
@@ -1299,13 +1360,13 @@ h_t =& o_t \tanh(c_t)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
   \begin{center}
-    {\Large Conclusions}
+    {\Large Strengths, Limits and Remedies}
   \end{center}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNNs advantages}
+\begin{frame}[fragile] \frametitle{RNN Advantages: The Fixed-Size Limit}
 
 \begin{itemize}
 \item The applications of standard Neural Networks (and also Convolutional Networks) are limited due to:
@@ -1316,7 +1377,7 @@ h_t =& o_t \tanh(c_t)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{RNNs advantages}
+\begin{frame}[fragile] \frametitle{RNN Advantages: Sequences of Vectors}
 
 \begin{itemize}
 \item Recurrent Neural Networks are unique as they allow us to operate over sequences of vectors.
@@ -1610,11 +1671,25 @@ h_t =& o_t \tanh(c_t)
 % \item problem: The derivative the activation nonlinearities, sigmoid or tanh, is smaller
 % than 1. So, after some timesteps, very minute gradient remains to make any weight changes. In further layers, weights do not change. So, NO TRAINING.
 % \item Solution: the hidden transfer function should be a linear function. Relu (rectilinear activation function) looks and acts like a linear function, making it easier to train and less likely to saturate, but is, in fact, a nonlinear function. The ReLU derivative is a constant of either 0 or 1, so it isn’t as likely to suffer from vanishing gradients.
-\item Vanilla RNNs suffer from the vanishing gradient problem.
-\item A modest recurrent neural network may have 200 to 400 input time steps, resulting conceptually in a very deep network.
-\item Problem: back-propagation through time multiplies the gradient at every step by the derivative of the activation (at most 1 for tanh, at most 0.25 for sigmoid) and by the recurrent weights. If these factors are below 1, the product shrinks toward zero.
-\item So the early time steps get almost no gradient, their weights barely change, and long-range dependencies are not learned.
-\item Remedies: gated cells (LSTM, GRU) are the standard fix. ReLU helps because its derivative is 0 or 1, but it can make gradients explode; gradient clipping handles that.
+% [upgrade-deck: rewritten 2026-10-26 | Task 5c | long bullets split into a lead plus sub-points; every fact kept; original below]
+% \item Vanilla RNNs suffer from the vanishing gradient problem.
+% \item A modest recurrent neural network may have 200 to 400 input time steps, resulting conceptually in a very deep network.
+% \item Problem: back-propagation through time multiplies the gradient at every step by the derivative of the activation (at most 1 for tanh, at most 0.25 for sigmoid) and by the recurrent weights. If these factors are below 1, the product shrinks toward zero.
+% \item So the early time steps get almost no gradient, their weights barely change, and long-range dependencies are not learned.
+% \item Remedies: gated cells (LSTM, GRU) are the standard fix. ReLU helps because its derivative is 0 or 1, but it can make gradients explode; gradient clipping handles that.
+\item Vanilla RNNs suffer from the vanishing gradient problem
+\item A modest RNN may have 200 to 400 input steps: conceptually a very deep network
+\item \textbf{Problem:} back-propagation through time multiplies the gradient at every step
+  \begin{itemize}
+  \item By the derivative of the activation: at most 1 for tanh, at most 0.25 for sigmoid
+  \item And by the recurrent weights. If these factors are below 1, the product shrinks toward zero
+  \end{itemize}
+\item So the early steps get almost no gradient, their weights barely change, and long-range dependencies are not learned
+\item \textbf{Remedies:} gated cells (LSTM, GRU) are the standard fix
+  \begin{itemize}
+  \item ReLU helps (its derivative is 0 or 1) but can make gradients explode
+  \item Gradient clipping handles that
+  \end{itemize}
 \end{itemize}
 
 \begin{center}
@@ -1647,12 +1722,19 @@ Steps $T$ & $|\partial h_T / \partial x_1|$, plain tanh RNN \\
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile] \frametitle{How LSTM solves Vanishing Gradient}
+\begin{frame}[fragile] \frametitle{How LSTM Eases Vanishing Gradient}
 \begin{itemize}
-\item LSTM increases memory network, handles more information, longer memory.
-\item LSTM network has three gates that update and control the cell states.
-\item So if we want Gradient not to vanish, our network needs to increase the likelihood that at least some of these sub gradients will not vanish.
-\item Forget gate sub-gradient does not behave similarly with other sub-gradient, so they all do not converge to zero.
+% [upgrade-deck: rewritten 2026-10-26 | Task 1 | "solves" overclaims: the previous slide shows a GRU or LSTM also fades at the untrained start; original below]
+% \item LSTM increases memory network, handles more information, longer memory.
+% \item LSTM network has three gates that update and control the cell states.
+% \item So if we want Gradient not to vanish, our network needs to increase the likelihood that at least some of these sub gradients will not vanish.
+% \item Forget gate sub-gradient does not behave similarly with other sub-gradient, so they all do not converge to zero.
+\item An LSTM adds a cell state $c_t$: a separate memory that carries information across many steps
+\item Three gates update and control the cell state
+\item The cell state changes by addition, $c_t = f_t c_{t-1} + i_t \tilde{c}_t$
+\item The gradient to earlier steps is a sum of several parts. We want at least some of them not to vanish
+\item The forget-gate part does not shrink the way the other parts do, so they do not all go to zero
+\item Gates ease the problem; they do not remove it. At the untrained start a GRU or an LSTM also fades (previous slide)
 \end{itemize}
 
 {\tiny (Ref: How LSTM networks solve the problem of vanishing gradients
@@ -1663,12 +1745,52 @@ Steps $T$ & $|\partial h_T / \partial x_1|$, plain tanh RNN \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{One Vector per Sequence: Three Readouts}
 \begin{itemize}
-\item For a sentiment label or a fault class we need one vector for the whole sequence, then a classifier on top. Three common ways to get it:
-\item \textbf{Last state} $h_T$: simple, but the whole sequence is squeezed through one vector. Order is not lost, but old information has faded (recency bias)
-\item \textbf{Pooling over time}: keep every $h_t$ and take the mean or the maximum of each feature over all steps. An early, strong signal survives
-\item \textbf{Attention}: keep every $h_t$ and let the model learn how much each step counts for this decision
-\item A fourth, orthogonal fix is to read the sequence in both directions (next slides)
+% [upgrade-deck: rewritten 2026-10-26 | Task 5c | long bullets split into a lead plus sub-points; every fact kept; original below]
+% \item For a sentiment label or a fault class we need one vector for the whole sequence, then a classifier on top. Three common ways to get it:
+% \item \textbf{Last state} $h_T$: simple, but the whole sequence is squeezed through one vector. Order is not lost, but old information has faded (recency bias)
+% \item \textbf{Pooling over time}: keep every $h_t$ and take the mean or the maximum of each feature over all steps. An early, strong signal survives
+% \item \textbf{Attention}: keep every $h_t$ and let the model learn how much each step counts for this decision
+% \item A fourth, orthogonal fix is to read the sequence in both directions (next slides)
+\item A sentiment label or a fault class needs one vector for the whole sequence, then a classifier on top. Three common ways:
+\item \textbf{Last state} $h_T$: simple, but the whole sequence is squeezed through one vector
+  \begin{itemize}
+  \item Order is not lost, but old information has faded (recency bias: the newest steps dominate)
+  \end{itemize}
+\item \textbf{Pooling over time}: take the mean or the maximum of each feature over all the $h_t$. An early, strong signal survives
+\item \textbf{Attention}: let the model learn how much each $h_t$ counts for this decision
+\item A fourth, separate fix: read the sequence in both directions (next slides)
 \end{itemize}
+\begin{center}
+\adjustbox{max width=\linewidth, max totalheight=0.28\textheight}{%
+\begin{tikzpicture}[>=latex, every node/.style={font=\scriptsize}, st/.style={draw, circle, minimum size=4mm, inner sep=0pt}, bx/.style={draw, rounded corners, fill=lightnyupurple!30, minimum width=19mm, minimum height=6mm}]
+\begin{scope}
+\foreach \i/\x in {1/0, 2/0.7, 3/1.4, 4/2.1} \node[st] (a\i) at (\x,0) {};
+\node[anchor=south] at (a1.north) {$h_1$};
+\node[anchor=south] at (a4.north) {$h_T$};
+\node[bx] (ab) at (1.05,-1.3) {last state};
+\draw[->, thick] (a4) -- (ab);
+\end{scope}
+\begin{scope}[xshift=3.6cm]
+\foreach \i/\x in {1/0, 2/0.7, 3/1.4, 4/2.1} \node[st] (b\i) at (\x,0) {};
+\node[anchor=south] at (b1.north) {$h_1$};
+\node[anchor=south] at (b4.north) {$h_T$};
+\node[bx] (bb) at (1.05,-1.3) {mean or max};
+\foreach \i in {1,2,3,4} \draw[->] (b\i) -- (bb);
+\end{scope}
+\begin{scope}[xshift=7.2cm]
+\foreach \i/\x in {1/0, 2/0.7, 3/1.4, 4/2.1} \node[st] (c\i) at (\x,0) {};
+\node[anchor=south] at (c1.north) {$h_1$};
+\node[anchor=south] at (c4.north) {$h_T$};
+\node[bx] (cb) at (1.05,-1.3) {weighted sum};
+\draw[->, line width=0.4pt] (c1) -- (cb);
+\draw[->, line width=1.6pt] (c2) -- (cb);
+\draw[->, line width=0.4pt] (c3) -- (cb);
+\draw[->, line width=1.0pt] (c4) -- (cb);
+\end{scope}
+\end{tikzpicture}}
+
+{\tiny Thicker arrow, larger share. Last state uses one step; pooling treats all steps alike; attention learns the shares.}
+\end{center}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1695,8 +1817,13 @@ LSTM, last state (100 epochs) & 1,250 & 50.9\% \\
 \end{tabular}}
 \end{center}
 \begin{itemize}
-\item Max pooling brings the early marker straight to the classifier. Bidirectional works because the backward pass ends at step 1, where the marker is fresh
-\item The last-state GRU and LSTM did not learn this task in our training budget, while the plain RNN did partly. We do not claim a ranking of cell types from one synthetic run
+% [upgrade-deck: rewritten 2026-10-26 | Task 5c | long bullets split into a lead plus sub-points; every fact kept; original below]
+% \item Max pooling brings the early marker straight to the classifier. Bidirectional works because the backward pass ends at step 1, where the marker is fresh
+% \item The last-state GRU and LSTM did not learn this task in our training budget, while the plain RNN did partly. We do not claim a ranking of cell types from one synthetic run
+\item \textbf{Max pooling:} brings the early marker straight to the classifier
+\item \textbf{Bidirectional:} the backward pass ends at step 1, where the marker is fresh
+\item The last-state GRU and LSTM did not learn this task in our training budget, while the plain RNN did partly
+\item We do not claim a ranking of cell types from one synthetic run
 \end{itemize}
 \end{frame}
 
@@ -1713,9 +1840,27 @@ LSTM, last state (100 epochs) & 1,250 & 50.9\% \\
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% [upgrade-deck: rewritten 2026-10-26 | Tasks 5 and 5c | the definitions got their own frame with an Intuition callout; the worked example follows on the next frame; original below]
+% \begin{frame}[fragile] \frametitle{Attention: A Weighted Look Back}
+% \begin{itemize}
+% \item Keep all hidden states $h_1, \dots, h_T$. Score each against a query $q$, turn scores into weights with softmax, and mix: $s_i = q \cdot h_i$, \quad $\alpha = \mathrm{softmax}(s)$, \quad $c = \sum_i \alpha_i h_i$
+% \item Example: $h_1 = (1,0)$, $h_2 = (0,1)$, $h_3 = (1,1)$ and $q = (1,0)$
+% \end{itemize}
 \begin{frame}[fragile] \frametitle{Attention: A Weighted Look Back}
 \begin{itemize}
-\item Keep all hidden states $h_1, \dots, h_T$. Score each against a query $q$, turn scores into weights with softmax, and mix: $s_i = q \cdot h_i$, \quad $\alpha = \mathrm{softmax}(s)$, \quad $c = \sum_i \alpha_i h_i$
+\item Keep all hidden states $h_1, \dots, h_T$, not only the last one
+\item \textbf{Score} each state against a query $q$ (a vector for what we are looking for): $s_i = q \cdot h_i$
+\item \textbf{Weights:} softmax turns the scores into positive numbers that add up to 1: $\alpha = \mathrm{softmax}(s)$
+\item \textbf{Mix} the states with those weights: $c = \sum_i \alpha_i h_i$
+\end{itemize}
+\begin{block}{Intuition}
+Think of reading your notes with a highlighter. The query is the question you ask, the scores say which lines match it, and the weights decide how much of each line goes into your answer.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Attention: A Worked Example}
+\begin{itemize}
 \item Example: $h_1 = (1,0)$, $h_2 = (0,1)$, $h_3 = (1,1)$ and $q = (1,0)$
 \end{itemize}
 \begin{center}
@@ -1731,7 +1876,8 @@ weight $\alpha_i$ & 0.4223 & 0.1554 & 0.4223 \\
 \end{tabular}}
 \end{center}
 \begin{itemize}
-\item Context $c = 0.4223\,(1,0) + 0.1554\,(0,1) + 0.4223\,(1,1) = (0.8446,\ 0.5777)$. A plain average would give $(0.6667,\ 0.6667)$: attention leans toward the states that match the query
+\item Context $c = 0.4223\,(1,0) + 0.1554\,(0,1) + 0.4223\,(1,1) = (0.8446,\ 0.5777)$
+\item A plain average would give $(0.6667,\ 0.6667)$: attention leans toward the states that match the query
 \end{itemize}
 \end{frame}
 
@@ -1777,8 +1923,20 @@ weight $\alpha_i$ & 0.4223 & 0.1554 & 0.4223 \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile] \frametitle{Summary}
 \begin{itemize}
-\item RNNs suffer from vanishing gradients and caused by long series of multiplications of small values, diminishing the gradients and causing the learning process to become degenerate.
-\item LSTMs solve the problem using a unique additive gradient structure that includes direct access to the forget gate’s activations, enabling the network to encourage desired behaviour from the error gradient using frequent gates update on every time step of the learning process.
+% [upgrade-deck: rewritten 2026-10-26 | Tasks 1 and 5c | grammar, "solve" overclaims (see Fading by Numbers), long bullet split; original below]
+% \item RNNs suffer from vanishing gradients and caused by long series of multiplications of small values, diminishing the gradients and causing the learning process to become degenerate.
+% \item LSTMs solve the problem using a unique additive gradient structure that includes direct access to the forget gate’s activations, enabling the network to encourage desired behaviour from the error gradient using frequent gates update on every time step of the learning process.
+\item RNNs suffer from vanishing gradients, caused by long series of multiplications of small values
+  \begin{itemize}
+  \item The gradient shrinks, and the early steps barely learn
+  \end{itemize}
+\item LSTMs ease the problem with an additive gradient structure
+  \begin{itemize}
+  \item It gives direct access to the forget gate's activations
+  \item Gates are updated at every step, so the network can encourage the desired behaviour from the error gradient
+  \end{itemize}
+\item Gates help, but they do not remove the problem: at the untrained start a GRU or an LSTM also fades
+\item To get one vector from a sequence: last state, pooling over time, attention, or both directions
 \end{itemize}
 
 {\tiny (Ref: How LSTM networks solve the problem of vanishing gradients
