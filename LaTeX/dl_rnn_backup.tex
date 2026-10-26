@@ -1,0 +1,84 @@
+% Backup for DLCoEP Session 2 (RNN): optional and advanced. Used only by this course, at the end of the deck,
+% after the case study (see seminar_dlcoep_session_2_content.tex).
+% Relocated 2026-10-26 from the middle of dl_rnn.tex: the author found these three frames too advanced for beginners.
+% The text is unchanged. To show them in class, move this file's \input before the case study.
+
+\section[Backup]{Backup: Optional, Advanced}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large Backup: Optional, Advanced}
+
+    {\small Experiments that compare a dense layer with recurrent layers}
+  \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Test 1: Order and Length}
+\begin{itemize}
+\item Task: symbols A and B each appear once among filler symbols. Label: does A come before B? Trained on sequences of length 6
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lrcc}
+\hline
+Model & Parameters & Test, length 6 & Test, length 10 \\
+\hline
+Bag of symbols (counts) + dense & 114 & 49.5\% & 49.9\% \\
+Dense on the 6 positions & 866 & 100.0\% & cannot run \\
+GRU, last state & 1,090 & 100.0\% & 50.1\% \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item The bag cannot tell the two orders apart: a coin flip. The dense net reads order but accepts only length 6
+\item The same GRU trained on lengths 6, 8, 10 and 12 scores 100.0\% on lengths 6, 10 and an unseen 14, and 83.1\% on an unseen 20. Running on any length is not enough: it has to be trained on a range of lengths
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Test 2: Move the Spike in Time}
+\begin{itemize}
+\item Task: is there a spike somewhere in a noisy sequence of 20 steps? Train with the spike only in steps 1 to 10, then test with it in steps 1 to 10 and in steps 11 to 20
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lrcc}
+\hline
+Model & Parameters & Spike in steps 1 to 10 & Spike in steps 11 to 20 \\
+\hline
+Dense 20-32-2 & 738 & 100.0\% & 50.2\% \\
+GRU, 8 units & 282 & 100.0\% & 97.1\% \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item The dense net's weights for steps 11 to 20 never saw a spike: a coin flip
+\item The GRU applies the same weights at every step, so a late spike is still recognised. The small drop (97.1\%) is because a late spike also arrives in a different memory state
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Parameters, and the Three Ideas}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{rrrrr}
+\hline
+Steps $T$ & Dense on $T \times 8$ inputs & RNN & GRU & LSTM \\
+\hline
+10 & 2,592 & 1,344 & 4,032 & 5,376 \\
+100 & 25,632 & 1,344 & 4,032 & 5,376 \\
+1000 & 256,032 & 1,344 & 4,032 & 5,376 \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item $8$ readings per step and $32$ hidden units. The dense layer grows with $T$ and accepts only one $T$; the recurrent layers do not grow
+\item RNN count: $d \times H + H \times H + 2H = 8 \times 32 + 32 \times 32 + 64 = 1{,}344$ (PyTorch keeps two bias vectors)
+\item So: any length, order kept in a hidden state, the same weights at every step. That is the recurrent network
+\end{itemize}
+\end{frame}
