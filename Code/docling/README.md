@@ -19,12 +19,11 @@ retrieval, a local LLM server for answers), plus a set of small Docling example 
 
 ## Run
 
-There is no `environment.yml` here. Create a conda environment, install the dependencies, and start the app:
+Create the conda environment from `environment.yml` and start the app:
 
 ```bash
-conda create -n bookqa python=3.10
-conda activate bookqa
-python setup_script.py
+conda env create -f environment.yml
+conda activate docling
 streamlit run streamlit_app.py
 ```
 

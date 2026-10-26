@@ -10,9 +10,6 @@ conda activate google-adk
 set GOOGLE_API_KEY=your_gemini_api_key
 ```
 
-The stock-price scripts also import `yfinance`, which is not in `environment.yml`; install it into the
-environment before running them.
-
 ## Files
 
 | File | Description |

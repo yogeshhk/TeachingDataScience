@@ -4,12 +4,11 @@ Scripts and notebooks covering LlamaIndex fundamentals, RAG patterns, agents, an
 
 ## Setup
 
-There is no `environment.yml` here. Create a conda environment and install the packages the scripts
-import (`llama-index`, `llama-index-llms-groq`, `llama-index-embeddings-huggingface`), then set the
-key the script needs:
+Create the conda environment from `environment.yml` (it installs `llama-index` with the Groq and
+HuggingFace integrations), then set the key the script needs:
 
 ```bash
-conda create -n llamaindex python=3.11
+conda env create -f environment.yml
 conda activate llamaindex
 set GROQ_API_KEY=your_key_here
 ```

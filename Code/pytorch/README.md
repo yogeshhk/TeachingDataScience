@@ -5,12 +5,11 @@ Each part has an Exercises notebook and a Solution notebook (Part 6 has a single
 
 ## Setup
 
-There is no `environment.yml` here. Create a conda environment and install PyTorch and torchvision:
+Create the conda environment from `environment.yml` (PyTorch, torchvision and the packages the notebooks import):
 
 ```bash
-conda create -n pytorch python=3.10
+conda env create -f environment.yml
 conda activate pytorch
-conda install pytorch torchvision -c pytorch
 ```
 
 ## Files

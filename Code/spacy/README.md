@@ -4,10 +4,10 @@ Scripts demonstrating spaCy for Named Entity Recognition (NER), custom pipelines
 
 ## Setup
 
-There is no `environment.yml` here. Create a conda environment with spaCy and download the English model:
+Create the conda environment from `environment.yml` and download the English model:
 
 ```bash
-conda create -n spacy -c conda-forge python=3.10 spacy
+conda env create -f environment.yml
 conda activate spacy
 python -m spacy download en_core_web_sm
 ```
