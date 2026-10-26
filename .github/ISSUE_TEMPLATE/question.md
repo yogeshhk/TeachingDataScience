@@ -10,4 +10,4 @@ What are you trying to understand or find?
 
 **Context**
 Which course/workshop/seminar or file (if any) is this about? Check
-[`COURSES.md`](../../COURSES.md) and the README first in case it's already answered there.
+the README and the `Main_*` driver files in `LaTeX/` first in case it's already answered there.

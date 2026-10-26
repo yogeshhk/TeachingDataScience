@@ -24,7 +24,7 @@ conventions worth following so new material fits in cleanly.
    patterns already used throughout the repo: a section-heading frame, a list slide, an image,
    a code listing, a two-column layout, and a table.
 3. `\input{<domain>_<topic>}` inside the relevant `seminar_*_content.tex` (or create a new one,
-   see [`COURSES.md`](COURSES.md) for the existing catalog, so you can tell whether your topic
+   see the `Main_*` driver files in `LaTeX/` for the existing catalog, so you can tell whether your topic
    fits an existing seminar or needs a new one).
 4. Place supporting images in `LaTeX/images/`.
 5. Compile before submitting, from `LaTeX/`:

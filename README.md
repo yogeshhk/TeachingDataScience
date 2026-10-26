@@ -39,7 +39,7 @@ Every seminar/workshop compiles to **both** Beamer slides and two-column printab
 
 ## Course Catalog
 
-Five full courses (Machine Learning, Maths for ML, Python, Deep Learning, Generative AI), each assembled from standalone workshops and seminars you can also take independently, plus dozens more standalone workshops and seminars beyond them (NLP, LLMs & GenAI, Graph ML, Reinforcement Learning, Software Engineering, Data Analytics, career prep, and more). See [`COURSES.md`](COURSES.md) for the full catalog with links to every driver.
+Five full courses (Machine Learning, Maths for ML, Python, Deep Learning, Generative AI), each assembled from standalone workshops and seminars you can also take independently, plus dozens more standalone workshops and seminars beyond them (NLP, LLMs & GenAI, Graph ML, Reinforcement Learning, Software Engineering, Data Analytics, career prep, and more), and two bespoke CoEP courses for mechanical engineers (ML, 20 sessions; DL, 2 sessions). The `Main_Course_*` driver files in `LaTeX/` are the catalog: each one lists the workshops and seminars it chains.
 
 ## Code Projects
 

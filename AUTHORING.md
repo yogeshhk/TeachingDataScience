@@ -5,7 +5,7 @@ short hard rules and points here; every how-to lives only in this file.
 
 ## Style Conventions
 
-User-visible markdown (`README.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `COURSES.md`,
+User-visible markdown (`README.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
 `Code/README.md`, and similar) must not use em-dashes; use a colon, comma or semicolon. Internal
 files (`CLAUDE.md`, templates) are exempt.
 

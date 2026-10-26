@@ -148,7 +148,7 @@ Follow `D:\Yogesh\GitHub\CLAUDE.md`:
 
 - `Code/mlcoep/` notebooks, scripts and datasets that the session uses: if a slide change makes one stale,
   tell the author and ask.
-- `COURSES.md` and `README.md`: only if the session list or titles changed.
+- `README.md`: only if the session list or titles changed.
 - COEP has no LMS and no textbook folder. Do not create either.
 
 ## Close out
