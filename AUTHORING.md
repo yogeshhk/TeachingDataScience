@@ -104,6 +104,9 @@ not raw `\begin{frame}` occurrences, when judging a deck's size**; raw counts ov
 Default to the full (`X.tex`) sibling over `_short` unless there is a genuine duration reason. Check
 both before assuming one is current.
 
+**Shared topic file:** `dl_rnn.tex` is also `\input` by `seminar_deeplearning_foundations_content.tex`.
+After a change to it, recompile the Workshop DL driver (`Main_Workshop_DL_*`) as well.
+
 **Always invoke `/upgrade-deck` itself rather than reconstructing its checklist from memory.**
 Manual passes have silently skipped items such as the prose-dash sweep.
 
