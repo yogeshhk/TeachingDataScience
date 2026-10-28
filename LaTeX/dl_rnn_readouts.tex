@@ -1,0 +1,179 @@
+% Moved 2026-10-28 from dl_rnn.tex: how to get one vector from a sequence, with any recurrent cell.
+% Follows the plain RNN, GRU and LSTM sections (dl_rnn, dl_gru, dl_lstm).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{One Vector per Sequence: Three Readouts}
+\begin{itemize}
+% [upgrade-deck: rewritten 2026-10-26 | Task 5c | long bullets split into a lead plus sub-points; every fact kept; original below]
+% \item For a sentiment label or a fault class we need one vector for the whole sequence, then a classifier on top. Three common ways to get it:
+% \item \textbf{Last state} $h_T$: simple, but the whole sequence is squeezed through one vector. Order is not lost, but old information has faded (recency bias)
+% \item \textbf{Pooling over time}: keep every $h_t$ and take the mean or the maximum of each feature over all steps. An early, strong signal survives
+% \item \textbf{Attention}: keep every $h_t$ and let the model learn how much each step counts for this decision
+% \item A fourth, orthogonal fix is to read the sequence in both directions (next slides)
+\item With a plain RNN, a GRU or an LSTM, a sentiment label or a fault class needs one vector for the whole sequence, then a classifier on top. Three common ways:
+\item \textbf{Last state} $h_T$: simple, but the whole sequence is squeezed through one vector
+  \begin{itemize}
+  \item Order is not lost, but old information has faded (recency bias: the newest steps dominate)
+  \end{itemize}
+\item \textbf{Pooling over time}: take the mean or the maximum of each feature over all the $h_t$. An early, strong signal survives
+\item \textbf{Attention}: let the model learn how much each $h_t$ counts for this decision
+\item A fourth, separate fix: read the sequence in both directions (the Bidirectional RNN frame)
+\end{itemize}
+\begin{center}
+\adjustbox{max width=\linewidth, max totalheight=0.28\textheight}{%
+\begin{tikzpicture}[>=latex, every node/.style={font=\scriptsize}, st/.style={draw, circle, minimum size=4mm, inner sep=0pt}, bx/.style={draw, rounded corners, fill=lightnyupurple!30, minimum width=19mm, minimum height=6mm}]
+\begin{scope}
+\foreach \i/\x in {1/0, 2/0.7, 3/1.4, 4/2.1} \node[st] (a\i) at (\x,0) {};
+\node[anchor=south] at (a1.north) {$h_1$};
+\node[anchor=south] at (a4.north) {$h_T$};
+\node[bx] (ab) at (1.05,-1.3) {last state};
+\draw[->, thick] (a4) -- (ab);
+\end{scope}
+\begin{scope}[xshift=3.6cm]
+\foreach \i/\x in {1/0, 2/0.7, 3/1.4, 4/2.1} \node[st] (b\i) at (\x,0) {};
+\node[anchor=south] at (b1.north) {$h_1$};
+\node[anchor=south] at (b4.north) {$h_T$};
+\node[bx] (bb) at (1.05,-1.3) {mean or max};
+\foreach \i in {1,2,3,4} \draw[->] (b\i) -- (bb);
+\end{scope}
+\begin{scope}[xshift=7.2cm]
+\foreach \i/\x in {1/0, 2/0.7, 3/1.4, 4/2.1} \node[st] (c\i) at (\x,0) {};
+\node[anchor=south] at (c1.north) {$h_1$};
+\node[anchor=south] at (c4.north) {$h_T$};
+\node[bx] (cb) at (1.05,-1.3) {weighted sum};
+\draw[->, line width=0.4pt] (c1) -- (cb);
+\draw[->, line width=1.6pt] (c2) -- (cb);
+\draw[->, line width=0.4pt] (c3) -- (cb);
+\draw[->, line width=1.0pt] (c4) -- (cb);
+\end{scope}
+\end{tikzpicture}}
+
+{\tiny Thicker arrow, larger share. Last state uses one step; pooling treats all steps alike; attention learns the shares.}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Early Evidence: Which Readout Works?}
+\begin{itemize}
+\item Task: sequences of 60 steps of noise; the label is whether a $+3$ marker sits in steps 1 to 3. Chance is 50\%. One run each
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lrc}
+\hline
+Model & Parameters & Test accuracy \\
+\hline
+Plain RNN, last state & 338 & 85.3\% \\
+Plain RNN, mean over time & 338 & 90.4\% \\
+Plain RNN, max over time & 338 & 99.2\% \\
+Plain RNN, bidirectional & 674 & 99.1\% \\
+GRU, max over time & 946 & 99.3\% \\
+GRU, bidirectional & 1,890 & 99.2\% \\
+GRU, last state (100 epochs) & 946 & 52.2\% \\
+LSTM, last state (100 epochs) & 1,250 & 50.9\% \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+% [upgrade-deck: rewritten 2026-10-26 | Task 5c | long bullets split into a lead plus sub-points; every fact kept; original below]
+% \item Max pooling brings the early marker straight to the classifier. Bidirectional works because the backward pass ends at step 1, where the marker is fresh
+% \item The last-state GRU and LSTM did not learn this task in our training budget, while the plain RNN did partly. We do not claim a ranking of cell types from one synthetic run
+\item \textbf{Max pooling:} brings the early marker straight to the classifier
+\item \textbf{Bidirectional:} the backward pass ends at step 1, where the marker is fresh
+\item The last-state GRU and LSTM did not learn this task in our training budget, while the plain RNN did partly
+\item We do not claim a ranking of cell types from one synthetic run
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Bidirectional RNN}
+\begin{center}
+\adjustbox{max width=0.7\linewidth, max totalheight=0.40\textheight}{\includegraphics{rnnbi}}
+\end{center}
+\begin{itemize}
+\item Two recurrent layers: one reads left to right, one right to left. At each step their states are joined, so every step has context from both sides
+\item The cost is twice the parameters (338 became 674 in the test before) and the whole sequence must be available
+\item Fine for classifying a finished recording or sentence. Not possible for real-time forecasting, where the future has not happened yet
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% [upgrade-deck: rewritten 2026-10-26 | Tasks 5 and 5c | the definitions got their own frame with an Intuition callout; the worked example follows on the next frame; original below]
+% \begin{frame}[fragile] \frametitle{Attention: A Weighted Look Back}
+% \begin{itemize}
+% \item Keep all hidden states $h_1, \dots, h_T$. Score each against a query $q$, turn scores into weights with softmax, and mix: $s_i = q \cdot h_i$, \quad $\alpha = \mathrm{softmax}(s)$, \quad $c = \sum_i \alpha_i h_i$
+% \item Example: $h_1 = (1,0)$, $h_2 = (0,1)$, $h_3 = (1,1)$ and $q = (1,0)$
+% \end{itemize}
+\begin{frame}[fragile] \frametitle{Attention: A Weighted Look Back}
+\begin{itemize}
+\item Keep all hidden states $h_1, \dots, h_T$, not only the last one
+\item \textbf{Score} each state against a query $q$ (a vector for what we are looking for): $s_i = q \cdot h_i$
+\item \textbf{Weights:} softmax turns the scores into positive numbers that add up to 1: $\alpha = \mathrm{softmax}(s)$
+\item \textbf{Mix} the states with those weights: $c = \sum_i \alpha_i h_i$
+\end{itemize}
+\begin{block}{Intuition}
+Think of reading your notes with a highlighter. The query is the question you ask, the scores say which lines match it, and the weights decide how much of each line goes into your answer.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Attention: A Worked Example}
+\begin{itemize}
+\item Example: $h_1 = (1,0)$, $h_2 = (0,1)$, $h_3 = (1,1)$ and $q = (1,0)$
+\end{itemize}
+\begin{center}
+\small
+\adjustbox{max width=\linewidth}{%
+\begin{tabular}{lccc}
+\hline
+ & $h_1$ & $h_2$ & $h_3$ \\
+\hline
+score $q \cdot h_i$ & 1 & 0 & 1 \\
+weight $\alpha_i$ & 0.4223 & 0.1554 & 0.4223 \\
+\hline
+\end{tabular}}
+\end{center}
+\begin{itemize}
+\item Context $c = 0.4223\,(1,0) + 0.1554\,(0,1) + 0.4223\,(1,1) = (0.8446,\ 0.5777)$
+\item A plain average would give $(0.6667,\ 0.6667)$: attention leans toward the states that match the query
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Attention: The Road to Transformers}
+\begin{itemize}
+\item Attention was first added on top of RNNs to ease the one-vector bottleneck: the decision can look back at every step, not only the last one
+\item A Transformer keeps attention and drops the recurrence. It adds position information so that order is not lost, and it reads all steps at once, which suits parallel hardware
+\item That is a pointer, not part of this session: the point here is why the bottleneck mattered
+\item Recurrent nets have not disappeared. Small, cheap models that process a stream one step at a time are still a good fit when memory and compute are tight
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Quick Check: Sequences}
+\begin{block}{Think About It}
+1. A sensor gives 8 readings per step, and a layer has 32 hidden units. The window grows from 100 to 1000 steps. What happens to the parameter count?
+\begin{enumerate}
+  \item[A.] Both a dense layer on the window and a recurrent layer grow about ten times.
+  \item[B.] The dense layer grows about ten times; the recurrent layer stays the same.
+  \item[C.] The recurrent layer grows about ten times; the dense layer stays the same.
+  \item[D.] Both stay the same.
+\end{enumerate}
+2. In the early-marker task, which readout lifted a plain RNN from 85\% to about 99\%?
+\begin{enumerate}
+  \item[A.] Last state only.
+  \item[B.] Max over time (or reading in both directions).
+  \item[C.] More hidden units with the same last-state readout.
+  \item[D.] Shuffling the steps.
+\end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Quick Check: Sequences}
+\begin{block}{Answer}
+\textbf{1. Correct: B.} The dense layer on the window has $T \times 8 \times 32$ weights plus biases: 25,632 at 100 steps and 256,032 at 1000. The recurrent layer reuses the same weights at every step: 1,344 for a plain RNN in both cases.
+
+\textbf{2. Correct: B.} Max over time keeps the early marker's strong response, and a backward pass ends exactly at the early steps. We did not test C, and D destroys the order the label depends on.
+\end{block}
+\end{frame}

@@ -1,5 +1,5 @@
 """
-DLCoEP Session 2 (RNN): the numbers behind the "Why not a dense layer for sequences?", "One step by
+DLCoEP, RNN: the numbers behind the "Why not a dense layer for sequences?", "One step by
 hand", "One vector per sequence" and "Attention" frames of LaTeX/dl_rnn.tex.
 
   A. parameter counts: dense layer on a fixed window against recurrent layers

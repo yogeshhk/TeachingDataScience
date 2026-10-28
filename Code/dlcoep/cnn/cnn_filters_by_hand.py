@@ -1,5 +1,5 @@
 """
-DLCoEP Session 1 (CNN): the numbers behind the "Why not a dense layer?" and "Filters by numbers"
+DLCoEP, CNN: the numbers behind the "Why not a dense layer?" and "Filters by numbers"
 frames of LaTeX/dl_cnn.tex.
 
   A. parameter counts, dense layer against convolution

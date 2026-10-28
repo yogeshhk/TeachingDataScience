@@ -1,5 +1,5 @@
 """
-DLCoEP Session 1 (CNN): the handwritten-digits case study of LaTeX/dl_cnn_digits_case_study.tex.
+DLCoEP, CNN: the handwritten-digits case study of LaTeX/dl_cnn_digits_case_study.tex.
 
   shapes through a small CNN -> parameter count against a fully connected net -> train on MNIST
   -> test accuracy, the digits that get confused, the learned 3x3 filters, and a few mistakes.

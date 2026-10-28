@@ -1,0 +1,1338 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large LSTM: A RNN variation}
+    
+    LSTM-GRU
+  \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Recap: Simple RNN}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm49}
+
+\tiny{(Ref: Intro to Deep Learning - Coursera, National Research University Higher School of Economics)}
+\end{center}
+RNN takes previous hidden state ($h_{t-1}$), current input ($x_t$) and generates new/next hidden state ($h_t$) by formula $h_t = f_h ( Vx_t + Wh_{t-1} + b_h)$
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{RNN Shortcomings}
+\begin{itemize}
+\item RNN does not work in some situations
+\item Especially when long past words need to be accounted for
+\item Due to Vanishing Gradient problem.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Shortcomings (Ref: Brandon Rohrer)}
+Say we are writting a children's book, which has only 3 sentences
+\begin{itemize}
+\item ``Doug saw Jane.''
+\item ``Jane saw Spot.''
+\item ``Spot saw Doug.''
+\item So the dictionary is : \{`Doug', `Jane', `Spot', `saw','.'\}, thats it.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Shortcomings}
+\begin{itemize}
+\item We are building a children's book
+\item Meaning predicting next word, called ``language model''
+\item Need to build neural network that will predict next probable word to generate good sentences.
+\item We represent words as One-hot encoding, of size 5.
+\item For `Doug', 1st position will be 1 rest all 0s. And so on.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Shortcomings}
+Observations: Whenever we see names like `Doug', `Spot' or `Jane', most likely next word is `saw' or `.'
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm11}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Shortcomings}
+Observations: If we had predicted a name in the previous time step, those will also vote for `saw' or `.'
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm12}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Shortcomings}
+Observations: Whenever we see names like `saw', or `.', most likely next word is amongst names.
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm13}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Shortcomings}
+\begin{itemize}
+\item Inputs are shown by network symbol below
+\item And the activation function is the sigmoid (makes to 0 to 1)
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm14}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Shortcomings}
+\begin{itemize}
+\item But the problem is ``Doug saw'' can predict any name next, and it can be ``Doug'' again.
+\item Thats a bad prediction, even though, by rules formed so far, it is correct.
+\item Another mistake ``Jane saw Spot saw Doug saw \ldots''
+\item This is because, we are seeing only one step behind.
+\item To overcome this issue, we expand the RNN to accommodate Memory.
+\item We want to be able to remember what happened many steps before.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Addressing shortcomings}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm15}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Addressing shortcomings}
+Note:
+\begin{itemize}
+\item Squashing with flat bottom:0 to 1 
+\item Plus gate does element wise addition
+\item Cross gate does element wise multiplication. It acts like a knob/gate which passes only some/all portions through.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{lstm15}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Addressing shortcomings}
+\begin{itemize}
+\item We still have previous output along with current input going as input to Neural network at the bottom, then full squashing.
+\item Predictions from there get passed through.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm16}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Addressing shortcomings}
+\begin{itemize}
+\item A copy of those predictions is hold on to for the next time step.
+\item Some of that (due to Cross gate), along with input from flat bottom squash are passed through. 
+\item Gets added to predictions as Memories.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm16}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Addressing shortcomings}
+\begin{itemize}
+\item The NN in the middle is doing something else.
+\item It learns to select to forget WHAT, remember WHAT. 
+\item So, called as FORGETTING Gate.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm16}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Addressing shortcomings}
+\begin{itemize}
+\item One more NN gets added at the top, called SELECTION
+\item We may not want to release all those memories now.
+\item It has own NN, own voting process, to decide what should be kept internal and what should be released as prediction.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm17}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Addressing shortcomings}
+\begin{itemize}
+\item Also introduced a full squashing function on vertical path
+\item Due to previous PLUS gate, things could be greater than one, so as to bring them back to -1 to 1 range.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm17}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: RNN Addressing shortcomings}
+\begin{itemize}
+\item One more NN, the IGNORING gate is also added
+\item Ignores some of the  possibilities. 
+\item Called ATTENTION mechanism.
+\item The whole thing is now LSTM: Long Short Term Memory
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm18}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM}
+\begin{itemize}
+\item All NNs start with random values
+\item They learn the weights during training.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm18}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item Lets assume that LSTM has been trained with the three sentences.
+\item Now ``Doug'' is the most recent word
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm19}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item Lets assume that LSTM has been trained with the three sentences.
+\item Now ``Doug'' is the most recent word
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm19}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item  Previously we had `.' and thus possible predictions were `Doug', `Jane' and `Spot'.
+\item So, New information ``Doug''
+\item Previous Predictions: `Doug', `Jane' and `Spot'.
+\item We pass these two vectors are inputs.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm20}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item  Previously we had `.' and thus possible predictions were `Doug', `Jane' and `Spot'.
+\item So, New information ``Doug''
+\item Previous Predictions: `Doug', `Jane' and `Spot'.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm20}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item We pass these two vectors are inputs to all 4 NNs
+\item They are learning to do: PREDICTION, IGNORING, FORGETTING, SELECTION.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm20}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item First one makes positive prediction: `saw'
+\item Having seen `Doug' it says negative prediction about `Doug' now. (HOW?? whats negative prediction? negative probability???, how??, because of full-activation??)
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm21}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item For this simple example, we need not look at ATTENTION so skipping IGNORING
+\item Positive `saw' and negative `Doug' are passed forward.
+\item Lets say, for now, there is no memory as well. So, passed forward.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm22}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item SELECTION: As recent word was name, the next one has to be `saw' or `.'
+\item So, block anything else, but allows only `saw', as prediction of the time step.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm23}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+Next time step
+\begin{itemize}
+\item Most recent prediction: `saw'
+\item Next new information/word: `saw'.
+\item So prediction is names: `Doug', `Jane' and `Spot'.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm24}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item Skip IGNORING for now.
+\item Positive `saw' and Negative `Doug' was stored in Memory at FORGETTING gate.
+\item Forgets `saw' and allows negative `Doug' to go through, as logical next prediction.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm25}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item At the PLUS gate, negative `Doug' and Positive `Doug' cancel.
+\item This lets only `Jane' and `Spot' to go through.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm26}
+\end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Toy Example: LSTM walk-through}
+\begin{itemize}
+\item SELECTION: knows that `saw' just occurred. Based on experience, names will happen next.
+\item We now have predictions for only `Jane' and `Spot'.
+\item This avoids repetition of `Doug' in the same sentence.
+\item Thus, LSTM can look back couple of time steps.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm27}
+\end{center}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Why - LSTM}
+Designed to overcome:
+\begin{itemize}
+\item Long-term dependencies
+\item Vanishing/exploding gradients
+\end{itemize}
+We don't want  to remember  everything,  just  the  important  things  for a long time
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Recap: Simple LSTM}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm50}
+
+\tiny{(Ref: Intro to Deep Learning - Coursera, National Research University Higher School of Economics)}
+\end{center}
+LSTM has two channels, the usual RNN channel like previous hidden state ($h_{t-1}$), current input ($x_t$) and new/next hidden state ($h_t$) and the second one of memory $c_t$ incoming and $c_{t-1}$ outgoing. Intermediate output $g$ is computed as $g_t = \hat{f} ( V_gx_t + W_gh_{t-1} + b_g)$
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Recap: Simple LSTM}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm50}
+
+\tiny{(Ref: Intro to Deep Learning - Coursera, National Research University Higher School of Economics)}
+\end{center}
+LSTM has two controllers of this intermediate $g$ output. Input Gate and Output Gate (both give out outputs of same dimmension as hidden unit).
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Recap: Simple LSTM}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm52}
+
+\tiny{(Ref: Intro to Deep Learning - Coursera, National Research University Higher School of Economics)}
+\end{center}
+Memory is added with dot product of input gate $i$ and $g$.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Recap: Simple LSTM}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm53}
+
+\tiny{(Ref: Intro to Deep Learning - Coursera, National Research University Higher School of Economics)}
+\end{center}
+Output gate $o$ controls what to read from memory and passed as next output/hidden state.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Recap: Simple LSTM}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm54}
+
+\tiny{(Ref: Intro to Deep Learning - Coursera, National Research University Higher School of Economics)}
+\end{center}
+As now, we have a short way (in form of memory) which has no sigmoid or gradient applied to it, so information decay (by vaniishing gradient) does not happen.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Recap: Simple LSTM}
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm55}
+
+\tiny{(Ref: Intro to Deep Learning - Coursera, National Research University Higher School of Economics)}
+\end{center}
+Need to forget something at times, thats Forget Gate.
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Vanishing Gradient}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm1}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Why - Long-Term Dependencies}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm2}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Vanishing Gradients}
+
+Discovered by Sepp Hochreiter and Yoshua Bengio
+
+\begin{center}
+\includegraphics[width=0.45\linewidth,keepaspectratio]{lstm30}
+\includegraphics[width=0.45\linewidth,keepaspectratio]{lstm31}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
+\end{center}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Vanishing Gradients}
+
+Gradient descent minimizes loss (C) to arrive at the best weight (thus $\hat{y}$)
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm32}
+
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
+\end{center}
+
+Weights are then updated in the back-propagation.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Vanishing Gradients}
+
+In RNN, information travels through time. In the figure below, each circle is not a node, but the whole layer.
+During training, at each time step you can calculate error ($\epsilon$)
+
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm33}
+
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Vanishing Gradients}
+
+Lets look at one single time step. Error is $\epsilon_t$. All the weights, not just below, but all (say, 50) the previous weights need to be updated. In forward pass $W_{rec}$ (Weight recurring) was the weight that was getting multiplied to output at each time step.
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm34}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Vanishing Gradients}
+So in back-propogration, similar weight will again multiply to arrive at the previous steps. If $W_{rec}$ is small, values of gradient decrease rapidly (green arrows). Lower the gradient, updating weights ceases shortly. Rest of the network  does not get trained. 
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm34}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
+\end{center}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Vanishing Gradients}
+So if $W_{rec}$ is small, you have Vanishing Gradient problem, else Exploding Gradient problem. It needs to  be 1.
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm34}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
+\end{center}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Summary: Vanishing Gradient}
+When weight  or activation  functions  (their  derivatives)  are:
+\begin{itemize}
+\item $< 1$ Vanishing Gradients
+\item $> 1$ Exploding Gradients
+\end{itemize}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm3}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Vanishing Gradients: Solutions}
+Exploding Gradient:
+\begin{itemize}
+\item Truncating back-propagation
+\item Penalties
+\item Gradient Clipping
+\end{itemize}
+Vanishing Gradient:
+\begin{itemize}
+\item Weight Initialization
+\item Echo State Networks
+\item LSTM \ldots
+\end{itemize}
+
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Vanishing Gradients: Solution: LSTM}
+One solution could be to have  $W_{rec} = 1$. Gets rid off the problem.
+Discovered by Sepp and Jurgen (his supervisor)
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm35}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
+\end{center}
+
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM}
+\begin{itemize}
+\item LSTM is the most sensible RNN architecture (ref: reddit)
+\item It can be derived directly from RNN in 2 steps
+\begin{itemize}
+\item Don't multiply, use Addition instead
+\item Gate all operations so that you don't cram everything
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Why - Don't multiply}
+\begin{itemize}
+\item Means, instead of multiplying the previous hidden state by a matrix to get the new state, you add something to your old hidden state and get the new state (here its not called as ``hidden'' but ``cell'')
+\item Why?
+\item Because, Multiplication == Vanishing Gradients.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Why - Gate all operations}
+\begin{itemize}
+\item Now we are capable of long term memory since we are not losing it by repeated multiplications.
+\item But is storing everything useful?
+\item Also, do we want to output everything we have stored at each instant.
+\item NO.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Why - Gate all operations}
+\begin{itemize}
+\item There are 3 steps in RNN: input to hidden, hidden to hidden, hidden to output
+\item LSTM regulates each with input, forget and output gates respectively.
+\item Each of the gates are calculated as function of what we already know (ie previous) and the current input
+\item Now our internal hidden state will becomes holy and restricted. So, its called as ``Cell''.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM Architecture}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm36}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko, Original Chris Olah's blog)}
+\end{center}
+
+Note: The middle circular nodes which were shown earlier are represented now by square boxes.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM Architecture}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm37}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko, Original Chris Olah's blog)}
+\end{center}
+
+If this looks complex, take a look \ldots (next)
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM Architecture}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm38}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
+\end{center}
+
+If this looks complex, take a look \ldots (next)
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM Architecture}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm37}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko, Original Chris Olah's blog)}
+\end{center}
+
+The top line, which goes through all the cells, is representing $W_{rec} = 1$ Nothing much is happening to it except two operations ($x,+$).
+When you back-propagate, there is no vanishing/exploding gradient problem.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM Architecture}
+\begin{center}
+\includegraphics[width=0.45\linewidth,keepaspectratio]{lstm39}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko, Original Chris Olah's blog)}
+\end{center}
+
+\begin{itemize}
+\item C : Memory
+\item h : Output (although two h's have been shown, they are just the same)
+\item X : Input
+\item 3 inputs, 2 outputs
+\item Every input, output is a vector of values.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{How}
+%Notation:
+%\begin{center}
+%\includegraphics[width=\linewidth,keepaspectratio]{lstm4}
+%\end{center}
+%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{How - LSTM Structure}
+
+With notations:
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{lstm5}
+\end{center}
+
+\begin{itemize}
+\item Concatenation is not summation, but just that they are running parallel, or at max, appended.
+\item Branch is a copy into forked legs.
+\item ``X'' operations are valves. They can be FORGET. MEMORY and OUTPUT.
+\item ``+'' is the additional op, like T shaped joint pipe.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{How - LSTM Step by Step:Forget Layer}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm7}
+\end{center}
+
+\begin{itemize}
+\item Current value coming in, along with output of previous state. 
+\item Apply Sigmoid on top of it, on one copy of it.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{How - LSTM Step by Step: Input gate Layer}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm8}
+\end{center}
+
+\begin{itemize}
+\item Apply tanh (-1, 1) on the second copy. 
+\item Both are combined and fed into a valve. 
+\item It decides how much to pass further.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{How - LSTM Step by Step: Cell State}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm6}
+\end{center}
+\begin{itemize}
+\item Memory flowing through.
+\end{itemize}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{How - LSTM Step by Step: Cell State Update}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm9}
+\end{center}
+\begin{itemize}
+\item FORGET Valve is merging to it. 
+\item MEMORY valve's output is getting added to it.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{How - LSTM Step by Step: Output Value}
+\begin{center}
+\includegraphics[width=\linewidth,keepaspectratio]{lstm10}
+\end{center}
+\begin{itemize}
+\item Input and previous output is combined, filtered through sigmoid and fed into OUTPUT Valve.
+\item Extract some memory from Memory (C) line, tanh on it and fed into OUTPUT Valve.
+\item The valve decides how much of it should be passed to the next cell as output.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Input units vs Time Steps}
+Time steps specify number of inputs in past. Then whats number of input units in the LSTM layer?
+\begin{center}
+\includegraphics[width=0.5\linewidth,keepaspectratio]{lstm45}
+\end{center}
+\begin{itemize}
+\item Each blue box is an LSTM layer, composed of multiple cells/units, each of which accepts a vector input x\_t. Each unit cell will take an input of size/units 50. 
+\item The output size is always 1, similar to neural network nodes (like sigmoidal units) that combine and then activate.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Code from Scratch}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{lstm46}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Example}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{lstm40}
+\end{center}
+\begin{itemize}
+\item Memory has, say, ``boy'' passing through.
+\item If the next input $X_t$ brings female name such as Amanda, the FORGET (first) valve is closed (destroy the current memory), memory valve changes subject/context to female gender, so that corresponding verbs etc can be changed and adds this new subject/conte to memory line.
+\item Last valve (OUTPUT), extracts the gender information, along with other intermediate output.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Practical Intuition}
+
+Examples taken from Kirpathy's paper called ``Unreasonable effectiveness \ldots''
+All are similar to language model, with visualization:
+
+Given UNIX code, it gets trained in various ways. It learns all this all  by itself. Some hidden states represent some aspects.
+\begin{center}
+\includegraphics[width=0.8\linewidth,keepaspectratio]{lstm28}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
+\end{center}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Practical Intuition}
+NN states:
+\begin{itemize}
+\item Green means active, blue means non active.
+\item Red means  likely prediction, gradation exists there
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{lstm29}
+
+\tiny{(Ref: Deep Learning A-Z - Kirill Eremenko)}
+\end{center}
+
+Look at top line. Active is green www. Row below shoes red predictions (shifted backward, obviously). Below green ``.'' you have weak ``b'' predicted, but the actual turns out to be ``y'' and so on.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM Variations}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{lstm41}
+\end{center}
+Additional inputs provided for all 3 valves, extracted from memory
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM Variations}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{lstm42}
+\end{center}
+Connect FORGET valve and MEMEORY valve. If you close MEMORY valve, you add something to MEMORY valve and vice versa.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{LSTM Variations}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{lstm43}
+\end{center}
+Gated Recurrent Units (GRU): No Memory (C) pipeline, it gets merged into output pipeline. Simplification but less flexible.
+\end{frame}
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{Solutions to Variable length issue}
+%\adjustbox{valign=t}{
+%\begin{minipage}{0.45\linewidth}
+%\begin{itemize}
+%\item Padding: Insert special symbols
+%\begin{itemize}
+%\item EOS : End of sentence
+%\item PAD : Filler
+%\item GO : Start decoding
+%\item UNK : Unknown; not in vocab
+%\end{itemize}
+%\item Input
+%\begin{itemize}
+%\item Q : How are you? 
+%\item A : I am fine.
+%\end{itemize}
+%\item Data struct
+%\begin{itemize}
+%\item Q : [ PAD, PAD, PAD, PAD, PAD, PAD, ``?'', ``you'', ``are'', ``How'' ]
+%\item A : [ GO, ``I'', ``am'', ``fine'', ``.'', EOS, PAD, PAD, PAD, PAD ]
+%\end{itemize}
+%
+%\end{itemize}
+%\end{minipage}
+%}
+%\hfill
+%\adjustbox{valign=t}{
+%\begin{minipage}{0.45\linewidth}
+%\begin{itemize}
+%\item With what to PAD? Problematic!!
+%\item Bucketing:
+%\begin{itemize}
+%\item Varying size based containers
+%\item Seq closest in size goes
+%\item Remaining places are padded
+%\end{itemize}
+%\item Word Embedding
+%\begin{itemize}
+%\item Embedding layer is added
+%\item Converts word to vec
+%\end{itemize}
+%\end{itemize}
+%\end{minipage}
+%}
+%
+%\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{LSTM}
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{lstmwts}
+%\end{center}
+%\end{frame}
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{LSTM cell}
+%While preparing next input, somethings are left, some are added
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{lstmcell}
+%\end{center}
+%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{GRU: Gated Recurrent Unit}
+\begin{itemize}
+\item Most popular amongst RNN variants
+\item Example: predict next character (one hot,100)
+\item Output is the same sequence shifted by one
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{GRU: Gated Recurrent Unit}
+Differences  from  LSTMs:
+\begin{itemize}
+\item  GRU has 2 gates while LSTM has 3 gates
+\item GRU's internal memory is completely exposed as output
+\item No output gate
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{What GRU: Gated Recurrent Unit}
+\begin{itemize}
+\item  Reset  to normal  RNN  by setting:
+\begin{itemize}
+\item   Reset gate to all 1s
+\item    Output gate to all 0s
+\end{itemize}
+\item  GRU  only has 2 gates
+\begin{itemize}
+\item   Reset - how to combined previous hidden state and current input
+\item  Update - how much of the internal memory to keep
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%\begin{frame}[fragile] \frametitle{GRU: Gated Recurrent Unit}
+%%\begin{center}
+%%\includegraphics[width=\linewidth,keepaspectratio]{gru}
+%%\end{center}
+%%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{What : LSTM vs. GRU}
+\begin{itemize}
+\item  Unclear  which  is better
+\item  GRUs  have fewer  parameters, may train faster and require less data for generalization
+\item LSTMs  are  very expressive, may require much more data
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Seq2Seq}
+\begin{itemize}
+\item Consists of two RNNs:
+\begin{itemize}
+\item Encoder: Takes a sequence(sentence) as input, Processes one symbol(word) at each timestep and converts a sequence to a fixed size imp feature vector 
+\item Decoder: From the context, the decoder generates another sequence, one symbol(word) at a time
+\end{itemize}
+\item Hidden states are called context or thought vectors.
+\item Problems:
+\begin{itemize}
+\item Fixed length input
+\item Softmax on whole dictionary is expensive, for each output word
+\end{itemize}
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.6\linewidth,keepaspectratio]{Seq2Seq}
+\end{center}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{A note on time initialization}
+%
+%One confusing bit, at least for me the first time I saw RNNs, is
+%the relationship between time and samples. We typically restart
+%the state, or memory, of the RNN when we move on to a new sample.
+%This detail seems to be glossed over in most tutorials on RNNs,
+%but I think it clarifies a key idea in what these models are capturing.
+%
+%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{Unrolling an RNN}
+%
+%In truth, an RNN can be seen as a traditional feedforward neural
+%network by unrolling the time component (assuming that there is
+%a fixed number of time steps).
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[height=3cm]{cloah02.png}
+%\end{center}
+%
+%Unrolling the recurrent neural network.
+%
+%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{Training RNNs}
+%
+%While it is nice that we get a `running output' from the model, when
+%we train RNNs we typically ignore all but the final output to the
+%model. Getting the right answer after we have looked at the entire
+%document is the end goal, anyway. To do this, back-propogation can
+%be used as before.
+%
+%While we could unroll the RNN into a FF network and apply the algorithms
+%we saw in Lecture 13, for both memory consumption and computational
+%efficiency, techniques exist to short-cut this approach.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%{I. Load IMDB dataset}
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%{II. Basic RNN example}
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[height=4.5cm]{cloah03.png}
+%\end{center}
+%
+%Because of the state in the model, words that occur
+%early in the sequence can still have an influence on
+%later outputs.
+%
+%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah04.png}
+%\end{center}
+%
+%Using a basic dense layer as the RNN unit, however, makes it
+%so that long range effects are hard to pass on.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%Long short-term memory was original proposed way
+%back in 1997 in order to alleviate this problem.
+%\begin{quote}
+%Hochreiter, Sepp, and Jürgen Schmidhuber. ''Long
+%short-term memory.'' Neural computation 9, no. 8 (1997):
+%1735-1780.
+%\end{quote}
+%Their specific idea that has had surprising staying power.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%A great reference for dissecting the details of their
+%paper is the blog post by Christopher Olah:
+%\begin{quote}
+%\url{http://colah.github.io/posts/2015-08-Understanding-LSTMs/}
+%\end{quote}
+%I will pull extensively from it throughout the remainder of
+%today's lecture.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{lstmPaperImg.jpg}
+%\end{center}
+%
+%Some people consider LSTM's to be a bit hard to understand;
+%here is a diagram from the original paper that partially
+%explains where the confusion comes from!
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah05.png}
+%\end{center}
+%
+%In fact, though, basic idea of an LSTM layer is exactly
+%the same as a simple RNN layer.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah06.png}
+%\end{center}
+%
+%It is just that the internal mechanism is just a bit more
+%complex, with two separate self-loops and several independent
+%weight functions to serve slightly different purposes.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah07.png}
+%\end{center}
+%
+%The diagrams use a few simple mechanics, most of which
+%we have seen in some form in CNNs. The pointwise operation,
+%for example, is used in the ResNet architecture when creating
+%skip-connections.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[height=4.5cm]{cloah08.png}
+%\end{center}
+%
+%A key idea is to separate the response that is passed back into
+%the LSTM and the output that is emitted; there is no particular
+%reason these need to be the same. The \textbf{cell state} is the
+%part of the layer that get's passed back, and is changed from
+%iteration to iteration only by two linear functions.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah09.png}
+%\end{center}
+%
+%Next, consider the \textbf{forget gate}. It uses the previous
+%output $h_{t-1}$ and the current input $x_t$ to determine
+%multiplicative weights to apply to the cell state. We use a
+%sigmoid layer here because it makes sense to have weights
+%between $0$ and $1$.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah10.png}
+%\end{center}
+%
+%Next, we have a choice of how to update the cell state. This
+%is done by multiplying an input gate (again, with a
+%sigmoid layer) by a tanh activated linear layer.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah11.png}
+%\end{center}
+%
+%The cell state of the next iteration is now completely
+%determined, and can be calculated directly.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah12.png}
+%\end{center}
+%
+%Now, to determine the output of the model, we want to
+%emit a weighted version of the cell state. This is done
+%by applying a tanh activation and multiplying by the
+%fourth and final set of weights: the output weights.
+%This passed both as an output to the LSTM layer as well
+%as into the next time step of the LSTM.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%{III. LSTM}
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah13.png}
+%\end{center}
+%
+%Over the years, variants on the LSTM layers have been given.
+%Confusingly, these are often presented \textit{as} LSTM layers
+%rather than minor variants on the original technique. One
+%modification is to add \textbf{peepholes} so that the input,
+%forget, and output gates also take the current cell state
+%into account.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah14.png}
+%\end{center}
+%
+%One natural extension is to set the input and forget
+%gates to be the negation of one another.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%A more dramatically different alternative is known as
+%a Gated Recurrent Unit (GRU), originally presented in this
+%paper:
+%\begin{quote}
+%Cho, Kyunghyun, Bart van Merriënboer, Dzmitry Bahdanau,
+%and Yoshua Bengio. ``On the properties of neural machine
+%translation: Encoder-decoder approaches.''
+%arXiv preprint arXiv:1409.1259 (2014).
+%\end{quote}
+%One benefit is that is offers a slight simplification in
+%the model with no systematic performance penalty. Along
+%with LSTM, it is the only other model implemented in
+%keras, which should point to its growing popularity.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%\begin{center}
+%\includegraphics[width=0.8\linewidth,keepaspectratio]{cloah15.png}
+%\end{center}
+%
+%In short, in combines the input and cell states together,
+%and combines the forget and input gates. This results in
+%one fewer set of weight matrices to learn.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%If you would like a good, comprehensive, and empirical
+%evaluation of the various tweaks to these recurrent
+%structures, I recommend this paper
+%\begin{quote}
+%Greff, Klaus, Rupesh Kumar Srivastava, Jan Koutník, Bas R. Steunebrink,
+%and Jürgen Schmidhuber. ``LSTM: A search space odyssey.''
+%arXiv preprint arXiv:1503.04069 (2015).
+%\end{quote}
+%As well as this article:
+%\begin{quote}
+%Jozefowicz, Rafal, Wojciech Zaremba, and Ilya Sutskever.
+%``An empirical exploration of recurrent network architectures.''
+%In Proceedings of the 32nd International Conference on Machine
+%Learning (ICML-15), pp. 2342-2350. 2015.
+%\end{quote}
+%Though, once you fully understand the LSTM model, the
+%specifics amongst the competing approaches typically do not
+%require understanding any new big ideas.
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%{IV. GRU}
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%{V. Evaluating a sequence of inputs}
+%
+%\end{frame}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{frame}[fragile] \frametitle{}
+%
+%{VI. Visualize the output}
+%
+%\end{frame}
+
+

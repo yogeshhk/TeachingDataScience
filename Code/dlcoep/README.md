@@ -1,23 +1,23 @@
 # DLCoEP: Deep Learning for Mechanical Engineers (CoEP)
 
-Code behind the two deep-learning sessions that follow the MLCoEP course: one on convolutional
-neural networks and one on recurrent neural networks. Each session pairs the generic slides
+Code behind the two deep-learning lectures that follow the MLCoEP course: one on convolutional
+neural networks and one on recurrent neural networks. Each lecture pairs the generic slides
 (`LaTeX/dl_cnn.tex`, `LaTeX/dl_rnn.tex`) with one hands-on case study.
 
-| Session | Slides | Script | Data |
+| Topic | Slides | Script | Data |
 |---|---|---|---|
-| 1. CNN | `LaTeX/dl_cnn_digits_case_study.tex` | `session01_cnn/cnn_digits_case_study.py` | MNIST handwritten digits, downloaded once through torchvision (about 11 MB, into `data/`, not committed). With no network the script falls back to scikit-learn's bundled 8 x 8 digits. |
-| 2. RNN | `LaTeX/dl_rnn_temperature_case_study.tex` | `session02_rnn/rnn_temperature_case_study.py` | `Code/ml/data/daily-minimum-temperatures-in-me.csv`, 3,650 daily minimum temperatures, 1981 to 1990. No download. |
-| 1. CNN, concept frames | "Why Not Just a Dense Layer?" and "Filters by Numbers" frames in `LaTeX/dl_cnn.tex` | `session01_cnn/cnn_filters_by_hand.py` | Parameter counts, a pixel-shuffle test and a translation test, Sobel and kernel worked numbers, pooling, and a synthetic machined-plate figure. MNIST is read from `data/` (already downloaded by the case-study script); the rest is synthetic. |
-| 2. RNN, concept frames | "Why Not Just a Dense Layer for Sequences?", "One Step by Hand", readout and attention frames in `LaTeX/dl_rnn.tex` | `session02_rnn/rnn_sequence_demos.py` | Synthetic sequences only: parameter counts, an order test, a position test, gradient fading, an early-evidence task with several readouts, and a tiny attention example. |
+| CNN | `LaTeX/dl_cnn_digits_case_study.tex` | `cnn/cnn_digits_case_study.py` | MNIST handwritten digits, downloaded once through torchvision (about 11 MB, into `data/`, not committed). With no network the script falls back to scikit-learn's bundled 8 x 8 digits. |
+| RNN | `LaTeX/dl_rnn_temperature_case_study.tex` | `rnn/rnn_temperature_case_study.py` | `Code/ml/data/daily-minimum-temperatures-in-me.csv`, 3,650 daily minimum temperatures, 1981 to 1990. No download. |
+| CNN, concept frames | "Why Not Just a Dense Layer?" and "Filters by Numbers" frames in `LaTeX/dl_cnn.tex` | `cnn/cnn_filters_by_hand.py` | Parameter counts, a pixel-shuffle test and a translation test, Sobel and kernel worked numbers, pooling, and a synthetic machined-plate figure. MNIST is read from `data/` (already downloaded by the case-study script); the rest is synthetic. |
+| RNN, concept frames | "Why Not Just a Dense Layer for Sequences?", "One Step by Hand", and "Fading by Numbers" frames in `LaTeX/dl_rnn.tex`; the readout and attention frames in `LaTeX/dl_rnn_readouts.tex` | `rnn/rnn_sequence_demos.py` | Synthetic sequences only: parameter counts, an order test, a position test, gradient fading, an early-evidence task with several readouts, and a tiny attention example. |
 
 ## Run
 
 ```bash
 conda env create -f environment.yml
 conda activate dlcoep
-python session01_cnn/cnn_digits_case_study.py
-python session02_rnn/rnn_temperature_case_study.py
+python cnn/cnn_digits_case_study.py
+python rnn/rnn_temperature_case_study.py
 ```
 
 Each script prints the numbers quoted on the slides and writes its figures to `out/` (not

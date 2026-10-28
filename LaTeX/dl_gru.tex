@@ -1,0 +1,141 @@
+% Colours of the presentation template, defined here as well so that the TikZ diagrams also compile in the cheat sheet.
+\definecolor{nyupurple}{RGB}{90, 35, 140}
+\definecolor{lightnyupurple}{RGB}{159, 120, 184}
+
+% GRU diagram, built in stages: #1 = 1 draws the update gate, #2 = 1 draws the reset gate.
+\providecommand{\grudiagram}[2]{%
+\adjustbox{max width=\linewidth, max totalheight=0.42\textheight}{%
+\begin{tikzpicture}[>=latex, thick, every node/.style={font=\small}, st/.style={draw, circle, minimum size=9mm, inner sep=1pt}, gt/.style={draw, rounded corners, fill=orange!25, minimum height=7mm, align=center, inner sep=3pt}]
+\node[st] (hp) at (0,2) {$h_{t-1}$};
+\node[st] (xt) at (0,-0.25) {$x_t$};
+\node[draw, rounded corners, fill=lightnyupurple!30, minimum width=26mm, minimum height=12mm, align=center] (cd) at (5,0) {candidate $\tilde{h}_t$\\$\tanh$};
+\node[draw, rounded corners, fill=white, minimum width=11mm, minimum height=7mm] (bl) at (9,2) {mix};
+\node[st] (ht) at (11.5,2) {$h_t$};
+\node[font=\scriptsize, gray, above] at (hp.north) {previous state};
+\node[font=\scriptsize, gray, below] at (xt.south) {input};
+\node[font=\scriptsize, gray, above] at (ht.north) {new state};
+\draw[->, line width=1.6pt, lightnyupurple!70!black] (hp) -- node[above, font=\scriptsize, black] {old memory, passed on} (bl);
+\fill (2,2) circle (2pt);
+\draw[->] (xt.east) -- (3.7,-0.25);
+\ifnum#2=1
+\node[gt] (rg) at (2,1.05) {reset\\$r_t$};
+\draw (2,2) -- (rg.north);
+\draw[->] (rg.south) -- (2,0.25) -- (3.7,0.25);
+\else
+\draw[->] (2,2) -- (2,0.25) -- (3.7,0.25);
+\fi
+\draw[->] (cd.east) -| node[pos=0.25, below, font=\scriptsize] {new content} (bl.south);
+\ifnum#1=1
+\node[gt] (zg) at (9,3.5) {update $z_t$};
+\draw[->] (zg.south) -- (bl.north);
+\fi
+\draw[->] (bl) -- (ht);
+\end{tikzpicture}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    {\Large Gated Recurrent Unit (GRU)}
+  \end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{Why Gates?}
+\begin{itemize}
+\item A plain RNN rewrites its whole state at every step: $h_t = \tanh(W_{xh}x_t + W_{hh}h_{t-1} + b_h)$
+\item Nothing is copied unchanged: every old value passes through weights and a $\tanh$, step after step
+\item So it cannot hold a value until it is needed, or ignore a useless reading such as a sensor glitch
+\item A \textbf{gate} is a number between 0 and 1 for every memory slot (one component of the state vector)
+  \begin{itemize}
+  \item It comes from a sigmoid, a curve that squeezes any number into the range 0 to 1
+  \item 0 blocks, 1 lets everything through, and in between lets a share through
+  \end{itemize}
+\item The GRU (Cho et al., 2014) uses gates so the cell can choose, step by step, between keeping and rewriting its memory
+\end{itemize}
+\begin{block}{Intuition}
+A gate works like a tap on a pipe. Fully closed, nothing passes; fully open, everything passes. The network learns how far to open each tap at every step.
+\end{block}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{The GRU Main Path}
+\begin{center}
+\grudiagram{0}{0}
+\end{center}
+\begin{itemize}
+\item Same two inputs as a plain RNN: the old state $h_{t-1}$ and the new input $x_t$
+\item The cell proposes a \textbf{candidate} $\tilde{h}_t$: what the new state could be
+\item The new state is a \textbf{mix} of the old memory and the candidate
+\item The old memory reaches the mix directly, with no weight matrix and no $\tanh$ on the way: a short path
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{The Update Gate}
+\begin{center}
+\grudiagram{1}{0}
+\end{center}
+\begin{itemize}
+\item The update gate decides the mix, one value per memory slot: $z_t = \sigma(W_{zx}x_t + W_{zh}h_{t-1} + b_z)$
+\item $h_t = z_t \odot h_{t-1} + (1 - z_t) \odot \tilde{h}_t$, where $\odot$ is a slot-by-slot product
+\item $z_t$ near 1 copies the old memory; $z_t$ near 0 replaces it with the candidate
+\item One slot, $h_{t-1} = 0.8$ and candidate $-0.2$:
+  \begin{itemize}
+  \item $z_t = 0.9$ gives $0.9 \cdot 0.8 + 0.1 \cdot (-0.2) = 0.70$, mostly kept
+  \item $z_t = 0.1$ gives $0.1 \cdot 0.8 + 0.9 \cdot (-0.2) = -0.10$, mostly replaced
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{The Reset Gate}
+\begin{center}
+\grudiagram{1}{1}
+\end{center}
+\begin{itemize}
+\item The reset gate sits on the path from the old state into the candidate: $r_t = \sigma(W_{rx}x_t + W_{rh}h_{t-1} + b_r)$
+\item Candidate: $\tilde{h}_t = \tanh(W_{cx}x_t + W_{ch}(r_t \odot h_{t-1}) + b_c)$
+\item $r_t$ near 1: the candidate sees the full history, like a plain RNN cell
+\item $r_t$ near 0: the candidate is built from the new input alone, a fresh start for the proposal
+\item Two different jobs: the update gate decides how much to \emph{replace}; the reset gate decides what the proposal may \emph{look at}
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{GRU in Equations}
+\begin{align*}
+z_t =& \sigma(W_{zx} x_t + W_{zh} h_{t-1} + b_z) \\
+r_t =& \sigma(W_{rx} x_t + W_{rh} h_{t-1} + b_r) \\
+\tilde{h}_t =& \tanh(W_{cx} x_t + W_{ch} (r_t \odot h_{t-1}) + b_c) \\
+h_t =& z_t \odot h_{t-1} + (1 - z_t) \odot \tilde{h}_t
+\end{align*}
+\begin{itemize}
+\item Three blocks of weights, each the size of a plain RNN's: about three times its parameters at the same width
+\item One state is carried from step to step: $h_t$
+\item As before, the same weights are used at every step
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile] \frametitle{What a GRU Gives and What Remains}
+\textbf{Gives}
+\begin{itemize}
+\item Can hold a value across many steps: keep $z_t$ near 1
+\item Can ignore an input, or restart its context with the reset gate
+\item A short direct path for memory, and for the gradient on its way back
+\item One state and fewer parameters than an LSTM: quick to train
+\end{itemize}
+\textbf{Still an issue}
+\begin{itemize}
+\item Memory and output are the same vector $h_t$: whatever is remembered is also shown
+\item Keep and replace are tied: $z_t$ and $1 - z_t$ cannot be set separately
+\item Gates ease the vanishing-gradient problem; they do not remove it
+\item Still one step at a time, so very long sequences are slow
+\end{itemize}
+\end{frame}

@@ -1,5 +1,5 @@
 """
-DLCoEP Session 2 (RNN): the sensor-series case study of LaTeX/dl_rnn_temperature_case_study.tex.
+DLCoEP, RNN: the sensor-series case study of LaTeX/dl_rnn_temperature_case_study.tex.
 
   a real daily series -> sliding windows -> (batch, steps, features) -> a GRU and an LSTM
   -> compare with "same as yesterday" and a straight-line fit on the last 7 days.

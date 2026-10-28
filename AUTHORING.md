@@ -151,9 +151,12 @@ To add a topic: create `LaTeX/<domain>_<topic>.tex`, `\input{<domain>_<topic>}` 
   shared with the generic seminar decks, so edits there affect both.
   `course_mlcoep_content.tex` chains all sessions into one combined driver (20+ minutes, 350+ pages,
   never verified); never compile it.
-- **DLCoEP** (deep learning for mechanical engineers, CoEP): the CNN and RNN sessions use `dl_cnn.tex`,
-  `dl_rnn.tex` and the case-study decks `dl_cnn_digits_case_study.tex` and
-  `dl_rnn_temperature_case_study.tex`; code is in `Code/dlcoep/`.
+- **DLCoEP** (deep learning for mechanical engineers, CoEP): separate lectures, named by topic and not
+  numbered. The CNN lecture (`seminar_dlcoep_cnn_content.tex`) uses `dl_cnn.tex` and the case-study deck
+  `dl_cnn_digits_case_study.tex`. The RNN lecture (`seminar_dlcoep_rnn_content.tex`) runs `dl_rnn.tex` (plain
+  RNN only), `dl_gru.tex`, `dl_lstm.tex`, `dl_rnn_readouts.tex`, `dl_rnn_temperature_case_study.tex` and
+  `dl_rnn_summary.tex`, in that order. `dl_lstm_deepdive.tex` is the long LSTM and GRU deck used only by the
+  DL foundations seminar. Code is in `Code/dlcoep/`.
 - `_overview.tex` topic files (`dnlp_intro_overview`, `data_intro_overview`, `dl_intro_overview`,
   `nlp_embedding_overview`) each have a minimal standalone `_Overview` seminar driver.
 
