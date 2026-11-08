@@ -1,7 +1,8 @@
 # AI for X: common core (Part A) and domain part (Part B)
 
-Plan and analysis, 2026-11-07. Nothing in the existing decks has been changed. Decisions by the author so far:
-AI for Authors uses the non-tech core; existing decks stay untouched until AI for Authors is built and seen.
+Plan and analysis, written 2026-11-07. Status (2026-11-08): the cores and AI for Authors are built, and the six existing
+decks (Tech Leaders, All Tech, All Non-Tech, Educators, Business Leaders, Project Managers) are refactored onto them
+(stage 5 done). Sections 1 to 5 are the original plan and rationale; section 6 is the current state.
 
 ## 1. The goal
 
@@ -119,28 +120,28 @@ I will tell you when stage 3 is finished and stage 5 is next; that is the point 
 
 ## 6. Decisions (author, 2026-11-07) and status
 
-- AI for Authors uses the non-tech core; length about 40 frames (one hour). Built: 16 core frames
-  (`ai_core_nontech_whatisai` 4, `_limits` 4, `_prompts` 8) plus 24 Part B frames (`ai_for_authors_intro` 3, `_pre` 4,
-  `_during` 5, `_post` 6, `_responsible` 4, `_wrapup` 2). Content file `seminar_ai_for_authors_content.tex`; drivers
-  `Main_Seminar_AI_For_Authors_{Presentation,CheatSheet}.tex`. Compiled once: Presentation 45 pages, CheatSheet 4 pages,
-  copied to `Publications/Presentations`. Waiting for the author's review (stage 3).
-- The tech core and non-tech core are the same size: 16 frames each (4 + 4 + 8). Tech core built 2026-11-07:
-  `ai_core_tech_whatisai`, `_limits`, `_prompts` (same CRAFT frames with engineering examples, plus the mechanisms
-  behind each limit). Checked once with a throwaway test deck (17 pages, 2-page cheat sheet), then the test driver was
-  deleted. No deck includes it yet; it will be exercised by the first tech audience deck or the stage 5 retrofit.
+- AI for Authors uses the non-tech core. Built: the 16 core frames (`ai_core_nontech_whatisai` 4, `_limits` 4,
+  `_prompts` 8) plus the Part B files `ai_for_authors_intro`, `_pre`, `_during`, `_post` (three optional frames commented
+  out at its end), `_responsible` and `_wrapup`. It was extended on 2026-11-08 (analytical versus generative AI, the author's
+  own plan first, continuity and fact checks, copyright and proof of authorship, two summary frames), so it is longer than
+  the original one-hour target of about 40 frames. Content file `seminar_ai_for_authors_content.tex`; drivers
+  `Main_Seminar_AI_For_Authors_{Presentation,CheatSheet}.tex`. The PDFs are in `Publications/Presentations` and
+  `GDrive/ToPrint/Talks`.
+- The tech core is 21 frames (`ai_core_tech_whatisai` 9, `_limits` 4, `_prompts` 8: the same CRAFT frames with engineering
+  examples, plus the mechanisms behind each limit) and the non-tech core is 16 frames. Tech Leaders and All Tech include the
+  tech core; the other decks include the non-tech core.
 - To trim a deck, comment frames in place; never delete them.
 - No short sibling for now; add a `_short` later only if needed.
 - Three kinds of file: tech core, non-tech core, and many domain-specific Part B sets.
 - The peanut butter sandwich demo (`llm_promptengg_sandwich`) is not in the Authors deck; it stays an optional add-on.
-- Section divider added at the start of Part B (frame "AI for Authors"), so the Authors deck is now 41 live frames. Use the
-  same divider frame at the start of Part B in every AI-for-X deck.
+- A section divider opens Part B in every AI-for-X deck (in Authors, the frame "AI for Authors").
 - Promo slides (optional, include in any seminar): `promo_book_airupe`, `promo_book_ai_sakal`,
   `promo_book_mentalmodels_sakal`, `promo_book_gametheory_sakal` (coming soon), `promo_book_gametheory_apress`, and
   one-slide `promo_paic` (the long `paic.tex` and `airupe.tex` stay for the older decks). `promo_macros.tex` shows a
   framed placeholder until the real cover or QR file exists in `images/` (`Cover_<Book>.jpg`, `QR_<Book>.png`).
   The Authors Presentation driver has them as commented `\input` lines.
-- Still open: whether "AI for Authors" should also cover academic papers (the deck says books, articles and papers in one
-  place and uses book examples); the review of the draft by the author.
+- Decided (author, 2026-11-08): "AI for Authors" stays as it is (books, articles and papers in one place, book examples);
+  no paper-specific frames.
 
 ## 7. Risks
 

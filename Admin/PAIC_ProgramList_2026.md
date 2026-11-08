@@ -1,6 +1,6 @@
 # 📅 12-Month Zero-to-Hero AI Learning Path (50 Sessions)
 
-## Month 1 — Python & Foundations (Sessions 1–4)
+## Month 1: Python & Foundations (Sessions 1–4)
 
 ### Session 1: Python Basics
 
@@ -24,7 +24,7 @@
 
 ---
 
-## Month 2 — Math & Stats (Sessions 5–8)
+## Month 2: Math & Stats (Sessions 5–8)
 
 ### Session 5: Linear Algebra I
 
@@ -46,7 +46,7 @@
 
 ---
 
-## Month 3 — Data & ML Foundations (Sessions 9–12)
+## Month 3: Data & ML Foundations (Sessions 9–12)
 
 ### Session 9: Data Cleaning
 
@@ -70,7 +70,7 @@
 
 ---
 
-## Month 4 — Advanced ML (Sessions 13–16)
+## Month 4: Advanced ML (Sessions 13–16)
 
 ### Session 13: Unsupervised Learning
 
@@ -94,7 +94,7 @@
 
 ---
 
-## Month 5 — Deep Learning Basics (Sessions 17–20)
+## Month 5: Deep Learning Basics (Sessions 17–20)
 
 ### Session 17: Neural Networks
 
@@ -118,7 +118,7 @@
 
 ---
 
-## Month 6 — Sequence Models (Sessions 21–24)
+## Month 6: Sequence Models (Sessions 21–24)
 
 ### Session 21: RNNs
 
@@ -138,7 +138,7 @@
 
 ---
 
-## Month 7 — Transformers (Sessions 25–28)
+## Month 7: Transformers (Sessions 25–28)
 
 ### Session 25: Transformer Architecture
 
@@ -160,7 +160,7 @@
 
 ---
 
-## Month 8 — Generative AI (Sessions 29–32)
+## Month 8: Generative AI (Sessions 29–32)
 
 ### Session 29: Autoencoders
 
@@ -183,7 +183,7 @@
 
 ---
 
-## Month 9 — LLM Applied Skills (Sessions 33–36)
+## Month 9: LLM Applied Skills (Sessions 33–36)
 
 ### Session 33: Prompt Engineering
 
@@ -207,7 +207,7 @@
 
 ---
 
-## Month 10 — Fine-Tuning & HF (Sessions 37–40)
+## Month 10: Fine-Tuning & HF (Sessions 37–40)
 
 ### Session 37: Fine-Tuning vs Prompting
 
@@ -230,7 +230,7 @@
 
 ---
 
-## Month 11 — Agentic AI (Sessions 41–44)
+## Month 11: Agentic AI (Sessions 41–44)
 
 ### Session 41: Agentic Fundamentals
 
@@ -252,7 +252,7 @@
 
 ---
 
-## Month 12 — Production, Ethics & Capstone (Sessions 45–50)
+## Month 12: Production, Ethics & Capstone (Sessions 45–50)
 
 ### Session 45: Agent Stack & Infra
 

@@ -5,7 +5,7 @@
 ---
 
 ### **PROGRAM OVERVIEW**
-The **DLL Trilogy** — **Docling**, **LangChain**, and **LangGraph** — is designed for developers and startups who want to build **non-trivial LLM-based applications** without relying on high-end computing or cloud platforms.
+The **DLL Trilogy** (**Docling**, **LangChain**, and **LangGraph**) is designed for developers and startups who want to build **non-trivial LLM-based applications** without relying on high-end computing or cloud platforms.
 
 This hands-on program helps participants understand how to parse multimodal data, design intelligent retrieval and agent systems, and automate agentic workflows end-to-end.  
 

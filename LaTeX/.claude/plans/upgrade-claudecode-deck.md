@@ -4,11 +4,11 @@
 ## Status: ALL PHASES COMPLETE
 
 ### Files Modified
-- `seminar_ai_claudecode_content.tex` — removed outer Demo section; demo file now manages its own sections
-- `ai_tools_claudecode_demo.tex` — 8 targeted edits (see below)
+- `seminar_ai_claudecode_content.tex`, removed outer Demo section; demo file now manages its own sections
+- `ai_tools_claudecode_demo.tex`, 8 targeted edits (see below)
 
 ### Files Created
-- `ai_tools_claudecode_tokenopt.tex` — NEW: 8 Token Optimization frames
+- `ai_tools_claudecode_tokenopt.tex`: NEW: 8 Token Optimization frames
 
 ---
 

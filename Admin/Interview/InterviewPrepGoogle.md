@@ -19,7 +19,7 @@ By - Google recruiter
 When you practice, do not use an IDE. You need to be able to write legible, compilable code without help with regards to layout, or spelling of standard library class/method names. I suggest solving similar style algorithmic/ DS problems on a google document or on paper to simulate a real interview. Several sites that provide similar problems to those typically asked in the interview are:
 
 - [Leetcode](https://leetcode.com/)
-- [Code Jam Kickstart](https://code.google.com/codejam/kickstart/) - great practice to get a glimpse of [Google coding and algorithm questions](https://code.google.com/codejam/past-contests#kickstart). Code Jam hosts online Kickstart rounds that give participants the opportunity to test and grow their coding abilities! Participate in [one](https://code.google.com/codejam/kickstart/schedule#kickstart)—or join them all! You can also learn how to solve those problems by reading our [analysis](https://code.google.com/codejam/contest/3254486/dashboard#s=a)
+- [Code Jam Kickstart](https://code.google.com/codejam/kickstart/) - great practice to get a glimpse of [Google coding and algorithm questions](https://code.google.com/codejam/past-contests#kickstart). Code Jam hosts online Kickstart rounds that give participants the opportunity to test and grow their coding abilities! Participate in [one](https://code.google.com/codejam/kickstart/schedule#kickstart), or join them all! You can also learn how to solve those problems by reading our [analysis](https://code.google.com/codejam/contest/3254486/dashboard#s=a)
 - [Codeforces](http://codeforces.com/contests)
 - [HackerRank](https://www.hackerrank.com/)
 - [Topcoder](https://community.topcoder.com/tc?module=MatchDetails&amp;rd=15712)

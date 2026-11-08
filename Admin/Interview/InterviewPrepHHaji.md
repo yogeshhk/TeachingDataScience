@@ -349,7 +349,7 @@ Suggested Reading:
   * Blog & NoteBook: [How to Choose Loss Functions When Training Deep Learning Neural Networks](https://machinelearningmastery.com/how-to-choose-loss-functions-when-training-deep-learning-neural-networks/) by Jason Brownlee    * Blog: [Why is my Validation Loss Lower than my Training Loss?](https://www.pyimagesearch.com/2019/10/14/why-is-my-validation-loss-lower-than-my-training-loss/) by Adrian Rosebrock   
   * Blog: [Saving/Loading Your Model in PyTorch](https://medium.com/udacity-pytorch-challengers/saving-loading-your-model-in-pytorch-741b80daf3c) by David Ashraf  
   * Blog: [Saving and Loading Your Model to Resume Training in PyTorch](https://medium.com/analytics-vidhya/saving-and-loading-your-model-to-resume-training-in-pytorch-cb687352fa61) by Rachit Jain   
-  * Blog: [Deep Learning with PyTorch: A 60 Minute Blitz — PyTorch](https://pytorch.org/tutorials/beginner/deep_learning_60min_blitz.html) by Soumith Chintala  
+  * Blog: [Deep Learning with PyTorch: A 60 Minute Blitz, PyTorch](https://pytorch.org/tutorials/beginner/deep_learning_60min_blitz.html) by Soumith Chintala  
 
 
 ```
@@ -414,11 +414,11 @@ Suggested Reading:
 
    * Blog: [Convolutional Neural Networks CheatSheet](https://stanford.edu/~shervine/teaching/cs-230/cheatsheet-convolutional-neural-networks) by Afshine Amidi and Shervine Amidi  
    * Blog: [Understanding Convolutions](http://colah.github.io/posts/2014-07-Understanding-Convolutions/) by Christopher Olah <br> 
-   * Blog: [A Comprehensive Guide to Convolutional Neural Networks — the ELI5 Way](https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53) by Sumit Saha  
+   * Blog: [A Comprehensive Guide to Convolutional Neural Networks, the ELI5 Way](https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53) by Sumit Saha  
    * Blog: [A Basic Introduction to Separable Convolutions](https://towardsdatascience.com/a-basic-introduction-to-separable-convolutions-b99ec3102728) by Chi-Feng Wang  
    * Blog: [Depth wise Separable Convolutional Neural Networks](https://www.geeksforgeeks.org/depth-wise-separable-convolutional-neural-networks/) by Mayank Chaurasia  
    * Blog: [Type of convolutions: Deformable and Transformable Convolution](https://towardsdatascience.com/type-of-convolutions-deformable-and-transformable-convolution-1f660571eb91) by Ali Raza  
-   * Blog: [Review: DilatedNet — Dilated Convolution (Semantic Segmentation)](https://towardsdatascience.com/review-dilated-convolution-semantic-segmentation-9d5a5bd768f5) by Sik-Ho Tsang  
+   * Blog: [Review: DilatedNet: Dilated Convolution (Semantic Segmentation)](https://towardsdatascience.com/review-dilated-convolution-semantic-segmentation-9d5a5bd768f5) by Sik-Ho Tsang  
    * Blog: [Region of Interest Pooling Explained](https://deepsense.ai/region-of-interest-pooling-explained/) by Tomasz Grel     
 
 ```
@@ -452,7 +452,7 @@ Required Reading:
 Suggested Reading:
 ```
 
-   * Blog: [Pytorch (Basics) — Intro to CNN](https://towardsdatascience.com/pytorch-basics-how-to-train-your-neural-net-intro-to-cnn-26a14c2ea29) by Akshaj Verma    
+   * Blog: [Pytorch (Basics): Intro to CNN](https://towardsdatascience.com/pytorch-basics-how-to-train-your-neural-net-intro-to-cnn-26a14c2ea29) by Akshaj Verma    
 
 ```
 Additional Resources:
