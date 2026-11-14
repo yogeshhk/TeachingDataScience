@@ -38,6 +38,7 @@ conda activate <env-name>
 | Directory | Covers |
 |---|---|
 | [`fine-tuning/`](fine-tuning/) | Overview and examples of fine-tuning small language models (SLMs) |
+| [`frugal/`](frugal/) | Frugal AI seminar: the deck's chart script (`make_charts.py`) and the offline live demo in [`demo/`](frugal/demo/), a Streamlit page that imports the projects of the sibling FrugalAI repo (see its README) |
 | `amd/` | AMD Academy workshop materials: AI agents, fine-tuning, LLM serving with vLLM |
 | [`LOCAL_LLM_PLAN.md`](LOCAL_LLM_PLAN.md) | Running small LLMs/SLMs locally on modest hardware (measured tok/s, model picks, LM Studio/Ollama setup); strongest use case is offline, reproducible classroom demos |
 
