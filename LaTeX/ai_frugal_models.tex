@@ -16,10 +16,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{What Is a Small Model?}
 \begin{itemize}
-\item In this talk: roughly 0.5 to 4 billion parameters, small enough to run on a laptop CPU.
-\item Two models used in the examples: \textbf{Qwen3 1.7B} (Apache-2.0 licence) and \textbf{Gemma 2 2B} (Google's Gemma terms of use; about 2.6 billion parameters, which the model card's metadata rounds to 3 billion).
-\item Small does not mean toy. It means: pick the job first, then the smallest model that does it well enough, and measure that on your own task.
-\item The rest of this part: four ways models are made small or cheap.
+\item Here: roughly 0.5 to 4 billion parameters (the numbers a model learns), small enough for a laptop CPU.
+\item Models used in the examples:
+	\begin{itemize}
+	\item \textbf{Qwen3 1.7B}: Apache-2.0 licence (open source).
+	\item \textbf{Gemma 2 2B}: Google's own terms of use; about 2.6 billion parameters.
+	\end{itemize}
+\item Small does not mean toy: pick the job first, then the smallest model that does it well enough, and measure on your own task.
+\item Next: ways models are made small or cheap.
 \end{itemize}
 {\tiny (Ref: Hugging Face model cards for Qwen/Qwen3-1.7B and google/gemma-2-2b-it)}
 \end{frame}
@@ -27,13 +31,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Quantisation: Fewer Bits per Weight}
 \begin{center}
-\adjustbox{max width=0.78\linewidth, max totalheight=0.50\textheight}{\includegraphics{frugal_gemma_sizes}}
+\adjustbox{max width=0.6\linewidth, max totalheight=0.30\textheight}{\includegraphics{frugal_gemma_sizes}}
 \end{center}
+\footnotesize
 \begin{itemize}
-\item Quantisation stores each weight in fewer bits. The same Gemma 2 2B goes from 10.5 GB (full precision) to 1.71 GB (4-bit Q4\_K\_M): about 6 times smaller.
-\item What you lose depends on the model and the task. Measure it on yours.
+\item Quantisation stores each weight (a number in the model) in fewer bits. Gemma 2 2B: 10.5 GB full, 1.71 GB at 4 bits (Q4\_K\_M).
+\item \textbf{Q4}: about 4 bits per weight. \textbf{K}: K-quant scheme (weights in blocks). \textbf{S, M, L}: small, medium, large mix (sensitive layers keep more bits). \textbf{IQ}: newer 2 to 4 bit family; \textbf{XS, XXS}: its smallest tiers.
+\item \textbf{Rule of thumb}: fewer bits, smaller file, usually faster, with some quality loss. Dhir 2B on one laptop CPU: 21 tokens per second at Q4\_K\_M, 16 at Q8\_0. Compare the same model only.
 \end{itemize}
-{\tiny (Ref: Hugging Face, lmstudio-community/gemma-2-2b-it-GGUF, file sizes)}
+{\tiny (Ref: Hugging Face, lmstudio-community/gemma-2-2b-it-GGUF, file sizes; llama.cpp quantize tool; our run, 14 November 2026, Intel i7-1255U)}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,10 +48,10 @@
 \adjustbox{max width=0.82\linewidth, max totalheight=0.45\textheight}{\includegraphics{frugal_size_vs_memory}}
 \end{center}
 \begin{itemize}
-\item The 1.71 GB model file is about 6,700 times the 256 KB of RAM on an Arduino Nano 33 BLE Sense. A language model does not fit there; small classifiers do.
-\item A Raspberry Pi 5 comes with 1 to 16 GB of RAM, and an 8 GB laptop is enough: those are the language-model platforms.
+\item The 1.71 GB file is about 6,700 times the 256 KB of RAM (working memory) on an Arduino Nano 33 BLE Sense. A language model does not fit there; small classifiers do.
+\item A Raspberry Pi 3 has 1 GB of RAM, so this file does not fit there either; a smaller model is needed. An 8 GB laptop is enough.
 \end{itemize}
-{\tiny (Ref: Nordic nRF52840; Raspberry Pi 5 product page; AIOOLL README; decimal units)}
+{\tiny (Ref: Nordic nRF52840; Raspberry Pi 3 Model B page, 1 GB to be checked on our board; AIOOLL README; decimal units)}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,9 +67,9 @@
 \end{tikzpicture}}
 \end{center}
 \begin{itemize}
-\item Train a small \textbf{student} model to imitate a large \textbf{teacher}, so the student keeps most of the skill in far fewer parameters.
-\item Example: MoScNet, which reads Modi script. Its authors report a student about 163 times smaller in parameters than its teacher that outperforms it, on their dataset.
-\item Distillation is how many small models get good: the large model's work is reused, not repeated.
+\item A small \textbf{student} model learns to imitate a large \textbf{teacher}, keeping most of the skill in far fewer parameters.
+\item Example: MoScNet reads Modi script (an old script for Marathi). Its authors report a student 163 times smaller than its teacher that outperforms it, on their data.
+\item The large model's work is reused, not repeated.
 \end{itemize}
 {\tiny (Ref: Kausadikar et al., arXiv 2503.13060)}
 \end{frame}
@@ -71,9 +77,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Memory: The KV Cache}
 \begin{itemize}
-\item While generating, a model keeps the keys and values of every token it has seen (the KV cache) so it need not recompute them.
-\item A serving paper states that this memory for each request ``is huge and grows and shrinks dynamically''.
-\item So long prompts cost memory as well as time: lean context is a frugal practice, not only a tidy one.
+\item The model keeps notes on every token it has read (the KV cache, short for keys and values) so it need not recompute them.
+\item A serving paper: this memory per request ``is huge and grows and shrinks dynamically''.
+\item So long prompts cost memory as well as time: a lean prompt is a frugal practice.
 \end{itemize}
 {\tiny (Ref: Kwon et al., PagedAttention, arXiv 2309.06180)}
 \end{frame}
@@ -81,9 +87,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Mixture of Experts}
 \begin{itemize}
-\item A router picks a few expert blocks for each token instead of using the whole network.
-\item Mixtral has 8 experts per layer and uses 2 per token: 47 billion parameters in total, 13 billion active for each token.
-\item Watch the catch: all the weights must still sit in memory, so this saves compute more than memory. It is not automatically a fit for small devices.
+\item A router picks a few expert blocks per token instead of the whole network.
+\item Mixtral: 8 experts per layer, 2 used per token; 47 billion parameters in total, 13 billion active per token.
+\item The catch: all the weights still sit in memory. It saves compute more than memory, so it is not automatically a fit for small devices.
 \end{itemize}
 {\tiny (Ref: Jiang et al., Mixtral of Experts, arXiv 2401.04088)}
 \end{frame}
@@ -102,9 +108,12 @@
 \end{tikzpicture}}
 \end{center}
 \begin{itemize}
-\item Train a large encoder once, then keep it frozen and train only a small head on top for your task.
-\item V-JEPA 2's paper evaluates this way, with a small attention-based probe on a frozen encoder; LeJEPA reports 79\% on ImageNet-1k with a frozen backbone and a linear probe (the authors' claim).
-\item Why it is frugal: only the small head needs your data and compute. The catch: the encoder still has to run at inference, so it is not free on small hardware.
+\item Train a large encoder once, keep it frozen, and train only a small head on top for your task.
+\item Same idea as LoRA in the fine-tuning project: freeze the big part, train a small added part.
+% [commented 2026-11-16 at the author's request: V-JEPA 2 and LeJEPA are not widely known]
+% \item V-JEPA 2's paper evaluates this way, with a small attention-based probe on a frozen encoder; LeJEPA reports 79\% on ImageNet-1k with a frozen backbone and a linear probe (the authors' claim).
+\item Why it is frugal: only the small head needs your data and compute.
+\item The catch: the encoder still runs at prediction time, so it is not free on small hardware.
 \end{itemize}
-{\tiny (Ref: Assran et al., arXiv 2506.09985; Balestriero and LeCun, arXiv 2511.08544)}
+% {\tiny (Ref: Assran et al., arXiv 2506.09985; Balestriero and LeCun, arXiv 2511.08544)}
 \end{frame}

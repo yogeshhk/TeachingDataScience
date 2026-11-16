@@ -16,11 +16,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Why Plain Retrieval Is Not Enough}
 \begin{itemize}
-\item The usual recipe: cut the PDF text into fixed windows, embed them, retrieve the top few, let the model answer.
-\item Some answers are not inside any window. In a course catalogue, ``mandatory'' or ``optional'' can live in the spanning header rows of a table, not in a column.
-\item Some answers are spread over many places: ``which courses mention a topic?'' needs a join over all courses, and top-k retrieval cannot join.
-\item Bullet hierarchy (topic, subtopic, sub-subtopic) is often only visible as indentation, and the same bullet glyph may be reused at deeper levels.
-\item Idea: recover the structure first, then answer exact questions from the structure and keep the model for language.
+\item Usual recipe (RAG, retrieval-augmented generation): cut the text into fixed windows, embed them, fetch the top few, let the model answer.
+\item Some answers sit in no window: ``mandatory'' or ``optional'' can live in a table's header rows, not in a column.
+\item Some answers are spread out: ``which courses mention a topic?'' needs a join over all courses; top-few retrieval cannot join.
+\item Bullet levels (topic, subtopic) often show only as indentation.
+\item Idea: recover the structure first, answer exact questions from it, keep the model for wording.
 \end{itemize}
 {\tiny (Ref: FrugalAI code/quantum-wiki)}
 \end{frame}
@@ -55,11 +55,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Implementation: Chunks, Embeddings, Retrievers}
 \begin{itemize}
-\item Chunks come from the cards, one per module. Each chunk starts with a header line (course code, title, section) so it is understandable alone, and carries its page numbers.
-\item Embeddings: LangChain \texttt{OpenAIEmbeddings} pointed at a local OpenAI-compatible server (LM Studio) running a small embedding model. Cache every vector on disk, and add the task prefixes the model expects.
-\item Retrievers: dense search in an in-memory vector store, BM25 (\texttt{rank-bm25}), and a reciprocal-rank fusion of the two. Compare them; do not assume the hybrid wins.
+\item \textbf{Chunks}: one per module, from the cards. Each starts with a header line (course code, title, section) and carries its page numbers.
+\item \textbf{Embeddings}: a small local embedding model (in LM Studio) turns each chunk into a list of numbers that captures meaning. Cached on disk.
+\item \textbf{Retrievers}: three, to compare:
+	\begin{itemize}
+	\item \textbf{Dense}: finds chunks whose embedding is close to the question's (similar meaning).
+	\item \textbf{BM25}: a keyword-scoring method, the successor of TF-IDF. A chunk scores higher when it has the question's words; rare words count more, repeats count less, long chunks are evened out. It matches words, not meaning, and uses no embeddings.
+	\item \textbf{Hybrid}: merges the two rankings (reciprocal-rank fusion). Do not assume it wins.
+	\end{itemize}
 \item Documents and retrievers are LangChain objects; the cards and tools are plain Python.
-\item Docling is called directly and its output wrapped as LangChain documents, so the shared environment does not need the extra loader package.
 \end{itemize}
 {\tiny (Ref: LangChain 1.x; LM Studio local server; FrugalAI code/quantum-wiki)}
 \end{frame}
@@ -67,11 +71,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile]\frametitle{Implementation: Tools First, Model Second, Then Check}
 \begin{itemize}
-\item A rule-based router sends each question to a tool: status of a course, a list by status, credits and titles, lecture counts, ``which courses mention X'', references, a course's topic tree. No rule fires: retrieval fallback.
-\item Tools return an exact answer when the structure holds it, so no model call is needed. The model reads a course's own text only for open topic questions.
-\item Check in plain code: every course code and every proper name in a model answer must occur in the evidence; otherwise retry once with a stricter prompt, then refuse.
-\item If a tool finds nothing, say ``the syllabus does not say''. Never let the model fill the gap.
-\item Evaluate with a gold question set (answers and pages), a second set of reworded questions kept apart, and the plain baselines on the same questions.
+\item A rule-based router sends each question to a tool (course status, credits, ``which courses mention X'', references, topic tree). No rule fires: fall back to retrieval.
+\item Tools give an exact answer from the structure, with no model call. The model reads a course's text only for open topic questions.
+\item Check in plain code: every course code and name in an answer must occur in the evidence; else retry once, then refuse.
+\item Nothing found: say ``the syllabus does not say''. Never let the model fill the gap.
+\item Evaluate with a gold question set (answers and pages), a separate set of reworded questions, and plain baselines on the same questions.
 \end{itemize}
 {\tiny (Ref: FrugalAI code/quantum-wiki)}
 \end{frame}

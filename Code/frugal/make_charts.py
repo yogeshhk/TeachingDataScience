@@ -12,8 +12,8 @@ Sources
           median text prompt 0.24 Wh within a full-stack boundary; Jegham et al., "How Hungry is AI?"
           (arXiv 2505.09598), over 29 Wh for a long prompt on the most energy-intensive of 30 models, estimated
           from public API data
-  Memory: Nordic nRF52840 (256 KB RAM, as on the Arduino Nano 33 BLE Sense), Raspberry Pi 5 (1 to 16 GB RAM
-          options), AIOOLL README (an 8 GB laptop). Decimal units throughout.
+  Memory: Nordic nRF52840 (256 KB RAM, as on the Arduino Nano 33 BLE Sense), Raspberry Pi 3 Model B (1 GB RAM,
+          to verify on the board), AIOOLL README (an 8 GB laptop). Decimal units throughout.
 
 Run: conda activate genai && python make_charts.py   (writes into ../../LaTeX/images)
 """
@@ -71,9 +71,8 @@ save(fig, "frugal_energy_per_prompt.png")   # sources are named on the slide
 # ---- 3. Model file against device memory -------------------------------------------------------
 items = [("Arduino Nano 33 BLE Sense: RAM", 256e3, GREEN),
          ("Gemma 2 2B Q4_K_M: file size", 1.71e9, ORANGE),
-         ("Raspberry Pi 5: smallest RAM option", 1e9, BLUE),
-         ("Old laptop in AIOOLL: RAM", 8e9, BLUE),
-         ("Raspberry Pi 5: largest RAM option", 16e9, BLUE)]
+         ("Raspberry Pi 3 Model B: RAM", 1e9, BLUE),
+         ("Old laptop in AIOOLL: RAM", 8e9, BLUE)]
 items.sort(key=lambda t: t[1])
 fig, ax = plt.subplots(figsize=(7.4, 3.4))
 ax.barh([n for n, _, _ in items], [v for _, v, _ in items], color=[c for _, _, c in items])
@@ -86,7 +85,7 @@ for n, v, _ in items:
     label = ("%d KB" % round(v / 1e3)) if v < 1e6 else ("%.2f GB" % (v / 1e9)).rstrip("0").rstrip(".")
     ax.text(v * 1.15, [i for i, (m, _, _) in enumerate(items) if m == n][0], label, va="center", fontsize=10)
 ax.set_title("A 2B-parameter model file is about 6,700 times the RAM of this microcontroller", fontsize=10)
-fig.text(0.01, -0.05, "Sources: Nordic nRF52840, Raspberry Pi 5 page, AIOOLL README, Hugging Face file listing. Decimal units.",
+fig.text(0.01, -0.05, "Sources: Nordic nRF52840, Raspberry Pi 3 Model B page (1 GB, to verify), AIOOLL README, Hugging Face file listing. Decimal units.",
          fontsize=8, ha="left")
 save(fig, "frugal_size_vs_memory.png")
 
