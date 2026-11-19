@@ -1,29 +1,29 @@
 ---
 name: qt-lecture-pipeline
-description: Runs the repeatable pipeline that turns one seminar of QT-01, QT-02 or QT-05 (a Part, Seminar, Lecture course under LaTeX/fdps/) from its study notes and content-plan row into authored lecture stubs, compiled decks, an LMS page set and a textbook section. Reads the Notes file and content plan, presents a sourcing plan and waits for approval, authors the stubs, compiles, waits for the user's own review comments, runs /upgrade-deck, stages the LMS pages, drafts the textbook sections, and lists the manual Studio steps. Use when the user asks to "author seminar X-Y of QT-0N", "develop the next QT-05 seminar", "build out these lectures", or calls /qt-lecture-pipeline. Quantum-specific: only for the TeachingQuantumTech repo. Not for QT-03 (use /qt03-notes-to-slides-lms) and not for QT-00.
+description: Runs the repeatable pipeline that turns one seminar of QT-01, QT-02 or QT-05 (a Part, Seminar, Lecture course under LaTeX/fdps/) from its study notes and content-plan row into authored lecture stubs, compiled decks, an LMS page set and a book section. Reads the Notes file and content plan, presents a sourcing plan and waits for approval, authors the stubs, compiles, waits for the user's own review comments, runs /upgrade-deck, stages the LMS pages, drafts the book sections, and lists the manual Studio steps. Use when the user asks to "author seminar X-Y of QT-0N", "develop the next QT-05 seminar", "build out these lectures", or calls /qt-lecture-pipeline. Quantum-specific: only for the TeachingQuantumTech repo. Not for QT-03 (use /qt03-notes-to-slides-lms) and not for QT-00.
 ---
 
 # QT Lecture Pipeline (QT-01, QT-02, QT-05)
 
 **Scope: quantum-specific.** This command is written for the TeachingQuantumTech repo and its folder
-layout (`LaTeX/fdps/QT-0N/`, `LMS/QT-0N/`, `LaTeX/textbooks/QT-0N/`). Its name starts with `qt-` for that
+layout (`LaTeX/fdps/QT-0N/`, `LMS/QT-0N/`, `LaTeX/books/QT-0N/`). Its name starts with `qt-` for that
 reason. It is not a generic command, and it needs adapting before use on another repo.
 
 You are running the repeatable, per-seminar pipeline for the three courses built on the QT-03 model:
 a Part, Seminar, Lecture tree (`X-Y-Z`) generated from a content plan. A Seminar groups 2 to 4 lectures
 and is one 90-minute FDP slot. A Lecture is one 45-minute semester lecture and is the authoring unit. The
-same `X-Y-Z` codes name the deck stubs, the LMS units and the textbook sections.
+same `X-Y-Z` codes name the deck stubs, the LMS units and the book sections.
 
 The argument is a course and a seminar, for example `QT-05 3-1`. If the seminar is omitted, find the next
 seminar whose lecture stubs are still empty, by checking each stub for frames. If the course is omitted,
 ask which one.
 
-This command does the LaTeX-side work, the LMS staging and the textbook drafting. The Open edX Studio
+This command does the LaTeX-side work, the LMS staging and the book drafting. The Open edX Studio
 sync is always manual and is listed as a checklist at the end, never executed by Claude.
 
 ## The sync rule that governs everything
 
-The deck stubs are the only source of truth. The LMS pages, the Booklet, the cheat sheets and the textbook
+The deck stubs are the only source of truth. The LMS pages, the Booklet, the cheat sheets and the book
 are derived. Every fix, from the author's review or from you, goes into the deck stub first and then flows
 outward. Never fix a claim only in a derived copy. The repo `CLAUDE.md` states this rule too.
 
@@ -45,10 +45,10 @@ Every step runs on Sonnet. The order is fixed:
 - `/upgrade-deck` (Sonnet).
 - Only then regenerate the derived copies (Sonnet): recompile the cheat sheets, lecture decks and Booklet
   (they `\input` the same stubs, so they follow the stubs automatically), then sync the LMS pages and the
-  textbook sections.
+  book sections.
 
-Do not stage the LMS or draft the textbook before the deck has passed the author's
-review. Any claim fixed later would then be fixed in four places. When a stub changes after the textbook
+Do not stage the LMS or draft the book before the deck has passed the author's
+review. Any claim fixed later would then be fixed in four places. When a stub changes after the book
 or the LMS exists, re-sync them: run `/qt-draft-textbook` for the book, update the LMS page, and report
 the LMS and PDF changes separately.
 
@@ -80,7 +80,7 @@ Read these, in this order, before planning anything:
   Seminar, Lecture, AICTE topic, sub-topics marked CORE, SUPPORTING or OPTIONAL, hands-on and the stub
   filename. Do not invent scope beyond what a row lists without flagging it.
 - This seminar's stubs (`qt0N_<domain>_<slug>.tex`), the seminar file `seminar_qt0N_X_Y_content.tex`
-  and the matching `LMS/QT-0N/` and `LaTeX/textbooks/QT-0N/` files, so you know what exists.
+  and the matching `LMS/QT-0N/` and `LaTeX/books/QT-0N/` files, so you know what exists.
 - The AICTE syllabus PDF in `docs/`, for anything that is on the edge of scope.
 
 ## Plan the sourcing, per lecture, and wait for approval
@@ -89,7 +89,7 @@ For every lecture in the seminar, decide and write down:
 
 - **Local source first.** The seed material named in `LaTeX/fdps/TODO.md` for this course: the legacy
   ready reference deck, `fdps/QT-00/`, `fdps/QT-03/`, `fdps/NMR/`, `fdps/Qiskit/`, `seminars/` decks and
-  the QCNP book in `Publications/Books/QCNP/`. Sibling repos are limited to the allowed list in
+  the QCNP book in `LaTeX/books/QCNP/`. Sibling repos are limited to the allowed list in
   `GitHub/CLAUDE.md`. Grep frame titles instead of trusting file names. Live-lecture clicker decks do not
   transplant: rewrite complete derivations or code, turn quiz framing into stated facts and exercises, and
   redraw every diagram as a static panel.
@@ -206,17 +206,17 @@ after the author's manual review is done.
 Flag the LMS changes and the regenerated PDFs separately in your report, so the user knows what to sync to
 Studio and what to upload to `static/`.
 
-## Draft the textbook sections
+## Draft the book sections
 
 The book elaborates the stubs, one section per lecture and one chapter per Part, in
-`LaTeX/textbooks/QT-0N/qt0N_book_<part>.tex`. Run `/qt-draft-textbook` for this step; it holds the full
+`LaTeX/books/QT-0N/qt0N_book_<part>.tex`. Run `/qt-draft-textbook` for this step; it holds the full
 rules. The summary:
 
 - Write each section as book prose from its stub, with derivations, worked examples and figures, keeping
   the `% SOURCE: ... | synced: DATE` comment and setting the date.
 - Fill in the chapter's Exercises (Routine, Applied, Challenge) and Further Reading, and add answers to the
   solutions appendix.
-- Run `python LaTeX/textbooks/_scripts/check_book_drift.py` and report its result.
+- Run `python LaTeX/books/_scripts/check_book_drift.py` and report its result.
 - Compile the interior driver and verify it as above. The book never carries a claim that the deck does
   not.
 
@@ -245,7 +245,7 @@ Add to a `TODO.md` only an item that is still open and actionable. Write no hist
 
 - Never run any git command.
 - Author only inside `LaTeX/fdps/QT-0N/` until the LMS step. Touch `LMS/QT-0N/` and
-  `LaTeX/textbooks/QT-0N/` only in their steps, and only after the decks are approved.
+  `LaTeX/books/QT-0N/` only in their steps, and only after the decks are approved.
 - Never touch `IHUB-QT-0N`, `ImpDocs/` or any folder that `GitHub/CLAUDE.md` prohibits.
 - Never move, copy or restructure files across folders without a numbered plan and confirmation. The
   lecture list changes only through the content plan and `_scripts/gen_scaffold.py`. If a lecture is

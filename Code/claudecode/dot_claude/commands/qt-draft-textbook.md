@@ -1,22 +1,22 @@
 ---
 name: qt-draft-textbook
-description: Drafts or re-syncs a textbook chapter under LaTeX/textbooks/QT-0N/ (QT-01, QT-02, QT-03 or QT-05) from that course's deck stubs in LaTeX/fdps/, which are the single source of truth. Turns terse Beamer frames into explanatory book prose with verified numbers, figures, code, graded exercises and further reading, then updates the solutions appendix, compiles, checks the pages and runs the drift script. Acts as an updater on a section that already has prose, never a blind recreator. Use when the user asks to "draft the book chapter for X", "write the textbook section from the slides", "re-sync the book with the decks", or calls /qt-draft-textbook. Quantum-specific: only for the TeachingQuantumTech repo. Not for the QCNP book (use /qcnp-draft-chapter).
+description: Drafts or re-syncs a book chapter under LaTeX/books/QT-0N/ (QT-01, QT-02, QT-03 or QT-05) from that course's deck stubs in LaTeX/fdps/, which are the single source of truth. Turns terse Beamer frames into explanatory book prose with verified numbers, figures, code, graded exercises and further reading, then updates the solutions appendix, compiles, checks the pages and runs the drift script. Acts as an updater on a section that already has prose, never a blind recreator. Use when the user asks to "draft the book chapter for X", "write the book section from the slides", "re-sync the book with the decks", or calls /qt-draft-textbook. Quantum-specific: only for the TeachingQuantumTech repo. Not for the QCNP book (use /qcnp-draft-chapter).
 ---
 
-# QT Textbook Drafting
+# QT Book Drafting
 
 **Scope: quantum-specific.** This command is written for the TeachingQuantumTech repo and its folder
-layout (`LaTeX/fdps/QT-0N/`, `LaTeX/textbooks/QT-0N/`). Its name starts with `qt-` for that reason. It is
+layout (`LaTeX/fdps/QT-0N/`, `LaTeX/books/QT-0N/`). Its name starts with `qt-` for that reason. It is
 not a generic command, and it needs adapting before use on another repo.
 
 You are turning the lecture or topic stubs of one course (`LaTeX/fdps/QT-0N/`) into book prose in
-`LaTeX/textbooks/QT-0N/`. The stubs are terse Beamer frames written to be projected. The book is read from
+`LaTeX/books/QT-0N/`. The stubs are terse Beamer frames written to be projected. The book is read from
 start to finish by a student alone with the page. Same claims, much more explanation.
 
 The argument is a course and a chapter, for example `QT-05 Fourier Algorithms` or `QT-03 probstat`. For
 QT-01, QT-02 and QT-05 a chapter is one Part and a section is one lecture. For QT-03 a chapter is one AICTE
 chapter and a section is one topic stub. If the chapter is omitted, find the next chapter whose sections
-are still `synced: never`, using `python LaTeX/textbooks/_scripts/check_book_drift.py -v`.
+are still `synced: never`, using `python LaTeX/books/_scripts/check_book_drift.py -v`.
 
 ## The sync rule
 
@@ -45,8 +45,8 @@ set the new `synced` date, and report them. This command adds no new facts of it
 
 Read, in this order:
 
-- `LaTeX/textbooks/README.md` and `LaTeX/textbooks/TODO.md`: layout, the source line convention, open items.
-- `LaTeX/textbooks/QT-0N/template_book.tex`: which environments and listing style exist, so that you use
+- `LaTeX/books/README.md` and `LaTeX/books/TODO.md`: layout, the source line convention, open items.
+- `LaTeX/books/QT-0N/template_book.tex`: which environments and listing style exist, so that you use
   them and add nothing. Do not add `\usepackage` calls to a chapter file.
 - One chapter of the same book that is already drafted, or of `QT-03` if none is, for voice, depth and
   layout. Match it.
@@ -87,8 +87,8 @@ Rules for this step:
 - Run a library snippet before saying that the library is unavailable or that a snippet was not run. Check
   with an import first. If it really cannot run, say so in the text and in your report.
 - Timings come from one machine. Write "on one test machine" and never promise a number.
-- Keep the script in the repo as `LaTeX/textbooks/QT-0N/_scripts/chN_figures_and_checks.py`, one per
-  chapter, as QT-03 does. Save each PNG into `LaTeX/textbooks/QT-0N/images/` as `qt0n_fig_<topic>.png`,
+- Keep the script in the repo as `LaTeX/books/QT-0N/_scripts/chN_figures_and_checks.py`, one per
+  chapter, as QT-03 does. Save each PNG into `LaTeX/books/QT-0N/images/` as `qt0n_fig_<topic>.png`,
   lowercase, no spaces, no chapter or section number. Write the script in the scratchpad first, run it, and
   copy it into `_scripts/` once the chapter is done.
 - Quote a date, a record or a product claim only from a source you fetched. Keep it generic otherwise.
@@ -152,14 +152,14 @@ narrative. Keep a bullet or a procedure step short and imperative, and let the n
 
 ## Compile and check
 
-- Compile the interior only: `texify -cp --pdf Main_Book_QT0N_interior.tex` from `LaTeX/textbooks/QT-0N/`.
+- Compile the interior only: `texify -cp --pdf Main_Book_QT0N_interior.tex` from `LaTeX/books/QT-0N/`.
   The cover build is separate.
 - Read the log for errors, undefined references and `Overfull` boxes that are worse than a point or two.
 - Run the `verify-pdf` skill on the PDF. Read every contact sheet for the new pages, then zoom into any
   page with a figure, a table or a wide listing. Fix text that runs off the margin, a listing that wraps
   badly, and a table that is cut off.
 - Set `synced: YYYY-MM-DD` on every section that you wrote or re-synced, then run
-  `python LaTeX/textbooks/_scripts/check_book_drift.py` and report its line for this course. It must show
+  `python LaTeX/books/_scripts/check_book_drift.py` and report its line for this course. It must show
   0 stale and 0 missing sources for what you touched.
 
 ## Output
@@ -174,12 +174,12 @@ Report, in this order:
 - The figures created, the page count, and the drift script result.
 - What is still open: sections not drafted, exercises without answers.
 
-Update `LaTeX/textbooks/TODO.md` only for an item that is still open and actionable. Write no history there.
+Update `LaTeX/books/TODO.md` only for an item that is still open and actionable. Write no history there.
 
 ## Guardrails
 
 - Never run any git command.
-- Work only inside `LaTeX/textbooks/QT-0N/`. Read the stubs and the code folder; change a stub only with the
+- Work only inside `LaTeX/books/QT-0N/`. Read the stubs and the code folder; change a stub only with the
   user's confirmation, and then list that change separately so that the LMS and the Booklet can follow.
 - Do not overwrite existing section prose wholesale.
 - Do not add packages, macros or environments that the template does not define; flag the need instead.
