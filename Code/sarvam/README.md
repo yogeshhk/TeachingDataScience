@@ -24,5 +24,5 @@ These scripts serve as quick integration tests and API exploration notebooks.
 
 ## Related
 
-- `mahamarathi/` — Marathi-specific NLP experiments
-- `nlp/` — General NLP notebooks
+- `mahamarathi/`: Marathi-specific NLP experiments
+- `nlp/`: General NLP notebooks

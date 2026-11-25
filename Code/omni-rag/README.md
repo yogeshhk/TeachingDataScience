@@ -1,24 +1,38 @@
 # Omni-RAG: Multimodal Retrieval Augmented Generation
 
-This project implements a research-grade RAG system capable of understanding complex document structures (tables, headers) using a Markdown-first approach.
+A research-grade RAG system that understands complex document structures (tables, headers) using a Markdown-first approach.
 
-## 🚀 Features
-- **Docling Integration:** Parses PDFs to Markdown, preserving table schemas for LLM understanding.
-- **LangGraph Agent:** Orchestrates retrieval and generation in a stateful graph.
-- **Groq Acceleration:** Uses `gemma2-9b-it` for near-instant inference.
-- **Ragas Evaluation:** Automated metrics for Faithfulness and Context Precision.
+## Features
 
-## 🛠️ Setup
+- **Docling integration:** parses PDFs to Markdown, preserving table schemas for the LLM.
+- **LangGraph agent:** orchestrates retrieval and generation in a stateful graph.
+- **Groq acceleration:** uses `gemma2-9b-it` for fast inference.
+- **Ragas evaluation:** automated metrics for faithfulness and context precision.
 
-1. **Clone the repo**
-2. **Install dependencies:**
+## Setup
+
+1. Install the dependencies:
+
    ```bash
-   pip install -r requirements.txt```
-   
-3. Set Environment Variables: Create a .env file: ```GROQ_API_KEY=your_groq_api_key_here```
+   pip install -r requirements.txt
+   ```
 
-4. Run the UI: ```streamlit run app.py```
+2. Create a `.env` file with your key:
+
+   ```
+   GROQ_API_KEY=your_groq_api_key_here
+   ```
+
+3. Run the UI:
+
+   ```bash
+   streamlit run app.py
+   ```
 
 ## Evaluation
 
-To run the Ragas evaluation suite: ```python evaluate.py```
+Run the Ragas evaluation suite:
+
+```bash
+python evaluate.py
+```

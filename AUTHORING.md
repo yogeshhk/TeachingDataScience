@@ -25,7 +25,7 @@ texify -cp Main_Seminar_AI_HandsOn_ClaudeCode_Presentation.tex
 ```
 
 ### Compile policy
-- **Per-session MLCoEP drivers** (the sessions 16-20 workflow below): compile without asking.
+- **Per-session MLCoEP drivers** (the MLCoEP workflow below): compile without asking.
 - **Anything else: ask first.** Never run `make_all.bat` or the combined `Main_Course_MLCoEP_*` driver,
   and do not run any other mega-deck compile (multi-workshop or full-course). Work at single-seminar or
   single-workshop scale.
@@ -38,10 +38,7 @@ This repo is public. **Compiled decks (`Main_*.pdf`) and build litter (`.aux .lo
 .toc .vrb`) are never committed** (gitignored at `LaTeX/.gitignore`). `LaTeX/images/*.pdf` are source
 assets and are unaffected.
 
-**MLCoEP sessions 16-20** (the rule is the same as in `D:\Yogesh\GitHub\CLAUDE.md`): after a
-significant change, compile both outputs. The Presentation goes to `Desktop\MLCoEP_Presentations` and
-to `Publications/Presentations`; the CheatSheet goes to `Desktop\MLCoEP_Presentations` only. Leave no
-PDFs beside the sources in `LaTeX/`. When a session is done, remove it from the Desktop folder only.
+**MLCoEP session decks:** the compile and PDF-destination rule lives only in `D:\Yogesh\GitHub\CLAUDE.md`.
 Other decks are copied to `Publications/Presentations/` after a local compile.
 
 ## LaTeX Architecture
@@ -149,8 +146,8 @@ To add a topic: create `LaTeX/<domain>_<topic>.tex`, `\input{<domain>_<topic>}` 
   then re-retire. Optional cuts are `%`-commented with an "Optional" marker; restore by uncommenting.
   Offline data and scripts are in `Code/mlcoep/`. `ml_pca`, `ml_kmeans` and `ml_production` are
   shared with the generic seminar decks, so edits there affect both.
-  `course_mlcoep_content.tex` chains all sessions into one combined driver (20+ minutes, 350+ pages,
-  never verified); never compile it.
+  `course_mlcoep_content.tex` chains all sessions into one combined driver (very slow, never verified);
+  never compile it.
 - **DLCoEP** (deep learning for mechanical engineers, CoEP): separate lectures, named by topic and not
   numbered. The CNN lecture (`seminar_dlcoep_cnn_content.tex`) uses `dl_cnn.tex` and the case-study deck
   `dl_cnn_digits_case_study.tex`. The RNN lecture (`seminar_dlcoep_rnn_content.tex`) runs `dl_rnn.tex` (plain
@@ -162,7 +159,7 @@ To add a topic: create `LaTeX/<domain>_<topic>.tex`, `\input{<domain>_<topic>}` 
 
 ### Local LLM (Qwen3)
 In-process Qwen3 can replace Groq for plain chat but not for tool calling; the detail is in
-`Code/LOCAL_LLM_PLAN.md` (section 9).
+`Code/LOCAL_LLM_PLAN.md` (the in-process Qwen3 section).
 
 ## Code Directory
 
@@ -187,7 +184,7 @@ Python uses conda only. Do not create `venv/` or `.venv/`.
 
 ### Security note
 `Code/google-adk/my_agent/.env` is gitignored but holds a real `GOOGLE_API_KEY` on disk; rotate it
-in Google Cloud Console (tracked in `TODO.md`).
+in Google Cloud Console (open action in `TODO.md`).
 
 ## Test Suite
 

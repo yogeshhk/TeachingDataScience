@@ -1,3 +1,3 @@
 # TODO: TeachingDataScience
 
-No open actions.
+- [ ] Rotate the `GOOGLE_API_KEY` in `Code/google-adk/my_agent/.env` in Google Cloud Console (file is gitignored but holds a real key).

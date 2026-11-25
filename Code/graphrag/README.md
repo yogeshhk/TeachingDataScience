@@ -1,4 +1,4 @@
-# GraphRAG — Graph-based Retrieval Augmented Generation
+# GraphRAG: Graph-based Retrieval Augmented Generation
 
 Scripts demonstrating knowledge graph construction and graph-based QA using LangChain's `NetworkxEntityGraph` and `GraphQAChain`, with Groq as the LLM backend (via the OpenAI-compatible endpoint).
 
@@ -38,5 +38,5 @@ Text / CSV  →  GraphIndexCreator / manual edges  →  NetworkxEntityGraph
 
 ## Notes
 
-- Both scripts use `ChatOpenAI` pointed at `https://api.groq.com/openai/v1` — a standard pattern for using Groq via the OpenAI SDK.
+- Both scripts use `ChatOpenAI` pointed at `https://api.groq.com/openai/v1`, a standard pattern for using Groq via the OpenAI SDK.
 - Reference: [LangChain GraphRAG article](https://medium.com/data-science-in-your-pocket/graph-analytics-relationship-link-prediction-in-graphs-using-neo4j-79a81716e73a)

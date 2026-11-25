@@ -1,7 +1,6 @@
-# Python Setup Guide — AIML 2026 Course
+# Python Setup Guide: AIML 2026 Course
 
 **Course**: AI-ML for Mechanical Engineers (CoEP Final Year)  
-**Setup Date**: Jul 20, 2026  
 **Estimated Time**: 30-45 minutes  
 
 ---
@@ -75,11 +74,10 @@ The course uses a specific set of libraries. We've provided a `environment.yml` 
 
 1. Download `environment.yml` from the course folder
 2. Open Command Prompt (Windows) or Terminal (Mac/Linux)
-3. Navigate to the folder where `environment.yml` is located:
+3. Navigate to the folder where `environment.yml` is located (`Code/mlcoep` in your copy of the repository):
    ```bash
-   cd D:\Yogesh\GitHub\TeachingDataScience\Code\mlcoep
+   cd path/to/TeachingDataScience/Code/mlcoep
    ```
-   (Replace with your actual path if different)
 
 4. Run:
    ```bash
@@ -120,7 +118,7 @@ Run the following commands to verify all packages are installed:
 ```bash
 python --version
 ```
-Should show: `Python 3.9.x`
+Should show: `Python 3.11.x`
 
 ```bash
 python -c "import numpy; import pandas; import sklearn; import matplotlib; import seaborn; import jupyter; print('All packages imported successfully!')"
@@ -150,8 +148,8 @@ Jupyter is your interactive coding environment for the course.
 3. You should see a Jupyter interface with your home folder contents.
 
 4. To navigate to the course materials:
-   - Click through folders to reach: `D:\Yogesh\GitHub\TeachingDataScience\Code\mlcoep\notebooks\`
-   - Click on a `.ipynb` notebook file to open it
+   - Click through folders to reach `Code/mlcoep/sessions/`
+   - Click on a `.ipynb` notebook file to open it, if the session has one
 
 5. To create a new notebook:
    - Click "New" → "Python 3" → start coding!
@@ -316,12 +314,5 @@ Once your environment is set up:
 1. Get the session slides (PDFs) from the instructor, or compile them yourself from `LaTeX/`
    in the main repo (`texify -cp Main_Course_MLCoEP_Presentation.tex`)
 2. Try the Session 8 hands-on scripts: `python Code/mlcoep/sessions/session08_feature_selection/pipeline_steel_plates_faults.py`
-3. The datasets for Sessions 4, 7, and 8 are already included locally under `Code/mlcoep/datasets/`
+3. The datasets for most sessions are already included locally under `Code/mlcoep/datasets/` (see the README there)
 4. Start coding!
-
----
-
-**Happy coding! 🚀**
-
-**Last Updated**: Jul 16, 2026  
-**Tested on**: Python 3.9.x, Windows 11 / Mac / Linux

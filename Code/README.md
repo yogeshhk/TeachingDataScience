@@ -60,7 +60,7 @@ conda activate <env-name>
 
 | Directory | Covers |
 |---|---|
-| [`ml/`](ml/) | ~160 notebooks covering classical ML algorithms and data analysis patterns |
+| [`ml/`](ml/) | Notebooks covering classical ML algorithms and data analysis patterns |
 | `math/` | Statistics and math tutorial notebooks (Bayes' theorem, hypothesis testing, distributions) |
 | `pandas/` | Pandas tutorial notebooks |
 | [`mlcoep/`](mlcoep/) | MLCoEP (AI-ML for mechanical engineers, CoEP): offline datasets and per-session scripts (`datasets/`, `sessions/`) |

@@ -150,7 +150,7 @@ response = chain.run(question)
 - Create a new service account. 
 - Download a JSON-formatted private key. This key will be used for authentication between your application and the Vertex AI API.
 - Set ENV variable GOOGLE_APPLICATION_CREDENTIALS="<path to the JSON key file obtained in the authentication setup step>"
-- Mine is at C:\Users\yoges\Documents\document-ai-374204-85985df1d53e.json
+- Keep the key file outside the repository (never commit it).
 - Use it in Langchain like
 from langchain.llms import VertexAI 
 llm = VertexAI() # model_name="gemini-pro", deafult=

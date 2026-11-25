@@ -1,4 +1,4 @@
-# OpenDataLoader PDF — Tutorial Suite
+# OpenDataLoader PDF: Tutorial Suite
 
 Sample programs covering the major features of
 [opendataloader-pdf](https://github.com/opendataloader-project/opendataloader-pdf)
@@ -40,7 +40,7 @@ conda activate opendataloader
 |---|------|---------|-----------------|
 | 01 | `tutorial_01_basic_extraction.py` | Single-file Markdown + text | `format="markdown"`, `format="text"` |
 | 02 | `tutorial_02_output_formats.py` | All four output formats | `format="markdown,json,html,text"` |
-| 03 | `tutorial_03_json_structure.py` | JSON schema analysis — element types, headings, bounding boxes, fonts | `format="json"` |
+| 03 | `tutorial_03_json_structure.py` | JSON schema analysis: element types, headings, bounding boxes, fonts | `format="json"` |
 | 04 | `tutorial_04_table_extraction.py` | Table element isolation | `format="json,markdown"` on `table.pdf` |
 | 05 | `tutorial_05_image_extraction.py` | Image output modes | `image_output="off/external/embedded"`, `image_format="png/jpeg"` |
 | 06 | `tutorial_06_batch_processing.py` | Whole-folder vs file-list batch | `input_path=[folder]` vs `input_path=[list]` |
@@ -65,7 +65,7 @@ done
 
 Each tutorial writes its output under `output/<nn>_<name>/`.
 
-## Tutorial 09 — OCR special setup
+## Tutorial 09: OCR special setup
 
 Tutorial 09 requires the hybrid backend running in a **separate terminal**:
 

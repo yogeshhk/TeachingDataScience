@@ -10,11 +10,10 @@ maintenance, quality control, process optimization, design automation).
 
 - **Instructor**: Yogesh H Kulkarni (Professor of Practice, CoEP)
 - **Email**: firstnamelastname \[at\] yahoo \[dot\] com (Subject "AIML4ME2026...")
-- **Phone**: nine eight nine zero two five one four zero six (for SMS, No WhatsApp)
 - **Class**: Final Year B.Tech Mech, 8th Semester, Elective
 - **Duration**: 20 hours (20 sessions x 1 hour each)
-- **Venue**: UG-Class Room 301 (Bajaj Building 3rd Floor)???
-- **Timing**: Thursdays & Fridays 12:30 am to 13:30 pm (1-hour sessions, twice per week)
+- **Venue**: to be announced by the instructor
+- **Timing**: Thursdays & Fridays 12:30 to 13:30 (1-hour sessions, twice per week)
 - **Academic Year**: Jul – Nov 2026
 
 ## Course Objectives

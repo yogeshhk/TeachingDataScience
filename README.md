@@ -33,13 +33,13 @@ Content comes in three tiers, so you can pick exactly the depth you need:
 - **Workshops**: one topic in depth, ~1-2 days (8-16 hrs)
 - **Seminars**: a focused session, ~1-2 hrs
 
-Workshops and seminars span far more ground than the courses above: classical ML, linear algebra, LLMs, RAG, LangGraph, GNNs, career advice, and more. There's also a growing set of runnable code projects in [`Code/`](Code/): LangChain, LangGraph, RAG pipelines, fine-tuning, classical ML, NLP, graph neural networks, and more.
+Workshops and seminars span far more ground than the courses above: classical ML, linear algebra, LLMs, RAG, LangGraph, GNNs, career advice, and more. There are also runnable code projects in [`Code/`](Code/): LangChain, LangGraph, RAG pipelines, fine-tuning, classical ML, NLP, graph neural networks, and more.
 
 Every seminar/workshop compiles to **both** Beamer slides and two-column printable "cheat sheet" notes from the same source `.tex` files.
 
 ## Course Catalog
 
-Five full courses (Machine Learning, Maths for ML, Python, Deep Learning, Generative AI), each assembled from standalone workshops and seminars you can also take independently, plus dozens more standalone workshops and seminars beyond them (NLP, LLMs & GenAI, Graph ML, Reinforcement Learning, Software Engineering, Data Analytics, career prep, and more), and two bespoke CoEP courses for mechanical engineers (ML, 20 sessions; DL, 2 sessions). The `Main_Course_*` driver files in `LaTeX/` are the catalog: each one lists the workshops and seminars it chains.
+Full courses: Machine Learning, Maths for ML, Python, Deep Learning and Generative AI, each assembled from standalone workshops and seminars you can also take independently. Beyond them sit many more standalone workshops and seminars (NLP, LLMs and GenAI, Graph ML, Reinforcement Learning, Software Engineering, Data Analytics, career prep, and more), and two bespoke CoEP courses for mechanical engineers (MLCoEP and DLCoEP, session by session). The `Main_Course_*` driver files in `LaTeX/` are the catalog: each one lists the workshops and seminars it chains.
 
 ## Code Projects
 
@@ -68,6 +68,7 @@ Requirements: a LaTeX distribution (MikTeX or TeX Live); install packages as pro
 
 - **`LaTeX/`**: `.tex` sources and images. Naming: `subject_maintopic_subtopic.tex` (e.g. `maths_linearalgebra_matrices.tex`). Driver files: `Main_[Seminar|Workshop|Course]_<Subject>_[Presentation|CheatSheet].tex`. Content hierarchy: **Course** (40hr) → **Workshop** (4-16hr) → **Seminar** (1hr) → raw topic files.
 - **`Code/`**: runnable Python/notebook files with necessary images and data, named to match their corresponding `.tex` file where applicable.
+
 ## How to Contribute
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md): corrections, new topics, code examples, and citation fixes are all welcome.
@@ -75,8 +76,6 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md): corrections, new topics, code examples
 ## Disclaimer
 
 Notes have been built from lots of publicly available material; care has been taken to cite sources, but some may be missing. Point them out and they'll be fixed. Don't depend on this fully; there's always more to improve.
-
----
 
 Connect: [LinkedIn](https://www.linkedin.com/in/yogeshkulkarni/)
 

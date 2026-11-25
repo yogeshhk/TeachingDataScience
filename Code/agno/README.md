@@ -14,7 +14,7 @@ Minimal agent scripts demonstrating the [Agno](https://github.com/agno-agi/agno)
 | `reasoning_agent.py` | Agent that streams step-by-step reasoning using `show_full_reasoning=True` |
 | `trial_agent.py` | Minimal single-turn agent using a local LM Studio model |
 | `web_search_agent.py` | Agent augmented with a web search tool |
-| `rag_agent.py` | Stub — placeholder for a future RAG-over-documents example |
+| `rag_agent.py` | Stub: placeholder for a future RAG-over-documents example |
 
 ## Quick Start
 
@@ -27,5 +27,5 @@ python trial_agent.py
 
 ## Notes
 
-- All scripts use LM Studio as a local OpenAI-compatible inference server — no cloud API key required.
+- All scripts use LM Studio as a local OpenAI-compatible inference server; no cloud API key required.
 - To switch models, change the `id` parameter in the `LMStudio(model=Model(id="..."))` call.
