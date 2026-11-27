@@ -1,3 +1,3 @@
 # TODO: TeachingDataScience
 
-- [ ] Rotate the `GOOGLE_API_KEY` in `Code/google-adk/my_agent/.env` in Google Cloud Console (file is gitignored but holds a real key).
+- [ ] Black and white (rule in `D:\Yogesh\GitHub\CLAUDE.md`): when a deck is next delivered or rebuilt, fix any text or figure that points by colour ("the red line", colour-coded diagrams): use line styles, markers or labels. The template is already grey. Search the deck for colour words first. Everyday colour words stay.
